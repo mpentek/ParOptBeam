@@ -14,7 +14,7 @@ from time_schemes import analytical_general, euler, bdf1, bdf2, rk4
 
 class SDoF:
 
-    def __init__(self, scheme=None, K=1.0, M=1, C=0.1, f=None, u0=1.0, v0=0.0, dt=0.01):
+    def __init__(self, scheme=None, K=1.0, M=1, C=0.5, f=None, u0=1.0, v0=0.0, dt=0.01):
         self.K = K
         self.M = M
         self.C = C
@@ -24,7 +24,7 @@ class SDoF:
         self.dt = dt
         time_scheme = scheme
         self.tend = 20.0
-        self.ta, self.ua, self.va = self.solve("analytical")
+        self.ua, self.va = [],[]
 
 
     def initialize(self, u, v):
@@ -56,6 +56,10 @@ class SDoF:
         if (time_scheme == "rk4"):
             u_n1, v_n1 = rk4(self, t, u[-1], v[-1])
 
+        ua, va = analytical_general(self, t)
+        self.ua.append(ua)
+        self.va.append(va)
+
         u.append(u_n1)
         v.append(v_n1)
 
@@ -71,6 +75,7 @@ class SDoF:
             print ("time step: ", tstep)
             if (tstep == 0):
                 self.initialize(u, v)
+                self.initialize(self.ua, self.va)
             else:
                 self.apply_scheme(time_scheme, u, v, t, tstep)
 
@@ -80,11 +85,13 @@ class SDoF:
         return t_vec, u, v
 
 
-    def error_estimation(self, t, ua, u):
-        e =[]
-        for i in range (0,len(ua)):
-            e.append(u[i] - ua[i])
-        return e
+    def error_estimation(self, t, u, v):
+        eu = []
+        ev = []
+        for i in range (0,len(u)):
+            eu.append(u[i] - self.ua[i])
+            ev.append(v[i] - self.va[i])
+        return eu, ev
 
 
 if __name__ == "__main__":

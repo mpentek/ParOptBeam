@@ -14,7 +14,7 @@ from adaptive_time_step_schemes import analytical_general, euler, bdf1, bdf2, rk
 
 class SDoF:
 
-    def __init__(self, scheme=None, K=1.0, M=1, C=0.1, f=None, u0=1.0, v0=0.0, dt=0.01):
+    def __init__(self, scheme=None, K=1.0, M=1, C=0.5, f=None, u0=1.0, v0=0.0, dt=0.01):
         self.K = K
         self.M = M
         self.C = C
@@ -22,11 +22,17 @@ class SDoF:
         self.u0 = u0
         self.v0 = v0
         self.dt = dt
+        self.eta_min = 1e-4
+        self.eta_max = 1e-1
+        self.eta = self.eta_min # minitoring function
         self.max_dt = 10 * self.dt
-        self.min_dt = 0.5 * self.dt
+        self.min_dt = 0.8 * self.dt
+        self.rho = 1.1 # amplification factor (should be smaller than 1.91, otherwise stability problems)
+        self.sigma = 0.95 # reduction factor
         time_scheme = scheme
         self.tend = 20.0
-        self.ta, self.ua, self.va = self.solve("analytical")
+        self.epsilon = 1e-6
+        self.ua, self.va = [],[]
 
 
     def initialize(self, u, v):
@@ -40,12 +46,26 @@ class SDoF:
     
 
     def update_dt(self, t, dt_old):
-        dt = dt_old * 1.001
+        if self.eta < self.eta_min: # when the change is small, large time step
+            self.dt = self.rho * self.dt
+        elif self.eta > self.eta_max: # when the change is large, small time step
+            self.dt = self.sigma * self.dt # 0 < sigma < 1
 
-        if dt > self.max_dt:
+        if self.dt > self.max_dt:
             dt = self.max_dt
+        elif self.dt < self.min_dt:
+            dt = self.min_dt
+        else:
+            dt = self.dt
+
         print("Current dt is: " + str(dt))
         return dt
+
+
+    def compute_eta(self,vn1,vn):
+        # eta is the monitoring function for the choice of time step size
+        # see Denner 2.2.1
+        self.eta = abs(vn1 - vn)/(abs(vn) + self.epsilon)
 
 
     def apply_scheme(self, time_scheme, u, v, t, dt, old_dt, tstep):
@@ -53,7 +73,7 @@ class SDoF:
             u_n1, v_n1 = analytical_general(self, t)
 
         if (time_scheme == "euler"):
-            u_n1, v_n1 = euler(self ,t, dt, u[-1], v[-1])
+            u_n1, v_n1 = euler(self, t, dt, u[-1], v[-1])
 
         if (time_scheme == "bdf1"):
             u_n1, v_n1 = bdf1(self, t, dt, u[-1], v[-1])
@@ -66,6 +86,11 @@ class SDoF:
 
         if (time_scheme == "rk4"):
             u_n1, v_n1 = rk4(self, t, u[-1], v[-1])
+        
+        ua, va = analytical_general(self, t)
+        self.ua.append(ua)
+        self.va.append(va)
+        self.compute_eta(u_n1,u[-1])
 
         u.append(u_n1)
         v.append(v_n1)
@@ -84,6 +109,7 @@ class SDoF:
             print ("time step: ", tstep)
             if (tstep == 0):
                 self.initialize(u, v)
+                self.initialize(self.ua, self.va)
             else:
                 self.apply_scheme(time_scheme, u, v, t, delta_time, old_delta_time, tstep)
 
@@ -94,15 +120,16 @@ class SDoF:
             old_delta_time = delta_time
             delta_time = self.update_dt(t, dt[-1])
 
-
         return t_vec, u, v
 
 
-    def error_estimation(self, t, ua, u):
-        e =[]
-        for i in range (0,len(ua)):
-            e.append(u[i] - ua[i])
-        return e
+    def error_estimation(self, t, u, v):
+        eu = []
+        ev = []
+        for i in range (0,len(u)):
+            eu.append(u[i] - self.ua[i])
+            ev.append(v[i] - self.va[i])
+        return eu, ev
 
 
 if __name__ == "__main__":

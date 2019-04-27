@@ -21,7 +21,7 @@ else:
 cycol = cycle('bgrcmk')
 fig, axes = plt.subplots(4,1,figsize = (16,10))
 #time_schemes = ["analytical", "euler", "bdf1", "bdf2", "rk4"]
-time_schemes = ["analytical", "bdf1"]
+time_schemes = ["analytical", "bdf2"]
 
 def plot(sdof, time_scheme):
     global axes, cycol
@@ -29,8 +29,7 @@ def plot(sdof, time_scheme):
     color = next(cycol)
 
     t, u, v = sdof.solve(time_scheme)
-    eu = sdof.error_estimation(t, sdof.ua, u)
-    ev = sdof.error_estimation(t, sdof.va, v)
+    eu, ev = sdof.error_estimation(t, u, v)
 
     axes[0].set_title(r"$Mu''(t) + Cu'(t) + Ku(t) = f(t), u(0) = 1, v(0) = 0$")
     axes[0].set_xlabel("t")
