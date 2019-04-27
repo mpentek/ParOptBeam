@@ -6,16 +6,22 @@ plt.rcParams.update({'font.size': 16})
 plt.rc('text', usetex=True)
 
 USE_TWO_VARIABLE_FORMULATOIN = True
+USE_ADAPTIVE_TIME_STEP = True
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
     sys.path.append('two_variables')
 else:
     sys.path.append('one_variable')
-from sdof_solver import SDoF
+
+if USE_ADAPTIVE_TIME_STEP == True:
+    from adaptive_sdof_solver import SDoF
+else:
+    from sdof_solver import SDoF
 
 cycol = cycle('bgrcmk')
 fig, axes = plt.subplots(4,1,figsize = (16,10))
-time_schemes = ["analytical", "euler", "bdf1", "bdf2", "rk4"]
+#time_schemes = ["analytical", "euler", "bdf1", "bdf2", "rk4"]
+time_schemes = ["analytical", "bdf1"]
 
 def plot(sdof, time_scheme):
     global axes, cycol
@@ -47,11 +53,11 @@ def plot(sdof, time_scheme):
     axes[3].grid('on')
     axes[3].plot(t, ev, label=time_scheme, c = color)
     axes[3].legend()
-    lgd = axes[3].legend(loc='lower center', bbox_to_anchor=(0.5, -0.8), fancybox=True,ncol=len(time_schemes))
+    lgd = axes[3].legend(loc='lower center', bbox_to_anchor=(0.5, -0.75), fancybox=True,ncol=len(time_schemes))
 
 
 for time_scheme in time_schemes:
     sdof = SDoF(time_scheme)
     plot(sdof, time_scheme)
 plt.show()
-plt.savefig("post_processing_results/two_varaibles.png")
+#plt.savefig("post_processing_results/two_varaibles.png")

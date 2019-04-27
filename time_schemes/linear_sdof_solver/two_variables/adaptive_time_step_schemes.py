@@ -73,13 +73,12 @@ def euler(SDoF, t, un, vn):
     return u_n1, v_n1
 
 
-def bdf1(SDoF, t, un, vn):
+def bdf1(SDoF, t, dt, un, vn):
 
     C = SDoF.C
     M = SDoF.M
     K = SDoF.K
     f = SDoF.f(t)
-    dt = SDoF.dt
 
     u_n1 = (dt*(M*vn + dt*f) + un*(C*dt + M))/(C*dt + K*dt**2 + M)
     v_n1 = (-K*dt*un + M*vn + dt*f)/(C*dt + K*dt**2 + M)
@@ -87,13 +86,12 @@ def bdf1(SDoF, t, un, vn):
     return u_n1, v_n1
 
 
-def bdf2(SDoF, t, un, vn, unm1, vnm1):
+def bdf2(SDoF, t, dt, old_dt, un, vn, unm1, vnm1):
 
     C = SDoF.C
     M = SDoF.M
     K = SDoF.K
     f = SDoF.f(t)
-    dt = SDoF.dt
 
 	# bdf coefficients for variable time steps
     Rho = old_dt / dt
@@ -107,13 +105,12 @@ def bdf2(SDoF, t, un, vn, unm1, vnm1):
     return un1, vn1
 
 
-def rk4(SDoF, t, un, vn):
+def rk4(SDoF, t, dt, un, vn):
 
     C = SDoF.C
     M = SDoF.M
     K = SDoF.K
     f = SDoF.f(t)
-    dt = SDoF.dt
 
     k0 =  dt*vn
     l0 =  dt*(-C*vn - K*un + f)/M
