@@ -65,4 +65,4 @@ for time_scheme in time_schemes:
         sdof = SDoF(USE_DISPLACEMENT_BASE_FORMULATION, time_scheme, K, M, C)
     plot(sdof, time_scheme)
 #plt.show()
-#plt.savefig("post_processing_results/one_varaibles_adaptive_dt_disp.png")
+plt.savefig("post_processing_results/one_varaibles_disp_adaptive_dt_monitor_v.png")

@@ -110,7 +110,7 @@ class SDoF:
         ua, va = analytical_general(self, t)
         self.ua.append(ua)
         self.va.append(va)
-        self.compute_eta(u_n1,u_disp[-1])
+        self.compute_eta(v_n1,v_disp[-1])
 
         u_disp.append(u_n1)
         v_disp.append(v_n1)
