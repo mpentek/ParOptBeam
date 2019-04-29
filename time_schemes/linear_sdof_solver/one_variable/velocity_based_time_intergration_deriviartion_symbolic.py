@@ -18,7 +18,7 @@ f, K, C, M = symbols('SDoF.f(t) SDoF.K SDoF.C SDoF.M')
 
 time_scheme = None
 
-def euler():
+def euler_vel_based():
     # ### euler ###
     # M * u''(t) + C * u'(t) + K * u(t) = f
     global un1, unm1, unm2, vn2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
@@ -60,7 +60,7 @@ def euler():
     print("v_n1 = ", vn1)
 
 
-def bdf1():
+def bdf1_vel_based():
     # ### bdf1 ###
     # M * u''(t) + C * u'(t) + K * u(t) = f
     global an, un1, un, unm1, unm2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
@@ -85,7 +85,7 @@ def bdf1():
     print("v_n1 = ", vn1)
 
 
-def bdf2():
+def bdf2_vel_based():
     # ### BDF2 ###
     # un+1 = 4/3 un - 1/3 un-1 + 2/3 dt f(tn+1, un+1)
     # vn+1 = 0.5/dt * (3 un+1 - 4 un + unm1)
@@ -110,7 +110,28 @@ def bdf2():
     return un1
 
 
-def rk4():
+def bdf2_vel_based_adaptive():
+    # ### BDF2 ###
+    # vn1 = bdf0 * un1 + bdf1 * un + bdf2 * unm1
+    global an1, an, un1, un, unm1, unm2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
+    un1, un, unm1, vn1, vn, vnm1, bdf0, bdf1, bdf2, t = symbols('un1 un unm1 vn1 vn vnm1 bdf0 bdf1 bdf2 t')
+
+    un1 = ( vn1 - bdf1 * un - bdf2 * unm1) / bdf0
+    an1 = bdf0 * vn1 + bdf1 * vn + bdf2 * vnm1
+
+    eq_u = nsimplify (M * an1 + C * vn1 + K * un1 - f)
+    #print(eq_u)
+
+    sol = solve(eq_u, vn1)
+    vn1 = nsimplify (sol[0])
+
+    print("##### BDF2 #####")
+    print("v_n1 = ", vn1)
+
+    return vn1
+
+
+def rk4_vel_based():
     # un+1 = un + g( (k0 + k1 + k2 + k3) / 6 ) * dt
     # vn+1 = vn + rhs( (l0 + l1 + l2 + l3) / 6 ) * dt
     global an1, an, un2, un1, un, unm1, unm2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
@@ -152,24 +173,27 @@ def rk4():
 
 def print_scheme(time_scheme):
     if time_scheme == 'euler':
-        euler()
+        euler_vel_based()
 
     if time_scheme == 'bdf1':
-        bdf1()
+        bdf1_vel_based()
 
     if time_scheme == 'bdf2':
-        bdf2()
+        bdf2_vel_based()
+    
+    if time_scheme == 'bdf2_adaptive':
+        bdf2_vel_based_adaptive()
 
     if time_scheme == 'rk4':
-        rk4()
+        rk4_vel_based()
 
-
-# Check number of command line arguments
-if len(sys.argv) != 2:
-    print ("Usage: python derive_scheme.py <scheme>")
-    sys.exit(1)
 
 if __name__ == "__main__":
-    # Get command line arguments
-    time_scheme = sys.argv[1]
-    print_scheme(time_scheme)
+    # Check number of command line arguments
+    if len(sys.argv) != 2:
+        print ("Usage: python derive_scheme.py <scheme>")
+        sys.exit(1)
+    else:
+        # Get command line arguments
+        time_scheme = sys.argv[1]
+        print_scheme(time_scheme)
