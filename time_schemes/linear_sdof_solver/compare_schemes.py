@@ -5,8 +5,8 @@ plt.rc('font',family='TeX Gyre Termes')
 plt.rcParams.update({'font.size': 16})
 plt.rc('text', usetex=True)
 
-USE_TWO_VARIABLE_FORMULATOIN = True
-USE_ADAPTIVE_TIME_STEP = True
+USE_TWO_VARIABLE_FORMULATOIN = False
+USE_ADAPTIVE_TIME_STEP = True  
 USE_DISPLACEMENT_BASE_FORMULATION = True
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
@@ -65,4 +65,4 @@ for time_scheme in time_schemes:
         sdof = SDoF(USE_DISPLACEMENT_BASE_FORMULATION, time_scheme, K, M, C)
     plot(sdof, time_scheme)
 #plt.show()
-plt.savefig("post_processing_results/two_varaibles_adaptive_dt.png")
+#plt.savefig("post_processing_results/one_varaibles_adaptive_dt_disp.png")

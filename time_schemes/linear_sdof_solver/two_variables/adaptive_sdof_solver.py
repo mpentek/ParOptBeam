@@ -8,6 +8,8 @@
 ###   rhs = f - cv - ku
 ################################################################################################
 
+############# TWO VARIABLE FORMULATION ################
+
 import numpy as np
 from sympy import *
 from adaptive_time_step_schemes import analytical_general, euler, bdf1, bdf2, rk4
