@@ -8,17 +8,11 @@
 ###   rhs = f - cv - ku
 ################################################################################################
 
-import matplotlib.pyplot as plt
 import numpy as np
 from math import *
 from sympy import *
-import cmath
-import sys
-from itertools import cycle
+from time_schemes import euler, bdf1, bdf2
 
-init_printing(use_unicode=True)
-cycol = cycle('bgrcmk')
-fig = plt.figure()
 
 class SDoF:
 
@@ -29,14 +23,13 @@ class SDoF:
         self.M = M
         self.C = C
         self.f = lambda t: 1.0
-        self.fstr = 'sin(t)'
+        self.fstr = '1.0'
         self.u0 = u0
         self.v0 = v0
         self.dt = dt
         self.time_scheme = time_scheme
         self.numerical_scheme = numerical_scheme
         self.tend = 20.0
-        self.plot_result()
 
 
     def initialize(self, u, v):
@@ -127,71 +120,7 @@ class SDoF:
         return t
 
 
-    def euler(self, t, u_n, v_n):
-        C = self.C
-        M = self.M
-        K = self.K(u_n)
-        f = self.f(t)
-        dt = self.dt
-
-        u_n1 = dt * v_n + u_n
-        v_n1 = ( M * v_n - dt * (C * v_n + K * u_n - f) ) / M
-
-        return u_n1, v_n1
-
-
-    def bdf1(self, t, u_n, v_n):
-
-        C = self.C
-        M = self.M
-        K = self.K(u_n)
-        f = self.f(t)
-        dt = self.dt
-
-        u_n1 = (dt*(M*v_n + dt*f) + u_n*(C*dt + M))/(C*dt + K*dt**2 + M)
-        v_n1 = (-K*dt*u_n + M*v_n + dt*f)/(C*dt + K*dt**2 + M)
-
-        return u_n1, v_n1
-
-
-    def bdf2(self, t, u_n, v_n, u_nm1, v_nm1):
-
-        C = self.C
-        M = self.M
-        K = self.K(u_n)
-        f = self.f(t)
-        dt = self.dt
-
-        u_n1 = (2.0*dt*(4.0*M*v_n - M*v_nm1 + 2.0*dt*f) + (4.0*u_n - u_nm1)*(2.0*C*dt + 3.0*M))/(6.0*C*dt + 4.0*K*dt**2 + 9.0*M)
-        v_n1 = (-8.0*K*dt*u_n + 2.0*K*dt*u_nm1 + 12.0*M*v_n - 3.0*M*v_nm1 + 6.0*dt*f)/(6.0*C*dt + 4.0*K*dt**2 + 9.0*M)
-
-        return u_n1, v_n1
-
-
-    def rk4(self, t, u_n, v_n):
-
-        C = self.C
-        M = self.M
-        #K = self.K(u_n)
-        f = self.f(t)
-        dt = self.dt
-
-        k0 =  dt*v_n
-        l0 =  dt*(-C*v_n - self.K(u_n)*u_n + f)/M
-        k1 =  dt*(0.5*l0 + v_n)
-        l1 =  dt*(-C*(0.5*l0 + v_n) - self.K(0.5*k0 + u_n)*(0.5*k0 + u_n) + f)/M
-        k2 =  dt*(0.5*l1 + v_n)
-        l2 =  dt*(-C*(0.5*l1 + v_n) - self.K(0.5*k1 + u_n)*(0.5*k1 + u_n) + f)/M
-        k3 =  dt*(l2 + v_n)
-        l3 =  dt*(-C*(l2 + v_n) - self.K(k2 + u_n)*(k2 + u_n) + f)/M
-
-        u_n1 =  k0/6 + k1/3 + k2/3 + k3/6 + u_n
-        v_n1 =  l0/6 + l1/3 + l2/3 + l3/6 + v_n
-
-        return u_n1, v_n1
-
-
-    def solve(self):
+    def solve(self, time_scheme):
         u, v = [], []
         t = 0.0
 
@@ -205,12 +134,12 @@ class SDoF:
             else:
                 u_n1, v_n1 = self.get_first_iteration_step(t, tstep, u, v)
 
-                if (self.time_scheme == 'bdf2' and tstep == 1):
+                if (time_scheme == 'bdf2' and tstep == 1):
                     ru, rv = self.calculate_residual('bdf1', t, u[-1], u_n1, v[-1], v_n1)
-                elif (self.time_scheme == 'bdf2' and tstep > 1):
-                    ru, rv = self.calculate_residual(self.time_scheme, t, u[-1], u_n1, v[-1], v_n1, u[-2], v[-2])
+                elif (time_scheme == 'bdf2' and tstep > 1):
+                    ru, rv = self.calculate_residual(time_scheme, t, u[-1], u_n1, v[-1], v_n1, u[-2], v[-2])
                 else:
-                    ru, rv = self.calculate_residual(self.time_scheme, t, u[-1], u_n1, v[-1], v_n1)
+                    ru, rv = self.calculate_residual(time_scheme, t, u[-1], u_n1, v[-1], v_n1)
 
                 print("ru: ", ru)
                 print("rv: ", rv)
@@ -228,19 +157,16 @@ class SDoF:
     def get_first_iteration_step(self, t, tstep, u, v):
         print(self.time_scheme)
         if (self.time_scheme == 'euler'):
-            u_n1, v_n1 = self.euler(t, u[-1], v[-1])
+            u_n1, v_n1 = euler(self, t, u[-1], v[-1])
 
         if (self.time_scheme == 'bdf1'):
-            u_n1, v_n1 = self.bdf1(t, u[-1], v[-1])
+            u_n1, v_n1 = bdf1(self, t, u[-1], v[-1])
 
         if (self.time_scheme == 'bdf2'):
             if (tstep == 1):
-                u_n1, v_n1 = self.bdf1(t, u[-1], v[-1])
+                u_n1, v_n1 = bdf1(self, t, u[-1], v[-1])
             else:
-                u_n1, v_n1 = self.bdf2(t, u[-1], v[-1], u[-2], v[-2])
-
-        if (self.time_scheme == 'rk4'):
-            u_n1, v_n1 = self.rk4(t, u[-1], v[-1])
+                u_n1, v_n1 = bdf2(self, t, u[-1], v[-1], u[-2], v[-2])
 
         return u_n1, v_n1
 
@@ -271,32 +197,5 @@ class SDoF:
 
         return u_n1, v_n1
 
-
-    def plot_result(self):
-        global fig, cycol
-        plt.title('Mu\'\'(t) + ' + str(self.C) + 'u\'(t) + K(u)u(t) = ' + str(self.fstr) + ', for u(0) = 1, v(0) = 0')
-        plt.grid(True)
-
-        nsteps = self.tend/self.dt
-        t = np.linspace(0.0, self.tend, nsteps)
-        u = self.solve()
-        color = next(cycol)
-        plt.plot(t, u, label=self.time_scheme + ' with ' + self.numerical_scheme, c = color)
-        plt.legend()
-
-
-# Check number of command line arguments
-if len(sys.argv) < 3:
-	print ("Usage: python sdof_solver.py <numerica scheme for all> <time scheme> <time scheme>...")
-	sys.exit(1)
-
-if __name__ == "__main__":
-
-    for i in range(2, len(sys.argv)):
-        # Get command line arguments
-        numerical_scheme = sys.argv[1]
-        time_scheme = sys.argv[i]
-        my_sdof = SDoF(time_scheme, numerical_scheme)
-    plt.show()
 
 
