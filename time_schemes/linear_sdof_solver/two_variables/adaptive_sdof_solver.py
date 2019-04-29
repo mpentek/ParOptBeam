@@ -22,7 +22,7 @@ class SDoF:
         self.u0 = u0
         self.v0 = v0
         self.dt = dt
-        self.eta_min = 1e-4
+        self.eta_min = 1e-3
         self.eta_max = 1e-1
         self.eta = self.eta_min # minitoring function
         self.max_dt = 10 * self.dt
@@ -130,19 +130,3 @@ class SDoF:
             eu.append(u[i] - self.ua[i])
             ev.append(v[i] - self.va[i])
         return eu, ev
-
-
-if __name__ == "__main__":
-    for i in range(1, len(sys.argv)):
-        # Check number of command line arguments
-        if len(sys.argv) < 2:
-            print ("Usage: python sdof_solver.py <scheme> <scheme>")
-            sys.exit(1)
-        else:
-            my_sdof = SDoF()
-            # Get command line arguments
-            scheme = sys.argv[i]
-            my_sdof.plot_result(scheme)
-    plt.show()
-
-

@@ -94,17 +94,3 @@ class SDoF:
         return eu, ev
 
 
-if __name__ == "__main__":
-    for i in range(1, len(sys.argv)):
-        # Check number of command line arguments
-        if len(sys.argv) < 2:
-            print ("Usage: python sdof_solver.py <scheme> <scheme>")
-            sys.exit(1)
-        else:
-            my_sdof = SDoF()
-            # Get command line arguments
-            scheme = sys.argv[i]
-            my_sdof.plot_result(scheme)
-    plt.show()
-
-

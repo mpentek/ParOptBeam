@@ -7,6 +7,7 @@ plt.rc('text', usetex=True)
 
 USE_TWO_VARIABLE_FORMULATOIN = True
 USE_ADAPTIVE_TIME_STEP = True
+USE_DISPLACEMENT_BASE_FORMULATION = True
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
     sys.path.append('two_variables')
@@ -54,9 +55,14 @@ def plot(sdof, time_scheme):
     axes[3].legend()
     lgd = axes[3].legend(loc='lower center', bbox_to_anchor=(0.5, -0.75), fancybox=True,ncol=len(time_schemes))
 
-
+K = 1.
+M = 1.
+C = 0.8
 for time_scheme in time_schemes:
-    sdof = SDoF(time_scheme)
+    if USE_TWO_VARIABLE_FORMULATOIN == True:
+        sdof = SDoF(time_scheme, K, M, C)
+    else:
+        sdof = SDoF(USE_DISPLACEMENT_BASE_FORMULATION, time_scheme, K, M, C)
     plot(sdof, time_scheme)
-plt.show()
-#plt.savefig("post_processing_results/two_varaibles.png")
+#plt.show()
+plt.savefig("post_processing_results/two_varaibles_adaptive_dt.png")

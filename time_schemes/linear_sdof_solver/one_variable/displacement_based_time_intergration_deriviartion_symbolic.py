@@ -62,15 +62,40 @@ def bdf2_disp_based():
     # vn+1 = 0.5/dt * (3 un+1 - 4 un + unm1)
     global an1, an, un1, un, unm1, unm2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
 
-    c0 =  3 * 0.5/dt
-    c1 =  -4 * 0.5/dt
-    c2 =  1 * 0.5/dt
+    bdf0 =  3 * 0.5/dt
+    bdf1 =  -4 * 0.5/dt
+    bdf2 =  1 * 0.5/dt
 
-    vn1 = c0 * un1 + c1 * un + c2 * unm1
-    vn = c0 * un + c1 * unm1 + c2 * unm2
-    vnm1 =  c0 * unm1 + c1 * unm2 + c2 * unm3
+    vn1 = bdf0 * un1 + bdf1 * un + bdf2 * unm1
+    vn = bdf0 * un + bdf1 * unm1 + bdf2 * unm2
+    vnm1 =  bdf0 * unm1 + bdf1 * unm2 + bdf2 * unm3
 
-    an1 = c0 * vn1 + c1 * vn + c2 * vnm1
+    an1 = bdf0 * vn1 + bdf1 * vn + bdf2 * vnm1
+
+    eq_u = nsimplify (M * an1 + C * vn1 + K * un1 - f)
+    #print(eq_u)
+
+    sol = solve(eq_u, un1)
+    un1 = nsimplify (sol[0])
+
+    print("##### BDF2 #####")
+    print("u_n1 = ", un1)
+
+    return un1
+
+
+def bdf2_disp_based_adaptive():
+    # ### BDF2 ###
+    # un+1 = 4/3 un - 1/3 un-1 + 2/3 dt f(tn+1, un+1)
+    # vn+1 = 0.5/dt * (3 un+1 - 4 un + unm1)
+    global an1, an, un1, un, unm1, unm2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
+    un1, un, unm1, vn1, vn, vnm1, bdf0, bdf1, bdf2, t = symbols('un1 un unm1 vn1 vn vnm1 bdf0 bdf1 bdf2 t')
+
+    vn1 = bdf0 * un1 + bdf1 * un + bdf2 * unm1
+    vn = bdf0 * un + bdf1 * unm1 + bdf2 * unm2
+    vnm1 =  bdf0 * unm1 + bdf1 * unm2 + bdf2 * unm3
+
+    an1 = bdf0 * vn1 + bdf1 * vn + bdf2 * vnm1
 
     eq_u = nsimplify (M * an1 + C * vn1 + K * un1 - f)
     #print(eq_u)
@@ -133,6 +158,9 @@ def print_scheme(time_scheme):
 
     if time_scheme == 'bdf2':
         bdf2_disp_based()
+    
+    if time_scheme == 'bdf2_adaptive':
+        bdf2_disp_based_adaptive()
 
     if time_scheme == 'rk4':
         rk4()
