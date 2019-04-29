@@ -80,7 +80,7 @@ def euler_disp_based(SDoF, t, un, unm1):
 	return u_n1, v_n
 
 
-def bdf1_disp_based(SDoF, t, un, unm1):
+def bdf1_disp_based(SDoF, t, dt, un, unm1):
 
 	u_n1 = (SDoF.C*SDoF.dt*un + 2*SDoF.M*un - SDoF.M*unm1 + SDoF.dt**2*SDoF.f(t))/(SDoF.C*SDoF.dt + SDoF.K*SDoF.dt**2 + SDoF.M)
 	v_n1 = ( u_n1 - un ) / SDoF.dt
@@ -88,20 +88,23 @@ def bdf1_disp_based(SDoF, t, un, unm1):
 	return u_n1, v_n1
 
 
-def bdf2_disp_based(SDoF, t, un, unm1, unm2, unm3):
+def bdf2_disp_based(SDoF, t, dt, old_dt, un, unm1, unm2, unm3):
 
-	c0 =  3 * 0.5/SDoF.dt
-	c1 =  -4 * 0.5/SDoF.dt
-	c2 =  1 * 0.5/SDoF.dt
+	# bdf coefficients for variable time steps
+    Rho = old_dt / dt
+    TimeCoeff = 1.0 / (dt * Rho * Rho + dt * Rho)    
+    bdf0 = TimeCoeff * (Rho * Rho + 2.0 * Rho) #coefficient for step n+1 (3/2Dt if Dt is constant)
+    bdf1 = -TimeCoeff * (Rho * Rho + 2.0 * Rho + 1.0) #coefficient for step n (-4/2Dt if Dt is constant)
+    bdf2 = TimeCoeff #coefficient for step n-1 (1/2Dt if Dt is constant)    
 
-	u_n1 =  (-SDoF.C*bdf1*un - SDoF.C*bdf2*unm1 - 2*SDoF.M*bdf0*bdf1*un - 2*SDoF.M*bdf0*bdf2*unm1 - SDoF.M*bdf1**2*unm1 - 2*SDoF.M*bdf1*bdf2*unm2 - SDoF.M*bdf2**2*unm3 + SDoF.f(t))/(SDoF.C*bdf0 + SDoF.K + SDoF.M*bdf0**2)
-	v_n1 = c0 * u_n1 + c1 * un + c2 * unm1
+    un1 =  (-SDoF.C*bdf1*un - SDoF.C*bdf2*unm1 - 2*SDoF.M*bdf0*bdf1*un - 2*SDoF.M*bdf0*bdf2*unm1 - SDoF.M*bdf1**2*unm1 - 2*SDoF.M*bdf1*bdf2*unm2 - SDoF.M*bdf2**2*unm3 + SDoF.f(t))/(SDoF.C*bdf0 + SDoF.K + SDoF.M*bdf0**2)
+    vn1 = bdf0 * un1 + bdf1 * un + bdf2 * unm1
 
-	return u_n1, v_n1
+    return un1, vn1
 
 
 ##### VELOCITY BASED SCHEMES #####
-def euler_vel_based(SDoF, t, vn, vnm1, un):
+def euler_vel_based(SDoF, t, dt, vn, vnm1, un):
 
 	#v_n1 =  (-SDoF.C*SDoF.dt*vn - SDoF.K*SDoF.dt**2*vnm1 + SDoF.M*vn - SDoF.M*(-vn + vnm2) + SDoF.dt*SDoF.f(t) - SDoF.dt*(-SDoF.C*vnm2 + SDoF.f(t)))/SDoF.M
 	v_n1 =  (-SDoF.C*SDoF.dt*vn - SDoF.K*SDoF.dt*un + SDoF.M*vn + SDoF.dt*SDoF.f(t))/SDoF.M
@@ -110,7 +113,7 @@ def euler_vel_based(SDoF, t, vn, vnm1, un):
 	return v_n1, u_n1
 
 
-def euler_vel_based2(SDoF, t, vn, vnm1, vnm2, un):
+def euler_vel_based2(SDoF, t, dt, vn, vnm1, vnm2, un):
 
 	v_n1 =  (-SDoF.C*SDoF.dt*vn - SDoF.K*SDoF.dt**2*vnm1 + SDoF.M*vn - SDoF.M*(-vn + vnm2) + SDoF.dt*SDoF.f(t) - SDoF.dt*(-SDoF.C*vnm2 + SDoF.f(t)))/SDoF.M
 	#v_n1 =  (-SDoF.C*SDoF.dt*vn - SDoF.K*SDoF.dt*un + SDoF.M*vn + SDoF.dt*SDoF.f(t))/SDoF.M
@@ -119,7 +122,7 @@ def euler_vel_based2(SDoF, t, vn, vnm1, vnm2, un):
 	return v_n1, u_n1
 
 
-def bdf1_vel_based(SDoF, t, vn, vnm1, un):
+def bdf1_vel_based(SDoF, t, dt, vn, vnm1, un):
 
 	v_n1 =  (SDoF.M*vn - SDoF.M*(-vn + vnm1) + SDoF.dt*SDoF.f(t) - SDoF.dt*(-SDoF.C*vn + SDoF.f(t)))/(SDoF.C*SDoF.dt + SDoF.K*SDoF.dt**2 + SDoF.M)
 	u_n1 = un + v_n1 * SDoF.dt
@@ -127,9 +130,15 @@ def bdf1_vel_based(SDoF, t, vn, vnm1, un):
 	return v_n1, u_n1
 
 
-def bdf2_vel_based(SDoF, t, vn, vnm1, vnm2, un, unm1):
+def bdf2_vel_based(SDoF, t, dt, old_dt, vn, vnm1, vnm2, un, unm1):
 
-	v_n1 =  (-8*SDoF.K*SDoF.dt*un + 2*SDoF.K*SDoF.dt*unm1 + 12*SDoF.M*vn - 3*SDoF.M*vnm1 + 6*SDoF.dt*SDoF.f(t))/(6*SDoF.C*SDoF.dt + 4*SDoF.K*SDoF.dt**2 + 9*SDoF.M)
-	u_n1 = 4/3 * un - 1/3 * unm1 + 2/3 * SDoF.dt * v_n1
+	# bdf coefficients for variable time steps
+    Rho = old_dt / dt
+    TimeCoeff = 1.0 / (dt * Rho * Rho + dt * Rho)    
+    bdf0 = TimeCoeff * (Rho * Rho + 2.0 * Rho) #coefficient for step n+1 (3/2Dt if Dt is constant)
+    bdf1 = -TimeCoeff * (Rho * Rho + 2.0 * Rho + 1.0) #coefficient for step n (-4/2Dt if Dt is constant)
+    bdf2 = TimeCoeff #coefficient for step n-1 (1/2Dt if Dt is constant)    
 
-	return v_n1, u_n1
+    v_n1 =  (SDoF.K*bdf1*un + SDoF.K*bdf2*unm1 - SDoF.M*bdf0*bdf1*vn - SDoF.M*bdf0*bdf2*vnm1 + SDoF.f(t)*bdf0)/(SDoF.C*bdf0 + SDoF.K + SDoF.M*bdf0**2)
+    u_n1 = (v_n1 - bdf1 * un - bdf2 * unm1) / bdf0
+    return v_n1, u_n1
