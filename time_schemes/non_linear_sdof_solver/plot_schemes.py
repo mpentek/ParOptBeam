@@ -6,7 +6,7 @@ plt.rcParams.update({'font.size': 16})
 plt.rc('text', usetex=True)
 
 USE_TWO_VARIABLE_FORMULATOIN = True
-USE_ADAPTIVE_TIME_STEP = False  
+USE_ADAPTIVE_TIME_STEP = True  
 NUMERICAL_SCHEME = 'Newton Raphson'
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
@@ -43,7 +43,7 @@ def plot(sdof, time_scheme):
 
 K = 1.
 M = 1.
-C = 0.2
+C = 0.8
 
 for time_scheme in time_schemes:
     sdof = SDoF(time_scheme, NUMERICAL_SCHEME, K, M, C)
@@ -51,4 +51,4 @@ for time_scheme in time_schemes:
 #plt.show()
 
 lgd = axes[1].legend(loc='lower center', bbox_to_anchor=(0.5, -0.65), fancybox=False, ncol=len(time_schemes))
-plt.savefig("post_processing_results/two_varaibles_const_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')
+#plt.savefig("post_processing_results/two_varaibles_adaptive_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')
