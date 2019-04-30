@@ -63,18 +63,6 @@ class SDoF:
             elif self.numerical_scheme == 'Picard':
                 rv = -C*v_n1 - M*(-2*v_n/dt + 3*v_n1/(2*dt) + v_nm1/(2*dt)) + f - self.K(u_n)*u_n1
 
-        if time_scheme == 'rk4':
-            ru0 =  v_n
-            rv0 =  (-C*v_n + f - u_n*(u_n**2 + 1))/M
-            ru1 =  0.5*dt*rv0 + v_n
-            rv1 =  (-C*(0.5*dt*rv0 + v_n) + f - (0.5*dt*ru0 + u_n)*((0.5*dt*ru0 + u_n)**2 + 1))/M
-            ru2 =  0.5*dt*rv1 + v_n
-            rv2 =  (-C*(0.5*dt*rv1 + v_n) + f - (0.5*dt*ru1 + u_n)*((0.5*dt*ru1 + u_n)**2 + 1))/M
-            ru3 =  dt*rv2 + v_n
-            rv3 =  (-C*(dt*rv2 + v_n) + f - (dt*ru2 + u_n)*((dt*ru2 + u_n)**2 + 1))/M
-
-            ru =  -ru0/6 - ru1/3 - ru2/3 - ru3/6 + (-u_n + u_n1)/dt
-            rv =  -rv0/6 - rv1/3 - rv2/3 - rv3/6 + (-v_n + v_n1)/dt
         return ru, rv
 
 
@@ -104,9 +92,6 @@ class SDoF:
                 du = 2*dt*(2*C*dt*ru + 3*M*ru + 2*dt*rv)/(6*C*dt + 9*M + 4*dt**2*u_n**2 + 4*dt**2)
                 dv = -2*dt*(2*dt*ru*(u_n**2 + 1) - 3*rv)/(6*C*dt + 9*M + 4*dt**2*(u_n**2 + 1))
 
-        if time_scheme == 'rk4':
-                du =  -dt*ru
-                dv =  -dt*rv
         return du, dv
 
 
@@ -122,6 +107,7 @@ class SDoF:
 
     def solve(self, time_scheme):
         u, v = [], []
+        t_vec = []
         t = 0.0
 
         nsteps = int(self.tend/self.dt)
@@ -149,9 +135,10 @@ class SDoF:
                 u.append(u_n1)
                 v.append(v_n1)
 
+            t_vec.append(t)
             t = self.update_time(t)
 
-        return u
+        return t_vec, u, v
 
 
     def get_first_iteration_step(self, t, tstep, u, v):

@@ -20,9 +20,8 @@ else:
     from nonlinear_sdof_solver import SDoF
 
 cycol = cycle('bgrcmk')
-fig, axes = plt.subplots(4,1,figsize = (16,10))
-#time_schemes = ["analytical", "euler", "bdf1", "bdf2", "rk4"]
-time_schemes = ['bdf1', 'bdf2']
+fig, axes = plt.subplots(2,1,figsize = (16,5))
+time_schemes = [ "euler", "bdf1", "bdf2"]
 
 def plot(sdof, time_scheme):
     global axes, cycol
@@ -30,7 +29,6 @@ def plot(sdof, time_scheme):
     color = next(cycol)
 
     t, u, v = sdof.solve(time_scheme)
-    eu, ev = sdof.error_estimation(t, u, v)
 
     axes[0].set_title(r"$Mu''(t) + Cu'(t) + Ku(t) = f(t), u(0) = 1, v(0) = 0$")
     axes[0].set_xlabel("t")
@@ -39,21 +37,9 @@ def plot(sdof, time_scheme):
     axes[0].plot(t, u, c = color)
 
     axes[1].set_xlabel("t")
-    axes[1].set_ylabel(r'$\varepsilon_u(t)$')
+    axes[1].set_ylabel("v(t)")
     axes[1].grid('on')
-    axes[1].plot(t, eu, c = color)
-
-    axes[2].set_xlabel("t")
-    axes[2].set_ylabel("v(t)")
-    axes[2].grid('on')
-    axes[2].plot(t, v, c = color)
-
-    axes[3].set_xlabel("t")
-    axes[3].set_ylabel(r'$\varepsilon_v(t)$')
-    axes[3].grid('on')
-    axes[3].plot(t, ev, label=time_scheme, c = color)
-    axes[3].legend()
-    lgd = axes[3].legend(loc='lower center', bbox_to_anchor=(0.5, -0.75), fancybox=True,ncol=len(time_schemes))
+    axes[1].plot(t, v, c = color, label=time_scheme)
 
 K = 1.
 M = 1.
@@ -63,4 +49,6 @@ for time_scheme in time_schemes:
     sdof = SDoF(time_scheme, NUMERICAL_SCHEME, K, M, C)
     plot(sdof, time_scheme)
 #plt.show()
-plt.savefig("post_processing_results/one_varaibles_disp_adaptive_dt_monitor_v.png")
+
+lgd = axes[1].legend(loc='lower center', bbox_to_anchor=(0.5, -0.65), fancybox=False, ncol=len(time_schemes))
+plt.savefig("post_processing_results/two_varaibles_const_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')

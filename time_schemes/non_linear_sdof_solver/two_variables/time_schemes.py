@@ -4,10 +4,14 @@ import numpy as np
 
 
 def euler(SDoF, t, un, vn):
+    C = SDoF.C
+    M = SDoF.M
+    K = SDoF.K(un)
+    f = SDoF.f(t)
+    dt = SDoF.dt
 
-    u_n1 = SDoF.dt * vn + un
-    v_n1 = ( SDoF.M * vn - SDoF.dt * (SDoF.C * vn + SDoF.K * un - SDoF.f(t)) ) / SDoF.M
-
+    u_n1 = dt * vn + un 
+    v_n1 = ( M * vn - dt * (C * vn + K * un - f) ) / M 
     return u_n1, v_n1
 
 
