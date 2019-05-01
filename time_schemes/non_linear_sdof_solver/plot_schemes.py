@@ -5,8 +5,8 @@ plt.rc('font',family='TeX Gyre Termes')
 plt.rcParams.update({'font.size': 16})
 plt.rc('text', usetex=True)
 
-USE_TWO_VARIABLE_FORMULATOIN = True
-USE_ADAPTIVE_TIME_STEP = True  
+USE_TWO_VARIABLE_FORMULATOIN = False
+USE_ADAPTIVE_TIME_STEP = False  
 NUMERICAL_SCHEME = 'Newton Raphson'
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
@@ -51,4 +51,4 @@ for time_scheme in time_schemes:
 #plt.show()
 
 lgd = axes[1].legend(loc='lower center', bbox_to_anchor=(0.5, -0.65), fancybox=False, ncol=len(time_schemes))
-#plt.savefig("post_processing_results/two_varaibles_adaptive_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')
+plt.savefig("post_processing_results/one_varaibles_disp_const_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')

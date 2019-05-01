@@ -8,6 +8,8 @@
 ###   rhs = f - cv - ku
 ################################################################################################
 
+####################### TWO VARIAVLE CONSTANT ######################
+
 import numpy as np
 from math import *
 from sympy import *

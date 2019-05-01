@@ -31,6 +31,7 @@ class SDoF:
         self.use_disp_form = DISPLCAMENT_BASED
         time_scheme = scheme
 
+
     def initialize(self, u, v):
         u.append(self.u0)
         v.append(self.v0)

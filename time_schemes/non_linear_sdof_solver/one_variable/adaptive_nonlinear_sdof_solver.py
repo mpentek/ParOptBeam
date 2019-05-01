@@ -8,8 +8,6 @@
 ###   rhs = f - cv - ku
 ################################################################################################
 
-####################### TWO VARIAVLE ADAPTIVE ######################
-
 import numpy as np
 from math import *
 from sympy import *
