@@ -8,16 +8,19 @@ plt.rc('text', usetex=True)
 USE_TWO_VARIABLE_FORMULATOIN = False
 USE_ADAPTIVE_TIME_STEP = False  
 NUMERICAL_SCHEME = 'Newton Raphson'
+DISPLACEMENT_BASE = True
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
     sys.path.append('two_variables')
 else:
     sys.path.append('one_variable')
 
-if USE_ADAPTIVE_TIME_STEP == True:
-    from adaptive_nonlinear_sdof_solver import SDoF
-else:
-    from nonlinear_sdof_solver import SDoF
+if USE_ADAPTIVE_TIME_STEP and DISPLACEMENT_BASE:
+    from adaptive_nonlinear_sdof_solver_disp_based import SDoF
+elif (not USE_ADAPTIVE_TIME_STEP) and DISPLACEMENT_BASE:
+    from nonlinear_sdof_solver_disp_based import SDoF
+elif (not USE_ADAPTIVE_TIME_STEP) and (not DISPLACEMENT_BASE):
+    from nonlinear_sdof_solver_vel_based import SDoF
 
 cycol = cycle('bgrcmk')
 fig, axes = plt.subplots(2,1,figsize = (16,5))
