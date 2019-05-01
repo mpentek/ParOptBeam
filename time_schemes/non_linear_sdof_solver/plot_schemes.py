@@ -8,7 +8,7 @@ plt.rc('text', usetex=True)
 USE_TWO_VARIABLE_FORMULATOIN = False
 USE_ADAPTIVE_TIME_STEP = True  
 NUMERICAL_SCHEME = 'Newton Raphson'
-DISPLACEMENT_BASE = False
+DISPLACEMENT_BASE = True
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
     sys.path.append('two_variables')
@@ -56,4 +56,4 @@ for time_scheme in time_schemes:
 #plt.show()
 
 lgd = axes[1].legend(loc='lower center', bbox_to_anchor=(0.5, -0.65), fancybox=False, ncol=len(time_schemes))
-plt.savefig("post_processing_results/one_varaibles_vel_adaptive_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')
+plt.savefig("post_processing_results/one_varaibles_disp_adaptive_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')
