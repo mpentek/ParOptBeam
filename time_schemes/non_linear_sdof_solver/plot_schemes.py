@@ -6,9 +6,9 @@ plt.rcParams.update({'font.size': 16})
 plt.rc('text', usetex=True)
 
 USE_TWO_VARIABLE_FORMULATOIN = False
-USE_ADAPTIVE_TIME_STEP = False  
+USE_ADAPTIVE_TIME_STEP = True  
 NUMERICAL_SCHEME = 'Newton Raphson'
-DISPLACEMENT_BASE = True
+DISPLACEMENT_BASE = False
 
 if USE_TWO_VARIABLE_FORMULATOIN == True:
     sys.path.append('two_variables')
@@ -17,6 +17,8 @@ else:
 
 if USE_ADAPTIVE_TIME_STEP and DISPLACEMENT_BASE:
     from adaptive_nonlinear_sdof_solver_disp_based import SDoF
+elif USE_ADAPTIVE_TIME_STEP and (not DISPLACEMENT_BASE):
+    from adaptive_nonlinear_sdof_solver_vel_based import SDoF
 elif (not USE_ADAPTIVE_TIME_STEP) and DISPLACEMENT_BASE:
     from nonlinear_sdof_solver_disp_based import SDoF
 elif (not USE_ADAPTIVE_TIME_STEP) and (not DISPLACEMENT_BASE):
@@ -54,4 +56,4 @@ for time_scheme in time_schemes:
 #plt.show()
 
 lgd = axes[1].legend(loc='lower center', bbox_to_anchor=(0.5, -0.65), fancybox=False, ncol=len(time_schemes))
-plt.savefig("post_processing_results/one_varaibles_disp_const_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')
+plt.savefig("post_processing_results/one_varaibles_vel_adaptive_dt.png", bbox_extra_artists=(lgd,),bbox_inches='tight')

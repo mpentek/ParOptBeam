@@ -212,40 +212,32 @@ class SDoF:
         print("dv = ", dv )
 
 
-    def bdf2_adaptive_time_step(self):
+    def bdf2_vel_based_adaptive(self):
         # ### BDF2 ###
         # v_n+1 = 4/3 v_n - 1/3 v_n-1 + 2/3 dt f(tn+1, v_n+1)
-        print("##### BDF2 Vel #####")
-        u_n1, u_n, unm1, v_n1, v_n, vnm1, t, dt, M, C, f, bdf0, bdf1, bdf2 = symbols('u_n1 u_n u_nm1 v_n1 v_n v_nm1 t dt M C f, bdf0 bdf1 bdf2')
-        du, dv, ru, rv = symbols('du dv ru rv')
+        print("##### BDF2 Vel Adaptive #####")
+        a_n1, a_n, u_n2, u_n1, u_n, u_nm1, u_nm2, u_nm3, v_n1, v_n, v_nm1, v_nm2, t, dt = symbols('a_n1 a_n u_n2 u_n1 u_n u_nm1 u_nm2 u_nm3 v_n1 v_n v_nm1 v_nm2 t dt')
+        bdf0, bdf1, bdf2 = symbols('bdf0 bdf1 bdf2')
+        f, C, M = symbols('f C M')
+        dv, rv = symbols('dv rv')
 
-        x_dot = bdf0 * u_n1 + bdf1 * u_n + bdf2 * unm1
-        v_dot = bdf0 * v_n1 + bdf1 * v_n + bdf2 * vnm1
-
-        r_u = - x_dot + v_n1
+        #v_n1 = bdf0 * u_n1 + bdf1 * u_n + bdf2 * unm1
+        u_n1 = (v_n1 - bdf1 * u_n - bdf2 * u_nm1) / bdf0
+        a_n1 = bdf0 * v_n1 + bdf1 * v_n + bdf2 * v_nm1
 
         if self.numerical_scheme == 'Newton Raphson':
-            r_v = f - M * v_dot - self.K(u_n1) * u_n1 - C * v_n1
+            r_v = f - ( M * a_n1 + C * v_n1 + self.K(u_n1) * u_n1 )
 
         elif self.numerical_scheme == 'Picard':
-            r_v = f - M * v_dot - self.K(u_n) * u_n1 - C * v_n1
-
-        print("ru = ", r_u)
+            r_v = f - ( M * a_n1 + C * v_n1 + self.K(u_n) * u_n1 )
+        
         print("rv = ", r_v)
 
-        drudu = diff(r_u, u_n1)
-        drudv = diff(r_u, v_n1)
-        drvdu = diff(r_v, u_n1)
         drvdv = diff(r_v, v_n1)
+        eq_v = rv + drvdv * dv
+        sol = solve(eq_v, dv)
+        dv = nsimplify(sol[0])
 
-        eq1 = ru + (drudu * du + drudv * dv)
-        eq2 = rv + (drvdu * du + drvdv * dv)
-
-        sol = solve([eq1, eq2],(du, dv))
-        du = sol[du]
-        dv = sol[dv]
-
-        print("du = ", du )
         print("dv = ", dv )
 
 
@@ -269,11 +261,11 @@ class SDoF:
         if self.time_scheme == 'bdf2_vel':
             self.bdf2_vel_based()
 
-        if self.time_scheme == 'bdf2_adaptive':
-            self.bdf2_adaptive_time_step()
+        if self.time_scheme == 'bdf2_vel_adaptive':
+            self.bdf2_vel_based_adaptive()
 
 
 if __name__ == "__main__":
     # Get command line arguments
-    my_sdof = SDoF('bdf2_vel','Newton Raphson')
-    #my_sdof = SDoF('bdf2_vel','Picard')
+    #my_sdof = SDoF('bdf2_vel_adaptive','Newton Raphson')
+    my_sdof = SDoF('bdf2_vel_adaptive','Picard')
