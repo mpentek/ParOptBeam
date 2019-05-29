@@ -105,16 +105,21 @@ class Structure:
             floor_displacement_x = np.interp( i*self.floor_height, self.undeformed_z, self.vec_dx)
             floor_displacement_y = np.interp( i*self.floor_height, self.undeformed_z, self.vec_dy)
             theta = np.interp( i*self.floor_height, self.undeformed_z, self.rotation_angles)
+            print("floor_displacement_x: ", floor_displacement_x)
+            print("floor_displacement_y: ", floor_displacement_y)
             #theta2 = np.interp( (i-1)*self.floor_height, self.undeformed_z, self.rotation_angles)
             #theta = (theta1 + theta2)/2
             # apply displacement for floor
             dx = np.interp( i*self.floor_height, self.undeformed_z, np.squeeze( np.asarray(self.displacement_vector[:, 0])))
             dy = np.interp( i*self.floor_height, self.undeformed_z, np.squeeze( np.asarray(self.displacement_vector[:, 1])))
             dz = np.interp( i*self.floor_height, self.undeformed_z, np.squeeze( np.asarray(self.displacement_vector[:, 2])))
+            print("dx = ", dx)
+            print("dy = ", dy)
             # rotational axis u = [ux, uy, uz]
             ux = np.interp( i*self.floor_height, self.undeformed_z, np.squeeze( np.asarray(self.surface_normals[:, 0])))
             uy = np.interp( i*self.floor_height, self.undeformed_z, np.squeeze( np.asarray(self.surface_normals[:, 1])))
             uz = np.interp( i*self.floor_height, self.undeformed_z, np.squeeze( np.asarray(self.surface_normals[:, 2])))
+            print("[ux, uy, uz] = ", [ux, uy, uz])
             #rotation_axis =  np.interp( i*self.floor_height, self.undeformed_z, self.surface_normals)
             self._create_single_floor(i, floor_displacement_x, floor_displacement_y, theta, dx, dy, dz, ux, uy, uz)
 
@@ -133,7 +138,7 @@ class Structure:
             print("x: ", str(x0))
             print("y: ", str(y0))
             print("z: ", str(z0))
-            x, y, z = self._apply_rotation_for_floor(x0, y0, z0, theta, 0, 1.0, 0.0)
+            x, y, z = self._apply_rotation_for_floor(x0, y0, z0, theta, 0.0, 1.0, 0.0)
             print("x: ", str(x))
             print("y: ", str(y))
             print("z: ", str(z))
@@ -193,13 +198,14 @@ class Structure:
     def _apply_rotation_for_floor(self, x0, y0, z0, theta, ux, uy, uz):
         c = cos(theta)
         s = sin(theta)
+        print("theta: ", theta*180/3.1415926)
         # rotation matrix around axis u = [ ux, uy, uz]
         R = np.matrix([[c+ ux*ux*(1-c),   ux*uy*(1-c)-uz*s,  ux*uz*(1-c)+uy*s,  0],
                        [uy*ux*(1-c)+uz*s, c+uy*uy*(1-c),     uy*uz*(1-c)-ux*s,  0],
                        [uz*ux*(1-c)-uy*s, uz*uy*(1-c)+ux*s,  c+uz*uz*(1-c),     0],
                        [0,                 0,                   0,              1]])
 
-        #print(R)
+        print(R)
         previous_coordinate = np.matrix([[x0],[y0],[z0],[0.0]])
         #T1 = self._return_translation_matrix(-x0, -y0, -z0)
         #T2 = self._return_translation_matrix(x0, y0, z0)
@@ -245,8 +251,9 @@ class Structure:
     def _calculate_rotation_axis(self):
         self.rotation_axis = []
         for normal in self.surface_normals:
-            axis = np.cross(normal,[0.0, 0.0, 1.0])
-            #print(axis)
+            #axis = np.cross(normal,[0.0, 0.0, 1.0])
+            axis = [0.0, -1.0, 0.0]
+            print("rotation axis: ", axis)
 
 
     def _calculate_rotation_angle(self):
@@ -256,9 +263,8 @@ class Structure:
             angle = np.dot(normal,initial_vector)/np.linalg.norm(normal)/np.linalg.norm(initial_vector) 
             angle = np.arccos(np.clip(angle, -1, 1))
             self.rotation_angles.append(angle)
-            print((angle))
         self.rotation_angles = np.reshape(self.rotation_angles, len(self.rotation_angles))
-
+        print("rotation angle: ", self.rotation_angles * 180/3.14159)
 
     def plot_1d_structure(self, t):
         """
@@ -413,16 +419,16 @@ if __name__ == "__main__":
     }
 
     num_of_points_in_height = 10
-    num_of_floors = 4
-    floor_height = 5.0 
+    num_of_floors = 1
+    floor_height = 10.0 
 
     displacement = {
-        "dx": lambda t, z: 0.0, #sin(0.05*z)*(2*cos(t)+sin(t)),
+        "dx": lambda t, z: z, #sin(0.05*z)*(2*cos(t)+sin(t)),
         "dy": lambda t, z: 0.0 #2*sin(0.05*z)*(4*cos(t)+3*sin(t))
     }
     rotation = {
         "phi" : lambda t, z: 0, #0.01*z,
-        "beta" : lambda t, z: 0.01*z,
+        "beta" : lambda t, z: 0, #0.01*z,
         "alpha" : lambda t, z: 0.0 #0.2*sin(0.05*z)*(2*cos(t)+sin(t))
     }
     displacement_pure_torsion = {
