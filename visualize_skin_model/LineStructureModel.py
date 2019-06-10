@@ -9,6 +9,8 @@ class LineStructure:
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [],[],[] 
+        self.dx_vec, self.dy_vec, self.dz_vec = [],[],[] 
+        self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [],[],[] 
         with open(structure_file) as json_file:
             data = json.load(json_file)
             self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
@@ -40,7 +42,13 @@ class LineStructure:
             theta_y = self.dofs[int(i*self.num_of_dofs_per_node+4)]
             theta_z = self.dofs[int(i*self.num_of_dofs_per_node+5)]
             self.nodes[i].add_dofs(dx, dy, dz, theta_x, theta_y, theta_z)  
-            self.nodes[i].print_info()   
+            self.dx_vec.append(self.nodes[i].dx)
+            self.dy_vec.append(self.nodes[i].dy)
+            self.dz_vec.append(self.nodes[i].dz)
+            self.theta_x_vec.append(self.nodes[i].theta_x)
+            self.theta_y_vec.append(self.nodes[i].theta_y)
+            self.theta_z_vec.append(self.nodes[i].theta_z)
+            #self.nodes[i].print_info()   
 
     def print_line_structure_info(self):    
         msg = "=============================================\n"
@@ -56,6 +64,6 @@ class LineStructure:
     def apply_transformation_for_line_structure(self):
         for node in self.nodes:
             node.apply_transformation()
-            self.x_vec.append(node.x)
-            self.y_vec.append(node.y)
-            self.z_vec.append(node.z)
+            self.x_vec[-1] = node.x
+            self.y_vec[-1] = node.y
+            self.z_vec[-1] = node.z
