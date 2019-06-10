@@ -72,12 +72,13 @@ class Structure:
 
     def create_floors(self):
         current_height = 0.0
-        while current_height < self.structure_height:       
+        while current_height <= self.structure_height:       
             floor = Floor(self.floor_geometry, current_height)
             self.floors.append(floor)
             current_height += self.floor_height
-            if current_height > self.structure_height:
-                urrent_height = self.structure_height  
+        if current_height !=self.structure_height:
+            floor = Floor(self.floor_geometry, self.structure_height)
+            self.floors.append(floor)
        
     def create_frames(self):
         for i in range(len(self.floor_geometry)):
