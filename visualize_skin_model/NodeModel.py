@@ -6,6 +6,9 @@ class Node:
         self.x0 = x
         self.y0 = y
         self.z0 = z
+        self.x = self.x0
+        self.y = self.y0
+        self.z = self.z0
     
     def add_dofs(self, dx, dy, dz, theta_x, theta_y, theta_z):
         self.dx = dx
@@ -26,24 +29,34 @@ class Node:
         msg += "theta_z = " + str(self.theta_z)
         print(msg)
 
-    def apply_rotation(self):
+    def apply_transformation(self):
+        # translation matrix
+        T = np.matrix([ [1,                  0,                    0,                   self.dx],
+                        [0,                  1,                    0,                   self.dy],
+                        [0,                  0,                    1,                   self.dz],
+                        [0,                  0,                    0,                   1      ]])
+
         # rotation matrix around axis x
-        Rx = np.matrix([[1,     0,                  0              ],
-                        [0,     cos(self.theta_x), -sin(self.theta_x)],
-                        [0,     sin(self.theta_x),  cos(self.theta_x) ]])
+        Rx = np.matrix([[1,                  0,                    0,                   0],
+                        [0,                  cos(self.theta_x),   -sin(self.theta_x),   0],
+                        [0,                  sin(self.theta_x),    cos(self.theta_x),   0],
+                        [0,                  0,                    0,                   1]])
 
         # rotation matrix around axis y
-        Ry = np.matrix([[ cos(self.theta_y),    0,    sin(self.theta_y)],
-                        [0,                     1,    0              ],
-                        [-sin(self.theta_y),    0,    cos(self.theta_y)]])
+        Ry = np.matrix([[ cos(self.theta_y), 0,                    sin(self.theta_y),   0],
+                        [0,                  1,                    0,                   0],
+                        [-sin(self.theta_y), 0,                    cos(self.theta_y),   0],
+                        [0,                  0,                    0,                   1]])
 
         # rotation matrix around axis z
-        Rz = np.matrix([[cos(self.theta_z), -sin(self.theta_z),     0],
-                        [sin(self.theta_z),  cos(self.theta_z),     0],
-                        [0,                  0,                      1]])
+        Rz = np.matrix([[cos(self.theta_z), -sin(self.theta_z),     0,                  0],
+                        [sin(self.theta_z),  cos(self.theta_z),     0,                  0],
+                        [0,                  0,                     1,                  0],
+                        [0,                  0,                     0,                  1]])
 
-        previous_coordinate = np.matrix([[self.x0],[self.y0],[self.z0]])
-        new_coordinate = (Ry*Rx)*previous_coordinate
+        print(Rx)
+        previous_coordinate = np.matrix([[self.x0],[self.y0],[self.z0],[1]])   
+        new_coordinate = (T*Rz*Ry*Rx)*previous_coordinate
         self.x = float(new_coordinate[0][0])
         self.y = float(new_coordinate[1][0])
         self.z = float(new_coordinate[2][0])
