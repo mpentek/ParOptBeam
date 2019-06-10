@@ -1,6 +1,9 @@
 import json
 import numpy as np
 from NodeModel import Node
+from sympy import Plane, Point3D
+
+CONNTOUR_DENSITY=5
 
 class Floor:
     def __init__(self, floor_geometry, height):
@@ -18,6 +21,11 @@ class Floor:
             self.z_vec.append(z)
             node = Node(x, y, z)
             self.nodes.append(node)
+
+        self.plane = Plane((self.nodes[0*CONNTOUR_DENSITY].x, self.nodes[0*CONNTOUR_DENSITY].y, self.nodes[0*CONNTOUR_DENSITY].z), 
+                           (self.nodes[1*CONNTOUR_DENSITY].x, self.nodes[1*CONNTOUR_DENSITY].y, self.nodes[1*CONNTOUR_DENSITY].z), 
+                           (self.nodes[2*CONNTOUR_DENSITY].x, self.nodes[2*CONNTOUR_DENSITY].y, self.nodes[2*CONNTOUR_DENSITY].z))    
+        
         # adding the first point to close the geometry
         self.x_vec.append(self.x_vec[0])
         self.y_vec.append(self.y_vec[0])
@@ -40,12 +48,13 @@ class Frame:
 
 
 class Structure:
-    def __init__(self, structure_file, density= 5):
+    def __init__(self, structure_file):
         """
         intializing structure with geometry
         """
         self.floors = []
         self.frames = []
+        self.mid_point_nodes = []
         with open(structure_file) as json_file:
             data = json.load(json_file)
             self.floor_geometry = data["geometry"]
@@ -56,7 +65,7 @@ class Structure:
             except:
                 self.floor_height = self.structure_height/self.num_of_floors
 
-        self.densify_contour(density)
+        self.densify_contour(CONNTOUR_DENSITY)
         self.print_structure_info()
         self.create_floors()
         self.create_frames()
