@@ -3,6 +3,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import numpy as np
+from map_line_structure_to_3d import Mapper
 from NodeModel import Node
 from StructureModel import Structure, Floor
 
@@ -23,12 +24,13 @@ class Visualiser:
     def __init__(self, structure, line_structure):
         self.structure = structure
         self.line_structure = line_structure
+        self.mapper = Mapper(structure, line_structure)
 
-        self.fig = plt.figure(figsize=(5, 10))
+        self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(111, projection = '3d', aspect='equal', azim=-40, elev=10)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
-        self.ax.set_axis_off()
+        #self.ax.set_axis_off()
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
         
@@ -36,8 +38,10 @@ class Visualiser:
         self.visualise_structure()
         self.visualise_line_structure()
         self.ax.set_zlim([0, self.ax.get_zlim()[1]])      
+
+        self.update()
         plt.tight_layout()
-        plt.show()
+        #plt.show()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(mutation_scale=20, arrowstyle='->',shrinkA=0, shrinkB=0)
@@ -64,17 +68,15 @@ class Visualiser:
         mid_y = (max(Y)+min(Y)) * 0.5
         mid_z = (max(Z)+min(Z)) * 0.5
         max_range = np.array([max(X)-min(X), max(Y)-min(Y), max(Z)-min(Z)]).max() / 2.0
-        self.ax.set_xlim(mid_x - max_range, mid_x + max_range)
+        self.ax.set_xlim(mid_x - (max_range), mid_x + max_range)
         self.ax.set_ylim(mid_y - max_range, mid_y + max_range)
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
-
     def visualise_line_structure(self):
-        start = - self.line_structure.num_of_nodes
-        z = np.array([self.line_structure.z_vec[start:], self.line_structure.z_vec[start:]])
-        self.ax.plot_wireframe(self.line_structure.x_vec[start:], self.line_structure.y_vec[start:], z, color='k', linewidth=3)
+        z = np.array([self.line_structure.z_vec, self.line_structure.z_vec])
+        self.ax.plot_wireframe(self.line_structure.x_vec, self.line_structure.y_vec, z, color='b', linewidth=3)
         for node in self.line_structure.nodes:
-            self.ax.scatter(node.x, node.y, node.z, marker='o', c='r', s = 10)
+            self.ax.scatter(node.x, node.y, node.z, marker='o', c='r', s = 100)
 
     def visualise_structure(self):
         self.visualise_floor()
@@ -83,35 +85,33 @@ class Visualiser:
     def visualise_floor(self):
         for floor in self.structure.floors:
             z = np.array([floor.z_vec, floor.z_vec])
-            self.ax.plot_wireframe(floor.x_vec, floor.y_vec, z)
+            self.ax.plot_wireframe(floor.x_vec, floor.y_vec, z, color='black')
 
     def visualize_frame(self):
         for frame in self.structure.frames:
             z = np.array([frame.z_vec, frame.z_vec])
-            self.ax.plot_wireframe(frame.x_vec, frame.y_vec, z)
+            self.ax.plot_wireframe(frame.x_vec, frame.y_vec, z,  color='black')
 
 
-def animate(self):
-    # Set up formatting for the movie files
-    Writer = animation.writers['ffmpeg']
-    writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-    a = animation.FuncAnimation(fig, self.update, 40, repeat = False)
-    #a.save("structure_displacement.avi")
-    plt.show()
+    def animate(self):
+        # Set up formatting for the movie files
+        Writer = animation.writers['ffmpeg']
+        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
+        a = animation.FuncAnimation(fig, self.update, 40, repeat = False)
+        #a.save("structure_displacement.avi")
+        plt.show()
 
 
-def update(self, t):
-    """
-    ploting the deformed structure with respect to the displacement
-    """
-    global fig, ax
+    def update(self):
+        """
+        ploting the deformed structure with respect to the displacement
+        """
+        self.ax.cla()
+        self.mapper.map_line_structure_to_frame_mid_point()
+        
 
-    wframe = fig.gca()
-    if wframe!=None:
-        ax.cla()
 
-    self._create_all_floors(t)
-    self.plot_all_floors()
-    self.plot_frame()
+
+
 
 

@@ -54,7 +54,6 @@ class Node:
                         [0,                  0,                     1,                  0],
                         [0,                  0,                     0,                  1]])
 
-        print(Rx)
         previous_coordinate = np.matrix([[self.x0],[self.y0],[self.z0],[1]])   
         new_coordinate = (T*Rz*Ry*Rx)*previous_coordinate
         self.x = float(new_coordinate[0][0])

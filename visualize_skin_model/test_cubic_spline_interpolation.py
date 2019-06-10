@@ -2,8 +2,8 @@ from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 import numpy as np
 
-x = [0.5, 1.75]
-y = [0.32, 2.15]
+x = [0.5, 1.75, 2.65]
+y = [0.32, 2.15, 9.12]
 
 # curvature - 2nd order deriv
 deriv_order = 2
