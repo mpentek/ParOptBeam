@@ -36,11 +36,11 @@ class LineStructure:
             dx = self.dofs[int(i*self.num_of_dofs_per_node  )]
             dy = self.dofs[int(i*self.num_of_dofs_per_node+1)]
             dz = self.dofs[int(i*self.num_of_dofs_per_node+2)]
-            theta_x = self.dofs[int(i*self.num_of_dofs_per_node  )]
-            theta_y = self.dofs[int(i*self.num_of_dofs_per_node+1)]
-            theta_z = self.dofs[int(i*self.num_of_dofs_per_node+2)]
+            theta_x = self.dofs[int(i*self.num_of_dofs_per_node+3)]
+            theta_y = self.dofs[int(i*self.num_of_dofs_per_node+4)]
+            theta_z = self.dofs[int(i*self.num_of_dofs_per_node+5)]
             self.nodes[i].add_dofs(dx, dy, dz, theta_x, theta_y, theta_z)  
-            #self.nodes[i].print_info()   
+            self.nodes[i].print_info()   
 
     def print_line_structure_info(self):    
         msg = "=============================================\n"
@@ -53,24 +53,9 @@ class LineStructure:
         for node in self.nodes:
             node.print_info()
 
-    def apply_rotation_for_line_structure(self):
-        # rotation matrix around axis x
-        Rx = np.matrix([[1,     0,                  0              ],
-                        [0,     cos(self.theta_x), -sin(self.theta_x)],
-                        [0,     sin(self.theta_x),  cos(self.theta_x) ]])
-
-        # rotation matrix around axis y
-        Ry = np.matrix([[cos(self.theta_y),   0,    sin(self.theta_y)],
-                        [0,                 1,    0              ],
-                        [-sin(self.theta_y),  0,    cos(self.theta_y)]])
-
-        # rotation matrix around axis z
-        Rz = np.matrix([[cos(self.theta_z), -sin(self.theta_z),  0],
-                        [sin(self.theta_z), cos(self.theta_z),   0],
-                        [0,                 0,                   1]])
-
-        previous_coordinate = np.matrix([[x0],[y0],[z0]])
-        new_coordinate = (Ry*Rx)*previous_coordinate
-        self.x = float(new_coordinate[0][0])
-        self.y = float(new_coordinate[1][0])
-        self.z = float(new_coordinate[2][0])
+    def apply_transformation_for_line_structure(self):
+        for node in self.nodes:
+            node.apply_transformation()
+            self.x_vec.append(node.x)
+            self.y_vec.append(node.y)
+            self.z_vec.append(node.z)
