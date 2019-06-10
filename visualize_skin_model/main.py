@@ -1,6 +1,11 @@
 from visualise_model import *
-from model import Structure, Floor, Node
+from NodeModel import Node
+from LineStructureModel import LineStructure
+from StructureModel import Structure, Floor
+from visualise_model import Visualiser
 
 if __name__ == "__main__":
-    s = Structure("trapezoid.json")
-    visualise_structure(s)
+    json_file_name = "trapezoid.json"
+    s = Structure(json_file_name)
+    ls = LineStructure(json_file_name)
+    plotter = Visualiser(s, ls)

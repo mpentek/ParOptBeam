@@ -14,5 +14,13 @@
     }],
     "height": 50,
     "num_of_floors": 20,
-    "floor_height": 2.4
+    "floor_height": 2.4,
+    "num_of_dofs_per_node": 6,
+    "node_positions": [0, 10, 0, 
+                       0, 10, 25,
+                       0, 10, 50],
+    "info": "Node wise: dx, dy, dz, theta_x, theta_y, theta_z",
+    "dofs": [0, 0, 0, 0, 0, 0, 
+             1, 0, 0, 0, 0, 0,
+             2, 0, 0, 0, 0, 0]
 }
