@@ -3,7 +3,7 @@ import numpy as np
 from NodeModel import Node
 
 class LineStructure:
-    def __init__(self, structure_file):
+    def __init__(self, structure_file=None):
         """
         intializing line structure with eigenform
         """
@@ -11,16 +11,17 @@ class LineStructure:
         self.x_vec, self.y_vec, self.z_vec = [],[],[] 
         self.dx_vec, self.dy_vec, self.dz_vec = [],[],[] 
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [],[],[] 
-        with open(structure_file) as json_file:
-            data = json.load(json_file)
-            self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
-            self.node_positions = data["node_positions"]
-            self.dofs = data["dofs"]
-            self.num_of_nodes = int(len(self.dofs)/self.num_of_dofs_per_node)
-            self.structure_height = data["height"]
-        self.print_line_structure_info()
-        self.init_nodes()
-        self.init_dofs()
+        if structure_file!=None:
+            with open(structure_file) as json_file:
+                data = json.load(json_file)
+                self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
+                self.node_positions = data["node_positions"]
+                self.dofs = data["dofs"]
+                self.num_of_nodes = int(len(self.dofs)/self.num_of_dofs_per_node)
+                self.structure_height = data["height"]
+            self.print_line_structure_info()
+            self.init_nodes()
+            self.init_dofs()
 
     def init_nodes(self):
         for i in range(self.num_of_nodes):

@@ -1,8 +1,6 @@
-from visualise_model import *
-from NodeModel import Node
+from Visualiser import *
 from LineStructureModel import LineStructure
-from StructureModel import Structure, Floor
-from visualise_model import Visualiser
+from StructureModel import Structure
 
 if __name__ == "__main__":
     json_file_name = "trapezoid.json"
