@@ -62,8 +62,8 @@ class LineStructure:
             node.print_info()
 
     def apply_transformation_for_line_structure(self):
-        for node in self.nodes:
-            node.apply_transformation()
-            self.x_vec[-1] = node.x
-            self.y_vec[-1] = node.y
-            self.z_vec[-1] = node.z
+        for i in range(len(self.nodes)):
+            self.nodes[i].apply_transformation()
+            self.x_vec[i] = self.nodes[i].x
+            self.y_vec[i] = self.nodes[i].y
+            self.z_vec[i] = self.nodes[i].z
