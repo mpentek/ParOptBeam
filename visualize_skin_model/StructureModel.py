@@ -49,7 +49,6 @@ class Structure:
         """
         self.floors = []
         self.frames = []
-        self.mid_point_nodes = []
         with open(structure_file) as json_file:
             data = json.load(json_file)
             self.floor_geometry = data["geometry"]
