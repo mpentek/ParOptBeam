@@ -3,7 +3,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import numpy as np
-from map_line_structure_to_3d import Mapper
+from Mapper import Mapper
 from NodeModel import Node
 from StructureModel import Structure, Floor
 
@@ -25,6 +25,7 @@ class Visualiser:
         self.structure = structure
         self.line_structure = line_structure
         self.mapper = Mapper(structure, line_structure)
+        self.interpolated_line_structure = self.mapper.interpolated_line_structure
 
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(111, projection = '3d', aspect='equal', azim=-40, elev=10)
@@ -33,15 +34,14 @@ class Visualiser:
         #self.ax.set_axis_off()
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
-        
-        self.line_structure.apply_transformation_for_line_structure()
+        self.update()
         self.visualise_structure()
         self.visualise_line_structure()
         self.ax.set_zlim([0, self.ax.get_zlim()[1]])      
 
-        self.update()
+        
         plt.tight_layout()
-        #plt.show()
+        plt.show()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(mutation_scale=20, arrowstyle='->',shrinkA=0, shrinkB=0)
@@ -106,8 +106,10 @@ class Visualiser:
         """
         ploting the deformed structure with respect to the displacement
         """
-        self.ax.cla()
+        #self.ax.cla()
         self.mapper.map_line_structure_to_frame_mid_point()
+        self.line_structure.apply_transformation_for_line_structure()
+        self.structure.apply_transformation_for_structure()
         
 
 
