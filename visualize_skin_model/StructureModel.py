@@ -25,12 +25,7 @@ class Floor:
         self.plane = Plane((self.nodes[0*CONNTOUR_DENSITY].x, self.nodes[0*CONNTOUR_DENSITY].y, self.nodes[0*CONNTOUR_DENSITY].z), 
                            (self.nodes[1*CONNTOUR_DENSITY].x, self.nodes[1*CONNTOUR_DENSITY].y, self.nodes[1*CONNTOUR_DENSITY].z), 
                            (self.nodes[2*CONNTOUR_DENSITY].x, self.nodes[2*CONNTOUR_DENSITY].y, self.nodes[2*CONNTOUR_DENSITY].z))    
-        
-        # adding the first point to close the geometry
-        self.x_vec.append(self.x_vec[0])
-        self.y_vec.append(self.y_vec[0])
-        self.z_vec.append(self.z_vec[0])            
-
+    
 
 class Frame:
     def __init__ (self, floors, index):
@@ -111,6 +106,21 @@ class Structure:
     def _get_equidistant_points(self, p1, p2, parts):
         return [{"x": val1, "y": val2} for val1, val2 in zip(np.linspace(p1[0], p2[0], parts+1),
                                                              np.linspace(p1[1], p2[1], parts+1))]
+
+    def apply_transformation_for_structure(self):
+        for floor in self.floors:
+            for i in range(len(floor.nodes)):
+                floor.nodes[i].apply_transformation()
+                floor.x_vec[i] = floor.nodes[i].x
+                floor.y_vec[i] = floor.nodes[i].y
+                floor.z_vec[i] = floor.nodes[i].z
+
+        for frame in self.frames:
+            for i in range(len(frame.nodes)):
+                frame.nodes[i].apply_transformation()
+                frame.x_vec[i] = frame.nodes[i].x
+                frame.y_vec[i] = frame.nodes[i].y
+                frame.z_vec[i] = frame.nodes[i].z
 
 if __name__ == "__main__":
     s = Structure("trapezoid.json")
