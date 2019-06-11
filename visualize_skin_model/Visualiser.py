@@ -37,8 +37,8 @@ class Visualiser:
         self.update()
         self.visualise_structure()
         self.visualise_line_structure()
+        self.visualise_interpolated_line_structure()
         self.ax.set_zlim([0, self.ax.get_zlim()[1]])      
-
         
         plt.tight_layout()
         plt.show()
@@ -78,6 +78,12 @@ class Visualiser:
         for node in self.line_structure.nodes:
             self.ax.scatter(node.x, node.y, node.z, marker='o', c='r', s = 100)
 
+    def visualise_interpolated_line_structure(self):
+        z = np.array([self.interpolated_line_structure.z_vec, self.interpolated_line_structure.z_vec])
+        self.ax.plot_wireframe(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.y_vec, z, color='g', linewidth=3, linestyle='--')
+        #for node in self.line_structure.nodes:
+            #self.ax.scatter(node.x, node.y, node.z, marker='o', c='r', s = 100)
+
     def visualise_structure(self):
         self.visualise_floor()
         self.visualize_frame()
@@ -107,8 +113,9 @@ class Visualiser:
         ploting the deformed structure with respect to the displacement
         """
         #self.ax.cla()
-        self.mapper.map_line_structure_to_frame_mid_point()
+        self.mapper.map_line_structure_to_structure_floor()
         self.line_structure.apply_transformation_for_line_structure()
+        self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
         
 
