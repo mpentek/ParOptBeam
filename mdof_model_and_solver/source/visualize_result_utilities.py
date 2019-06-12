@@ -129,7 +129,7 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     ax.set_xlim(plot_limits["x"][0], plot_limits["x"][1])   
     
     # PMT NOTE: manually overwriding:
-    ax.set_xlim(-0.00035, 0.00035)
+    #ax.set_xlim(-0.00035, 0.00035)
 
     ax.set_ylim(plot_limits["y"][0], plot_limits["y"][1])
     # ax.set_xticks(np.arange(xmin, xmax, 1)) 

@@ -460,7 +460,7 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
                              "x": None,
                              "y": None}
 
-        super().__init__(m, b, k, nodal_coordinates, name, category='MDoF2DMixed')
+        super().__init__(m, b, k, nodal_coordinates, name, category='MDoF3DMixed')
 
     def _get_nodal_coordinates(self, level_height, num_of_levels):
         nodal_coordinates = level_height * np.arange(1, num_of_levels+1)
@@ -472,11 +472,85 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
 
         USING the consistent mass formulation
         """
-        # mass values for one level
-        length = level_height
-        m_const = rho * area * length
 
         # mass values for one level
+
+        #
+        # VERSION 1
+        #
+        # NOTE: checking out alternative implementation
+        # according to https://mediatum.ub.tum.de/doc/1072355/file.pdf
+        # description and implementation seems correct
+        # NOTE: find out where the formulation for the mass comes from, stiffness seems standard
+
+        t = 45.0 # t: beam thickness (y) [m]
+        h = 30.0 # h: beam height (z) [m]
+        rho = 160.0 # density of steel [kg/mˆ3]
+        E = 2.861e8 # E: Young's modulus of steel [N/mˆ2]
+        nu = 3/10 # nu: Poisson's ratio
+
+        G = E/2/(1+nu) # G: Shear modulus [N/mˆ2]
+        l = level_height # l: beam element length
+        A = t*h # beam area [mˆ2]
+        ASy = 5/6*A    
+        ASz = 5/6*A # effective area of shear
+        Iy = 1/12*h**3*t    
+        Iz = 1/12*t**3*h # second moments of area [mˆ4]
+        Ip = 1/12*t*h*(h**2+t**2) # polar moment of inertia [mˆ4]
+        It = min([h,t])**3 *max([h,t])/7 # torsion constant [mˆ4]
+        Py = 12*E*Iz/(G*ASy*l**2) #
+        Pz = 12*E*Iy/(G*ASz*l**2) #
+
+        M11 = np.zeros((6,6))
+        M11[0][0] = 1/3
+        M11[1][1] = 13/35 + 6*Iz/(5*A*l**2)
+        M11[2][2] = 13/35 + 6*Iy/(5*A*l**2)
+        M11[3][3] = Ip/(3*A)
+        M11[4][4] = l**2/105 + 2*Iy/(15*A)
+        M11[5][5] = l**2/105 + 2*Iz/(15*A)
+        M11[5][1] = 11*l/210 + Iz/(10*A*l)
+        M11[1][5] = M11[5][1]
+        M11[4][2] =-11*l/210-Iy/(10*A*l)
+        M11[2][4] = M11[4][2]
+
+        M22 = -M11 + 2*np.diag(np.diag(M11))
+
+        M21 = np.zeros((6,6))
+        M21[0][0] = 1/6
+        M21[1][1] = 9/70-6*Iz/(5*A*l**2)
+        M21[2][2] = 9/70-6*Iy/(5*A*l**2)
+        M21[3][3] = Ip/(6*A)
+        M21[4][4] =-l**2/140-Iy/(30*A)
+        M21[5][5] =-l**2/140-Iz/(30*A)
+        M21[5][1] =-13*l/420 + Iz/(10*A*l)
+        M21[1][5] =-M21[5][1]
+        M21[4][2] = 13*l/420-Iy/(10*A*l)
+        M21[2][4] =-M21[4][2]
+
+        # mass values for one level
+        length = level_height
+        m_const = rho * A * length
+
+        m_el = np.zeros((2*6,2*6))
+        # upper left
+        m_el[0:6,0:6] += m_const * M11
+        # lower left
+        m_el[6:12,0:6] += m_const * M21
+        # upper right
+        m_el[0:6,6:12] += m_const * np.transpose(M21)
+        # lower right
+        m_el[6:12,6:12] += m_const * M22
+
+        version1_m_el = m_el
+        # print("\n VERSION1 - m_el")
+        # print(np.array2string(version1_m_el, precision=3, separator=',', suppress_small=True))
+
+        #
+        # VERSION 2
+        #
+        # NOTE: from http://homes.civil.aau.dk/jc/FemteSemester/Beams3D.pdf
+        # seems to be a typo in 1-105 and 1-106 as a division with l**3 instead of l**3 should take place
+        # implemented mass matrices similar to the stiffness one
 
         # define component-wise to have enable better control for various optimization parameters
 
@@ -487,71 +561,79 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
         m_el_x = m_x * np.array([[m_x_11, m_x_12],
                                  [m_x_12, m_x_11]])
         # torsion inertia - around axis x - here marked as alpha - a
-        # NOTE: assuming torsional inertia to be x100 greates than translation
-        m_a = m_const / 6.0 * 100 
+        m_a = m_const * Ip/A / 6.0 
         m_a_11 = 2
         m_a_12 = 1
         m_el_a = m_a * np.array([[m_a_11, m_a_12],
                                  [m_a_12, m_a_11]])
-        # bending - inertia along axis y, rotations around axis z - here marked as beta - b
-        m_yb = m_const / 420        
+        # bending - inertia along axis y, rotations around axis z - here marked as gamma - g
+        m_yg = m_const / 420        
         #
-        m_yb_11 = 156.
-        m_yb_12 = 22*length
-        m_yb_13 = 54.
-        m_yb_14 = -13.*length
+        m_yg_11 = 156.
+        m_yg_12 = 22*length
+        m_yg_13 = 54.
+        m_yg_14 = -13.*length
         #
-        m_yb_22 = 4 * length **2
-        m_yb_23 = 13. * length
-        m_yb_24 = -3 * length ** 2
+        m_yg_22 = 4 * length **2
+        m_yg_23 = 13. * length
+        m_yg_24 = -3 * length ** 2
         #
-        m_yb_33 = 156.
-        m_yb_34 = -22. * length
+        m_yg_33 = 156.
+        m_yg_34 = -22. * length
         #
-        m_yb_44 = 4 * length ** 2
+        m_yg_44 = 4 * length ** 2
         #
-        m_el_yb = m_yb * np.array([[m_yb_11, m_yb_12, m_yb_13, m_yb_14],
-                                   [m_yb_12, m_yb_22, m_yb_23, m_yb_24],
-                                   [m_yb_13, m_yb_23, m_yb_33, m_yb_34],
-                                   [m_yb_14, m_yb_24, m_yb_34, m_yb_44]])
+        m_el_yg = m_yg * np.array([[m_yg_11, m_yg_12, m_yg_13, m_yg_14],
+                                   [m_yg_12, m_yg_22, m_yg_23, m_yg_24],
+                                   [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
+                                   [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
 
-        # bending - inertia along axis z, rotations around axis y - here marked as gamma - g
-        # NOTE: some signs swapped as for stiffness - is this correct?
-        m_zg = m_const / 420
+        # bending - inertia along axis z, rotations around axis y - here marked as beta - b
+        m_zb = m_const / 420
         #
-        m_zg_11 = 156.
-        m_zg_12 = (-1) * 22*length
-        m_zg_13 = 54.
-        m_zg_14 = (-1) * 13.*length
+        m_zb_11 = 156.
+        m_zb_12 = -22*length
+        m_zb_13 = 54.
+        m_zb_14 = 13.*length
         #
-        m_zg_22 = 4. * length **2
-        m_zg_23 = (-1) * 13. * length
-        m_zg_24 = -3 * length ** 2
+        m_zb_22 = 4. * length **2
+        m_zb_23 = -13. * length
+        m_zb_24 = -3 * length ** 2
         #
-        m_zg_33 = 156.
-        m_zg_34 = (-1) * 22. * length
+        m_zb_33 = 156.
+        m_zb_34 = 22. * length
         #
-        m_zg_44 = 4 * length ** 2
+        m_zb_44 = 4 * length ** 2
         #
-        m_el_zg = m_zg * np.array([[m_zg_11, m_zg_12, m_zg_13, m_zg_14],
-                                   [m_zg_12, m_zg_22, m_zg_23, m_zg_24],
-                                   [m_zg_13, m_zg_23, m_zg_33, m_zg_34],
-                                   [m_zg_14, m_zg_24, m_zg_34, m_zg_44]])
+        m_el_zb = m_zb * np.array([[m_zb_11, m_zb_12, m_zb_13, m_zb_14],
+                                   [m_zb_12, m_zb_22, m_zb_23, m_zb_24],
+                                   [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
+                                   [m_zb_14, m_zb_24, m_zb_34, m_zb_44]])
 
         # assemble all components
         m_el = np.array([[m_el_x[0][0], 0., 0., 0., 0., 0.,                 m_el_x[0][1], 0., 0., 0., 0., 0.],
-                         [0., m_el_yb[0][0], 0., 0., 0., m_el_yb[0][1],     0., m_el_yb[0][2], 0., 0., 0., m_el_yb[0][3]],
-                         [0., 0., m_el_zg[0][0], 0., m_el_zg[0][1], 0.,     0., 0., m_el_zg[0][2], 0., m_el_zg[0][3], 0.],
+                         [0., m_el_yg[0][0], 0., 0., 0., m_el_yg[0][1],     0., m_el_yg[0][2], 0., 0., 0., m_el_yg[0][3]],
+                         [0., 0., m_el_zb[0][0], 0., m_el_zb[0][1], 0.,     0., 0., m_el_zb[0][2], 0., m_el_zb[0][3], 0.],
                          [0., 0., 0., m_el_a[0][0], 0., 0.,                 0., 0., 0., m_el_a[0][1], 0., 0.],
-                         [0., 0., m_el_zg[0][1], 0., m_el_zg[1][1], 0.,     0., 0., m_el_zg[1][2], 0., m_el_zg[1][3], 0.],
-                         [0., m_el_yb[0][1], 0., 0., 0., m_el_yb[1][1],     0., m_el_yb[1][2], 0., 0., 0., m_el_yb[1][3]],
+                         [0., 0., m_el_zb[0][1], 0., m_el_zb[1][1], 0.,     0., 0., m_el_zb[1][2], 0., m_el_zb[1][3], 0.],
+                         [0., m_el_yg[0][1], 0., 0., 0., m_el_yg[1][1],     0., m_el_yg[1][2], 0., 0., 0., m_el_yg[1][3]],
                          
                          [m_el_x[1][0], 0., 0., 0., 0., 0.,                 m_el_x[1][1], 0., 0., 0., 0., 0.],
-                         [0., m_el_yb[0][2], 0., 0., 0., m_el_yb[1][2],     0., m_el_yb[2][2], 0., 0., 0., m_el_yb[2][3]],
-                         [0., 0., m_el_zg[0][2], 0., m_el_zg[1][2], 0.,     0., 0., m_el_zg[2][2], 0., m_el_zg[2][3], 0.],
+                         [0., m_el_yg[0][2], 0., 0., 0., m_el_yg[1][2],     0., m_el_yg[2][2], 0., 0., 0., m_el_yg[2][3]],
+                         [0., 0., m_el_zb[0][2], 0., m_el_zb[1][2], 0.,     0., 0., m_el_zb[2][2], 0., m_el_zb[2][3], 0.],
                          [0., 0., 0., m_el_a[1][0], 0., 0.,                 0., 0., 0., m_el_a[1][1], 0., 0.],
-                         [0., 0., m_el_zg[0][3], 0., m_el_zg[1][3], 0.,     0., 0., m_el_zg[2][3], 0., m_el_zg[3][3], 0.],
-                         [0., m_el_yb[0][3], 0., 0., 0., m_el_yb[1][3],     0., m_el_yb[2][3], 0., 0., 0., m_el_yb[3][3]]])
+                         [0., 0., m_el_zb[0][3], 0., m_el_zb[1][3], 0.,     0., 0., m_el_zb[2][3], 0., m_el_zb[3][3], 0.],
+                         [0., m_el_yg[0][3], 0., 0., 0., m_el_yg[1][3],     0., m_el_yg[2][3], 0., 0., 0., m_el_yg[3][3]]])
+
+
+        version2_m_el = m_el
+        # print("\n VERSION2 - m_el")
+        # print(np.array2string(version2_m_el, precision=3, separator=',', suppress_small=True))
+
+        print("\n NORM - between m_el_ versions:")
+        print(np.linalg.norm(version1_m_el - version2_m_el))
+        print()
+        # wait = input("check...")
 
         # global mass matrix initialization with zeros
         m_glob = np.zeros(((num_of_levels+1) * self.dofs_per_node,
@@ -579,10 +661,10 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
             # delet corresponding column
             m_glob = np.delete(m_glob, dof, axis=1)
 
-        # https://stackoverflow.com/questions/16266720/find-out-if-matrix-is-positive-definite-with-numpy
-        print(" If mass global is positive definite should return True")
-        print(np.all(np.linalg.eigvals(m_glob) > 0))
-        wait = input("check...")
+        # # https://stackoverflow.com/questions/16266720/find-out-if-matrix-is-positive-definite-with-numpy
+        # print(" If mass global is positive definite should return True")
+        # print(np.all(np.linalg.eigvals(m_glob) > 0))
+        # wait = input("check...")
 
         # return mass matrix
         return m_glob
@@ -623,85 +705,160 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
         return self._assemble_k(level_height, num_of_levels)
 
     def _assemble_k(self, level_height, num_of_levels):
-        length = level_height
+        
+        #
+        # VERSION 1
+        #
+        # NOTE: checking out alternative implementation
+        # according to https://mediatum.ub.tum.de/doc/1072355/file.pdf
+        # description and implementation seems correct
+        # NOTE: find out where the formulation for the mass comes from, stiffness seems standard
 
+        t = 45.0 # t: beam thickness (y) [m]
+        h = 30.0 # h: beam height (z) [m]
+        rho = 160.0 # density of steel [kg/mˆ3]
+        E = 2.861e8 # E: Young's modulus of steel [N/mˆ2]
+        nu = 3/10 # nu: Poisson's ratio
+
+        G = E/2/(1+nu) # G: Shear modulus [N/mˆ2]
+        l = level_height # l: beam element length
+        A = t*h # beam area [mˆ2]
+        ASy = 5/6*A    
+        ASz = 5/6*A # effective area of shear
+        Iy = 1/12*h**3*t    
+        Iz = 1/12*t**3*h # second moments of area [mˆ4]
+        Ip = 1/12*t*h*(h**2+t**2) # polar moment of inertia [mˆ4]
+        It = min([h,t])**3 *max([h,t])/7 # torsion constant [mˆ4]
+        Py = 12*E*Iz/(G*ASy*l**2) #
+        Pz = 12*E*Iy/(G*ASz*l**2) #
+
+        K11 = np.zeros((6,6))
+        K11[0][0] = E*A/l
+        K11[1][1] = 12*E*Iz/(l**3*(1+Py))
+        K11[2][2] = 12*E*Iy/(l**3*(1+Pz))
+        K11[3][3] = G*It/l
+        K11[4][4] = (4+Pz)*E*Iy/(l*(1+Pz))
+        K11[5][5] = (4+Py)*E*Iz/(l*(1+Py))
+        K11[1][5] = 6*E*Iz/(l**2*(1+Py))
+        K11[5][1] = K11[1][5]
+        K11[2][4] =-6*E*Iy/(l**2*(1+Pz))
+        K11[4][2] = K11[2][4] 
+
+        K22 = -K11 + 2*np.diag(np.diag(K11))
+
+        K21 = K11 - 2*np.diag(np.diag(K11))
+        K21[4][4] = (2-Pz)*E*Iy/(l*(1+Pz))
+        K21[5][5] = (2-Py)*E*Iz/(l*(1+Py))
+        K21[1][5] =-K21[5][1]
+        K21[2][4] =-K21[4][2]
+
+        k_el = np.zeros((2*6,2*6))
+        # upper left
+        k_el[0:6,0:6] += K11
+        # lower left
+        k_el[6:12,0:6] += K21
+        # upper right
+        k_el[0:6,6:12] += np.transpose(K21)
+        # lower right
+        k_el[6:12,6:12] += K22
+
+        version1_k_el = k_el
+        # print("\n VERSION1 - k_el")
+        # print(np.array2string(version1_k_el, precision=3, separator=',', suppress_small=True))
+
+
+        #
+        # VERSION 2
+        #
+        # NOTE: from http://homes.civil.aau.dk/jc/FemteSemester/Beams3D.pdf
+        # seems to be a typo in 1-105 and 1-106 as a division with l**3 instead of l**3 should take place
+        # implemented mass matrices similar to the stiffness one
+        
         # stifness values for one level
-
         # define component-wise to have enable better control for various optimization parameters
 
+        length = l
         # axial stiffness - along axis x - here marked as x
-        k_x = 1500. # E*A/l
+        k_x = E*A/l
         k_x_11 = 1.0
         k_x_12 = -1.0
         k_el_x = k_x * np.array([[k_x_11, k_x_12],
                                  [k_x_12, k_x_11]])
         # torsion stiffness - around axis x - here marked as alpha - a
-        # NOTE: assuming that torsional stiffness is 100 longitudnal one, probably incorrect
-        k_a = 150 * 100.  # G*K/l
+        k_a = G*It/l  # G*K/l
         k_a_11 = 1.0
         k_a_12 = -1.0
         k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                  [k_a_12, k_a_11]])
-        # bending - displacement along axis y, rotations around axis z - here marked as beta - b
-        beta_yb = 0.001
-        k_yb = 500 #E * I_z / (1+beta_yb)**2 / h**2
+        # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
+        beta_yg = Py
+        k_yg = E*Iz/(1+beta_yg)/l**3
         #
-        k_yb_11 = 12.
-        k_yb_12 = 6*length
-        k_yb_13 = -12.
-        k_yb_14 = 6.*length
+        k_yg_11 = 12.
+        k_yg_12 = 6*length
+        k_yg_13 = -12.
+        k_yg_14 = 6.*length
         #
-        k_yb_22 = (4.+beta_yb) * length **2
-        k_yb_23 = -6. * length
-        k_yb_24 = (2-beta_yb) * length ** 2
+        k_yg_22 = (4.+beta_yg) * length **2
+        k_yg_23 = -6. * length
+        k_yg_24 = (2-beta_yg) * length ** 2
         #
-        k_yb_33 = 12.
-        k_yb_34 = -6. * length
+        k_yg_33 = 12.
+        k_yg_34 = -6. * length
         #
-        k_yb_44 = (4+beta_yb) * length ** 2
+        k_yg_44 = (4+beta_yg) * length ** 2
         #
-        k_el_yb = k_yb * np.array([[k_yb_11, k_yb_12, k_yb_13, k_yb_14],
-                                   [k_yb_12, k_yb_22, k_yb_23, k_yb_24],
-                                   [k_yb_13, k_yb_23, k_yb_33, k_yb_34],
-                                   [k_yb_14, k_yb_24, k_yb_34, k_yb_44]])
+        k_el_yg = k_yg * np.array([[k_yg_11, k_yg_12, k_yg_13, k_yg_14],
+                                   [k_yg_12, k_yg_22, k_yg_23, k_yg_24],
+                                   [k_yg_13, k_yg_23, k_yg_33, k_yg_34],
+                                   [k_yg_14, k_yg_24, k_yg_34, k_yg_44]])
 
-        # bending - displacement along axis z, rotations around axis y - here marked as gamma - g
-        beta_zg = 0.0025
-        k_zg = 500 #E * I_y / (1+beta_zg)**2 / h**2
+        # bending - displacement along axis z, rotations around axis y - here marked as beta - b
+        beta_zb = Pz
+        k_zb = E*Iy/(1+beta_zb)/l**3
         #
-        k_zg_11 = 12.
-        k_zg_12 = -6*length
-        k_zg_13 = -12.
-        k_zg_14 = -6.*length
+        k_zb_11 = 12.
+        k_zb_12 = -6*length
+        k_zb_13 = -12.
+        k_zb_14 = -6.*length
         #
-        k_zg_22 = (4.+beta_zg) * length **2
-        k_zg_23 = 6. * length
-        k_zg_24 = (2-beta_zg) * length ** 2
+        k_zb_22 = (4.+beta_zb) * length **2
+        k_zb_23 = 6. * length
+        k_zb_24 = (2-beta_zb) * length ** 2
         #
-        k_zg_33 = 12.
-        k_zg_34 = 6. * length
+        k_zb_33 = 12.
+        k_zb_34 = 6. * length
         #
-        k_zg_44 = (4+beta_zg) * length ** 2
+        k_zb_44 = (4+beta_zb) * length ** 2
         #
-        k_el_zg = k_zg * np.array([[k_zg_11, k_zg_12, k_zg_13, k_zg_14],
-                                   [k_zg_12, k_zg_22, k_zg_23, k_zg_24],
-                                   [k_zg_13, k_zg_23, k_zg_33, k_zg_34],
-                                   [k_zg_14, k_zg_24, k_zg_34, k_zg_44]])
+        k_el_zb = k_zb * np.array([[k_zb_11, k_zb_12, k_zb_13, k_zb_14],
+                                   [k_zb_12, k_zb_22, k_zb_23, k_zb_24],
+                                   [k_zb_13, k_zb_23, k_zb_33, k_zb_34],
+                                   [k_zb_14, k_zb_24, k_zb_34, k_zb_44]])
 
         # assemble all components
         k_el = np.array([[k_el_x[0][0], 0., 0., 0., 0., 0.,                 k_el_x[0][1], 0., 0., 0., 0., 0.],
-                         [0., k_el_yb[0][0], 0., 0., 0., k_el_yb[0][1],     0., k_el_yb[0][2], 0., 0., 0., k_el_yb[0][3]],
-                         [0., 0., k_el_zg[0][0], 0., k_el_zg[0][1], 0.,     0., 0., k_el_zg[0][2], 0., k_el_zg[0][3], 0.],
+                         [0., k_el_yg[0][0], 0., 0., 0., k_el_yg[0][1],     0., k_el_yg[0][2], 0., 0., 0., k_el_yg[0][3]],
+                         [0., 0., k_el_zb[0][0], 0., k_el_zb[0][1], 0.,     0., 0., k_el_zb[0][2], 0., k_el_zb[0][3], 0.],
                          [0., 0., 0., k_el_a[0][0], 0., 0.,                 0., 0., 0., k_el_a[0][1], 0., 0.],
-                         [0., 0., k_el_zg[0][1], 0., k_el_zg[1][1], 0.,     0., 0., k_el_zg[1][2], 0., k_el_zg[1][3], 0.],
-                         [0., k_el_yb[0][1], 0., 0., 0., k_el_yb[1][1],     0., k_el_yb[1][2], 0., 0., 0., k_el_yb[1][3]],
+                         [0., 0., k_el_zb[0][1], 0., k_el_zb[1][1], 0.,     0., 0., k_el_zb[1][2], 0., k_el_zb[1][3], 0.],
+                         [0., k_el_yg[0][1], 0., 0., 0., k_el_yg[1][1],     0., k_el_yg[1][2], 0., 0., 0., k_el_yg[1][3]],
                          
                          [k_el_x[1][0], 0., 0., 0., 0., 0.,                 k_el_x[1][1], 0., 0., 0., 0., 0.],
-                         [0., k_el_yb[0][2], 0., 0., 0., k_el_yb[1][2],     0., k_el_yb[2][2], 0., 0., 0., k_el_yb[2][3]],
-                         [0., 0., k_el_zg[0][2], 0., k_el_zg[1][2], 0.,     0., 0., k_el_zg[2][2], 0., k_el_zg[2][3], 0.],
+                         [0., k_el_yg[0][2], 0., 0., 0., k_el_yg[1][2],     0., k_el_yg[2][2], 0., 0., 0., k_el_yg[2][3]],
+                         [0., 0., k_el_zb[0][2], 0., k_el_zb[1][2], 0.,     0., 0., k_el_zb[2][2], 0., k_el_zb[2][3], 0.],
                          [0., 0., 0., k_el_a[1][0], 0., 0.,                 0., 0., 0., k_el_a[1][1], 0., 0.],
-                         [0., 0., k_el_zg[0][3], 0., k_el_zg[1][3], 0.,     0., 0., k_el_zg[2][3], 0., k_el_zg[3][3], 0.],
-                         [0., k_el_yb[0][3], 0., 0., 0., k_el_yb[1][3],     0., k_el_yb[2][3], 0., 0., 0., k_el_yb[3][3]]])
+                         [0., 0., k_el_zb[0][3], 0., k_el_zb[1][3], 0.,     0., 0., k_el_zb[2][3], 0., k_el_zb[3][3], 0.],
+                         [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3],     0., k_el_yg[2][3], 0., 0., 0., k_el_yg[3][3]]])
+
+        version2_k_el = k_el
+        # print("\n VERSION2 - k_el")
+        # print(np.array2string(version2_k_el, precision=3, separator=',', suppress_small=True))
+
+        print("\n NORM - k_el versions:")
+        print(np.linalg.norm(version1_k_el - version2_k_el))
+        print()
+        # wait = input("check...")
 
         # global stiffness matrix initialization with zeros
         k_glob = np.zeros(((num_of_levels+1) * self.dofs_per_node,
@@ -745,11 +902,6 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
 
         # TODO: try to avoid this code duplication
         # raw results
-
-        # https://stackoverflow.com/questions/16266720/find-out-if-matrix-is-positive-definite-with-numpy
-        print(" If mass is positive definite should return True")
-        print(np.all(np.linalg.eigvals(m) > 0))
-        wait = input("check...")
 
         eig_values_raw, eigen_modes_raw = linalg.eigh(k, m)
         # rad/s

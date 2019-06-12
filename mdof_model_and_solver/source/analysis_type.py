@@ -260,6 +260,19 @@ class EigenvalueAnalysis(AnalysisType):
         elif self.structure_model.category in ['MDoFBeam','MDoF2DMixed']:
             self.structure_model.nodal_coordinates["x"] = self.eigenform[::2]
 
+        elif self.structure_model.category in ['MDoF3DMixed']:
+            # TODO: make this generic
+            # x, y, z, alpha, beta, gamma
+            # slicing: start:stop:step
+            chosen_dof = 1 # should be y or z
+            dofs_per_node = 6
+            start = chosen_dof
+            stop = len(self.eigenform[:][0])
+            step = dofs_per_node
+            self.structure_model.nodal_coordinates["x"] = self.eigenform[start:stop:step]
+            
+            #self.structure_model.nodal_coordinates["x"] = self.eigenform[::6]
+
         else:
             sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
 

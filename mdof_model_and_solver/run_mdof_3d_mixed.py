@@ -32,7 +32,7 @@ from source.load_type import*
 # Create example structure
 
 # Distribution of floor according to their number and floor height
-floor_num = 3
+floor_num = 60
 floor_height = 3
 Z = np.zeros(floor_num + 1)
 
