@@ -32,8 +32,8 @@ from source.load_type import*
 # Create example structure
 
 # Distribution of floor according to their number and floor height
-floor_num = 60
-floor_height = 3
+floor_num = int(60/2)
+floor_height = 3*2
 Z = np.zeros(floor_num + 1)
 
 for i in range(1, floor_num + 1):

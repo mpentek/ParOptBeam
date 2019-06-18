@@ -115,7 +115,8 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     except:
         geometry["deformed"] = [np.add(geometry["undeformed"][0][:,np.newaxis], geometry["deformation"][0] * scaling["deformation"]),
                                 np.add(geometry["undeformed"][1], geometry["deformation"][1] * scaling["deformation"])]
-    
+        # geometry["deformed"] = [np.add(geometry["undeformed"][0], geometry["deformation"][0] * scaling["deformation"]),
+        #                         np.add(geometry["undeformed"][1], geometry["deformation"][1] * scaling["deformation"])]
         pass
     # Axis, Grid and Label
 

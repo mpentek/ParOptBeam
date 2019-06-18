@@ -79,6 +79,9 @@ class SimplifiedCantileverStructure(object):
         self.b = b
         # stiffness matrix
         self.k = k
+        # TODO: to move here
+        # boundary condition dofs
+        # self.bc_dofs = bc_dofs
 
         # geometric properties
         self.nodal_coordinates = nodal_coordinates
@@ -93,7 +96,6 @@ class SimplifiedCantileverStructure(object):
                 '\" is not supported in SimplifiedCantileverStructure\n'
             err_msg += 'Available options are: \"MDoF2DMixed\", \"MDoF3DMixed\"'
             raise Exception(err_msg)
-
 
 class MDoFMixed2DModel(SimplifiedCantileverStructure):
     """
@@ -351,7 +353,7 @@ class MDoFMixed2DModel(SimplifiedCantileverStructure):
         # wait = input("check...")
 
         # raw results
-        eig_values_raw, eigen_modes_raw = linalg.eigh(k, m)
+        eig_values_raw, eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(k), self.apply_bc_by_reduction(m))
         # rad/s
         eig_values = np.sqrt(np.real(eig_values_raw))
         # 1/s = Hz
@@ -447,6 +449,30 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
         self.dofs_per_node = 6
         self.nodes_per_level = 2
 
+        # TODO: implement bc type for 2d, apply not in the matrix build
+        # pass to constructor
+        bc='fixed-fixed' # works
+        bc='fixed-free' # works
+        bc='free-fixed' # works
+        bc='pinned-pinned' # works
+        bc='fixed-pinned'
+        # bc='pinned-fixed' # works
+        if bc == 'fixed-fixed':
+            self.bc_dofs = [0,1,2,3,4,5,-6,-5,-4,-3,-2,-1]
+        elif bc == 'pinned-pinned':
+            self.bc_dofs = [0,1,2,-6,-5,-4]
+        elif bc == 'fixed-pinned':
+            self.bc_dofs = [0,1,2,3,4,5,-6,-5,-4]
+        elif bc == 'pinned-fixed':
+            self.bc_dofs = [0,1,2,-6,-5,-4,-3,-2,-1]
+        elif bc == 'fixed-free':
+            self.bc_dofs = [0,1,2,3,4,5]
+        elif bc == 'free-fixed':
+            self.bc_dofs = [-6,-5,-4,-3,-2,-1]
+        else:
+            # TODO: implement error message
+            pass
+
         m = self._calculate_mass(rho, area, level_height, num_of_levels)
         k = self._calculate_stiffness(
             m, level_height, num_of_levels, target_freq, target_mode)
@@ -461,9 +487,60 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
                              "y": None}
 
         super().__init__(m, b, k, nodal_coordinates, name, category='MDoF3DMixed')
+        # TODO: to move bcs to constructor
+        # super().__init__(m, b, k, bc_dofs, nodal_coordinates, name, category='MDoF3DMixed')
+
+    def apply_bc_by_reduction(self, matrix):
+        '''
+        list of dofs to apply bc's to provided by self.bc_dofs
+        convert prescribed bc's to global dof number
+        subtract from all dofs to keep what is needed
+        use np.ix_ and ixgrid to extract relevant elements
+        '''
+
+        # NOTE: should be quite robust
+        # TODO: test
+
+        # list copy by slicing -> [:] -> to have a copy by value
+        bc_dofs_global = self.bc_dofs[:]
+        for idx, dof in enumerate(bc_dofs_global):
+            # shift to global numbering the negative values
+            if dof < 0:
+                bc_dofs_global[idx] = dof + matrix.shape[0]
+
+        # only take bc's of interes
+        all_dofs_global = list(range(matrix.shape[0]))
+        bcs_to_keep = list(set(all_dofs_global)-set(bc_dofs_global))
+
+        # make a grid of indices on interest
+        ixgrid = np.ix_(bcs_to_keep, bcs_to_keep) 
+
+        return matrix[ixgrid]
+
+    def recuperate_bc_by_extension(self, matrix):
+        # for static, dynamic and eigenvalue solve recuperate
+        # corresponding rows to bc's with zero values
+
+        # TODO: problems with self.bc_dofs = [0,1,2,3,4,5,-6,-5,-4]
+        # so fixed-pinned -> how to recuperate only -6, -5, -4
+
+        values = np.zeros(matrix.shape[1])
+        print('# shape before: ', matrix.shape)
+        for dof in self.bc_dofs:
+            if dof >= 0: # insert before first-(0) index
+                matrix = np.insert(matrix, 0, values, axis=0)
+            else: # insert after last-(-1) index
+                cur_len = matrix.shape[0]
+                matrix = np.insert(matrix, cur_len, values, axis=0)
+        print('# shape after: ', matrix.shape)
+        return matrix
 
     def _get_nodal_coordinates(self, level_height, num_of_levels):
-        nodal_coordinates = level_height * np.arange(1, num_of_levels+1)
+        # NOTE: adding lower node here as well
+        nodal_coordinates = level_height * np.arange(0, num_of_levels+1)
+        
+        # TODO: make consistent
+        # nodal_coordinates = level_height * np.arange(1, num_of_levels+1)
         return nodal_coordinates
 
     def _calculate_mass(self, rho, area, level_height, num_of_levels):
@@ -640,16 +717,6 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
 
             m_glob += m_temp
 
-        # remove the fixed degrees of freedom
-        # at first node all dofs are considered fixed for the cantilever beam
-        # generate a list of indices 0, 1, 2,...self.dofs_per_node
-        # go through it in reverse order to keep the numbering intact
-        for dof in range(self.dofs_per_node)[::-1]:
-            # delete corresponding row
-            m_glob = np.delete(m_glob, dof, axis=0)
-            # delet corresponding column
-            m_glob = np.delete(m_glob, dof, axis=1)
-
         # return mass matrix
         return m_glob
 
@@ -810,16 +877,6 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
 
             k_glob += k_temp
 
-        # remove the fixed degrees of freedom
-        # at first node all dofs are considered fixed for the cantilever beam
-        # generate a list of indices 0, 1, 2,...self.dofs_per_node
-        # go through it in reverse order to keep the numbering intact
-        for dof in range(self.dofs_per_node)[::-1]:
-            # delete corresponding row
-            k_glob = np.delete(k_glob, dof, axis=0)
-            # delet corresponding column
-            k_glob = np.delete(k_glob, dof, axis=1)
-
         # return stiffness matrix
         return k_glob
 
@@ -837,7 +894,9 @@ class MDoFMixed3DModel(SimplifiedCantileverStructure):
         # TODO: try to avoid this code duplication
         # raw results
 
-        eig_values_raw, eigen_modes_raw = linalg.eigh(k, m)
+        # apply BC's to be able to solve and avoid rigid modes
+
+        eig_values_raw, eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(k), self.apply_bc_by_reduction(m))
         # rad/s
         eig_values = np.sqrt(np.real(eig_values_raw))
         # 1/s = Hz

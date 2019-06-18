@@ -2,6 +2,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+my_array= np.array([[0.0, 0.1, 0.2, 0.3, 0.4],
+                    [1.0, 1.1, 1.2, 1.3, 1.4],
+                    [2.0, 2.1, 2.2, 2.3, 2.4]])
+
+ixgrid = np.ix_([1,2],[2,4])
+print(ixgrid)
+
+print(my_array[ixgrid])
+
 def map_lin_to_log(val, base):
     # it has to be defined with a min=0.0 and max=1.0
     return base**(1.0 - val)

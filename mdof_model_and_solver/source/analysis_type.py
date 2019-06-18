@@ -148,7 +148,10 @@ class EigenvalueAnalysis(AnalysisType):
 
     def solve(self):
 
-        eig_values_raw, eig_modes_raw = linalg.eigh(self.structure_model.k, self.structure_model.m)  
+        k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
+        m = self.structure_model.apply_bc_by_reduction(self.structure_model.m)
+
+        eig_values_raw, eig_modes_raw = linalg.eigh(k, m)  
         # rad/s
         eig_values = np.sqrt(np.real(eig_values_raw))
         # 1/s = Hz
@@ -172,13 +175,13 @@ class EigenvalueAnalysis(AnalysisType):
         
         print("Generalized mass should be identity")
         for i in range(len(eig_values_raw)):
-            gen_mass_raw[i] = (np.transpose(eig_modes_raw[:,i])).dot(self.structure_model.m).dot(eig_modes_raw[:,i])
+            gen_mass_raw[i] = (np.transpose(eig_modes_raw[:,i])).dot(m).dot(eig_modes_raw[:,i])
 
             unit_gen_mass_norm_fact = np.sqrt(gen_mass_raw[i])
 
             eig_modes_norm[:,i] = eig_modes_raw[:,i]/unit_gen_mass_norm_fact
 
-            gen_mass_norm[i] = (np.transpose(eig_modes_norm[:,i])).dot(self.structure_model.m).dot(eig_modes_norm[:,i])
+            gen_mass_norm[i] = (np.transpose(eig_modes_norm[:,i])).dot(m).dot(eig_modes_norm[:,i])
             # print("norm ", i, ": ",gen_mass_norm[i])
 
         # print("Multiplication check: thethaT dot M dot theta: ",(np.transpose(eig_modes_norm)).dot(self.structure_model.m).dot(eig_modes_norm)," numerically 0 for off-diagonal terms")
@@ -192,6 +195,8 @@ class EigenvalueAnalysis(AnalysisType):
             self.eigenform[:, index] = eig_modes_norm[:, eig_freqs_sorted_indices[index]]
             self.frequency[index] =  eig_freqs[eig_freqs_sorted_indices[index]]
             self.period[index] = eig_pers[eig_freqs_sorted_indices[index]]
+
+        self.eigenform = self.structure_model.recuperate_bc_by_extension(self.eigenform)
 
     def plot_selected_eigenmode(self, selected_mode):
         """
@@ -218,14 +223,23 @@ class EigenvalueAnalysis(AnalysisType):
         self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
         origin_point = np.zeros(1)
 
-        geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-                    "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
-                                    np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
-                    "deformed": None}
+        # geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
+        #                             np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
+        #             "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
+        #                                         np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
+        #                             np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
+        #                                         np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
+        #             "deformed": None}
 
+
+        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"]],
+                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["x"],
+                                                self.structure_model.nodal_coordinates["x0"]),
+                                    np.subtract(self.structure_model.nodal_coordinates["y"],
+                                                self.structure_model.nodal_coordinates["y0"])],
+                    "deformed": None}
+                    
         force = {"external"     : None,
                  "base_reaction": None}
 
@@ -267,9 +281,9 @@ class EigenvalueAnalysis(AnalysisType):
             chosen_dof = 1 # should be y or z
             dofs_per_node = 6
             start = chosen_dof
-            stop = len(self.eigenform[:][0])
+            stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
             step = dofs_per_node
-            self.structure_model.nodal_coordinates["x"] = self.eigenform[start:stop:step]
+            self.structure_model.nodal_coordinates["x"] = self.eigenform[start:stop+1:step]
             
             #self.structure_model.nodal_coordinates["x"] = self.eigenform[::6]
 
@@ -278,14 +292,23 @@ class EigenvalueAnalysis(AnalysisType):
 
         self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
 
-        origin_point = np.zeros(1)
-        origin_vector = np.zeros(len(self.eigenform))
+        # origin_point = np.zeros(1)
+        # origin_vector = np.zeros(len(self.eigenform))
 
-        geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-                    "deformation": [np.vstack((origin_vector, self.structure_model.nodal_coordinates["x"])),
-                                    np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
+        # geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
+        #                             np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
+        #             "deformation": [np.vstack((origin_vector, self.structure_model.nodal_coordinates["x"])),
+        #                             np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
+        #                                         np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
+        #             "deformed": None}
+
+        # NOTE: bc dofs should already be recoperated
+        # TODO: check if an origin point shift or extension still needed
+        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    np.subtract(self.structure_model.nodal_coordinates["y"],
+                                                self.structure_model.nodal_coordinates["y0"])],
                     "deformed": None}
 
         force = {"external"     : None,
