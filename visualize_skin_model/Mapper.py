@@ -40,16 +40,14 @@ class Mapper:
             self.interpolate_dofs(mid_z, floor.nodes, self.line_structure)
 
     def map_line_structure_to_interpolated_line_structure(self):
-        mid_z_prev = 0
-        for floor in self.structure.floors:
+        mid_z_prev = sum(self.structure.floors[0].z_vec) / len(self.structure.floors[0].z_vec)
+        for floor in self.structure.floors[1:]:
             mid_x = sum(floor.x_vec) / len(floor.x_vec)
             mid_y = sum(floor.y_vec) / len(floor.y_vec)
             mid_z = sum(floor.z_vec) / len(floor.z_vec)
 
-            if mid_z != mid_z_prev:
-                z_vec = np.linspace(mid_z_prev, mid_z, INTERPOLATION_DENSITY)
-            else:
-                z_vec = [mid_z]
+            z_vec = np.linspace(mid_z_prev, mid_z, INTERPOLATION_DENSITY)
+
             for z in z_vec:
                 node = Node(mid_x, mid_y, z)
                 self.interpolate_dofs(z, node, self.line_structure)
