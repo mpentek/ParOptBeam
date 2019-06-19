@@ -116,7 +116,6 @@ class Visualiser:
         plotting the deformed structure with respect to the displacement
         """
         # self.ax.cla()
-        self.mapper.map_line_structure_to_interpolated_line_structure()
         self.mapper.map_interpolated_line_structure_to_structure_floor()
         self.line_structure.apply_transformation_for_line_structure()
         self.interpolated_line_structure.apply_transformation_for_line_structure()

@@ -11,7 +11,7 @@ class Node:
         self.y = self.y0
         self.z = self.z0
     
-    def add_dofs(self, dx, dy, dz, theta_x, theta_y, theta_z):
+    def assign_dofs(self, dx, dy, dz, theta_x, theta_y, theta_z):
         self.dx = dx
         self.dy = dy
         self.dz = dz

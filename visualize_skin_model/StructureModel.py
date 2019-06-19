@@ -3,7 +3,7 @@ import numpy as np
 from visualize_skin_model.NodeModel import Node
 from sympy import Plane, Point3D
 
-CONNTOUR_DENSITY=1
+CONTOUR_DENSITY = 1
 
 
 class Floor:
@@ -23,9 +23,9 @@ class Floor:
             node = Node(x, y, z)
             self.nodes.append(node)
 
-        self.plane = Plane((self.nodes[0*CONNTOUR_DENSITY].x, self.nodes[0*CONNTOUR_DENSITY].y, self.nodes[0*CONNTOUR_DENSITY].z), 
-                           (self.nodes[1*CONNTOUR_DENSITY].x, self.nodes[1*CONNTOUR_DENSITY].y, self.nodes[1*CONNTOUR_DENSITY].z), 
-                           (self.nodes[2*CONNTOUR_DENSITY].x, self.nodes[2*CONNTOUR_DENSITY].y, self.nodes[2*CONNTOUR_DENSITY].z))    
+        self.plane = Plane((self.nodes[0 * CONTOUR_DENSITY].x, self.nodes[0 * CONTOUR_DENSITY].y, self.nodes[0 * CONTOUR_DENSITY].z),
+                           (self.nodes[1 * CONTOUR_DENSITY].x, self.nodes[1 * CONTOUR_DENSITY].y, self.nodes[1 * CONTOUR_DENSITY].z),
+                           (self.nodes[2 * CONTOUR_DENSITY].x, self.nodes[2 * CONTOUR_DENSITY].y, self.nodes[2 * CONTOUR_DENSITY].z))
 
     def print_floor(self):
         for node in self.nodes:
@@ -64,7 +64,7 @@ class Structure:
             except:
                 self.floor_height = self.structure_height/self.num_of_floors
 
-        self.densify_contour(CONNTOUR_DENSITY)
+        self.densify_contour(CONTOUR_DENSITY)
         self.print_structure_info()
         self.create_floors()
         self.create_frames()
