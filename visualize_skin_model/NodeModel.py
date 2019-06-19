@@ -1,6 +1,7 @@
 from math import sin, cos
 import numpy as np
 
+
 class Node:
     def __init__(self, x, y, z):
         self.x0 = x

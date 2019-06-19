@@ -5,13 +5,13 @@ from visualize_skin_model.NodeModel import Node
 class LineStructure:
     def __init__(self, structure_file=None):
         """
-        intializing line structure with eigenform
+        initializing line structure with eigenform
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [],[],[] 
         self.dx_vec, self.dy_vec, self.dz_vec = [],[],[] 
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [],[],[] 
-        if structure_file!=None:
+        if structure_file is not None:
             with open(structure_file) as json_file:
                 data = json.load(json_file)
                 self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
