@@ -1,17 +1,17 @@
 import json
-import numpy as np
-from NodeModel import Node
+from visualize_skin_model.NodeModel import Node
+
 
 class LineStructure:
     def __init__(self, structure_file=None):
         """
-        intializing line structure with eigenform
+        initializing line structure with eigenform
         """
         self.nodes = []
-        self.x_vec, self.y_vec, self.z_vec = [],[],[] 
-        self.dx_vec, self.dy_vec, self.dz_vec = [],[],[] 
-        self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [],[],[] 
-        if structure_file!=None:
+        self.x_vec, self.y_vec, self.z_vec = [], [], []
+        self.dx_vec, self.dy_vec, self.dz_vec = [], [], []
+        self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
+        if structure_file is not None:
             with open(structure_file) as json_file:
                 data = json.load(json_file)
                 self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
@@ -42,14 +42,14 @@ class LineStructure:
             theta_x = self.dofs[int(i*self.num_of_dofs_per_node+3)]
             theta_y = self.dofs[int(i*self.num_of_dofs_per_node+4)]
             theta_z = self.dofs[int(i*self.num_of_dofs_per_node+5)]
-            self.nodes[i].add_dofs(dx, dy, dz, theta_x, theta_y, theta_z)  
+            self.nodes[i].assign_dofs(dx, dy, dz, theta_x, theta_y, theta_z)
             self.dx_vec.append(self.nodes[i].dx)
             self.dy_vec.append(self.nodes[i].dy)
             self.dz_vec.append(self.nodes[i].dz)
             self.theta_x_vec.append(self.nodes[i].theta_x)
             self.theta_y_vec.append(self.nodes[i].theta_y)
             self.theta_z_vec.append(self.nodes[i].theta_z)
-            #self.nodes[i].print_info()   
+            # self.nodes[i].print_info()
 
     def print_line_structure_info(self):    
         msg = "=============================================\n"

@@ -1,6 +1,6 @@
-from Visualiser import *
-from LineStructureModel import LineStructure
-from StructureModel import Structure
+from visualize_skin_model.Visualiser import *
+from visualize_skin_model.LineStructureModel import LineStructure
+from visualize_skin_model.StructureModel import Structure
 
 if __name__ == "__main__":
     json_file_name = "trapezoid.json"
