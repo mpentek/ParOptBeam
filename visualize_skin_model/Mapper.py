@@ -1,6 +1,6 @@
 from visualize_skin_model.NodeModel import Node
 from visualize_skin_model.LineStructureModel import LineStructure
-from scipy.interpolate import interp1d
+from scipy.interpolate import griddata
 from scipy.interpolate import CubicSpline
 import numpy as np
 
@@ -10,21 +10,17 @@ PRESCRIBED_2ND_ORDER_DERIV = [0, 0]
 INTERPOLATION_DENSITY = 5
 
 
+def interpolate_3d_points(v, points, values):
+    griddata(points, values, (grid_x, grid_y), method='cubic')
+
+
 def interpolate_points(v, x, y):
-    if v <= x[0]:
-        return y[0] + (y[1] - y[0]) / (x[1] - x[0]) * (v - x[0])
-    elif v >= x[-1]:
-        return y[-2] + (y[-1] - y[-2]) / (x[-1] - x[-2]) * (v - x[-2])
-    else:
-        f = interp1d(x, y, kind='cubic')
-        return f(v)
-
-
-def interpolate_points_scipy(x, f):
-    interp_x = CubicSpline(x, f, bc_type=(
+    interp_x = CubicSpline(x, y, bc_type=(
         (DERIV_ORDER, PRESCRIBED_2ND_ORDER_DERIV[0]),
         (DERIV_ORDER, PRESCRIBED_2ND_ORDER_DERIV[1])))
-    return interp_x
+    normal = interp_x.derivative()(v)
+    print(normal)
+    return interp_x(v)
 
 
 class Mapper:
@@ -68,8 +64,6 @@ class Mapper:
                 self.interpolated_line_structure.theta_z_vec.append(node.theta_z)
 
             mid_z_prev = mid_z
-
-        self.interpolated_line_structure.print_nodal_infos()
 
     @staticmethod
     def interpolate_dofs(z, nodes, line_structure):
