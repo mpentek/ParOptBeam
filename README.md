@@ -1,2 +1,2 @@
-# hiwi_statics
+# visualize skin model
 

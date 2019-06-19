@@ -1,6 +1,6 @@
 import json
-import numpy as np
-from NodeModel import Node
+from visualize_skin_model.NodeModel import Node
+
 
 class LineStructure:
     def __init__(self, structure_file=None):
@@ -49,7 +49,7 @@ class LineStructure:
             self.theta_x_vec.append(self.nodes[i].theta_x)
             self.theta_y_vec.append(self.nodes[i].theta_y)
             self.theta_z_vec.append(self.nodes[i].theta_z)
-            #self.nodes[i].print_info()   
+            # self.nodes[i].print_info()
 
     def print_line_structure_info(self):    
         msg = "=============================================\n"
