@@ -1,5 +1,13 @@
 import numpy as np
 
+m = np.array([[10, 11, 12, 13, 14],
+              [20, 21, 22, 23, 24],
+              [30, 31, 32, 33, 34]])
+n = np.array([1, 2, 3])
+
+print(m-n[:, np.newaxis])
+print(m-n.transpose())
+
 ###
 ##
 #
