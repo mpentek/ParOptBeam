@@ -91,8 +91,12 @@ class Visualiser:
 
     def visualise_floor(self):
         for floor in self.structure.floors:
-            z = np.array([floor.z_vec, floor.z_vec])
-            self.ax.plot_wireframe(floor.x_vec, floor.y_vec, z, color='black')
+            x_vec = floor.x_vec + [floor.x_vec[0]]
+            y_vec = floor.y_vec + [floor.y_vec[0]]
+            z_vec = floor.z_vec + [floor.z_vec[0]]
+            z = np.array([z_vec, z_vec])
+
+            self.ax.plot_wireframe(x_vec, y_vec, z, color='black')
 
     def visualize_frame(self):
         for frame in self.structure.frames:
@@ -109,10 +113,12 @@ class Visualiser:
 
     def update(self):
         """
-        ploting the deformed structure with respect to the displacement
+        plotting the deformed structure with respect to the displacement
         """
         # self.ax.cla()
-        self.mapper.map_line_structure_to_structure_floor()
+        self.mapper.map_line_structure_to_interpolated_line_structure()
+        self.mapper.map_interpolated_line_structure_to_structure_floor()
         self.line_structure.apply_transformation_for_line_structure()
         self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
+        # self.structure.print_floor(2)
