@@ -212,10 +212,10 @@ class EigenvalueAnalysis(AnalysisType):
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
         if self.structure_model.category in ['SDoF','MDoFShear']:
-            self.structure_model.nodal_coordinates["x"] = np.add(self.structure_model.nodal_coordinates["x0"], self.eigenform[:,selected_mode])
+            self.structure_model.nodal_coordinates["y"] = np.add(self.structure_model.nodal_coordinates["y0"], self.eigenform[:,selected_mode])
 
         elif self.structure_model.category in ['MDoFBeam','MDoFMixed']:
-            self.structure_model.nodal_coordinates["x"] = np.add(self.structure_model.nodal_coordinates["x0"], self.eigenform[::2,selected_mode])
+            self.structure_model.nodal_coordinates["y"] = np.add(self.structure_model.nodal_coordinates["y0"], self.eigenform[::2,selected_mode])
             
         else:
             sys.exit('Wrong structural type selected for eigenmodes')
@@ -232,12 +232,12 @@ class EigenvalueAnalysis(AnalysisType):
         #             "deformed": None}
 
 
-        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
-                                    self.structure_model.nodal_coordinates["y0"]],
-                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["x"],
-                                                self.structure_model.nodal_coordinates["x0"]),
-                                    np.subtract(self.structure_model.nodal_coordinates["y"],
-                                                self.structure_model.nodal_coordinates["y0"])],
+        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["y"],
+                                                self.structure_model.nodal_coordinates["y0"]),
+                                    np.subtract(self.structure_model.nodal_coordinates["z"],
+                                                self.structure_model.nodal_coordinates["z0"])],
                     "deformed": None}
                     
         force = {"external"     : None,
@@ -268,29 +268,42 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
 
-        if self.structure_model.category in ['SDoF','MDoFShear']:
-            self.structure_model.nodal_coordinates["x"] = self.eigenform
-
-        elif self.structure_model.category in ['MDoFBeam','MDoF2DMixed']:
-            self.structure_model.nodal_coordinates["x"] = self.eigenform[::2]
+        if self.structure_model.category in ['MDoF2DMixed']:
+            self.structure_model.nodal_coordinates["y"] = self.eigenform[::2]
 
         elif self.structure_model.category in ['MDoF3DMixed']:
-            # TODO: make this generic
+            # TODO: make this generic and avoid code duplication
             # x, y, z, alpha, beta, gamma
             # slicing: start:stop:step
-            chosen_dof = 1 # should be y or z
+
+            # for x
+            chosen_dof = 0
             dofs_per_node = 6
             start = chosen_dof
             stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
             step = dofs_per_node
             self.structure_model.nodal_coordinates["x"] = self.eigenform[start:stop+1:step]
-            
-            #self.structure_model.nodal_coordinates["x"] = self.eigenform[::6]
+
+            # for y
+            chosen_dof = 1
+            dofs_per_node = 6
+            start = chosen_dof
+            stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
+            step = dofs_per_node
+            self.structure_model.nodal_coordinates["y"] = self.eigenform[start:stop+1:step]
+
+            # for z
+            chosen_dof = 2
+            dofs_per_node = 6
+            start = chosen_dof
+            stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
+            step = dofs_per_node
+            self.structure_model.nodal_coordinates["z"] = self.eigenform[start:stop+1:step]
 
         else:
             sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
 
-        self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
+        # self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
 
         # origin_point = np.zeros(1)
         # origin_vector = np.zeros(len(self.eigenform))
@@ -304,12 +317,20 @@ class EigenvalueAnalysis(AnalysisType):
 
         # NOTE: bc dofs should already be recoperated
         # TODO: check if an origin point shift or extension still needed
+
+        # NOTE: this should be the correct way        
         geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
-                                    self.structure_model.nodal_coordinates["y0"]],
-                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["x"],
+                                                self.structure_model.nodal_coordinates["x0"][:, np.newaxis]),
                                     np.subtract(self.structure_model.nodal_coordinates["y"],
-                                                self.structure_model.nodal_coordinates["y0"])],
+                                                self.structure_model.nodal_coordinates["y0"][:, np.newaxis]),
+                                    np.subtract(self.structure_model.nodal_coordinates["z"],
+                                                self.structure_model.nodal_coordinates["z0"][:, np.newaxis])],
                     "deformed": None}
+
+
 
         force = {"external"     : None,
                  "base_reaction": None}

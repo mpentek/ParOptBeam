@@ -113,10 +113,11 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
         geometry["deformed"] = [np.add(geometry["undeformed"][0], geometry["deformation"][0] * scaling["deformation"]),
                                 np.add(geometry["undeformed"][1], geometry["deformation"][1] * scaling["deformation"])]
     except:
-        geometry["deformed"] = [np.add(geometry["undeformed"][0][:,np.newaxis], geometry["deformation"][0] * scaling["deformation"]),
-                                np.add(geometry["undeformed"][1], geometry["deformation"][1] * scaling["deformation"])]
-        # geometry["deformed"] = [np.add(geometry["undeformed"][0], geometry["deformation"][0] * scaling["deformation"]),
-        #                         np.add(geometry["undeformed"][1], geometry["deformation"][1] * scaling["deformation"])]
+        # NOTE: now donw for 0-x, 1-y, 2-z DoFs
+        # TODO: make consistent and generic
+        geometry["deformed"] = [np.add(geometry["deformation"][0] * scaling["deformation"], geometry["undeformed"][0][:, np.newaxis]),
+                                np.add(geometry["deformation"][1] * scaling["deformation"], geometry["undeformed"][1][:, np.newaxis]),
+                                np.add(geometry["deformation"][2] * scaling["deformation"], geometry["undeformed"][2][:, np.newaxis])]
         pass
     # Axis, Grid and Label
 
@@ -127,12 +128,12 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     ax.set_ylabel('y')
        
     # set axes, grid
-    ax.set_xlim(plot_limits["x"][0], plot_limits["x"][1])   
+    #ax.set_xlim(plot_limits["x"][0], plot_limits["x"][1])   
     
     # PMT NOTE: manually overwriding:
     #ax.set_xlim(-0.00035, 0.00035)
 
-    ax.set_ylim(plot_limits["y"][0], plot_limits["y"][1])
+    #ax.set_ylim(plot_limits["y"][0], plot_limits["y"][1])
     # ax.set_xticks(np.arange(xmin, xmax, 1)) 
     # ax.set_yticks(np.arange(ymin, ymax, 1))
     
@@ -176,12 +177,18 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
             # forces are None
             pass
     
+    
+    # TODO: make generic and compatible with all possible DoFs
     # multiple func in one plot
-    elif (n_data < 4):        
+    elif (n_data < 4):       
         for i in range(n_data):
             # TODO not using current formatting yet, needs update
-            plt.plot(geometry["deformed"][0][:,i], 
-                 geometry["deformed"][1], label="mode "+ str(i+1),
+            plt.plot(
+                 # undeformed - 0 - x - londituginal coordinates
+                 geometry["undeformed"][0][:], 
+                 # deformed - 1 - y - trnasversal coordinates
+                 geometry["deformed"][1][:,i],
+                 label="mode "+ str(i+1),
                  color=LINE_TYPE_SETUP["color"][i+1], 
                  linestyle=LINE_TYPE_SETUP["linestyle"][i+1], 
                  marker = LINE_TYPE_SETUP["marker"][i+1],
