@@ -120,4 +120,4 @@ class Visualiser:
         self.line_structure.apply_transformation_for_line_structure()
         self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
-        # self.structure.print_floor(2)
+        self.structure.print_floor_normal(2)

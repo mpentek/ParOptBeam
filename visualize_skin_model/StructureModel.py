@@ -12,7 +12,7 @@ class Floor:
         creating single floor based on the given floor geometry with the floor height
         """
         self.nodes = []
-        self.x_vec, self.y_vec, self.z_vec = [],[],[]
+        self.x_vec, self.y_vec, self.z_vec = [], [], []
         for point in floor_geometry:
             x = point["x"]
             y = point["y"]
@@ -23,22 +23,26 @@ class Floor:
             node = Node(x, y, z)
             self.nodes.append(node)
 
-        self.plane = Plane((self.nodes[0 * CONTOUR_DENSITY].x, self.nodes[0 * CONTOUR_DENSITY].y, self.nodes[0 * CONTOUR_DENSITY].z),
-                           (self.nodes[1 * CONTOUR_DENSITY].x, self.nodes[1 * CONTOUR_DENSITY].y, self.nodes[1 * CONTOUR_DENSITY].z),
-                           (self.nodes[2 * CONTOUR_DENSITY].x, self.nodes[2 * CONTOUR_DENSITY].y, self.nodes[2 * CONTOUR_DENSITY].z))
+        self.plane = Plane(
+            (self.nodes[0 * CONTOUR_DENSITY].x, self.nodes[0 * CONTOUR_DENSITY].y, self.nodes[0 * CONTOUR_DENSITY].z),
+            (self.nodes[1 * CONTOUR_DENSITY].x, self.nodes[1 * CONTOUR_DENSITY].y, self.nodes[1 * CONTOUR_DENSITY].z),
+            (self.nodes[2 * CONTOUR_DENSITY].x, self.nodes[2 * CONTOUR_DENSITY].y, self.nodes[2 * CONTOUR_DENSITY].z))
 
     def print_floor(self):
         for node in self.nodes:
             node.print_info()
 
+    def print_floor_normal(self):
+        print(self.plane.normal_vector)
+
 
 class Frame:
-    def __init__ (self, floors, index):
+    def __init__(self, floors, index):
         """
         connecting all points from the same geometry point for each floor
-        """ 
+        """
         self.nodes = []
-        self.x_vec, self.y_vec, self.z_vec = [],[],[]
+        self.x_vec, self.y_vec, self.z_vec = [], [], []
         for floor in floors:
             node = floor.nodes[index]
             self.nodes.append(node)
@@ -62,14 +66,14 @@ class Structure:
             try:
                 self.floor_height = data["floor_height"]
             except:
-                self.floor_height = self.structure_height/self.num_of_floors
+                self.floor_height = self.structure_height / self.num_of_floors
 
         self.densify_contour(CONTOUR_DENSITY)
         self.print_structure_info()
         self.create_floors()
         self.create_frames()
 
-    def print_structure_info(self):    
+    def print_structure_info(self):
         msg = "=============================================\n"
         msg += "STRUCTURE MODEL INFO \n"
         msg += "HEIGHT:\t" + str(self.structure_height) + "\n"
@@ -80,14 +84,14 @@ class Structure:
 
     def create_floors(self):
         current_height = 0.0
-        while current_height <= self.structure_height:       
+        while current_height <= self.structure_height:
             floor = Floor(self.floor_geometry, current_height)
             self.floors.append(floor)
             current_height += self.floor_height
-        if current_height !=self.structure_height:
+        if current_height <= self.structure_height:
             floor = Floor(self.floor_geometry, self.structure_height)
             self.floors.append(floor)
-       
+
     def create_frames(self):
         for i in range(len(self.floor_geometry)):
             frame = Frame(self.floors, i)
@@ -100,18 +104,18 @@ class Structure:
                 new_floor_geometry.append(self.floor_geometry[i])
 
                 new_floor_geometry += self._get_equidistant_points(
-                        [self.floor_geometry[i % len(self.floor_geometry)]["x"],
-                         self.floor_geometry[i % len(self.floor_geometry)]["y"]],
-                        [self.floor_geometry[(i+1) % len(self.floor_geometry)]["x"],
-                         self.floor_geometry[(i+1) % len(self.floor_geometry)]["y"]],
-                        parts)
+                    [self.floor_geometry[i % len(self.floor_geometry)]["x"],
+                     self.floor_geometry[i % len(self.floor_geometry)]["y"]],
+                    [self.floor_geometry[(i + 1) % len(self.floor_geometry)]["x"],
+                     self.floor_geometry[(i + 1) % len(self.floor_geometry)]["y"]],
+                    parts)
 
             self.floor_geometry = new_floor_geometry
 
     @staticmethod
     def _get_equidistant_points(p1, p2, parts):
-        return [{"x": val1, "y": val2} for val1, val2 in zip(np.linspace(p1[0], p2[0], parts+1),
-                                                             np.linspace(p1[1], p2[1], parts+1))]
+        return [{"x": val1, "y": val2} for val1, val2 in zip(np.linspace(p1[0], p2[0], parts + 1),
+                                                             np.linspace(p1[1], p2[1], parts + 1))]
 
     def apply_transformation_for_structure(self):
         for floor in self.floors:
@@ -120,6 +124,12 @@ class Structure:
                 floor.x_vec[i] = floor.nodes[i].x
                 floor.y_vec[i] = floor.nodes[i].y
                 floor.z_vec[i] = floor.nodes[i].z
+            floor.plane = Plane((floor.nodes[0 * CONTOUR_DENSITY].x, floor.nodes[0 * CONTOUR_DENSITY].y,
+                                 floor.nodes[0 * CONTOUR_DENSITY].z),
+                                (floor.nodes[1 * CONTOUR_DENSITY].x, floor.nodes[1 * CONTOUR_DENSITY].y,
+                                 floor.nodes[1 * CONTOUR_DENSITY].z),
+                                (floor.nodes[2 * CONTOUR_DENSITY].x, floor.nodes[2 * CONTOUR_DENSITY].y,
+                                 floor.nodes[2 * CONTOUR_DENSITY].z))
 
         for frame in self.frames:
             for i in range(len(frame.nodes)):
@@ -131,6 +141,9 @@ class Structure:
     def print_floor(self, floor_id):
         print("Printing Floor: " + str(floor_id))
         self.floors[floor_id].print_floor()
+
+    def print_floor_normal(self, floor_id):
+        self.floors[floor_id].print_floor_normal()
 
 
 if __name__ == "__main__":
