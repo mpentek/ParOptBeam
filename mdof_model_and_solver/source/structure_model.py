@@ -166,33 +166,26 @@ class StraightBeam(object):
 
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
+
+        self.nodal_coordinates = {"x0": length_coords,
+                            # all zeroes as it is being centered and undeformed - user defined center
+                            "y0": np.zeros(len(length_coords)),
+                            "z0": np.zeros(len(length_coords)),
+                            "a0": np.zeros(len(length_coords)),
+                            "b0": np.zeros(len(length_coords)),
+                            "g0": np.zeros(len(length_coords)),
+                            # placeholders for nodal dofs - will be overwritten during analysis
+                            "y" : np.zeros(len(length_coords)),
+                            "z" : np.zeros(len(length_coords)),
+                            "a" : np.zeros(len(length_coords)),
+                            "b" : np.zeros(len(length_coords)),
+                            "g" : np.zeros(len(length_coords))}
+
         if self.domain_size == '2D':
-            self.nodal_coordinates = {"x0": length_coords,
-                                      # all zeroes as it is being centered and undeformed
-                                      "y0": np.zeros(len(length_coords)),
-                                      "g0": np.zeros(len(length_coords)),
-                                      # placeholders for nodal dofs
-                                      "x": None,
-                                      "y": None,
-                                      "g": None}
             self.dofs_per_node = 3
             # TODO: to deprecate, for now kept for plotting
             self.category = 'MDoF2DMixed'
         elif self.domain_size == '3D':
-            self.nodal_coordinates = {"x0": length_coords,
-                                      # all zeroes as it is being centered and undeformed
-                                      "y0": np.zeros(len(length_coords)),
-                                      "z0": np.zeros(len(length_coords)),
-                                      "a0": np.zeros(len(length_coords)),
-                                      "b0": np.zeros(len(length_coords)),
-                                      "g0": np.zeros(len(length_coords)),
-                                      # placeholders for nodal dofs
-                                      "x": None,
-                                      "y": None,
-                                      "z": None,
-                                      "a": None,
-                                      "b": None,
-                                      "g": None}
             self.dofs_per_node = 6
             # TODO: to deprecate, for now kept for plotting
             self.category = 'MDoF3DMixed'
@@ -305,17 +298,89 @@ class StraightBeam(object):
 
     def __get_el_mass_2D(self):
 
-        # TODO: formulation not correct, update based upon correct 3D version
+        """
+        Getting the consistant mass matrix based on analytical integration
 
-        length = self.parameters['lx_i']
+        USING the consistent mass formulation
+
+        mass values for one level
+        VERSION 3: from Appendix A - Straight Beam Element Matrices - page 228
+        https://link.springer.com/content/pdf/bbm%3A978-3-319-56493-7%2F1.pdf
+
+        Adaptation of the 3D version to 2D
+        """
+
         m_const = self.parameters['rho'] * self.parameters['a'] * self.parameters['lx_i']
 
-        m_beam_elem = m_const * 1/420 * np.array([[156, 22*length, 54,   -13*length],
-                                                  [22*length, 4*length**2, 13*length, -3*length**2],
-                                                  [54, 13*length, 156, -22*length],
-                                                  [-13*length, -3*length**2, -22*length, 4*length**2]])
+        #
+        # mass values for one level
+        # define component-wise to have enable better control for various optimization parameters
 
-        return m_beam_elem
+        # axial inertia - along axis x - here marked as x
+        m_x = m_const / 6.0 
+        m_x_11 = 2.
+        m_x_12 = 1.
+        m_el_x = m_x * np.array([[m_x_11, m_x_12],
+                                 [m_x_12, m_x_11]])
+
+        # bending - inertia along axis y, rotations around axis z - here marked as gamma - g
+        # translation
+        Py = self.parameters['py']
+        m_yg = m_const / 210 / (1+Py)**2        
+        #
+        m_yg_11 = 70*Py**2 + 147*Py + 78
+        m_yg_12 = (35*Py**2 + 77*Py + 44) * self.parameters['lx_i'] / 4
+        m_yg_13 = 35*Py**2 + 63*Py + 27
+        m_yg_14 = -(35*Py**2 + 63*Py + 26) * self.parameters['lx_i'] / 4
+        #
+        m_yg_22 = (7*Py**2 + 14*Py + 8) * self.parameters['lx_i'] **2 / 4
+        m_yg_23 = - m_yg_14 
+        m_yg_24 = -(7*Py**2 + 14*Py + 6) * self.parameters['lx_i'] **2 / 4
+        #
+        m_yg_33 = m_yg_11
+        m_yg_34 = -m_yg_12
+        #
+        m_yg_44 = m_yg_22
+        #
+        m_el_yg_trans = m_yg * np.array([[m_yg_11, m_yg_12, m_yg_13, m_yg_14],
+                                         [m_yg_12, m_yg_22, m_yg_23, m_yg_24],
+                                         [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
+                                         [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
+        # rotation
+        m_yg = self.parameters['rho']*self.parameters['iz'] / 30 / (1+Py)**2 / self.parameters['lx_i']        
+        #
+        m_yg_11 = 36
+        m_yg_12 = -(15*Py-3) * self.parameters['lx_i']
+        m_yg_13 = -m_yg_11
+        m_yg_14 = m_yg_12
+        #
+        m_yg_22 = (10*Py**2 + 5*Py + 4) * self.parameters['lx_i'] **2
+        m_yg_23 = - m_yg_12
+        m_yg_24 = (5*Py**2 - 5*Py -1) * self.parameters['lx_i'] **2
+        #
+        m_yg_33 = m_yg_11
+        m_yg_34 = - m_yg_12
+        #
+        m_yg_44 = m_yg_22
+        #
+        m_el_yg_rot = m_yg * np.array([[m_yg_11, m_yg_12, m_yg_13, m_yg_14],
+                                       [m_yg_12, m_yg_22, m_yg_23, m_yg_24],
+                                       [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
+                                       [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
+
+        # sum up translation and rotation
+        m_el_yg = m_el_yg_trans + m_el_yg_rot
+
+        # assemble all components
+        m_el = np.array([[m_el_x[0][0], 0., 0.,                 m_el_x[0][1], 0., 0.],
+                         [0., m_el_yg[0][0], m_el_yg[0][1],     0., m_el_yg[0][2], m_el_yg[0][3]],
+                         [0., m_el_yg[0][1], m_el_yg[1][1],     0., m_el_yg[1][2], m_el_yg[1][3]],
+                         
+                         [m_el_x[1][0], 0., 0.,                 m_el_x[1][1], 0., 0.],
+                         [0., m_el_yg[0][2], m_el_yg[1][2],     0., m_el_yg[2][2], m_el_yg[2][3]],
+                         [0., m_el_yg[0][3], m_el_yg[1][3],     0., m_el_yg[2][3], m_el_yg[3][3]]])
+
+        return m_el
 
 
     def __get_el_mass_3D(self):
@@ -475,21 +540,57 @@ class StraightBeam(object):
 
     def __get_el_stiffness_2D(self):
         
-        # TODO: formulation not correct, update based upon correct 3D version
+        """
+        stiffness values for one level
+        VERSION 2
+        
+        NOTE: from http://homes.civil.aau.dk/jc/FemteSemester/Beams3D.pdf
+        seems to be a typo in 1-105 and 1-106 as a division with l**3 instead of l**3 should take place
+        implemented mass matrices similar to the stiffness one
+        
+        Adaptation of the 3D version to 2D
+        """
 
-        length = self.parameters['lx_i']
-
-        # beam stiffness
+        # axial stiffness - along axis x - here marked as x
+        k_x = self.parameters['e']*self.parameters['a']/self.parameters['lx_i']
+        k_x_11 = 1.0
+        k_x_12 = -1.0
+        k_el_x = k_x * np.array([[k_x_11, k_x_12],
+                                 [k_x_12, k_x_11]])
+        
+        # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
         beta_yg = self.parameters['py']
-        k_beam = self.parameters['e']*self.parameters['iz']/(1+beta_yg)/self.parameters['lx_i']**3
+        k_yg = self.parameters['e']*self.parameters['iz']/(1+beta_yg)/self.parameters['lx_i']**3
+        #
+        k_yg_11 = 12.
+        k_yg_12 = 6. * self.parameters['lx_i']
+        k_yg_13 = -k_yg_11
+        k_yg_14 = k_yg_12
+        #
+        k_yg_22 = (4.+beta_yg) * self.parameters['lx_i'] **2
+        k_yg_23 = -k_yg_12
+        k_yg_24 = (2-beta_yg) * self.parameters['lx_i'] ** 2
+        #
+        k_yg_33 = k_yg_11
+        k_yg_34 = -k_yg_12
+        #
+        k_yg_44 = k_yg_22
+        #
+        k_el_yg = k_yg * np.array([[k_yg_11, k_yg_12, k_yg_13, k_yg_14],
+                                   [k_yg_12, k_yg_22, k_yg_23, k_yg_24],
+                                   [k_yg_13, k_yg_23, k_yg_33, k_yg_34],
+                                   [k_yg_14, k_yg_24, k_yg_34, k_yg_44]])
 
-        # stifness values for one level
-        k_beam_elem = k_beam * 1/(1+beta_yg) * np.array([[12,     6 * length,         -12,     6 * length],
-                                                      [6 * length, (4+beta_yg) * length **2, -6 * length, 2 * length ** 2],
-                                                      [-12,    -6 * length, 12,    -6 * length],
-                                                      [6 * length, 2 * length ** 2, -6 * length, (4+beta_yg) * length ** 2]])
+        # assemble all components
+        k_el = np.array([[k_el_x[0][0], 0., 0.,                 k_el_x[0][1], 0., 0.],
+                         [0., k_el_yg[0][0], k_el_yg[0][1],     0., k_el_yg[0][2], k_el_yg[0][3]],       
+                         [0., k_el_yg[0][1], k_el_yg[1][1],     0., k_el_yg[1][2], k_el_yg[1][3]],
+                         
+                         [k_el_x[1][0], 0., 0.,                 k_el_x[1][1], 0., 0.],
+                         [0., k_el_yg[0][2], k_el_yg[1][2],     0., k_el_yg[2][2], k_el_yg[2][3]],
+                         [0., k_el_yg[0][3], k_el_yg[1][3],     0., k_el_yg[2][3], k_el_yg[3][3]]])
 
-        return k_beam_elem
+        return k_el
 
     def __get_el_stiffness_3D(self):
         """

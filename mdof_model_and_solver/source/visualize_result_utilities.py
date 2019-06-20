@@ -28,6 +28,9 @@ import math
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from matplotlib import animation
+
+import matplotlib as mpl
+from mpl_toolkits.mplot3d import Axes3D
 '''
 Everything should boil down to 2 main visualizaiton types:
 (1) "Static" (so not animated) image
@@ -98,7 +101,7 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     # print(geometry)
     #Set up figure
     fig = plt.figure()
-    ax = fig.add_subplot(111)
+    ax = fig.gca(projection='3d') #fig.add_subplot(111)
         
     #Handover data
     # x_undef = np.zeros(len(undeformed_geometry))
@@ -115,9 +118,9 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     except:
         # NOTE: now donw for 0-x, 1-y, 2-z DoFs
         # TODO: make consistent and generic
-        geometry["deformed"] = [np.add(geometry["deformation"][0] * scaling["deformation"], geometry["undeformed"][0][:, np.newaxis]),
-                                np.add(geometry["deformation"][1] * scaling["deformation"], geometry["undeformed"][1][:, np.newaxis]),
-                                np.add(geometry["deformation"][2] * scaling["deformation"], geometry["undeformed"][2][:, np.newaxis])]
+        geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + (geometry["undeformed"][0][:, np.newaxis] + np.zeros((geometry["deformation"][0].shape))),
+                                geometry["deformation"][1] * scaling["deformation"] + (geometry["undeformed"][1][:, np.newaxis] + np.zeros((geometry["deformation"][1].shape))),
+                                geometry["deformation"][2] * scaling["deformation"] + (geometry["undeformed"][2][:, np.newaxis] + np.zeros((geometry["deformation"][2].shape)))]
         pass
     # Axis, Grid and Label
 
@@ -181,13 +184,21 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     # TODO: make generic and compatible with all possible DoFs
     # multiple func in one plot
     elif (n_data < 4):       
+        ax.plot(geometry["undeformed"][0], 
+            geometry["undeformed"][1], 
+            geometry["undeformed"][2], 
+            label='undeformed',
+            color=LINE_TYPE_SETUP["color"][0], 
+            linestyle=LINE_TYPE_SETUP["linestyle"][0], 
+            marker = LINE_TYPE_SETUP["marker"][0],
+            markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+            markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+            markersize=LINE_TYPE_SETUP["markersize"][0])
         for i in range(n_data):
             # TODO not using current formatting yet, needs update
-            plt.plot(
-                 # undeformed - 0 - x - londituginal coordinates
-                 geometry["undeformed"][0][:], 
-                 # deformed - 1 - y - trnasversal coordinates
-                 geometry["deformed"][1][:,i],
+            ax.plot(geometry["deformed"][0][:,i], 
+                 geometry["deformed"][1][:,i], 
+                 geometry["deformed"][2][:,i], 
                  label="mode "+ str(i+1),
                  color=LINE_TYPE_SETUP["color"][i+1], 
                  linestyle=LINE_TYPE_SETUP["linestyle"][i+1], 

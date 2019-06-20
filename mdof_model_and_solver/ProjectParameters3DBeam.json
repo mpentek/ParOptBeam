@@ -11,8 +11,8 @@
             "geometry": {
                 "length_x": 180.0 ,
                 "number_of_elements": 25,
-                "length_y": 45.0,
-                "length_z": 30.0
+                "length_y": 30.0,
+                "length_z": 45.0
             }
         },
         "boundary_conditions": "free-fixed"

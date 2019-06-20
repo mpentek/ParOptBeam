@@ -232,9 +232,12 @@ class EigenvalueAnalysis(AnalysisType):
         #             "deformed": None}
 
 
-        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["y0"],
+        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"],
                                     self.structure_model.nodal_coordinates["z0"]],
-                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["y"],
+                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["x"],
+                                                self.structure_model.nodal_coordinates["x0"]),
+                                    np.subtract(self.structure_model.nodal_coordinates["y"],
                                                 self.structure_model.nodal_coordinates["y0"]),
                                     np.subtract(self.structure_model.nodal_coordinates["z"],
                                                 self.structure_model.nodal_coordinates["z0"])],
@@ -268,37 +271,26 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
 
-        if self.structure_model.category in ['MDoF2DMixed']:
-            self.structure_model.nodal_coordinates["y"] = self.eigenform[::2]
+        if self.structure_model.domain_size == '2D':
+            # for x, y, z
+            chosen_dof_idx = [0, 1]
+            # dof label
+            dof_label = ["x", "y"]
+        elif self.structure_model.domain_size == '3D':
+            # for x, y, z
+            chosen_dof_idx = [0, 1, 2]
+            # dof label
+            dof_label = ["x", "y", "z"]
+        else:
+            sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
 
-        elif self.structure_model.category in ['MDoF3DMixed']:
-            # TODO: make this generic and avoid code duplication
-            # x, y, z, alpha, beta, gamma
-            # slicing: start:stop:step
 
-            # for x
-            chosen_dof = 0
-            dofs_per_node = 6
-            start = chosen_dof
-            stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
-            step = dofs_per_node
-            self.structure_model.nodal_coordinates["x"] = self.eigenform[start:stop+1:step]
-
-            # for y
-            chosen_dof = 1
-            dofs_per_node = 6
-            start = chosen_dof
-            stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
-            step = dofs_per_node
-            self.structure_model.nodal_coordinates["y"] = self.eigenform[start:stop+1:step]
-
-            # for z
-            chosen_dof = 2
-            dofs_per_node = 6
-            start = chosen_dof
-            stop = self.eigenform.shape[0] + chosen_dof - dofs_per_node
-            step = dofs_per_node
-            self.structure_model.nodal_coordinates["z"] = self.eigenform[start:stop+1:step]
+        if self.structure_model.category in ['MDoF2DMixed', 'MDoF3DMixed']:
+            for idx, label in zip(chosen_dof_idx, dof_label):
+                start = idx
+                step = self.structure_model.dofs_per_node
+                stop = self.eigenform.shape[0] + idx - step
+                self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
 
         else:
             sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
@@ -319,15 +311,13 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO: check if an origin point shift or extension still needed
 
         # NOTE: this should be the correct way        
+        # TODO: add some generic way to be able to subtract some non-zero origin point
         geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
                                     self.structure_model.nodal_coordinates["y0"],
                                     self.structure_model.nodal_coordinates["z0"]],
-                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["x"],
-                                                self.structure_model.nodal_coordinates["x0"][:, np.newaxis]),
-                                    np.subtract(self.structure_model.nodal_coordinates["y"],
-                                                self.structure_model.nodal_coordinates["y0"][:, np.newaxis]),
-                                    np.subtract(self.structure_model.nodal_coordinates["z"],
-                                                self.structure_model.nodal_coordinates["z0"][:, np.newaxis])],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
                     "deformed": None}
 
 

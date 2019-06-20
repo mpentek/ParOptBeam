@@ -1,12 +1,19 @@
 import numpy as np
 
-m = np.array([[10, 11, 12, 13, 14],
-              [20, 21, 22, 23, 24],
-              [30, 31, 32, 33, 34]])
-n = np.array([1, 2, 3])
+m = np.array([[10, 11, 12, 13, 14, 15],
+              [20, 21, 22, 23, 24, 25],
+              [30, 31, 32, 33, 34, 35]]).transpose()
+n = np.array([0, 1, 2, 3, 4, 5])
 
-print(m-n[:, np.newaxis])
-print(m-n.transpose())
+v = np.zeros((m.shape))
+print(v)
+
+n = n[:, np.newaxis]
+
+w = n + v
+print(n)
+print(w)
+print(w+m)
 
 ###
 ##
