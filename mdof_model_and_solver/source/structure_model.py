@@ -99,31 +99,31 @@ class StraightBeam(object):
                      '\"pinned-fixed\"', '\"fixed-free\"', '\"free-fixed\"']
 
     BC_DOFS = {
-        '2D': {'\"fixed-fixed\"'    : [0, 1, 2, -3, -2, -1],
-               '\"pinned-pinned\"'  : [0, 1, -5, -4],
-               '\"fixed-pinned\"'   : [0, 1, 2, -5, -4],
-               '\"pinned-fixed\"'   : [0, 1, -3, -2, -1],
-               '\"fixed-free\"'     : [0, 1, 2],
-               '\"free-fixed\"'     : [-3, -2, -1]
+        '2D': {'\"fixed-fixed\"': [0, 1, 2, -3, -2, -1],
+               '\"pinned-pinned\"': [0, 1, -5, -4],
+               '\"fixed-pinned\"': [0, 1, 2, -5, -4],
+               '\"pinned-fixed\"': [0, 1, -3, -2, -1],
+               '\"fixed-free\"': [0, 1, 2],
+               '\"free-fixed\"': [-3, -2, -1]
                },
-        '3D': {'\"fixed-fixed\"'    : [0, 1, 2, 3, 4, 5, -6, -5, -4, -3, -2, -1],
-               '\"pinned-pinned\"'  : [0, 1, 2, -6, -5, -4],
-               '\"fixed-pinned\"'   : [0, 1, 2, 3, 4, 5, -6, -5, -4],
-               '\"pinned-fixed\"'   : [0, 1, 2, -6, -5, -4, -3, -2, -1],
-               '\"fixed-free\"'     : [0, 1, 2, 3, 4, 5],
-               '\"free-fixed\"'     : [-6, -5, -4, -3, -2, -1]
+        '3D': {'\"fixed-fixed\"': [0, 1, 2, 3, 4, 5, -6, -5, -4, -3, -2, -1],
+               '\"pinned-pinned\"': [0, 1, 2, -6, -5, -4],
+               '\"fixed-pinned\"': [0, 1, 2, 3, 4, 5, -6, -5, -4],
+               '\"pinned-fixed\"': [0, 1, 2, -6, -5, -4, -3, -2, -1],
+               '\"fixed-free\"': [0, 1, 2, 3, 4, 5],
+               '\"free-fixed\"': [-6, -5, -4, -3, -2, -1]
                }}
 
-    DOFS_PER_NODE = {'2D' : 3, 
-                     '3D' : 6}
+    DOFS_PER_NODE = {'2D': 3,
+                     '3D': 6}
 
-    DOF_LABELS = {'2D' : ['x', 'y', 'g'],
-                  '3D' : ['x', 'y', 'z', 'a', 'b', 'g']}
+    DOF_LABELS = {'2D': ['x', 'y', 'g'],
+                  '3D': ['x', 'y', 'z', 'a', 'b', 'g']}
 
     NODES_PER_LEVEL = 2
 
     def __init__(self, parameters):
-              
+
         # TODO: add domain size check
         self.domain_size = parameters["model_parameters"]["domain_size"]
 
@@ -131,15 +131,15 @@ class StraightBeam(object):
         # NOTE: for now using the assumption of the prismatic homogenous isotropic beam
         self.parameters = {
             # material
-            'rho'   : parameters["model_parameters"]["system_parameters"]["material"]["density"],
-            'e'     : parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
-            'nu'    : parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
-            'zeta'  : parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
+            'rho': parameters["model_parameters"]["system_parameters"]["material"]["density"],
+            'e': parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
+            'nu': parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
+            'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
-            'lx'    : parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
-            'ly'    : parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
-            'lz'    : parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            'n_el'  : parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'lx': parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
+            'ly': parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
+            'lz': parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
+            'n_el': parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
@@ -180,33 +180,36 @@ class StraightBeam(object):
             np.arange(self.parameters['n_el']+1)
 
         self.nodal_coordinates = {"x0": length_coords,
-                            # all zeroes as it is being centered and undeformed - user defined center
-                            "y0": np.zeros(len(length_coords)),
-                            "z0": np.zeros(len(length_coords)),
-                            "a0": np.zeros(len(length_coords)),
-                            "b0": np.zeros(len(length_coords)),
-                            "g0": np.zeros(len(length_coords)),
-                            # placeholders for nodal dofs - will be overwritten during analysis
-                            "y" : np.zeros(len(length_coords)),
-                            "z" : np.zeros(len(length_coords)),
-                            "a" : np.zeros(len(length_coords)),
-                            "b" : np.zeros(len(length_coords)),
-                            "g" : np.zeros(len(length_coords))}
+                                  # all zeroes as it is being centered and undeformed - user defined center
+                                  "y0": np.zeros(len(length_coords)),
+                                  "z0": np.zeros(len(length_coords)),
+                                  "a0": np.zeros(len(length_coords)),
+                                  "b0": np.zeros(len(length_coords)),
+                                  "g0": np.zeros(len(length_coords)),
+                                  # placeholders for nodal dofs - will be overwritten during analysis
+                                  "y": np.zeros(len(length_coords)),
+                                  "z": np.zeros(len(length_coords)),
+                                  "a": np.zeros(len(length_coords)),
+                                  "b": np.zeros(len(length_coords)),
+                                  "g": np.zeros(len(length_coords))}
 
         self.n_nodes = self.parameters['n_el']+1
 
         # TODO: make BC handling cleaner and compact
-        self.all_dofs_global = np.arange(self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size])
-        bc = '\"'+ parameters["model_parameters"]["boundary_conditions"] + '\"'
+        self.all_dofs_global = np.arange(
+            self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size])
+        bc = '\"' + \
+            parameters["model_parameters"]["boundary_conditions"] + '\"'
         if bc in StraightBeam.AVAILABLE_BCS:
             self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc]
         else:
-            err_msg =  "The BC for input \"" + parameters["model_parameters"]["boundary_conditions"]
-            err_msg +=  "\" is not available \n"
+            err_msg = "The BC for input \"" + \
+                parameters["model_parameters"]["boundary_conditions"]
+            err_msg += "\" is not available \n"
             err_msg += "Choose one of: "
             err_msg += ', '.join(StraightBeam.AVAILABLE_BCS)
             raise Exception(err_msg)
-        
+
         # list copy by slicing -> [:] -> to have a copy by value
         bc_dofs_global = self.bc_dofs[:]
         for idx, dof in enumerate(bc_dofs_global):
@@ -225,7 +228,6 @@ class StraightBeam(object):
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
 
-    
     def apply_bc_by_reduction(self, matrix):
         '''
         list of dofs to apply bc's to provided by self.bc_dofs
@@ -238,11 +240,11 @@ class StraightBeam(object):
         # TODO: test
 
         # make a grid of indices on interest
-        ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep) 
+        ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
 
         return matrix[ixgrid]
 
-    def recuperate_bc_by_extension(self, matrix,axis='row'):
+    def recuperate_bc_by_extension(self, matrix, axis='row'):
         '''
         list of dofs to apply the effect of bc 
         by extension
@@ -253,7 +255,7 @@ class StraightBeam(object):
         # TODO: test
 
         # make a grid of indices on interest
-        ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep) 
+        ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
 
         # create new array with zeros the size it should be
         # with ixgrid take from existing the relevant data and copy to new
@@ -266,28 +268,28 @@ class StraightBeam(object):
             rows = matrix.shape[0]
             cols = len(self.all_dofs_global)
             # make a grid of indices on interest
-            ixgrid = np.ix_(np.arange(matrix.shape[0]),self.bcs_to_keep)
+            ixgrid = np.ix_(np.arange(matrix.shape[0]), self.bcs_to_keep)
         elif axis == 'both':
             rows = len(self.all_dofs_global)
             cols = rows
             # make a grid of indices on interest
             ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
         else:
-            err_msg =  "The extension mode with input \"" + axis
-            err_msg +=  "\" for axis is not avaialbe \n"
+            err_msg = "The extension mode with input \"" + axis
+            err_msg += "\" for axis is not avaialbe \n"
             err_msg += "Choose one of: \"row\", \"column\", \"both\""
             raise Exception(err_msg)
-       
+
         extended_matrix = np.zeros((rows, cols))
         # copy the needed element into the extended matrix
-        extended_matrix[ixgrid] = matrix 
+        extended_matrix[ixgrid] = matrix
 
         return extended_matrix
 
     def _assemble_el_into_glob(self, el_matrix):
         # global stiffness matrix initialization with zeros
         glob_matrix = np.zeros((self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size],
-                           self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size]))
+                                self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
         # fill global stiffness matix entries
         for i in range(self.parameters['n_el']):
@@ -676,7 +678,7 @@ class StraightBeam(object):
                          [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3],     0., k_el_yg[2][3], 0., 0., 0., k_el_yg[3][3]]])
 
         return k_el
-        
+
     def _get_stiffness(self):
         if self.domain_size == '2D':
             k_el = self.__get_el_stiffness_2D()
