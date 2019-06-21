@@ -1,6 +1,6 @@
 {
     "model_parameters": {
-        "domain_size": "3D",
+        "domain_size": "2D",
         "system_parameters": {
             "material": {
                 "density": 160.0,

@@ -27,6 +27,9 @@ from scipy.optimize import minimize
 from functools import partial
 import math
 
+
+# TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
+
 CUST_MAGNITUDE = 4
 
 
@@ -53,6 +56,7 @@ def shift_normalize(val, base=10**3):
 
 
 # def shape_function_lin(val): return 1-val
+
 
 # TODO: try to figure out a good relationship between exp and magnitude_difference
 def shape_function_exp(val, exp=CUST_MAGNITUDE): return (1-val)**exp
@@ -109,6 +113,14 @@ class StraightBeam(object):
                '\"fixed-free\"'     : [0, 1, 2, 3, 4, 5],
                '\"free-fixed\"'     : [-6, -5, -4, -3, -2, -1]
                }}
+
+    DOFS_PER_NODE = {'2D' : 3, 
+                     '3D' : 6}
+
+    DOF_LABELS = {'2D' : ['x', 'y', 'g'],
+                  '3D' : ['x', 'y', 'z', 'a', 'b', 'g']}
+
+    NODES_PER_LEVEL = 2
 
     def __init__(self, parameters):
               
@@ -181,22 +193,10 @@ class StraightBeam(object):
                             "b" : np.zeros(len(length_coords)),
                             "g" : np.zeros(len(length_coords))}
 
-        if self.domain_size == '2D':
-            self.dofs_per_node = 3
-            # TODO: to deprecate, for now kept for plotting
-            self.category = 'MDoF2DMixed'
-        elif self.domain_size == '3D':
-            self.dofs_per_node = 6
-            # TODO: to deprecate, for now kept for plotting
-            self.category = 'MDoF3DMixed'
-        else:
-            pass
-
-        self.nodes_per_level = 2
         self.n_nodes = self.parameters['n_el']+1
 
         # TODO: make BC handling cleaner and compact
-        self.all_dofs_global = np.arange(self.n_nodes * self.dofs_per_node)
+        self.all_dofs_global = np.arange(self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size])
         bc = '\"'+ parameters["model_parameters"]["boundary_conditions"] + '\"'
         if bc in StraightBeam.AVAILABLE_BCS:
             self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc]
@@ -286,13 +286,13 @@ class StraightBeam(object):
 
     def _assemble_el_into_glob(self, el_matrix):
         # global stiffness matrix initialization with zeros
-        glob_matrix = np.zeros((self.n_nodes * self.dofs_per_node,
-                           self.n_nodes * self.dofs_per_node))
+        glob_matrix = np.zeros((self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
         # fill global stiffness matix entries
         for i in range(self.parameters['n_el']):
-            glob_matrix[self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level,
-                        self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level] += el_matrix
+            glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+                        StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
         return glob_matrix
 
 
@@ -724,6 +724,14 @@ class StraightBeam(object):
                             [zeta_i, zeta_j])
         return a[0] * self.m + a[1] * self.k
 
+
+'''
+NOTE:
+For now backup code to see how tuning/optimization could work
+Remove once finished
+'''
+
+
 # class MDoFMixed2DModel(SimplifiedCantileverStructure):
 #     """
 #     A multi-degree-of-freedom MDoF model assuming
@@ -750,8 +758,8 @@ class StraightBeam(object):
 
 #         self.gamma = gamma
 
-#         self.dofs_per_node = 2
-#         self.nodes_per_level = 2
+#         StraightBeam.DOFS_PER_NODE[self.domain_size] = 2
+#         StraightBeam.NODES_PER_LEVEL = 2
 
 #         m = self._calculate_mass(rho, area, level_height, num_of_levels)
 #         k = self._calculate_stiffness(
@@ -829,9 +837,9 @@ class StraightBeam(object):
 
 #         # remove the fixed degrees of freedom
 #         # at first node all dofs are considered fixed for the cantilever beam
-#         # generate a list of indices 0, 1, 2,...self.dofs_per_node
+#         # generate a list of indices 0, 1, 2,...StraightBeam.DOFS_PER_NODE[self.domain_size]
 #         # go through it in reverse order to keep the numbering intact
-#         for dof in range(self.dofs_per_node)[::-1]:
+#         for dof in range(StraightBeam.DOFS_PER_NODE[self.domain_size])[::-1]:
 #             # delete corresponding row
 #             m_glob = np.delete(m_glob, dof, axis=0)
 #             # delet corresponding column
@@ -915,8 +923,8 @@ class StraightBeam(object):
 #                                   2 * 10**shear_rotation_magnitude]])
 
 #         # global stiffness matrix initialization with zeros
-#         k_glob = np.zeros(((num_of_levels+1) * self.dofs_per_node,
-#                            (num_of_levels+1) * self.dofs_per_node))
+#         k_glob = np.zeros(((num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size],
+#                            (num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
 #         # shape function values for superposition of bending and shear
 #         sf_b_val = (1-shape_function_exp(shift_normalize(
@@ -935,24 +943,24 @@ class StraightBeam(object):
 
 #         # fill global stiffness matix entries
 #         for i in range(num_of_levels):
-#             k_temp = np.zeros(((num_of_levels+1) * self.dofs_per_node,
-#                                (num_of_levels+1) * self.dofs_per_node))
+#             k_temp = np.zeros(((num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size],
+#                                (num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
 #             # beam part
-#             k_temp[self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level,
-#                    self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level] = sf_b_val * k_beam * k_beam_elem
+#             k_temp[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+#                    StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] = sf_b_val * k_beam * k_beam_elem
 #             # shear part
 
-#             k_temp[self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level,
-#                    self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level] += sf_s_val * k_shear * k_shear_elem
+#             k_temp[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+#                    StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += sf_s_val * k_shear * k_shear_elem
 
 #             k_glob += k_temp
 
 #         # remove the fixed degrees of freedom
 #         # at first node all dofs are considered fixed for the cantilever beam
-#         # generate a list of indices 0, 1, 2,...self.dofs_per_node
+#         # generate a list of indices 0, 1, 2,...StraightBeam.DOFS_PER_NODE[self.domain_size]
 #         # go through it in reverse order to keep the numbering intact
-#         for dof in range(self.dofs_per_node)[::-1]:
+#         for dof in range(StraightBeam.DOFS_PER_NODE[self.domain_size])[::-1]:
 #             # delete corresponding row
 #             k_glob = np.delete(k_glob, dof, axis=0)
 #             # delet corresponding column
@@ -1092,8 +1100,8 @@ class StraightBeam(object):
 
 #         self.gamma = gamma
 
-#         self.dofs_per_node = 6
-#         self.nodes_per_level = 2
+#         StraightBeam.DOFS_PER_NODE[self.domain_size] = 6
+#         StraightBeam.NODES_PER_LEVEL = 2
 
 #         # TODO: implement bc type for 2d, apply not in the matrix build
 #         # pass to constructor
@@ -1123,7 +1131,7 @@ class StraightBeam(object):
 #                                    '\"pinned-fixed\"', '\"fixed-free\"', '\"free-fixed\"'])
 #             raise Exception(err_msg)
 
-#         self.all_dofs_global = np.arange(0, (num_of_levels+1)*self.dofs_per_node)
+#         self.all_dofs_global = np.arange(0, (num_of_levels+1)*StraightBeam.DOFS_PER_NODE[self.domain_size])
 
 #         m = self._calculate_mass(rho, area, level_height, num_of_levels)
 #         k = self._calculate_stiffness(
@@ -1390,18 +1398,18 @@ class StraightBeam(object):
 #                          [0., m_el_yg[0][3], 0., 0., 0., m_el_yg[1][3],     0., m_el_yg[2][3], 0., 0., 0., m_el_yg[3][3]]])
 
 #         # global mass matrix initialization with zeros
-#         m_glob = np.zeros(((num_of_levels+1) * self.dofs_per_node,
-#                            (num_of_levels+1) * self.dofs_per_node))
+#         m_glob = np.zeros(((num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size],
+#                            (num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
 
 #         # fill global mass matix entries
 #         for i in range(num_of_levels):
-#             m_temp = np.zeros(((num_of_levels+1) * self.dofs_per_node,
-#                                (num_of_levels+1) * self.dofs_per_node))
+#             m_temp = np.zeros(((num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size],
+#                                (num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
 #             # beam part
-#             m_temp[self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level,
-#                    self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level] = m_el
+#             m_temp[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+#                    StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] = m_el
 
 #             m_glob += m_temp
 
@@ -1550,18 +1558,18 @@ class StraightBeam(object):
 #                          [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3],     0., k_el_yg[2][3], 0., 0., 0., k_el_yg[3][3]]])
 
 #         # global stiffness matrix initialization with zeros
-#         k_glob = np.zeros(((num_of_levels+1) * self.dofs_per_node,
-#                            (num_of_levels+1) * self.dofs_per_node))
+#         k_glob = np.zeros(((num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size],
+#                            (num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
 
 #         # fill global stiffness matix entries
 #         for i in range(num_of_levels):
-#             k_temp = np.zeros(((num_of_levels+1) * self.dofs_per_node,
-#                                (num_of_levels+1) * self.dofs_per_node))
+#             k_temp = np.zeros(((num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size],
+#                                (num_of_levels+1) * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
 #             # beam part
-#             k_temp[self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level,
-#                    self.dofs_per_node * i: self.dofs_per_node * i + self.dofs_per_node * self.nodes_per_level] = k_el
+#             k_temp[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+#                    StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] = k_el
 
 #             k_glob += k_temp
 

@@ -1,4 +1,4 @@
-#===============================================================================
+# ===============================================================================
 '''
 Project:Lecture - Structural Wind Engineering WS17-18 
         Chair of Structural Analysis @ TUM - A. Michalski, R. Wuchner, M. Pentek
@@ -20,7 +20,7 @@ Note:   UPDATE: The script has been written using publicly available information
 Created on:  22.11.2017
 Last update: 30.11.2017
 '''
-#===============================================================================
+# ===============================================================================
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -67,34 +67,40 @@ class StaticAnalysis(AnalysisType):
 
     def __init__(self, structure_model, name="StaticAnalysis"):
 
-        super().__init__(structure_model, name)   
+        super().__init__(structure_model, name)
 
     def solve(self, ext_force):
         print("Solving for ext_force in StaticAnalysis derived class \n")
         self.force = ext_force
 
         print(self.structure_model.category)
-        
+
         self.result = np.linalg.solve(self.structure_model.k, self.force)
 
-        if self.structure_model.category in ['SDoF','MDoFShear']:
+        if self.structure_model.category in ['SDoF', 'MDoFShear']:
             self.displacement = self.result
-            self.reaction = -1/2 * self.structure_model.k[0,0] * self.displacement[0] 
-           
+            self.reaction = -1/2 * \
+                self.structure_model.k[0, 0] * self.displacement[0]
+
         elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
             self.displacement = self.result[::2]
             self.rotation = self.result[1::2]
 
-            self.reaction = -1/2 * self.structure_model.k[0,0] * self.displacement[0] 
-            self.moment = -1/2 * self.structure_model.k[0,1] * self.rotation[0] 
+            self.reaction = -1/2 * \
+                self.structure_model.k[0, 0] * self.displacement[0]
+            self.moment = -1/2 * \
+                self.structure_model.k[0, 1] * self.rotation[0]
 
-            self.reaction = -1/2 * self.structure_model.k[0,0] * self.displacement[0] 
-            self.moment = -1/2 * self.structure_model.k[0,1] * self.rotation[0]
+            self.reaction = -1/2 * \
+                self.structure_model.k[0, 0] * self.displacement[0]
+            self.moment = -1/2 * \
+                self.structure_model.k[0, 1] * self.rotation[0]
 
         else:
             sys.exit('Selected structure not implemented!')
 
-        self.structure_model.nodal_coordinates["x"] = np.add(self.structure_model.nodal_coordinates["x0"], self.displacement)
+        self.structure_model.nodal_coordinates["x"] = np.add(
+            self.structure_model.nodal_coordinates["x0"], self.displacement)
         self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
 
     def plot_solve_result(self):
@@ -110,26 +116,26 @@ class StaticAnalysis(AnalysisType):
 
         origin_point = np.zeros(1)
 
-        geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
+        geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
+                                   np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
                     "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
                                                 np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
                                     np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
                                                 np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
                     "deformed": None}
 
-        force = {"external"     : [np.append(origin_point,self.force), np.zeros(len(self.force) + 1)],
+        force = {"external": [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
                  "base_reaction": [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
 
         scaling = {"deformation": 1,
                    "force": 1}
-        
-        plot_title = "Static Analysis : "      
 
-        visualize_result_utilities.plot_result(plot_title, 
+        plot_title = "Static Analysis : "
+
+        visualize_result_utilities.plot_result(plot_title,
                                                geometry,
                                                force,
-                                               scaling, 
+                                               scaling,
                                                1)
 
 
@@ -142,7 +148,7 @@ class EigenvalueAnalysis(AnalysisType):
         super().__init__(structure_model, name)
 
         # adding additional attributes to the derived class
-        self.eigenform = None  
+        self.eigenform = None
         self.frequency = None
         self.period = None
 
@@ -151,52 +157,56 @@ class EigenvalueAnalysis(AnalysisType):
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
         m = self.structure_model.apply_bc_by_reduction(self.structure_model.m)
 
-        eig_values_raw, eig_modes_raw = linalg.eigh(k, m)  
+        eig_values_raw, eig_modes_raw = linalg.eigh(k, m)
         # rad/s
         eig_values = np.sqrt(np.real(eig_values_raw))
         # 1/s = Hz
-        eig_freqs = eig_values /2. /np.pi 
+        eig_freqs = eig_values / 2. / np.pi
         # s
-        eig_pers = 1. / eig_freqs   
-        #sort eigenfrequencies
-        eig_freqs_sorted_indices = np.argsort(eig_freqs)  
+        eig_pers = 1. / eig_freqs
+        # sort eigenfrequencies
+        eig_freqs_sorted_indices = np.argsort(eig_freqs)
         ##
 
-        ## normalize results
+        # normalize results
         # http://www.colorado.edu/engineering/CAS/courses.d/Structures.d/IAST.Lect19.d/IAST.Lect19.Slides.pdf
         # normalize - unit generalized mass - slide 23
 
         [rows, columns] = eig_modes_raw.shape
-        
+
         eig_modes_norm = np.zeros((rows, columns))
 
         gen_mass_raw = np.zeros(columns)
         gen_mass_norm = np.zeros(columns)
-        
+
         print("Generalized mass should be identity")
         for i in range(len(eig_values_raw)):
-            gen_mass_raw[i] = (np.transpose(eig_modes_raw[:,i])).dot(m).dot(eig_modes_raw[:,i])
+            gen_mass_raw[i] = (np.transpose(eig_modes_raw[:, i])).dot(
+                m).dot(eig_modes_raw[:, i])
 
             unit_gen_mass_norm_fact = np.sqrt(gen_mass_raw[i])
 
-            eig_modes_norm[:,i] = eig_modes_raw[:,i]/unit_gen_mass_norm_fact
+            eig_modes_norm[:, i] = eig_modes_raw[:, i]/unit_gen_mass_norm_fact
 
-            gen_mass_norm[i] = (np.transpose(eig_modes_norm[:,i])).dot(m).dot(eig_modes_norm[:,i])
+            gen_mass_norm[i] = (np.transpose(eig_modes_norm[:, i])).dot(
+                m).dot(eig_modes_norm[:, i])
             # print("norm ", i, ": ",gen_mass_norm[i])
 
         # print("Multiplication check: thethaT dot M dot theta: ",(np.transpose(eig_modes_norm)).dot(self.structure_model.m).dot(eig_modes_norm)," numerically 0 for off-diagonal terms")
         # print()
 
-        self.eigenform = np.zeros(eig_modes_norm.shape)  
+        self.eigenform = np.zeros(eig_modes_norm.shape)
         self.frequency = np.zeros(eig_freqs.shape)
-        self.period = np.zeros(eig_pers.shape) 
+        self.period = np.zeros(eig_pers.shape)
 
         for index in range(len(eig_freqs)):
-            self.eigenform[:, index] = eig_modes_norm[:, eig_freqs_sorted_indices[index]]
-            self.frequency[index] =  eig_freqs[eig_freqs_sorted_indices[index]]
+            self.eigenform[:, index] = eig_modes_norm[:,
+                                                      eig_freqs_sorted_indices[index]]
+            self.frequency[index] = eig_freqs[eig_freqs_sorted_indices[index]]
             self.period[index] = eig_pers[eig_freqs_sorted_indices[index]]
 
-        self.eigenform = self.structure_model.recuperate_bc_by_extension(self.eigenform)
+        self.eigenform = self.structure_model.recuperate_bc_by_extension(
+            self.eigenform)
 
     def plot_selected_eigenmode(self, selected_mode):
         """
@@ -205,61 +215,49 @@ class EigenvalueAnalysis(AnalysisType):
             self.eigenform -> as displacement  
             self.frequency -> in legend
             self.period -> in legend
-            
+
         """
         selected_mode = selected_mode - 1
 
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
-        if self.structure_model.category in ['SDoF','MDoFShear']:
-            self.structure_model.nodal_coordinates["y"] = np.add(self.structure_model.nodal_coordinates["y0"], self.eigenform[:,selected_mode])
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])), 
+                            StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step][:, selected_mode]
 
-        elif self.structure_model.category in ['MDoFBeam','MDoFMixed']:
-            self.structure_model.nodal_coordinates["y"] = np.add(self.structure_model.nodal_coordinates["y0"], self.eigenform[::2,selected_mode])
-            
-        else:
-            sys.exit('Wrong structural type selected for eigenmodes')
-           
-        self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
-        origin_point = np.zeros(1)
+        # NOTE: this should be the correct way
+        # TODO: add some generic way to be able to subtract some non-zero origin point
+        # TODO: check if an origin point shift or extension still needed
 
-        # geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-        #                             np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-        #             "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
-        #                                         np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
-        #                             np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
-        #                                         np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
-        #             "deformed": None}
-
-
-        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
-                                    self.structure_model.nodal_coordinates["y0"],
-                                    self.structure_model.nodal_coordinates["z0"]],
-                    "deformation": [np.subtract(self.structure_model.nodal_coordinates["x"],
-                                                self.structure_model.nodal_coordinates["x0"]),
-                                    np.subtract(self.structure_model.nodal_coordinates["y"],
-                                                self.structure_model.nodal_coordinates["y0"]),
-                                    np.subtract(self.structure_model.nodal_coordinates["z"],
-                                                self.structure_model.nodal_coordinates["z0"])],
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
                     "deformed": None}
-                    
-        force = {"external"     : None,
+
+        force = {"external": None,
                  "base_reaction": None}
 
         scaling = {"deformation": 1,
                    "force": 1}
-          
-        plot_title = " Eigenmode: " + str(selected_mode+1) 
-        plot_title += "  Frequency: " + '{0:.2f}'.format(self.frequency[selected_mode]) 
-        plot_title += "  Period: " + '{0:.2f}'.format(self.period[selected_mode])
 
-        visualize_result_utilities.plot_result(plot_title, 
+        plot_title = " Eigenmode: " + str(selected_mode+1)
+        plot_title += "  Frequency: " + \
+            '{0:.2f}'.format(self.frequency[selected_mode])
+        plot_title += "  Period: " + \
+            '{0:.2f}'.format(self.period[selected_mode])
+
+        visualize_result_utilities.plot_result(plot_title,
                                                geometry,
                                                force,
-                                               scaling, 
+                                               scaling,
                                                1)
 
-        
     def plot_selected_first_n_eigenmodes(self, number_of_modes):
         """
         Pass to plot function:
@@ -271,76 +269,42 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
 
-        if self.structure_model.domain_size == '2D':
-            # for x, y, z
-            chosen_dof_idx = [0, 1]
-            # dof label
-            dof_label = ["x", "y"]
-        elif self.structure_model.domain_size == '3D':
-            # for x, y, z
-            chosen_dof_idx = [0, 1, 2]
-            # dof label
-            dof_label = ["x", "y", "z"]
-        else:
-            sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])), 
+                            StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
 
-
-        if self.structure_model.category in ['MDoF2DMixed', 'MDoF3DMixed']:
-            for idx, label in zip(chosen_dof_idx, dof_label):
-                start = idx
-                step = self.structure_model.dofs_per_node
-                stop = self.eigenform.shape[0] + idx - step
-                self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
-
-        else:
-            sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
-
-        # self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
-
-        # origin_point = np.zeros(1)
-        # origin_vector = np.zeros(len(self.eigenform))
-
-        # geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-        #                             np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-        #             "deformation": [np.vstack((origin_vector, self.structure_model.nodal_coordinates["x"])),
-        #                             np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
-        #                                         np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
-        #             "deformed": None}
-
-        # NOTE: bc dofs should already be recoperated
+        # NOTE: this should be the correct way
+        # TODO: add some generic way to be able to subtract some non-zero origin point
         # TODO: check if an origin point shift or extension still needed
 
-        # NOTE: this should be the correct way        
-        # TODO: add some generic way to be able to subtract some non-zero origin point
-        geometry = {"undeformed" : [self.structure_model.nodal_coordinates["x0"],
-                                    self.structure_model.nodal_coordinates["y0"],
-                                    self.structure_model.nodal_coordinates["z0"]],
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
                                     self.structure_model.nodal_coordinates["z"]],
                     "deformed": None}
 
-
-
-        force = {"external"     : None,
+        force = {"external": None,
                  "base_reaction": None}
 
         scaling = {"deformation": 1,
                    "force": 1}
         # print("Geometry: ", geometry)
         # print("Self.Nodal coordinates: ", self.structure_model.nodal_coordinates["x"])
-       
+
         plot_title = " "
         for selected_mode in range(number_of_modes):
-            plot_title += "Eigenmode " + str(selected_mode +1) + "  Frequency: " + str(np.round(self.frequency[selected_mode],3)) + "  Period: " + str(np.round(self.period[selected_mode],3)) + "\n"       
-        visualize_result_utilities.plot_result(plot_title, 
+            plot_title += "Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
+                self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n"
+        visualize_result_utilities.plot_result(plot_title,
                                                geometry,
                                                force,
-                                               scaling, 
+                                               scaling,
                                                number_of_modes)
-
-
-
 
     def animate_selected_eigenmode(self, selected_mode):
         """
@@ -354,59 +318,50 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Animating eigenmode in EigenvalueAnalysis \n")
 
-        if self.structure_model.category in ['SDoF','MDoFShear']:
-            displacement = self.eigenform[:, selected_mode]
-
-        elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-            displacement = self.eigenform[::2, selected_mode]
-
-        else:
-            sys.exit("If this error message appears, there is a bug in the code, please contact your supervisor")
-    
-       # displacement = self.eigenform[:, selected_mode]
         time_steps = 100
-        array_time = np.linspace(0, self.period[selected_mode], time_steps)
+        array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(0, self.period[selected_mode], time_steps))
 
-        displacement_time_history = [[] for i in range(len(array_time))]
-        for i in range(len(array_time)):
-            displacement_time_history[i] = [value * np.sin(
-                2 * np.pi * self.frequency[selected_mode] * array_time[i]) for value in displacement]
-          
-        self.structure_model.nodal_coordinates["x"] = [[] for i in range(len(array_time))]
-        self.structure_model.nodal_coordinates["y"] = [[] for i in range(len(array_time))]
-        for i in range(len(array_time)):
-            self.structure_model.nodal_coordinates["x"][i] = displacement_time_history[i]
-            self.structure_model.nodal_coordinates["y"][i] = self.structure_model.nodal_coordinates["y0"]
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])), 
+                            StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step][:, selected_mode][:, np.newaxis] * array_time
 
-        origin_point = np.zeros(1)
+        # for remaining dofs - case of 2D - create placeholders in correct format
+        remaining_labels = list(set(StraightBeam.DOF_LABELS['3D'])-set(StraightBeam.DOF_LABELS[self.structure_model.domain_size]))
+        for label in remaining_labels:
+            self.structure_model.nodal_coordinates[label] = np.zeros((self.structure_model.n_nodes, len(array_time)))
 
-        geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-                    "deformation": [[[] for i in range(len(array_time))], [[] for i in range(len(array_time))]],
-                    "deformed": [[[] for i in range(len(array_time))], [[] for i in range(len(array_time))]]}
+        # NOTE: this should be the correct way
+        # TODO: add some generic way to be able to subtract some non-zero origin point
+        # TODO: check if an origin point shift or extension still needed
 
-        for i in range(len(array_time)):
-           
-            geometry["deformation"][0][i] =np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"][i]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["x0"]))
-            geometry["deformation"][1][i] =np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"][i]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
 
-        force = {"external"     : None,
+        force = {"external": None,
                  "base_reaction": None}
 
         scaling = {"deformation": 1,
                    "force": 1}
-        
-        plot_title = "Eigenmode: " + str(selected_mode) 
-        plot_title += "  Frequency: " + '{0:.2f}'.format(self.frequency[selected_mode]) 
-        plot_title += "  Period: " + '{0:.2f}'.format(self.period[selected_mode])
 
-        visualize_result_utilities.animate_result(plot_title, 
-                                                 array_time,
-                                                 geometry,
-                                                 force,
-                                                 scaling)
+        plot_title = "Eigenmode: " + str(selected_mode)
+        plot_title += "  Frequency: " + \
+            '{0:.2f}'.format(self.frequency[selected_mode])
+        plot_title += "  Period: " + \
+            '{0:.2f}'.format(self.period[selected_mode])
+
+        visualize_result_utilities.animate_result(plot_title,
+                                                  array_time,
+                                                  geometry,
+                                                  force,
+                                                  scaling)
 
 
 class DynamicAnalysis(AnalysisType):
@@ -424,68 +379,71 @@ class DynamicAnalysis(AnalysisType):
 
         self.dt = dt
         self.time = time
-        self.array_time = np.arange(self.time[0], self.time[1] + self.dt, self.dt)
+        self.array_time = np.arange(
+            self.time[0], self.time[1] + self.dt, self.dt)
         rows = len(self.force)
         cols = len(self.array_time)
 
         # adding additional attributes to the derived class
-        self.displacement = np.zeros((rows, cols)) 
+        self.displacement = np.zeros((rows, cols))
         self.velocity = np.zeros((rows, cols))
-        self.acceleration = np.zeros((rows, cols)) 
+        self.acceleration = np.zeros((rows, cols))
 
         if self.force.shape[1] != len(self.array_time):
-            err_msg =  "The time step for forces does not match the time step defined"
+            err_msg = "The time step for forces does not match the time step defined"
             raise Exception(err_msg)
-       
+
         if time_integration_scheme == "GenAlpha":
-            self.solver = GeneralizedAlphaScheme(self.dt, structure_model, initial_conditions)
+            self.solver = GeneralizedAlphaScheme(
+                self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "Euler12":
             self.solver = Euler12(self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "ForwardEuler1":
-            self.solver = ForwardEuler1(self.dt, structure_model, initial_conditions)
+            self.solver = ForwardEuler1(
+                self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "BackwardEuler1":
-            self.solver = BackwardEuler1(self.dt, structure_model, initial_conditions)
-            
+            self.solver = BackwardEuler1(
+                self.dt, structure_model, initial_conditions)
+
         else:
-            err_msg =  "The requested time integration scheme \"" + time_integration_scheme 
-            err_msg +=  "\" is not available \n"
+            err_msg = "The requested time integration scheme \"" + time_integration_scheme
+            err_msg += "\" is not available \n"
             err_msg += "Choose one of: \"GenAlpha\", \"Euler12\", \"ForwardEuler1\", \"BackwardEuler1\""
             raise Exception(err_msg)
 
     def solve(self):
         print("Solving the structure for dynamic loads \n")
-        # time loop 
-        for i in range(1,len(self.array_time)): 
+        # time loop
+        for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
-            self.solver.solve_structure(self.force[:,i])
+            self.solver.solve_structure(self.force[:, i])
 
-            # appending results to the list 
-            self.displacement[:,i] = self.solver.get_displacement()
-            self.velocity[:,i] = self.solver.get_velocity()
-            self.acceleration[:,i] = self.solver.get_acceleration()
+            # appending results to the list
+            self.displacement[:, i] = self.solver.get_displacement()
+            self.velocity[:, i] = self.solver.get_velocity()
+            self.acceleration[:, i] = self.solver.get_acceleration()
 
             # update results
-            self.solver.update_structure_time_step()   
-        
- 
+            self.solver.update_structure_time_step()
+
     def plot_selected_time_step(self, selected_time_step):
         """
         Pass to plot function:
             from structure model undeformed geometry
             self.displacement -> here as time series -> select closes results to a requested time_step [s]  
-            
+
         """
 
         print("Plotting result for a selected time step in DynamicAnalysis \n")
-                
-        # find closesed time step 
+
+        # find closesed time step
         idx = (np.abs(self.array_time-selected_time_step)).argmin()
 
-         # TODO for the dynamic analysis create self.structure_model.nodal_coordinates after solve not here
-        if self.structure_model.category in ['SDoF','MDoFShear']:
-            self.structure_model.nodal_coordinates["x"] = self.displacement[:,idx]
+        # TODO for the dynamic analysis create self.structure_model.nodal_coordinates after solve not here
+        if self.structure_model.category in ['SDoF', 'MDoFShear']:
+            self.structure_model.nodal_coordinates["x"] = self.displacement[:, idx]
         elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-            self.structure_model.nodal_coordinates["x"] = self.displacement[::2,idx]
+            self.structure_model.nodal_coordinates["x"] = self.displacement[::2, idx]
         else:
             sys.exit()
 
@@ -493,26 +451,27 @@ class DynamicAnalysis(AnalysisType):
 
         origin_point = np.zeros(1)
 
-        geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
+        geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
+                                   np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
                     "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
                                                 np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
                                     np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
                                                 np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
                     "deformed": None}
 
-        force = {"external"     : [np.append(origin_point,self.force), np.zeros(len(self.force) + 1)],
+        force = {"external": [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
                  "base_reaction": [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
 
         scaling = {"deformation": 1,
                    "force": 1}
-        
-        plot_title = "Dyanimc Analyis: Deformation at t = " + str(selected_time_step) + " [s]"       
 
-        visualize_result_utilities.plot_result(plot_title, 
+        plot_title = "Dyanimc Analyis: Deformation at t = " + \
+            str(selected_time_step) + " [s]"
+
+        visualize_result_utilities.plot_result(plot_title,
                                                geometry,
                                                force,
-                                               scaling, 
+                                               scaling,
                                                1)
 
     def animate_time_history(self):
@@ -523,14 +482,16 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-          
-        self.structure_model.nodal_coordinates["x"] = [[] for i in range(len(self.array_time))]
-        self.structure_model.nodal_coordinates["y"] = [[] for i in range(len(self.array_time))]
+
+        self.structure_model.nodal_coordinates["x"] = [
+            [] for i in range(len(self.array_time))]
+        self.structure_model.nodal_coordinates["y"] = [
+            [] for i in range(len(self.array_time))]
         for i in range(len(self.array_time)):
-            if self.structure_model.category in ['SDoF','MDoFShear']:
-                self.structure_model.nodal_coordinates["x"][i] = self.displacement[:,i]
+            if self.structure_model.category in ['SDoF', 'MDoFShear']:
+                self.structure_model.nodal_coordinates["x"][i] = self.displacement[:, i]
             elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-                self.structure_model.nodal_coordinates["x"][i] = self.displacement[::2,i]
+                self.structure_model.nodal_coordinates["x"][i] = self.displacement[::2, i]
             else:
                 sys.exit()
 
@@ -538,26 +499,26 @@ class DynamicAnalysis(AnalysisType):
 
         origin_point = np.zeros(1)
 
-        geometry = {"undeformed" : [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
+        geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
+                                   np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
                     "deformation": [[[] for i in range(len(self.array_time))], [[] for i in range(len(self.array_time))]],
                     "deformed": [[[] for i in range(len(self.array_time))], [[] for i in range(len(self.array_time))]]}
 
         for i in range(len(self.array_time)):
-            geometry["deformation"][0][i] =np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"][i]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["x0"]))
-            geometry["deformation"][1][i] =np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"][i]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))
+            geometry["deformation"][0][i] = np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"][i]),
+                                                        np.append(origin_point, self.structure_model.nodal_coordinates["x0"]))
+            geometry["deformation"][1][i] = np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"][i]),
+                                                        np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))
 
-        force = {"external"     : None,
+        force = {"external": None,
                  "base_reaction": None}
 
         scaling = {"deformation": 1,
                    "force": 1}
-        
-        plot_title = "Dyanimc Analyis: Deformation over time"   
 
-        visualize_result_utilities.animate_result(plot_title, 
+        plot_title = "Dyanimc Analyis: Deformation over time"
+
+        visualize_result_utilities.animate_result(plot_title,
                                                   self.array_time,
                                                   geometry,
                                                   force,

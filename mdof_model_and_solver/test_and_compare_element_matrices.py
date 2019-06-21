@@ -1,20 +1,5 @@
 import numpy as np
 
-m = np.array([[10, 11, 12, 13, 14, 15],
-              [20, 21, 22, 23, 24, 25],
-              [30, 31, 32, 33, 34, 35]]).transpose()
-n = np.array([0, 1, 2, 3, 4, 5])
-
-v = np.zeros((m.shape))
-print(v)
-
-n = n[:, np.newaxis]
-
-w = n + v
-print(n)
-print(w)
-print(w+m)
-
 ###
 ##
 #

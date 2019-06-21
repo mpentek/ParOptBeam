@@ -113,14 +113,15 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     # use matrices straightforward
     try:
         # single / static case
-        geometry["deformed"] = [np.add(geometry["undeformed"][0], geometry["deformation"][0] * scaling["deformation"]),
-                                np.add(geometry["undeformed"][1], geometry["deformation"][1] * scaling["deformation"])]
+        geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0],
+                                geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1],
+                                geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2]]
     except:
         # NOTE: now donw for 0-x, 1-y, 2-z DoFs
         # TODO: make consistent and generic
-        geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + (geometry["undeformed"][0][:, np.newaxis] + np.zeros((geometry["deformation"][0].shape))),
-                                geometry["deformation"][1] * scaling["deformation"] + (geometry["undeformed"][1][:, np.newaxis] + np.zeros((geometry["deformation"][1].shape))),
-                                geometry["deformation"][2] * scaling["deformation"] + (geometry["undeformed"][2][:, np.newaxis] + np.zeros((geometry["deformation"][2].shape)))]
+        geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis],
+                                geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis],
+                                geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis]]
         pass
     # Axis, Grid and Label
 
@@ -144,26 +145,32 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     plt.grid()
     plt.title(plot_title)    # set title   
     # plot undeformed
-    plt.plot(geometry["undeformed"][0], 
-             geometry["undeformed"][1], 
-             color=LINE_TYPE_SETUP["color"][0], 
-             linestyle=LINE_TYPE_SETUP["linestyle"][0], 
-             marker = LINE_TYPE_SETUP["marker"][0], 
-             markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0], 
-             markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0], 
-             markersize=LINE_TYPE_SETUP["markersize"][0])
+    ax.plot(geometry["undeformed"][0], 
+        geometry["undeformed"][1], 
+        geometry["undeformed"][2], 
+        label='undeformed',
+        color=LINE_TYPE_SETUP["color"][0], 
+        linestyle=LINE_TYPE_SETUP["linestyle"][0], 
+        marker = LINE_TYPE_SETUP["marker"][0],
+        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+        markersize=LINE_TYPE_SETUP["markersize"][0])
 
     if(n_data == 1):
-        plt.plot(geometry["deformed"][0], 
-                 geometry["deformed"][1], 
-                 color=LINE_TYPE_SETUP["color"][1], 
-                 linestyle=LINE_TYPE_SETUP["linestyle"][1], 
-                 marker = LINE_TYPE_SETUP["marker"][1],
-                 markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
-                 markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
-                 markersize=LINE_TYPE_SETUP["markersize"][1])
+        # TODO not using current formatting yet, needs update
+        ax.plot(geometry["deformed"][0], 
+                geometry["deformed"][1], 
+                geometry["deformed"][2], 
+                label="mode "+ str(1),
+                color=LINE_TYPE_SETUP["color"][1], 
+                linestyle=LINE_TYPE_SETUP["linestyle"][1], 
+                marker = LINE_TYPE_SETUP["marker"][1],
+                markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
+                markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
+                markersize=LINE_TYPE_SETUP["markersize"][1])
 
         try:
+            # TODO: syntax neesds to be updated for quiver and forces
             plt.quiver(geometry["undeformed"][0], 
                     geometry["undeformed"][1], 
                     force["external"][0], 
@@ -184,16 +191,6 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     # TODO: make generic and compatible with all possible DoFs
     # multiple func in one plot
     elif (n_data < 4):       
-        ax.plot(geometry["undeformed"][0], 
-            geometry["undeformed"][1], 
-            geometry["undeformed"][2], 
-            label='undeformed',
-            color=LINE_TYPE_SETUP["color"][0], 
-            linestyle=LINE_TYPE_SETUP["linestyle"][0], 
-            marker = LINE_TYPE_SETUP["marker"][0],
-            markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
-            markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
-            markersize=LINE_TYPE_SETUP["markersize"][0])
         for i in range(n_data):
             # TODO not using current formatting yet, needs update
             ax.plot(geometry["deformed"][0][:,i], 
@@ -223,7 +220,8 @@ def animate_result(title, array_time, geometry, force, scaling):
     # animate
 
     fig = plt.figure()
-    
+    ax = Axes3D(fig) #fig.gca(projection='3d')
+     
     #TODO: animate needs scaling as well
     # set min and max values    
     #xmin = displacement_time_history.min()
@@ -233,68 +231,99 @@ def animate_result(title, array_time, geometry, force, scaling):
 
     # TODO extend and use plot limits
     
-
-    for i in range(len(array_time)): 
-        geometry["deformed"][0][i] = np.add(geometry["undeformed"][0], geometry["deformation"][0][i] * scaling["deformation"])
-        geometry["deformed"][1][i] = np.add(geometry["undeformed"][1], geometry["deformation"][1][i] * scaling["deformation"])
-    
+    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis],
+                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis],
+                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis]]
+   
     xmin = np.min(geometry["deformed"][0])
     xmax = np.max(geometry["deformed"][0])
-    #xmin = xmin - math.ceil((xmax-xmin)/30)
-    #xmax = xmax + math.ceil((xmax-xmin)/30)
+    # xmin = xmin - math.ceil((xmax-xmin)/30)
+    # xmax = xmax + math.ceil((xmax-xmin)/30)
 
     ymin = np.min(geometry["deformed"][1])
     ymax = np.max(geometry["deformed"][1])
-    ymin = ymin - math.ceil((ymax-ymin)/30)
-    ymax = ymax + math.ceil((ymax-ymin)/30)
+    # ymin = ymin - math.ceil((ymax-ymin)/30)
+    # ymax = ymax + math.ceil((ymax-ymin)/30)
     
+    zmin = np.min(geometry["deformed"][2])
+    zmax = np.max(geometry["deformed"][2])
+    # zmin = zmin - math.ceil((zmax-zmin)/30)
+    # zmax = zmax + math.ceil((zmax-zmin)/30)
 
-    ax = plt.axes(xlim=(xmin, xmax), ylim=(ymin, ymax))
-    text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
-    text_mode = ax.text(0.02, 0.95, '', transform=ax.transAxes)
-    ax.set_xlabel("Displacement")
-    ax.set_ylabel("Height")
+    ax.set_xlim3d(xmin, xmax)
+    ax.set_ylim3d(ymin, ymax)
+    ax.set_zlim3d(zmax, zmin)
+    
+    # text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
+    # text_mode = ax.text(0.02, 0.95, '', transform=ax.transAxes)
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
     ax.set_title(title)
     ax.grid(True)
 
-    undeformed_line, = ax.plot(geometry["undeformed"][0], 
-                               geometry["undeformed"][1], 
-                               color=LINE_TYPE_SETUP["color"][0], 
-                               linestyle=LINE_TYPE_SETUP["linestyle"][0], 
-                               marker = LINE_TYPE_SETUP["marker"][0], 
-                               markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0], 
-                               markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0], 
-                               markersize=LINE_TYPE_SETUP["markersize"][0])
+    # ax.set_ylim(-0.0005,0.0005)
+    # #ax.set_zlim(0,1.1)
 
-    deformed_line, = ax.plot([], [], 
+    # TODO: clear if this part or init is at all neded or both together redundant
+    # NOTE: Adding the comma un-packs the length one list into
+    undeformed_line, = ax.plot(geometry["undeformed"][0], 
+                        geometry["undeformed"][1], 
+                        geometry["undeformed"][2], 
+                        label='undeformed',
+                        color=LINE_TYPE_SETUP["color"][0], 
+                        linestyle=LINE_TYPE_SETUP["linestyle"][0], 
+                        marker = LINE_TYPE_SETUP["marker"][0],
+                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+                        markersize=LINE_TYPE_SETUP["markersize"][0])
+
+    # NOTE: Can't pass empty arrays into 3d version of plot()
+    # NOTE: Adding the comma un-packs the length one list into
+    deformed_line, = ax.plot([], [], [],
                              color=LINE_TYPE_SETUP["color"][1], 
                              linestyle=LINE_TYPE_SETUP["linestyle"][1],
                              marker = LINE_TYPE_SETUP["marker"][1],
                              markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1], 
                              markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1], 
                              markersize=LINE_TYPE_SETUP["markersize"][1])
+    
+    text = ax.text(10, 0, 0, 'init', color='red')
 
     # initialization function: plot the background of each frame
     def init():
+        undeformed_line.set_data([], [])
         deformed_line.set_data([], [])
+        # NOTE: there is no .set_data() for 3 dim data...
+        undeformed_line.set_3d_properties([])
+        deformed_line.set_3d_properties([])
+        
         text.set_text('')
-        text.set_text('')
-        return deformed_line,
+
+        return undeformed_line, deformed_line, text
 
     # animation function.  This is called sequentially
 
     def animate(i):
-        x = geometry["deformed"][0][i]
-        y = geometry["deformed"][1][i]
-
-        deformed_line.set_data(x, y)
+        undeformed_line.set_data(geometry["undeformed"][0], 
+                            geometry["undeformed"][1])
+        deformed_line.set_data(geometry["deformed"][0][:,i], 
+                            geometry["deformed"][1][:,i])
+        # NOTE: there is no .set_data() for 3 dim data...
+        undeformed_line.set_3d_properties(geometry["undeformed"][2])
+        deformed_line.set_3d_properties(geometry["deformed"][2][:,i])
+       
         text.set_text('{0:.2f}'.format(array_time[i]) + "[s]")
-        return deformed_line, text
+
+        return undeformed_line, deformed_line, text
+
     # call the animator.  blit=True means only re-draw the parts that have
     # changed.
     # frames = number of columns in result
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                   frames=len(geometry["deformed"][0]), interval=20, blit=True)
+                                   frames=len(array_time)-1, interval=20, blit=True)
+    
+
     plt.show()
 
 

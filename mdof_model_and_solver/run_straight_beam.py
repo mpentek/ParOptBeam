@@ -35,59 +35,9 @@ parameters = json.loads(parameter_file.read())
 
 beam_model = StraightBeam(parameters)
 
-# # Create example structure
-
-# # Distribution of floor according to their number and floor height
-# floor_num = int(60/2)
-# floor_height = 3*2
-# Z = np.zeros(floor_num + 1)
-
-# for i in range(1, floor_num + 1):
-#     Z[i] = floor_height * i
-
-# Z = Z[1:]
-
-# nodal_coordinates = {"x0": np.zeros(len(Z)),
-#                      "y0": Z,
-#                      "x": None,
-#                      "y": None}
-
-# # Geometrical and material characteristics
-# rho = 160.
-# building_length = 45.
-# building_width = 30.
-# area = building_length * building_width 
-
-# # Vibration characteristics
-# target_freq = 0.2
-# target_mode = 1
-# zeta = 0.05  # Damping ratio
-
-# # Structural layout type
-# # Create object of MDoFMixedModel
-
-# # pure bending
-# # gamma = 1.0
-# # pure shear
-# # gamma = 0.0
-# gamma = 0#.25 # 0.75
-
-# mixed_model = MDoFMixed3DModel(
-# #     rho, area, target_freq, target_mode, zeta, floor_height, floor_num, gamma)
-
-# #=========================static analysis==========================
-
-# #=========================eigen value analysis ==========================
-# eigenvalue_analysis = EigenvalueAnalysis(mixed_model)
-# eigenvalue_analysis.solve()
-# # eigenvalue_analysis.plot_selected_eigenmode(1)
-# eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
-# # eigenvalue_analysis.animate_selected_eigenmode(1)
-
-# #=========================dynamic analysis ==========================
-
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
-# eigenvalue_analysis.plot_selected_eigenmode(1)
+eigenvalue_analysis.plot_selected_eigenmode(1)
+eigenvalue_analysis.plot_selected_eigenmode(4)
 eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
-# eigenvalue_analysis.animate_selected_eigenmode(1)
+eigenvalue_analysis.animate_selected_eigenmode(1)
