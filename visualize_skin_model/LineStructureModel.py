@@ -1,5 +1,10 @@
 import json
-from visualize_skin_model.NodeModel import Node
+import numpy as np
+
+try:
+    from visualize_skin_model.NodeModel import Node
+except ModuleNotFoundError:
+    from NodeModel import Node
 
 
 class LineStructure:
@@ -11,45 +16,70 @@ class LineStructure:
         self.x_vec, self.y_vec, self.z_vec = [], [], []
         self.dx_vec, self.dy_vec, self.dz_vec = [], [], []
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
+        self.num_of_nodes = 0
+        self.node_positions = {}
+        self.dofs = {}
         if structure_file is not None:
             with open(structure_file) as json_file:
                 data = json.load(json_file)
                 self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
-                self.node_positions = data["node_positions"]
-                self.dofs = data["dofs"]
-                self.num_of_nodes = int(len(self.dofs)/self.num_of_dofs_per_node)
+                self.dof_file = data["dofs_file_name"]
+                self.beam_direction = data["beam_direction"]
                 self.structure_height = data["height"]
-            self.print_line_structure_info()
+
             self.init_nodes()
             self.init_dofs()
+            self.print_line_structure_info()
 
     def init_nodes(self):
+
+        with open(self.dof_file) as f:
+            f = json.load(f)
+            # wrapping beam direction from x to z (mdof_solver)
+            self.node_positions["x0"] = f["x0"]
+            self.node_positions["y0"] = f["y0"]
+            self.node_positions["z0"] = f["z0"]
+
+            self.num_of_nodes = len(f["x0"])
+
         for i in range(self.num_of_nodes):
-            x = self.node_positions[int(i*3  )]
-            y = self.node_positions[int(i*3+1)]
-            z = self.node_positions[int(i*3+2)]
+            x = self.node_positions["x0"][i]
+            y = self.node_positions["y0"][i]
+            z = self.node_positions["z0"][i]
             node = Node(x, y, z)
             self.nodes.append(node)
             self.x_vec.append(node.x0)
             self.y_vec.append(node.y0)
             self.z_vec.append(node.z0)
+        print("Undeformed Nodes added successfully!")
 
     def init_dofs(self):
-        for i in range(self.num_of_nodes):
-            dx = self.dofs[int(i*self.num_of_dofs_per_node  )]
-            dy = self.dofs[int(i*self.num_of_dofs_per_node+1)]
-            dz = self.dofs[int(i*self.num_of_dofs_per_node+2)]
-            theta_x = self.dofs[int(i*self.num_of_dofs_per_node+3)]
-            theta_y = self.dofs[int(i*self.num_of_dofs_per_node+4)]
-            theta_z = self.dofs[int(i*self.num_of_dofs_per_node+5)]
-            self.nodes[i].assign_dofs(dx, dy, dz, theta_x, theta_y, theta_z)
-            self.dx_vec.append(self.nodes[i].dx)
-            self.dy_vec.append(self.nodes[i].dy)
-            self.dz_vec.append(self.nodes[i].dz)
-            self.theta_x_vec.append(self.nodes[i].theta_x)
-            self.theta_y_vec.append(self.nodes[i].theta_y)
-            self.theta_z_vec.append(self.nodes[i].theta_z)
-            # self.nodes[i].print_info()
+        with open(self.dof_file) as f:
+            f = json.load(f)
+            # TODO check the dof in beam direction
+            self.dofs["dx"] = np.zeros(self.num_of_nodes)
+            self.dofs["dy"] = f["y"]
+            self.dofs["dz"] = f["z"]
+            self.dofs["theta_x"] = f["a"]
+            self.dofs["theta_y"] = f["b"]
+            self.dofs["theta_z"] = f["g"]  # torsion
+
+            print(self.dofs["dx"])
+            for i in range(self.num_of_nodes):
+                dx = self.dofs["dx"][i]
+                dy = self.dofs["dy"][i]
+                dz = self.dofs["dz"][i]
+                theta_x = self.dofs["theta_x"][i]
+                theta_y = self.dofs["theta_y"][i]
+                theta_z = self.dofs["theta_z"][i]
+                self.nodes[i].assign_dofs(dx, dy, dz, theta_x, theta_y, theta_z)
+                self.dx_vec.append(self.nodes[i].dx)
+                self.dy_vec.append(self.nodes[i].dy)
+                self.dz_vec.append(self.nodes[i].dz)
+                self.theta_x_vec.append(self.nodes[i].theta_x)
+                self.theta_y_vec.append(self.nodes[i].theta_y)
+                self.theta_z_vec.append(self.nodes[i].theta_z)
+                # self.nodes[i].print_info()
 
     def print_line_structure_info(self):    
         msg = "=============================================\n"
@@ -58,7 +88,7 @@ class LineStructure:
         msg += "============================================="
         print(msg)
 
-    def print_nodal_infos(self):
+    def print_nodal_info(self):
         for node in self.nodes:
             node.print_info()
 
@@ -68,3 +98,7 @@ class LineStructure:
             self.x_vec[i] = self.nodes[i].x
             self.y_vec[i] = self.nodes[i].y
             self.z_vec[i] = self.nodes[i].z
+
+
+if __name__ == "__main__":
+    ls = LineStructure("trapezoid.json")
