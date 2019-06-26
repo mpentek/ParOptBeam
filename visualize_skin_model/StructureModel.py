@@ -1,48 +1,60 @@
 import json
 import numpy as np
 from visualize_skin_model.NodeModel import Node
-from sympy import Plane, Point3D
+from sympy import Plane
 
 CONTOUR_DENSITY = 1
 
 
-class Floor:
-    def __init__(self, floor_geometry, height):
+class Element:
+    def __init__(self, floor_geometry, s, beam_direction="x"):
         """
         creating single floor based on the given floor geometry with the floor height
+        @:param s: coordinate in the beam direction
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
         for point in floor_geometry:
+            # the beam direction takes a dummy value 0 at the beginning and will be overwritten
             x = point["x"]
             y = point["y"]
-            z = height
+            z = point["z"]
             self.x_vec.append(x)
             self.y_vec.append(y)
             self.z_vec.append(z)
             node = Node(x, y, z)
+            node.assign_beam_direction(beam_direction, s)
             self.nodes.append(node)
+
+        # assigning the beam-wise vector
+        if beam_direction == "x":
+            self.s_vec = self.x_vec
+        elif beam_direction == "y":
+            self.s_vec = self.y_vec
+        elif beam_direction == "z":
+            self.s_vec = self.z_vec
 
         self.plane = Plane(
             (self.nodes[0 * CONTOUR_DENSITY].x, self.nodes[0 * CONTOUR_DENSITY].y, self.nodes[0 * CONTOUR_DENSITY].z),
             (self.nodes[1 * CONTOUR_DENSITY].x, self.nodes[1 * CONTOUR_DENSITY].y, self.nodes[1 * CONTOUR_DENSITY].z),
             (self.nodes[2 * CONTOUR_DENSITY].x, self.nodes[2 * CONTOUR_DENSITY].y, self.nodes[2 * CONTOUR_DENSITY].z))
 
-    def print_floor(self):
+    def print_element(self):
         for node in self.nodes:
             node.print_info()
 
-    def print_floor_normal(self):
+    def print_element_normal(self):
         print(self.plane.normal_vector)
 
 
 class Frame:
-    def __init__(self, floors, index):
+    def __init__(self, floors, index,  beam_direction="x"):
         """
         connecting all points from the same geometry point for each floor
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
+        self.s_vec = []
         for floor in floors:
             node = floor.nodes[index]
             self.nodes.append(node)
@@ -50,67 +62,73 @@ class Frame:
             self.y_vec.append(node.y0)
             self.z_vec.append(node.z0)
 
+        if beam_direction == "x":
+            self.s_vec = self.x_vec
+        elif beam_direction == "y":
+            self.s_vec = self.y_vec
+        elif beam_direction == "z":
+            self.s_vec = self.z_vec
+
 
 class Structure:
     def __init__(self, structure_file):
         """
         initializing structure with geometry
         """
-        self.floors = []
+        self.elements = []
         self.frames = []
         with open(structure_file) as json_file:
             data = json.load(json_file)
-            self.floor_geometry = data["geometry"]
-            self.structure_height = data["height"]
-            self.num_of_floors = data["num_of_floors"]
-            try:
-                self.floor_height = data["floor_height"]
-            except:
-                self.floor_height = self.structure_height / self.num_of_floors
+            self.element_geometry = data["geometry"]
+            self.dof_file = data["dofs_file_name"]
+            self.beam_length = json.load(open(self.dof_file))["length"]
+            self.num_of_elements = data["num_of_elements"]
+            self.beam_direction = data["beam_direction"]
+            self.element_length = self.beam_length / self.num_of_elements
 
         self.densify_contour(CONTOUR_DENSITY)
         self.print_structure_info()
-        self.create_floors()
+        self.create_elements()
         self.create_frames()
 
     def print_structure_info(self):
         msg = "=============================================\n"
-        msg += "STRUCTURE MODEL INFO \n"
-        msg += "HEIGHT:\t" + str(self.structure_height) + "\n"
-        msg += "#FLOOR:\t" + str(self.num_of_floors) + "\n"
-        msg += "FLOOR HEIGHT:\t" + str(self.floor_height) + "\n"
+        msg += "BEAM MODEL INFO \n"
+        msg += "LENGTH:\t" + str(self.beam_length) + "\n"
+        msg += "#ELEMENTS:\t" + str(self.num_of_elements) + "\n"
+        msg += "ELEMENT LENGTH:\t" + str(self.element_length) + "\n"
         msg += "============================================="
         print(msg)
 
-    def create_floors(self):
-        current_height = 0.0
-        while current_height <= self.structure_height:
-            floor = Floor(self.floor_geometry, current_height)
-            self.floors.append(floor)
-            current_height += self.floor_height
-        if current_height <= self.structure_height:
-            floor = Floor(self.floor_geometry, self.structure_height)
-            self.floors.append(floor)
+    def create_elements(self):
+        current_length = 0.0
+        while current_length <= self.beam_length:
+            element = Element(self.element_geometry, current_length, self.beam_direction)
+            self.elements.append(element)
+            current_length += self.element_length
+        if current_length <= self.beam_length:
+            element = Element(self.element_geometry, self.beam_length, self.beam_direction)
+            self.elements.append(element)
 
     def create_frames(self):
-        for i in range(len(self.floor_geometry)):
-            frame = Frame(self.floors, i)
+        for i in range(len(self.element_geometry)):
+            frame = Frame(self.elements, i,  self.beam_direction)
             self.frames.append(frame)
 
     def densify_contour(self, parts=5):
         if parts > 1:
             new_floor_geometry = []
-            for i in range(len(self.floor_geometry)):
-                new_floor_geometry.append(self.floor_geometry[i])
+            for i in range(len(self.element_geometry)):
+                new_floor_geometry.append(self.element_geometry[i])
 
                 new_floor_geometry += self._get_equidistant_points(
-                    [self.floor_geometry[i % len(self.floor_geometry)]["x"],
-                     self.floor_geometry[i % len(self.floor_geometry)]["y"]],
-                    [self.floor_geometry[(i + 1) % len(self.floor_geometry)]["x"],
-                     self.floor_geometry[(i + 1) % len(self.floor_geometry)]["y"]],
+                    [self.element_geometry[i % len(self.element_geometry)]["x"],
+                     self.element_geometry[i % len(self.element_geometry)]["y"]],
+                    [self.element_geometry[(i + 1) % len(self.element_geometry)]["x"],
+                     self.element_geometry[(i + 1) % len(self.element_geometry)]["y"]],
                     parts)
 
-            self.floor_geometry = new_floor_geometry
+            self.element_geometry = new_floor_geometry
 
     @staticmethod
     def _get_equidistant_points(p1, p2, parts):
@@ -118,7 +136,7 @@ class Structure:
                                                              np.linspace(p1[1], p2[1], parts + 1))]
 
     def apply_transformation_for_structure(self):
-        for floor in self.floors:
+        for floor in self.elements:
             for i in range(len(floor.nodes)):
                 floor.nodes[i].apply_transformation()
                 floor.x_vec[i] = floor.nodes[i].x
@@ -138,12 +156,12 @@ class Structure:
                 frame.y_vec[i] = frame.nodes[i].y
                 frame.z_vec[i] = frame.nodes[i].z
 
-    def print_floor(self, floor_id):
+    def print_structure_element(self, floor_id):
         print("Printing Floor: " + str(floor_id))
-        self.floors[floor_id].print_floor()
+        self.elements[floor_id].print_element()
 
-    def print_floor_normal(self, floor_id):
-        self.floors[floor_id].print_floor_normal()
+    def print_one_structure_normal(self, floor_id):
+        self.elements[floor_id].print_element_normal()
 
 
 if __name__ == "__main__":
