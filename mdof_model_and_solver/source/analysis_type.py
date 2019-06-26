@@ -25,6 +25,7 @@ Last update: 30.11.2017
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
+import json
 
 from source.structure_model import *
 from source.time_integration_scheme import *
@@ -207,6 +208,21 @@ class EigenvalueAnalysis(AnalysisType):
 
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
+
+    def write_output_file(self):
+        """"
+        This function writes out the nodal dofs of the deformed state
+
+        """
+        file = open("beam.txt", "w")
+        dict = {}
+        for key, val in self.structure_model.nodal_coordinates.items():
+            dict[key] = val.tolist()
+
+        json_string = json.dumps(dict)
+
+        file.write(json_string)
+        file.close()
 
     def plot_selected_eigenmode(self, selected_mode):
         """
