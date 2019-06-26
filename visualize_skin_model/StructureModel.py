@@ -48,7 +48,7 @@ class Element:
         for node in self.nodes:
             node.print_info()
 
-    def print_element(self):
+    def print_element_normal(self):
         print(self.plane.normal_vector)
 
 

@@ -22,12 +22,15 @@ class Node:
     def print_info(self):
         msg = "###################################################\n"
         msg += "Node at Position [" + str(self.x0) + " "+ str(self.y0) + " " + str(self.z0) + "]: \n"
-        msg += "dx = " + str(self.dx) + "\t" 
-        msg += "dy = " + str(self.dy) + "\t" 
-        msg += "dz = " + str(self.dz) + "\n" 
-        msg += "theta_x = " + str(self.theta_x) + "\t" 
-        msg += "theta_y = " + str(self.theta_y) + "\t" 
-        msg += "theta_z = " + str(self.theta_z)
+        try:
+            msg += "dx = " + str(self.dx) + "\t"
+            msg += "dy = " + str(self.dy) + "\t"
+            msg += "dz = " + str(self.dz) + "\n"
+            msg += "theta_x = " + str(self.theta_x) + "\t"
+            msg += "theta_y = " + str(self.theta_y) + "\t"
+            msg += "theta_z = " + str(self.theta_z)
+        except AttributeError:
+            pass
         print(msg)
 
     def apply_transformation(self):
