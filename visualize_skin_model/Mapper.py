@@ -1,6 +1,5 @@
 from visualize_skin_model.NodeModel import Node
 from visualize_skin_model.LineStructureModel import LineStructure
-from scipy.interpolate import griddata
 from scipy.interpolate import CubicSpline
 import numpy as np
 
@@ -10,16 +9,11 @@ PRESCRIBED_2ND_ORDER_DERIV = [0, 0]
 INTERPOLATION_DENSITY = 5
 
 
-def interpolate_3d_points(v, points, values):
-    griddata(points, values, (grid_x, grid_y), method='cubic')
-
-
 def interpolate_points(v, x, y):
     interp_x = CubicSpline(x, y, bc_type=(
         (DERIV_ORDER, PRESCRIBED_2ND_ORDER_DERIV[0]),
         (DERIV_ORDER, PRESCRIBED_2ND_ORDER_DERIV[1])))
-    normal = interp_x.derivative()(v)
-    print(normal)
+    # normal = interp_x.derivative()(v)
     return interp_x(v)
 
 
@@ -29,21 +23,22 @@ class Mapper:
         self.line_structure = line_structure
         self.interpolated_line_structure = LineStructure()
         self.map_line_structure_to_interpolated_line_structure()
+        self.beam_direction = self.line_structure.beam_direction
 
     def map_interpolated_line_structure_to_structure_floor(self):
-        for floor in self.structure.floors:
-            mid_z = sum(floor.z_vec) / len(floor.z_vec)
+        for element in self.structure.elements:
+            mid_s = sum(element.s_vec) / len(element.s_vec)
 
-            self.interpolate_dofs(mid_z, floor.nodes, self.interpolated_line_structure)
+            self.interpolate_dofs(mid_s, element.nodes, self.interpolated_line_structure)
 
     def map_line_structure_to_interpolated_line_structure(self):
-        mid_z_prev = sum(self.structure.floors[0].z_vec) / len(self.structure.floors[0].z_vec)
-        for floor in self.structure.floors[1:]:
+        mid_z_prev = sum(self.structure.elements[0].z_vec) / len(self.structure.elements[0].z_vec)
+        for floor in self.structure.elements[1:]:
             mid_x = sum(floor.x_vec) / len(floor.x_vec)
             mid_y = sum(floor.y_vec) / len(floor.y_vec)
             mid_z = sum(floor.z_vec) / len(floor.z_vec)
 
-            if floor != self.structure.floors[-1]:
+            if floor != self.structure.elements[-1]:
                 z_vec = np.linspace(mid_z_prev, mid_z, INTERPOLATION_DENSITY, endpoint=False)
             else:
                 z_vec = np.linspace(mid_z_prev, mid_z, INTERPOLATION_DENSITY)
@@ -66,13 +61,13 @@ class Mapper:
             mid_z_prev = mid_z
 
     @staticmethod
-    def interpolate_dofs(z, nodes, line_structure):
-        dx = interpolate_points(z, line_structure.z_vec, line_structure.dx_vec)
-        dy = interpolate_points(z, line_structure.z_vec, line_structure.dy_vec)
-        dz = interpolate_points(z, line_structure.z_vec, line_structure.dz_vec)
-        theta_x = interpolate_points(z, line_structure.z_vec, line_structure.theta_x_vec)
-        theta_y = interpolate_points(z, line_structure.z_vec, line_structure.theta_y_vec)
-        theta_z = interpolate_points(z, line_structure.z_vec, line_structure.theta_z_vec)
+    def interpolate_dofs(s, nodes, line_structure):
+        dx = interpolate_points(s, line_structure.s_vec, line_structure.dx_vec)
+        dy = interpolate_points(s, line_structure.s_vec, line_structure.dy_vec)
+        dz = interpolate_points(s, line_structure.s_vec, line_structure.dz_vec)
+        theta_x = interpolate_points(s, line_structure.s_vec, line_structure.theta_x_vec)
+        theta_y = interpolate_points(s, line_structure.s_vec, line_structure.theta_y_vec)
+        theta_z = interpolate_points(s, line_structure.s_vec, line_structure.theta_z_vec)
 
         if isinstance(nodes, (list,)):
             for node in nodes:

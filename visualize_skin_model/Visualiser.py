@@ -21,20 +21,21 @@ class Arrow3D(FancyArrowPatch):
 
 
 class Visualiser:
-    def __init__(self, structure, line_structure):
-        self.structure = structure
+    def __init__(self, line_structure, structure=None):
         self.line_structure = line_structure
+        if structure is not None:
+            self.structure = structure
         self.mapper = Mapper(structure, line_structure)
         self.interpolated_line_structure = self.mapper.interpolated_line_structure
 
         self.fig = plt.figure(figsize=(10, 10))
-        self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-40, elev=10)
+        self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-90, elev=10)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
-        # self.ax.set_axis_off()
+        self.ax.set_zlabel('z')
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
-        self.update()
+        # self.update()
         self.visualise_structure()
         self.visualise_line_structure()
         self.visualise_interpolated_line_structure()
@@ -68,7 +69,7 @@ class Visualiser:
         mid_y = (max(Y) + min(Y)) * 0.5
         mid_z = (max(Z) + min(Z)) * 0.5
         max_range = np.array([max(X) - min(X), max(Y) - min(Y), max(Z) - min(Z)]).max() / 2.0
-        self.ax.set_xlim(mid_x - (max_range), mid_x + max_range)
+        self.ax.set_xlim(mid_x - max_range, mid_x + max_range)
         self.ax.set_ylim(mid_y - max_range, mid_y + max_range)
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
@@ -86,11 +87,11 @@ class Visualiser:
         # self.ax.scatter(node.x, node.y, node.z, marker='o', c='g', s = 50)
 
     def visualise_structure(self):
-        self.visualise_floor()
+        self.visualise_element()
         self.visualize_frame()
 
-    def visualise_floor(self):
-        for floor in self.structure.floors:
+    def visualise_element(self):
+        for floor in self.structure.elements:
             x_vec = floor.x_vec + [floor.x_vec[0]]
             y_vec = floor.y_vec + [floor.y_vec[0]]
             z_vec = floor.z_vec + [floor.z_vec[0]]
@@ -120,4 +121,3 @@ class Visualiser:
         self.line_structure.apply_transformation_for_line_structure()
         self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
-        self.structure.print_floor_normal(2)

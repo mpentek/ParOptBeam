@@ -19,11 +19,16 @@ class Element:
             x = point["x"]
             y = point["y"]
             z = point["z"]
+            if beam_direction == "x":
+                x = s
+            elif beam_direction == "y":
+                y = s
+            elif beam_direction == "z":
+                z = s
             self.x_vec.append(x)
             self.y_vec.append(y)
             self.z_vec.append(z)
             node = Node(x, y, z)
-            node.assign_beam_direction(beam_direction, s)
             self.nodes.append(node)
 
         # assigning the beam-wise vector
@@ -43,7 +48,7 @@ class Element:
         for node in self.nodes:
             node.print_info()
 
-    def print_element_normal(self):
+    def print_element(self):
         print(self.plane.normal_vector)
 
 
@@ -90,6 +95,7 @@ class Structure:
         self.print_structure_info()
         self.create_elements()
         self.create_frames()
+        self.print_structure_element(2)
 
     def print_structure_info(self):
         msg = "=============================================\n"

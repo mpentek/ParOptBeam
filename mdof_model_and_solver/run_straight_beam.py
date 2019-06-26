@@ -37,6 +37,7 @@ beam_model = StraightBeam(parameters)
 
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
+eigenvalue_analysis.write_output_file()
 eigenvalue_analysis.plot_selected_eigenmode(1)
 eigenvalue_analysis.plot_selected_eigenmode(4)
 eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)

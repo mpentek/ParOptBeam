@@ -14,18 +14,20 @@ class LineStructure:
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
+        self.s_vec = []  # beam-wise vector
         self.dx_vec, self.dy_vec, self.dz_vec = [], [], []
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
+        self.beam_length = 0
         self.num_of_nodes = 0
         self.node_positions = {}
         self.dofs = {}
+
         if structure_file is not None:
             with open(structure_file) as json_file:
                 data = json.load(json_file)
                 self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
                 self.dof_file = data["dofs_file_name"]
                 self.beam_direction = data["beam_direction"]
-                self.structure_height = data["height"]
 
             self.init_nodes()
             self.init_dofs()
@@ -36,6 +38,8 @@ class LineStructure:
         with open(self.dof_file) as f:
             f = json.load(f)
             # wrapping beam direction from x to z (mdof_solver)
+            self.beam_length = f["length"]
+            self.num_of_nodes = f["num_of_elements"]
             self.node_positions["x0"] = f["x0"]
             self.node_positions["y0"] = f["y0"]
             self.node_positions["z0"] = f["z0"]
@@ -51,6 +55,14 @@ class LineStructure:
             self.x_vec.append(node.x0)
             self.y_vec.append(node.y0)
             self.z_vec.append(node.z0)
+
+        # assigning the beam-wise vector
+        if self.beam_direction == "x":
+            self.s_vec = self.x_vec
+        elif self.beam_direction == "y":
+            self.s_vec = self.y_vec
+        elif self.beam_direction == "z":
+            self.s_vec == self.z_vec
         print("Undeformed Nodes added successfully!")
 
     def init_dofs(self):
@@ -64,7 +76,6 @@ class LineStructure:
             self.dofs["theta_y"] = f["b"]
             self.dofs["theta_z"] = f["g"]  # torsion
 
-            print(self.dofs["dx"])
             for i in range(self.num_of_nodes):
                 dx = self.dofs["dx"][i]
                 dy = self.dofs["dy"][i]
