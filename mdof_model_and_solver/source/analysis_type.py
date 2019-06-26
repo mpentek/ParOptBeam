@@ -216,6 +216,8 @@ class EigenvalueAnalysis(AnalysisType):
         """
         file = open("beam.txt", "w")
         dict = {}
+        dict["length"] = max(self.structure_model.nodal_coordinates["x0"])
+        dict["num_of_elements"] = len(self.structure_model.nodal_coordinates["x0"])
         for key, val in self.structure_model.nodal_coordinates.items():
             dict[key] = val.tolist()
 
