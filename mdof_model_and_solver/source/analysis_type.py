@@ -74,36 +74,51 @@ class StaticAnalysis(AnalysisType):
         print("Solving for ext_force in StaticAnalysis derived class \n")
         self.force = ext_force
 
-        print(self.structure_model.category)
+        k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
+        print(k)
+        print(np.linalg.det(k))
 
-        self.result = np.linalg.solve(self.structure_model.k, self.force)
+        errr
 
-        if self.structure_model.category in ['SDoF', 'MDoFShear']:
-            self.displacement = self.result
-            self.reaction = -1/2 * \
-                self.structure_model.k[0, 0] * self.displacement[0]
+        self.static_result = np.linalg.solve(k, self.force)
+        self.static_result = self.structure_model.recuperate_bc_by_extension(
+            self.static_result)
 
-        elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-            self.displacement = self.result[::2]
-            self.rotation = self.result[1::2]
 
-            self.reaction = -1/2 * \
-                self.structure_model.k[0, 0] * self.displacement[0]
-            self.moment = -1/2 * \
-                self.structure_model.k[0, 1] * self.rotation[0]
 
-            self.reaction = -1/2 * \
-                self.structure_model.k[0, 0] * self.displacement[0]
-            self.moment = -1/2 * \
-                self.structure_model.k[0, 1] * self.rotation[0]
+        # if self.structure_model.category in ['SDoF', 'MDoFShear']:
+        #     self.displacement = self.result
 
-        else:
-            sys.exit('Selected structure not implemented!')
+            # # TODO Compute reactions 
+            # self.reaction = -1/2 * \
+            #     self.structure_model.k[0, 0] * self.displacement[0]
 
-        self.structure_model.nodal_coordinates["x"] = np.add(
-            self.structure_model.nodal_coordinates["x0"], self.displacement)
-        self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
+        # elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
+        #     self.displacement = self.result[::2]
+        #     self.rotation = self.result[1::2]
+            # TOD : compute reactions 
 
+            # self.reaction = -1/2 * \
+            #     self.structure_model.k[0, 0] * self.displacement[0]
+            # self.moment = -1/2 * \
+            #     self.structure_model.k[0, 1] * self.rotation[0]
+
+            # self.reaction = -1/2 * \
+            #     self.structure_model.k[0, 0] * self.displacement[0]
+            # self.moment = -1/2 * \
+            #     self.structure_model.k[0, 1] * self.rotation[0]
+
+        # else:
+        #     sys.exit('Selected structure not implemented!')
+
+       
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                           1:step]
     def plot_solve_result(self):
         """
         Pass to plot function:
@@ -115,15 +130,13 @@ class StaticAnalysis(AnalysisType):
 
         print("Plotting result in StaticAnalysis \n")
 
-        origin_point = np.zeros(1)
-
-        geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                   np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-                    "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
-                                    np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
-                    "deformed": None}
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                            self.structure_model.nodal_coordinates["y0"],
+                            self.structure_model.nodal_coordinates["z0"]],
+            "deformation": [self.structure_model.nodal_coordinates["x"],
+                            self.structure_model.nodal_coordinates["y"],
+                            self.structure_model.nodal_coordinates["z"]],
+            "deformed": None}
 
         force = {"external": [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
                  "base_reaction": [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
@@ -156,7 +169,9 @@ class EigenvalueAnalysis(AnalysisType):
     def solve(self):
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
+        print('determinant of K',np.linalg.det(k))
         m = self.structure_model.apply_bc_by_reduction(self.structure_model.m)
+        print('determinant of M',np.linalg.det(m))
 
         eig_values_raw, eig_modes_raw = linalg.eigh(k, m)
         # rad/s

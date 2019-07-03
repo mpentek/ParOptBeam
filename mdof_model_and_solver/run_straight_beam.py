@@ -42,3 +42,13 @@ eigenvalue_analysis.plot_selected_eigenmode(1)
 eigenvalue_analysis.plot_selected_eigenmode(4)
 eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
 eigenvalue_analysis.animate_selected_eigenmode(1)
+
+
+
+# # static analysis
+# static_force = 10 * np.ones(151)
+# print(static_force)
+# static_analysis = StaticAnalysis(beam_model)
+# static_analysis.solve(static_force)
+# static_analysis.write_output_file()
+# static_analysis.plot_solve_result()
