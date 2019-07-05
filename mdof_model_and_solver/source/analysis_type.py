@@ -78,11 +78,12 @@ class StaticAnalysis(AnalysisType):
         print(k)
         print(np.linalg.det(k))
 
-        errr
-
         self.static_result = np.linalg.solve(k, self.force)
-        self.static_result = self.structure_model.recuperate_bc_by_extension(
-            self.static_result)
+        result = np.zeros([1,len(self.static_result)])
+        result [0,:] = self.static_result
+        print(result.shape)
+
+        self.static_result = self.structure_model.recuperate_bc_by_extension(result)
 
 
 
@@ -138,8 +139,8 @@ class StaticAnalysis(AnalysisType):
                             self.structure_model.nodal_coordinates["z"]],
             "deformed": None}
 
-        force = {"external": [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
-                 "base_reaction": [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+        force = {"external": None ,# [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
+                 "base_reaction": None } #[np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
 
         scaling = {"deformation": 1,
                    "force": 1}
@@ -409,7 +410,6 @@ class DynamicAnalysis(AnalysisType):
     """
 
     def __init__(self, structure_model, initial_conditions, force, time, dt, time_integration_scheme="GenAlpha", name="DynamicAnalysis"):
-
         super().__init__(structure_model, name)
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
@@ -419,7 +419,7 @@ class DynamicAnalysis(AnalysisType):
         self.time = time
         self.array_time = np.arange(
             self.time[0], self.time[1] + self.dt, self.dt)
-        rows = len(self.force)
+        rows = len(self.structure_model.apply_bc_by_reduction(self.structure_model.k))
         cols = len(self.array_time)
 
         # adding additional attributes to the derived class
@@ -463,6 +463,10 @@ class DynamicAnalysis(AnalysisType):
 
             # update results
             self.solver.update_structure_time_step()
+        
+        self.displacement = self.structure_model.recuperate_bc_by_extension(self.displacement)
+        self.velocity = self.structure_model.recuperate_bc_by_extension(self.velocity)
+        self.acceleration = self.structure_model.recuperate_bc_by_extension(self.acceleration)
 
     def plot_selected_time_step(self, selected_time_step):
         """
@@ -475,30 +479,26 @@ class DynamicAnalysis(AnalysisType):
         print("Plotting result for a selected time step in DynamicAnalysis \n")
 
         # find closesed time step
-        idx = (np.abs(self.array_time-selected_time_step)).argmin()
+        idx_time = (np.abs(self.array_time-selected_time_step)).argmin()
 
-        # TODO for the dynamic analysis create self.structure_model.nodal_coordinates after solve not here
-        if self.structure_model.category in ['SDoF', 'MDoFShear']:
-            self.structure_model.nodal_coordinates["x"] = self.displacement[:, idx]
-        elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-            self.structure_model.nodal_coordinates["x"] = self.displacement[::2, idx]
-        else:
-            sys.exit()
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.displacement.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                           1:step][:, idx_time]
 
-        self.structure_model.nodal_coordinates["y"] = self.structure_model.nodal_coordinates["y0"]
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                            self.structure_model.nodal_coordinates["y0"],
+                            self.structure_model.nodal_coordinates["z0"]],
+            "deformation": [self.structure_model.nodal_coordinates["x"],
+                            self.structure_model.nodal_coordinates["y"],
+                            self.structure_model.nodal_coordinates["z"]],
+            "deformed": None}
 
-        origin_point = np.zeros(1)
-
-        geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                   np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-                    "deformation": [np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["x0"])),
-                                    np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"]),
-                                                np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))],
-                    "deformed": None}
-
-        force = {"external": [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
-                 "base_reaction": [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+        force = {"external": None ,# [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
+                 "base_reaction": None } #[np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
 
         scaling = {"deformation": 1,
                    "force": 1}
@@ -521,22 +521,14 @@ class DynamicAnalysis(AnalysisType):
 
         print("Animating time history in DynamicAnalysis \n")
 
-        self.structure_model.nodal_coordinates["x"] = [
-            [] for i in range(len(self.array_time))]
-        self.structure_model.nodal_coordinates["y"] = [
-            [] for i in range(len(self.array_time))]
-        for i in range(len(self.array_time)):
-            if self.structure_model.category in ['SDoF', 'MDoFShear']:
-                self.structure_model.nodal_coordinates["x"][i] = self.displacement[:, i]
-            elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-                self.structure_model.nodal_coordinates["x"][i] = self.displacement[::2, i]
-            else:
-                sys.exit()
-
-            self.structure_model.nodal_coordinates["y"][i] = self.structure_model.nodal_coordinates["y0"]
-
-        origin_point = np.zeros(1)
-
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                           1:step][:, sel.array_time]
+                                                                           
         geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
                                    np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
                     "deformation": [[[] for i in range(len(self.array_time))], [[] for i in range(len(self.array_time))]],

@@ -15,6 +15,6 @@
                 "length_z": 45.0
             }
         },
-        "boundary_conditions": "free-fixed"
+        "boundary_conditions": "fixed-free"
     }
 }
