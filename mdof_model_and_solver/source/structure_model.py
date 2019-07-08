@@ -215,7 +215,7 @@ class StraightBeam(object):
         for idx, dof in enumerate(bc_dofs_global):
             # shift to global numbering the negative values
             if dof < 0:
-                bc_dofs_global[idx] = dof + (len(self.all_dofs_global)+1)
+                bc_dofs_global[idx] = dof + len(self.all_dofs_global)
 
         # only take bc's of interes
         self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global))
