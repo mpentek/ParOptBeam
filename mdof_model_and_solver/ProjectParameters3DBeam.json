@@ -10,7 +10,7 @@
             },
             "geometry": {
                 "length_x": 180.0 ,
-                "number_of_elements": 20,
+                "number_of_elements": 25,
                 "length_y": 30.0,
                 "length_z": 45.0
             }

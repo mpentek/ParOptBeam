@@ -383,16 +383,15 @@ class DynamicAnalysis(AnalysisType):
 
     """
 
-    def __init__(self, structure_model, force, time, dt, time_integration_scheme="GenAlpha", name="DynamicAnalysis"):
+    def __init__(self, structure_model, force, dt, array_time, time_integration_scheme="GenAlpha", name="DynamicAnalysis"):
         super().__init__(structure_model, name)
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force
 
-        self.dt = dt
-        self.time = time
-        self.array_time = np.arange(
-            self.time[0], self.time[1] + self.dt, self.dt)
+        self.dt = dt 
+        #self.time = time
+        self.array_time = np.asarray(array_time) #np.arange(self.time[0], self.time[1] + self.dt, self.dt)
         rows = len(self.structure_model.apply_bc_by_reduction(self.structure_model.k))
         cols = len(self.array_time)
 
