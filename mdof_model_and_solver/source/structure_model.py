@@ -256,6 +256,7 @@ class StraightBeam(object):
 
         # make a grid of indices on interest
         ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+        print(ixgrid)
 
         # create new array with zeros the size it should be
         # with ixgrid take from existing the relevant data and copy to new
@@ -274,10 +275,14 @@ class StraightBeam(object):
             cols = rows
             # make a grid of indices on interest
             ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+        elif axis == 'row_vector':
+            rows = len(self.all_dofs_global)
+            cols = 1
+            ixgrid = np.ix_(self.bcs_to_keep, [0])
         else:
             err_msg = "The extension mode with input \"" + axis
             err_msg += "\" for axis is not avaialbe \n"
-            err_msg += "Choose one of: \"row\", \"column\", \"both\""
+            err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
             raise Exception(err_msg)
 
         extended_matrix = np.zeros((rows, cols))

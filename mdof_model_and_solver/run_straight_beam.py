@@ -38,20 +38,20 @@ beam_model = StraightBeam(parameters)
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
 #eigenvalue_analysis.write_output_file()
-eigenvalue_analysis.plot_selected_eigenmode(1)
+#igenvalue_analysis.plot_selected_eigenmode(1)
 #eigenvalue_analysis.plot_selected_eigenmode(4)
-eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
+#eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
 #eigenvalue_analysis.animate_selected_eigenmode(1)
 
 
 
 # static analysis
-static_force = 10 * np.ones(120)
+static_force = 100000 * np.ones(120)
 print(static_force)
 static_analysis = StaticAnalysis(beam_model)
 static_analysis.solve(static_force)
-#static_analysis.write_output_file()
-#static_analysis.plot_solve_result()
+#static_analysis.write_output_file() # TODO : write the function to write out outputs 
+static_analysis.plot_solve_result()
 
 # Dynamic analysis 
 
@@ -63,19 +63,15 @@ array_time = np.arange (start_time,end_time + dt, dt)
 
 # # external dynamic force acting on the system
 freq = 1
-
 # # MDoFModel more degrees of freedom -> 2*len(Z) 2 degrees of freedom for each floor
-ampl_sin = 1000 * np.ones([120,1])
+ampl_sin = 100000 * np.ones([120,1])
 dynamic_force = ampl_sin * np.sin ( 2 * np.pi * freq * array_time)
 print('dynamic forces', dynamic_force)
-# initial condition # TODO : check a abetter way to do this 
-u0 = np.zeros(120) # initial displacement
-v0 = np.zeros(120)  # initial velocity
-a0 = np.zeros(120)  # initial acceleration
-
-dynamic_analysis = DynamicAnalysis(beam_model, np.array([u0,v0,a0]), dynamic_force, [start_time,end_time],
+# initial condition # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
+dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, [start_time,end_time],
                     dt, "GenAlpha" )
-
 dynamic_analysis.solve()
 dynamic_analysis.plot_selected_time_step(0.75)
 dynamic_analysis.animate_time_history()
+dynamic_analysis.plot_result_at_dof(30, 'acceleration')
+dynamic_analysis.plot_result_at_dof(30, 'displacement')

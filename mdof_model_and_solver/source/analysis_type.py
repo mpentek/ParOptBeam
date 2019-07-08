@@ -79,47 +79,14 @@ class StaticAnalysis(AnalysisType):
         print(np.linalg.det(k))
 
         self.static_result = np.linalg.solve(k, self.force)
-        result = np.zeros([1,len(self.static_result)])
-        result [0,:] = self.static_result
+        result = np.zeros([len(self.static_result),1])
+        result [:,0] = self.static_result
         print(result.shape)
 
-        self.static_result = self.structure_model.recuperate_bc_by_extension(result)
-
-
-
-        # if self.structure_model.category in ['SDoF', 'MDoFShear']:
-        #     self.displacement = self.result
-
-            # # TODO Compute reactions 
-            # self.reaction = -1/2 * \
-            #     self.structure_model.k[0, 0] * self.displacement[0]
-
-        # elif self.structure_model.category in ['MDoFBeam', 'MDoFMixed']:
-        #     self.displacement = self.result[::2]
-        #     self.rotation = self.result[1::2]
-            # TOD : compute reactions 
-
-            # self.reaction = -1/2 * \
-            #     self.structure_model.k[0, 0] * self.displacement[0]
-            # self.moment = -1/2 * \
-            #     self.structure_model.k[0, 1] * self.rotation[0]
-
-            # self.reaction = -1/2 * \
-            #     self.structure_model.k[0, 0] * self.displacement[0]
-            # self.moment = -1/2 * \
-            #     self.structure_model.k[0, 1] * self.rotation[0]
-
-        # else:
-        #     sys.exit('Selected structure not implemented!')
+        self.static_result = self.structure_model.recuperate_bc_by_extension(result, 'row_vector')
 
        
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
-            start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
-            stop = self.static_result.shape[0] + idx - step
-            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
-                                                                           1:step]
+       
     def plot_solve_result(self):
         """
         Pass to plot function:
@@ -131,6 +98,13 @@ class StaticAnalysis(AnalysisType):
 
         print("Plotting result in StaticAnalysis \n")
 
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                           1:step][:,0]
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                             self.structure_model.nodal_coordinates["y0"],
                             self.structure_model.nodal_coordinates["z0"]],
@@ -409,7 +383,7 @@ class DynamicAnalysis(AnalysisType):
 
     """
 
-    def __init__(self, structure_model, initial_conditions, force, time, dt, time_integration_scheme="GenAlpha", name="DynamicAnalysis"):
+    def __init__(self, structure_model, force, time, dt, time_integration_scheme="GenAlpha", name="DynamicAnalysis"):
         super().__init__(structure_model, name)
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
@@ -421,6 +395,14 @@ class DynamicAnalysis(AnalysisType):
             self.time[0], self.time[1] + self.dt, self.dt)
         rows = len(self.structure_model.apply_bc_by_reduction(self.structure_model.k))
         cols = len(self.array_time)
+
+        # inital condition of zero displacement and velocity used for the time being. 
+
+        u0 = np.zeros(rows) # initial displacement
+        v0 = np.zeros(rows)  # initial velocity
+        a0 = np.zeros(rows)  # initial acceleration
+        initial_conditions = np.array([u0,v0,a0])
+
 
         # adding additional attributes to the derived class
         self.displacement = np.zeros((rows, cols))
@@ -467,6 +449,28 @@ class DynamicAnalysis(AnalysisType):
         self.displacement = self.structure_model.recuperate_bc_by_extension(self.displacement)
         self.velocity = self.structure_model.recuperate_bc_by_extension(self.velocity)
         self.acceleration = self.structure_model.recuperate_bc_by_extension(self.acceleration)
+    
+    def plot_result_at_dof(self, dof, selected_result):
+        """
+        Pass to plot function:
+            Plots the time series of required quantitiy 
+        """
+        print('Plotting result for selected dof in dynamic analysis \n')
+        plot_title = selected_result.capitalize() + ' at DoF ' + str(dof)
+        if selected_result == 'displacement':
+            result_data = self.displacement[dof, :]
+        elif selected_result == 'velocity': 
+            result_data = self.velocity[dof, :]
+        elif selected_result == 'acceleration':
+            result_data = self.acceleration[dof, :]
+        else: 
+            err_msg = "The selected result \"" + selected_result
+            err_msg += "\" is not avaialbe \n"
+            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
+            raise Exception(err_msg)
+
+        visualize_result_utilities.plot_dynamic_result(plot_title, result_data, self.array_time)
+
 
     def plot_selected_time_step(self, selected_time_step):
         """
