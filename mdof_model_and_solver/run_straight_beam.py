@@ -51,6 +51,31 @@ print(static_force)
 static_analysis = StaticAnalysis(beam_model)
 static_analysis.solve(static_force)
 #static_analysis.write_output_file()
-static_analysis.plot_solve_result()
+#static_analysis.plot_solve_result()
 
 # Dynamic analysis 
+
+# # time parameters
+start_time = 0
+end_time = 10
+dt = 0.005
+array_time = np.arange (start_time,end_time + dt, dt)
+
+# # external dynamic force acting on the system
+freq = 1
+
+# # MDoFModel more degrees of freedom -> 2*len(Z) 2 degrees of freedom for each floor
+ampl_sin = 1000 * np.ones([120,1])
+dynamic_force = ampl_sin * np.sin ( 2 * np.pi * freq * array_time)
+print('dynamic forces', dynamic_force)
+# initial condition # TODO : check a abetter way to do this 
+u0 = np.zeros(120) # initial displacement
+v0 = np.zeros(120)  # initial velocity
+a0 = np.zeros(120)  # initial acceleration
+
+dynamic_analysis = DynamicAnalysis(beam_model, np.array([u0,v0,a0]), dynamic_force, [start_time,end_time],
+                    dt, "GenAlpha" )
+
+dynamic_analysis.solve()
+dynamic_analysis.plot_selected_time_step(0.75)
+dynamic_analysis.animate_time_history()

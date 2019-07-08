@@ -355,7 +355,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         time_steps = 100
         array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
-            0, self.period[selected_mode], time_steps))
+            0, self.period[selected_mode], time_steps))  # AK: can this be called an array tiem ? 
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
                               StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
@@ -520,26 +520,26 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
+        
+        print(self.displacement.shape)
+       
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
                               StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
             step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
-            stop = self.eigenform.shape[0] + idx - step
+            stop = self.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
-                                                                           1:step][:, sel.array_time]
-                                                                           
-        geometry = {"undeformed": [np.append(origin_point, self.structure_model.nodal_coordinates["x0"]),
-                                   np.append(origin_point, self.structure_model.nodal_coordinates["y0"])],
-                    "deformation": [[[] for i in range(len(self.array_time))], [[] for i in range(len(self.array_time))]],
-                    "deformed": [[[] for i in range(len(self.array_time))], [[] for i in range(len(self.array_time))]]}
-
-        for i in range(len(self.array_time)):
-            geometry["deformation"][0][i] = np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["x"][i]),
-                                                        np.append(origin_point, self.structure_model.nodal_coordinates["x0"]))
-            geometry["deformation"][1][i] = np.subtract(np.append(origin_point, self.structure_model.nodal_coordinates["y"][i]),
-                                                        np.append(origin_point, self.structure_model.nodal_coordinates["y0"]))
-
+                                                                           1:step]
+                                                                                                 
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
+            
         force = {"external": None,
                  "base_reaction": None}
 
