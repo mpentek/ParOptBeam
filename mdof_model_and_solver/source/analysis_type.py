@@ -18,7 +18,7 @@ Note:   UPDATE: The script has been written using publicly available information
             matplotlib.pyplot
 
 Created on:  22.11.2017
-Last update: 30.11.2017
+Last update: 09.07.2019
 '''
 # ===============================================================================
 
@@ -75,13 +75,10 @@ class StaticAnalysis(AnalysisType):
         self.force = ext_force
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        print(k)
-        print(np.linalg.det(k))
-
+        
         self.static_result = np.linalg.solve(k, self.force)
         result = np.zeros([len(self.static_result),1])
         result [:,0] = self.static_result
-        print(result.shape)
 
         self.static_result = self.structure_model.recuperate_bc_by_extension(result, 'row_vector')
 
@@ -144,9 +141,7 @@ class EigenvalueAnalysis(AnalysisType):
     def solve(self):
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        print('determinant of K',np.linalg.det(k))
         m = self.structure_model.apply_bc_by_reduction(self.structure_model.m)
-        print('determinant of M',np.linalg.det(m))
 
         eig_values_raw, eig_modes_raw = linalg.eigh(k, m)
         # rad/s
@@ -396,6 +391,7 @@ class DynamicAnalysis(AnalysisType):
         cols = len(self.array_time)
 
         # inital condition of zero displacement and velocity used for the time being. 
+        # TODO : to incorporate user defined initial conditions
 
         u0 = np.zeros(rows) # initial displacement
         v0 = np.zeros(rows)  # initial velocity
@@ -449,6 +445,30 @@ class DynamicAnalysis(AnalysisType):
         self.velocity = self.structure_model.recuperate_bc_by_extension(self.velocity)
         self.acceleration = self.structure_model.recuperate_bc_by_extension(self.acceleration)
     
+    def write_result_at_dof(self, dof, selected_result):
+        """"
+        This function writes out the time history of response at the selected dof
+
+        """
+        print('Writing out result for selected dof in dynamic analysis \n')
+        if selected_result == 'displacement':
+            result_data = self.displacement[dof, :]
+        elif selected_result == 'velocity': 
+            result_data = self.velocity[dof, :]
+        elif selected_result == 'acceleration':
+            result_data = self.acceleration[dof, :]
+        else: 
+            err_msg = "The selected result \"" + selected_result
+            err_msg += "\" is not avaialbe \n"
+            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
+            raise Exception(err_msg)
+
+        file = open(selected_result + "at_dof_" + str(dof) + ".txt", "w")
+        file.write("time \t" + selected_result + "\n")
+        for i in np.arange(len(self.array_time)):
+            file.write(str(self.array_time[i])+"\t"+str(result_data[i])+"\n")
+        file.close()
+
     def plot_result_at_dof(self, dof, selected_result):
         """
         Pass to plot function:
@@ -523,8 +543,6 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-        
-        print(self.displacement.shape)
        
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),

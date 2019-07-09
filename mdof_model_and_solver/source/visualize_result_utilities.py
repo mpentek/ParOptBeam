@@ -18,7 +18,7 @@ Note:   UPDATE: The script has been written using publicly available information
             matplotlib.pyplot
 
 Created on:  22.11.2017
-Last update: 23.11.2017
+Last update: 07.09.2019
 '''
 # ===============================================================================
 

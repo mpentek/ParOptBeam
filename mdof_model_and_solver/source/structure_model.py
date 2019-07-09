@@ -17,7 +17,7 @@ Note:   UPDATE: The script has been written using publicly available information
             matplotlib.pyplot
 
 Created on:  22.11.2017
-Last update: 23.11.2017
+Last update: 09.07.2018
 '''
 # ===============================================================================
 
@@ -256,7 +256,6 @@ class StraightBeam(object):
 
         # make a grid of indices on interest
         ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
-        print(ixgrid)
 
         # create new array with zeros the size it should be
         # with ixgrid take from existing the relevant data and copy to new
