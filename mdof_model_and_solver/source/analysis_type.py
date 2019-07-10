@@ -145,6 +145,23 @@ class StaticAnalysis(AnalysisType):
                                                scaling,
                                                1)
 
+    def write_output_file(self):
+        """"
+        This function writes out the nodal dofs of the deformed state
+
+        """
+        file = open("beam.txt", "w")
+        dict = {}
+        dict["length"] = max(self.structure_model.nodal_coordinates["x0"])
+        dict["num_of_elements"] = len(self.structure_model.nodal_coordinates["x0"])
+        for key, val in self.structure_model.nodal_coordinates.items():
+            dict[key] = val.tolist()
+
+        json_string = json.dumps(dict)
+
+        file.write(json_string)
+        file.close()
+
 
 class EigenvalueAnalysis(AnalysisType):
     """

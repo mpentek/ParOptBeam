@@ -35,18 +35,18 @@ parameters = json.loads(parameter_file.read())
 
 beam_model = StraightBeam(parameters)
 
-#==============================================
+# ==============================================
 # #eigen value analysis
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
-#eigenvalue_analysis.write_output_file()
-#eigenvalue_analysis.plot_selected_eigenmode(1)
-#eigenvalue_analysis.plot_selected_eigenmode(4)
-#eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
-#eigenvalue_analysis.animate_selected_eigenmode(1)
+# eigenvalue_analysis.write_output_file()
+# eigenvalue_analysis.plot_selected_eigenmode(1)
+# eigenvalue_analysis.plot_selected_eigenmode(4)
+# eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
+# eigenvalue_analysis.animate_selected_eigenmode(1)
 
 
-#============================================
+# ============================================
 # #static analysis 
 #static_force = 100000 * np.ones(150)
 static_force = np.zeros(150)
@@ -54,8 +54,8 @@ static_force[127] = 10000
 static_analysis = StaticAnalysis(beam_model)
 static_analysis.solve(static_force)
 static_analysis.plot_solve_result()
-
-#===========================================
+static_analysis.write_output_file()
+# ===========================================
 # Dynamic analysis 
 # array_time = np.load('array_time.npy')
 # dynamic_force = np.load('force_dynamic.npy')
