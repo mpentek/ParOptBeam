@@ -87,7 +87,7 @@ class StaticAnalysis(AnalysisType):
                         "a": np.zeros(0),
                         "b": np.zeros(0),
                         "g": np.zeros(0)}
-        self.resisting_force = np.matmul(self.structure_model.k,self.static_result)
+        self.resisting_force = - np.matmul(self.structure_model.k,self.static_result)
         ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
         self.resisting_force[ixgrid] = 0
         self.reaction = {"x": np.zeros(0),
@@ -318,8 +318,6 @@ class EigenvalueAnalysis(AnalysisType):
 
         scaling = {"deformation": 1,
                    "force": 1}
-        # print("Geometry: ", geometry)
-        # print("Self.Nodal coordinates: ", self.structure_model.nodal_coordinates["x"])
 
         plot_title = " "
         for selected_mode in range(number_of_modes):
@@ -465,7 +463,13 @@ class DynamicAnalysis(AnalysisType):
         self.displacement = self.structure_model.recuperate_bc_by_extension(self.displacement)
         self.velocity = self.structure_model.recuperate_bc_by_extension(self.velocity)
         self.acceleration = self.structure_model.recuperate_bc_by_extension(self.acceleration)
-    
+
+    def compute_reactions(self):
+        # forward multiplying to compute the forces and reactions 
+        self.dynamic_reaction = -np.matmul(self.structure_model.m,self.displacement)
+        -np.matmul(self.structure_model.b, self.velocity)
+        -np.matmul(self.structure_model.k, self.displacement)
+        
     def write_result_at_dof(self, dof, selected_result):
         """"
         This function writes out the time history of response at the selected dof
