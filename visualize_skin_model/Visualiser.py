@@ -39,7 +39,6 @@ class Visualiser:
         self.visualise_structure()
         self.visualise_line_structure()
         self.visualise_interpolated_line_structure()
-        self.ax.set_zlim([0, self.ax.get_zlim()[1]])
 
         plt.tight_layout()
         plt.show()

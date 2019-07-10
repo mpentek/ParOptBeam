@@ -7,3 +7,5 @@ time_schemes/one_variable/statics_env/lib/python3\.6/site-packages/bleach/__pyca
 mdof_model_and_solver/level_force/
 
 *.npy
+
+*.avi
