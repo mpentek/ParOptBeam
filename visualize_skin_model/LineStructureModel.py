@@ -15,12 +15,13 @@ class LineStructure:
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
         self.s_vec = []  # beam-wise vector
-        self.dx_vec, self.dy_vec, self.dz_vec = [], [], []
+        self.dx_vec, self.dy_vec, self.dz_vec, self.ds_vec = [], [], [], []
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
         self.beam_length = 0
         self.num_of_nodes = 0
         self.node_positions = {}
         self.dofs = {}
+        self.beam_direction = None
 
         if structure_file is not None:
             with open(structure_file) as json_file:

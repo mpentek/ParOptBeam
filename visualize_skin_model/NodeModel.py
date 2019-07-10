@@ -10,6 +10,12 @@ class Node:
         self.x = self.x0
         self.y = self.y0
         self.z = self.z0
+        self.dx = 0.0
+        self.dy = 0.0
+        self.dz = 0.0
+        self.theta_x = 0.0
+        self.theta_y = 0.0
+        self.theta_z = 0.0
     
     def assign_dofs(self, dx, dy, dz, theta_x, theta_y, theta_z):
         self.dx = dx

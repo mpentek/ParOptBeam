@@ -35,7 +35,7 @@ class Visualiser:
         self.ax.set_zlabel('z')
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
-        # self.update()
+        self.update()
         self.visualise_structure()
         self.visualise_line_structure()
         self.visualise_interpolated_line_structure()
@@ -117,6 +117,6 @@ class Visualiser:
         """
         # self.ax.cla()
         self.mapper.map_interpolated_line_structure_to_structure_floor()
-        self.line_structure.apply_transformation_for_line_structure()
-        self.interpolated_line_structure.apply_transformation_for_line_structure()
-        self.structure.apply_transformation_for_structure()
+        # self.line_structure.apply_transformation_for_line_structure()
+        # self.interpolated_line_structure.apply_transformation_for_line_structure()
+        # self.structure.apply_transformation_for_structure()
