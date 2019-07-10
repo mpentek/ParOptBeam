@@ -14,6 +14,7 @@ class LineStructure:
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
+        self.x0_vec, self.y0_vec, self.z0_vec = [], [], []
         self.s_vec = []  # beam-wise vector
         self.dx_vec, self.dy_vec, self.dz_vec, self.ds_vec = [], [], [], []
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
@@ -53,6 +54,9 @@ class LineStructure:
             z = self.node_positions["z0"][i]
             node = Node(x, y, z)
             self.nodes.append(node)
+            self.x0_vec.append(node.x0)
+            self.y0_vec.append(node.y0)
+            self.z0_vec.append(node.z0)
             self.x_vec.append(node.x0)
             self.y_vec.append(node.y0)
             self.z_vec.append(node.z0)

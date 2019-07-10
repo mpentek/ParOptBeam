@@ -56,6 +56,9 @@ class Mapper:
             s = self.interpolated_line_structure.s_vec[i]
             # interpolate a node on the interpolated LS to LS
             self.interpolate_dofs(s, node, self.line_structure)
+            self.interpolated_line_structure.x0_vec.append(node.x0)
+            self.interpolated_line_structure.y0_vec.append(node.y0)
+            self.interpolated_line_structure.z0_vec.append(node.z0)
             self.interpolated_line_structure.x_vec.append(node.x0)
             self.interpolated_line_structure.y_vec.append(node.y0)
             self.interpolated_line_structure.z_vec.append(node.z0)

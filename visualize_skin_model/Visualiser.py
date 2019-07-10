@@ -27,7 +27,7 @@ class Visualiser:
             self.structure = structure
         self.mapper = Mapper(structure, line_structure)
         self.interpolated_line_structure = self.mapper.interpolated_line_structure
-        self.factor = 100.
+        self.factor = 150.
 
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-90, elev=10)
@@ -74,14 +74,25 @@ class Visualiser:
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
     def visualise_line_structure(self):
-        z = np.array([self.line_structure.z_vec, self.line_structure.z_vec])
-        self.ax.plot_wireframe(self.line_structure.x_vec, self.line_structure.y_vec, z, color='b', linewidth=3)
+        x_vec = self.line_structure.x0_vec + np.subtract(self.line_structure.x_vec, self.line_structure.x0_vec) * self.factor
+        y_vec = self.line_structure.y0_vec + np.subtract(self.line_structure.y_vec, self.line_structure.y0_vec) * self.factor
+        z_vec = self.line_structure.z0_vec + np.subtract(self.line_structure.z_vec, self.line_structure.z0_vec) * self.factor
+
+        z = np.array([z_vec, z_vec])
+        self.ax.plot_wireframe(x_vec, y_vec, z, color='b', linewidth=3)
         for node in self.line_structure.nodes:
-            self.ax.scatter(node.x, node.y, node.z, marker='o', c='r', s=100)
+            x = node.x0 + (node.x - node.x0) * self.factor
+            y = node.y0 + (node.y - node.y0) * self.factor
+            z = node.z0 + (node.z - node.z0) * self.factor
+            self.ax.scatter(x, y, z, marker='o', c='r', s=100)
 
     def visualise_interpolated_line_structure(self):
-        z = np.array([self.interpolated_line_structure.z_vec, self.interpolated_line_structure.z_vec])
-        self.ax.plot_wireframe(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.y_vec, z,
+        x_vec = self.interpolated_line_structure.x0_vec + np.subtract(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.x0_vec) * self.factor
+        y_vec = self.interpolated_line_structure.y0_vec + np.subtract(self.interpolated_line_structure.y_vec, self.interpolated_line_structure.y0_vec) * self.factor
+        z_vec = self.interpolated_line_structure.z0_vec + np.subtract(self.interpolated_line_structure.z_vec, self.interpolated_line_structure.z0_vec) * self.factor
+
+        z = np.array([z_vec, z_vec])
+        self.ax.plot_wireframe(x_vec, y_vec, z,
                                color='g', linewidth=3, linestyle='--')
         # for node in self.interpolated_line_structure.nodes:
         # self.ax.scatter(node.x, node.y, node.z, marker='o', c='g', s = 50)

@@ -103,7 +103,6 @@ class Structure:
         self.print_structure_info()
         self.create_elements()
         self.create_frames()
-        self.print_structure_element(2)
 
     def print_structure_info(self):
         msg = "=============================================\n"
