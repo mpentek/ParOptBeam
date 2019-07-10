@@ -218,7 +218,8 @@ class StraightBeam(object):
                 bc_dofs_global[idx] = dof + len(self.all_dofs_global)
 
         # only take bc's of interes
-        self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global))
+        self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
+        #AK :is it better to rename it to dof_to_keep than bc_to_keep ??
 
         # structural properties
         # mass matrix
@@ -255,7 +256,7 @@ class StraightBeam(object):
         # TODO: test
 
         # make a grid of indices on interest
-        ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+        #ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
 
         # create new array with zeros the size it should be
         # with ixgrid take from existing the relevant data and copy to new
@@ -278,6 +279,7 @@ class StraightBeam(object):
             rows = len(self.all_dofs_global)
             cols = 1
             ixgrid = np.ix_(self.bcs_to_keep, [0])
+            matrix = matrix.reshape([len(matrix),1])
         else:
             err_msg = "The extension mode with input \"" + axis
             err_msg += "\" for axis is not avaialbe \n"

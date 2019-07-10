@@ -77,11 +77,25 @@ class StaticAnalysis(AnalysisType):
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
         
         self.static_result = np.linalg.solve(k, self.force)
-        result = np.zeros([len(self.static_result),1])
-        result [:,0] = self.static_result
+        
 
-        self.static_result = self.structure_model.recuperate_bc_by_extension(result, 'row_vector')
-
+        self.static_result = self.structure_model.recuperate_bc_by_extension(self.static_result, 'row_vector')
+        self.force = self.structure_model.recuperate_bc_by_extension(self.force, 'row_vector')
+        self.force_action = {"x": np.zeros(0),
+                        "y": np.zeros(0),
+                        "z": np.zeros(0),
+                        "a": np.zeros(0),
+                        "b": np.zeros(0),
+                        "g": np.zeros(0)}
+        self.resisting_force = np.matmul(self.structure_model.k,self.static_result)
+        ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
+        self.resisting_force[ixgrid] = 0
+        self.reaction = {"x": np.zeros(0),
+                        "y": np.zeros(0),
+                        "z": np.zeros(0),
+                        "a": np.zeros(0),
+                        "b": np.zeros(0),
+                        "g": np.zeros(0)}
        
        
     def plot_solve_result(self):
@@ -102,6 +116,9 @@ class StaticAnalysis(AnalysisType):
             stop = self.static_result.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
                                                                            1:step][:,0]
+            self.force_action[label] = self.force[start:stop + 1:step][:,0]
+            self.reaction[label] = self.resisting_force[start:stop + 1:step][:,0]
+
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                             self.structure_model.nodal_coordinates["y0"],
                             self.structure_model.nodal_coordinates["z0"]],
@@ -110,8 +127,12 @@ class StaticAnalysis(AnalysisType):
                             self.structure_model.nodal_coordinates["z"]],
             "deformed": None}
 
-        force = {"external": None ,# [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
-                 "base_reaction": None } #[np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+        force = {"external": [self.force_action["x"],
+                            self.force_action["y"],
+                            self.force_action["z"]], 
+                 "reaction": [self.reaction["x"],
+                            self.reaction["y"],
+                            self.reaction["z"]] } 
 
         scaling = {"deformation": 1,
                    "force": 1}

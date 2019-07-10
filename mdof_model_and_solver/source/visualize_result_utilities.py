@@ -174,16 +174,20 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
 
         try:
             # TODO: syntax neesds to be updated for quiver and forces
-            plt.quiver(geometry["undeformed"][0],
+            ax.quiver(geometry["undeformed"][0],
                        geometry["undeformed"][1],
+                       geometry["undeformed"][2],
                        force["external"][0],
                        force["external"][1],
+                       force["external"][2],
                        color="red")
 
-            plt.quiver(geometry["undeformed"][0][0],
-                       geometry["undeformed"][0][1],
-                       force["base_reaction"][0][0],
-                       force["base_reaction"][0][1],
+            ax.quiver(geometry["undeformed"][0],
+                       geometry["undeformed"][1],
+                       geometry["undeformed"][2],
+                       force["reaction"][0],
+                       force["reaction"][1],
+                       force["reaction"][2],
                        color="green")
 
         except:
