@@ -27,6 +27,7 @@ class Visualiser:
             self.structure = structure
         self.mapper = Mapper(structure, line_structure)
         self.interpolated_line_structure = self.mapper.interpolated_line_structure
+        self.factor = 100.
 
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-90, elev=10)
@@ -90,18 +91,27 @@ class Visualiser:
         self.visualize_frame()
 
     def visualise_element(self):
-        for floor in self.structure.elements:
-            x_vec = floor.x_vec + [floor.x_vec[0]]
-            y_vec = floor.y_vec + [floor.y_vec[0]]
-            z_vec = floor.z_vec + [floor.z_vec[0]]
+        for element in self.structure.elements:
+            x_vec = element.x0_vec + np.subtract(element.x_vec, element.x0_vec) * self.factor
+            y_vec = element.y0_vec + np.subtract(element.y_vec, element.y0_vec) * self.factor
+            z_vec = element.z0_vec + np.subtract(element.z_vec, element.z0_vec) * self.factor
+
+            x_vec = np.append(x_vec, x_vec[0])
+            y_vec = np.append(y_vec, y_vec[0])
+            z_vec = np.append(z_vec, z_vec[0])
+
             z = np.array([z_vec, z_vec])
 
             self.ax.plot_wireframe(x_vec, y_vec, z, color='black')
 
     def visualize_frame(self):
         for frame in self.structure.frames:
-            z = np.array([frame.z_vec, frame.z_vec])
-            self.ax.plot_wireframe(frame.x_vec, frame.y_vec, z, color='black')
+            x_vec = frame.x0_vec + np.subtract(frame.x_vec, frame.x0_vec) * self.factor
+            y_vec = frame.y0_vec + np.subtract(frame.y_vec, frame.y0_vec) * self.factor
+            z_vec = frame.z0_vec + np.subtract(frame.z_vec, frame.z0_vec) * self.factor
+
+            z = np.array([z_vec, z_vec])
+            self.ax.plot_wireframe(x_vec, y_vec, z, color='black')
 
     def animate(self):
         # Set up formatting for the movie files
@@ -117,6 +127,6 @@ class Visualiser:
         """
         # self.ax.cla()
         self.mapper.map_interpolated_line_structure_to_structure_floor()
-        # self.line_structure.apply_transformation_for_line_structure()
-        # self.interpolated_line_structure.apply_transformation_for_line_structure()
-        # self.structure.apply_transformation_for_structure()
+        self.line_structure.apply_transformation_for_line_structure()
+        self.interpolated_line_structure.apply_transformation_for_line_structure()
+        self.structure.apply_transformation_for_structure()
