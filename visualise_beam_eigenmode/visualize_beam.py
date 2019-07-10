@@ -436,7 +436,7 @@ if __name__ == "__main__":
         "dy": lambda t, z: t/(t+1e-32) * z/(z+1e-32)
     }
     myStructure = Structure(displacement, rotation, num_of_points_in_height, num_of_floors, floor_geometry_square, floor_height)
-    #myStructure.animate()
+    myStructure.animate()
     myStructure._reconstruct_function_in_vectors(0)
     myStructure._create_all_floors(0)
     myStructure.plot_all_floors()
