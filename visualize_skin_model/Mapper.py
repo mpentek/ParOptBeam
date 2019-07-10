@@ -29,7 +29,6 @@ class Mapper:
     def map_interpolated_line_structure_to_structure_floor(self):
         for element in self.structure.elements:
             mid_s = sum(element.s_vec) / len(element.s_vec)
-            print(mid_s)
 
             self.interpolate_dofs(mid_s, element.nodes, self.interpolated_line_structure)
 
@@ -45,14 +44,13 @@ class Mapper:
                 s_vec = np.linspace(mid_s_prev, mid_s, INTERPOLATION_DENSITY, endpoint=False)
             else:
                 s_vec = np.linspace(mid_s_prev, mid_s, INTERPOLATION_DENSITY)
-
             for s in s_vec:
                 node = Node(mid_x, mid_y, mid_z)
                 # print("NODE: [", mid_x, mid_y, mid_z, "]")
                 self.interpolated_line_structure.s_vec.append(s)
                 self.interpolated_line_structure.nodes.append(node)
 
-            mid_s_prev = s
+            mid_s_prev = mid_s
 
         for i, node in zip(range(len(self.interpolated_line_structure.nodes)), self.interpolated_line_structure.nodes):
             s = self.interpolated_line_structure.s_vec[i]
