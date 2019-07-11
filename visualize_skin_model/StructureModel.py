@@ -7,14 +7,15 @@ CONTOUR_DENSITY = 1
 
 
 class Element:
-    def __init__(self, floor_geometry, s, beam_direction="x"):
+    def __init__(self, geometry, s, beam_direction="x"):
         """
         creating single floor based on the given floor geometry with the floor height
         @:param s: coordinate in the beam direction
         """
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
-        for point in floor_geometry:
+        self.x0_vec, self.y0_vec, self.z0_vec = [], [], []
+        for point in geometry:
             # the beam direction takes a dummy value 0 at the beginning and will be overwritten
             x = point["x"]
             y = point["y"]
@@ -25,6 +26,9 @@ class Element:
                 y = s
             elif beam_direction == "z":
                 z = s
+            self.x0_vec.append(x)
+            self.y0_vec.append(y)
+            self.z0_vec.append(z)
             self.x_vec.append(x)
             self.y_vec.append(y)
             self.z_vec.append(z)
@@ -58,11 +62,15 @@ class Frame:
         connecting all points from the same geometry point for each floor
         """
         self.nodes = []
-        self.x_vec, self.y_vec, self.z_vec = [], [], []
-        self.s_vec = []
+        self.x_vec, self.y_vec, self.z_vec, self.s_vec = [], [], [], []
+        self.x0_vec, self.y0_vec, self.z0_vec = [], [], []
+
         for floor in floors:
             node = floor.nodes[index]
             self.nodes.append(node)
+            self.x0_vec.append(node.x0)
+            self.y0_vec.append(node.y0)
+            self.z0_vec.append(node.z0)
             self.x_vec.append(node.x0)
             self.y_vec.append(node.y0)
             self.z_vec.append(node.z0)
@@ -95,7 +103,6 @@ class Structure:
         self.print_structure_info()
         self.create_elements()
         self.create_frames()
-        self.print_structure_element(2)
 
     def print_structure_info(self):
         msg = "=============================================\n"
