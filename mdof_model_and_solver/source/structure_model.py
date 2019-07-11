@@ -147,6 +147,10 @@ class StraightBeam(object):
         self.parameters['g'] = 8.75 * 10**3 * 10**6 #self.parameters['e'] / \
             # 2 / (1+self.parameters['nu'])
 
+        # NOTE: trying out the other configuration
+        #self.parameters['e'] = 4.75 * 10**4 * 10**6
+        #self.parameters['g'] = self.parameters['e'] / 2 / (1+0.2)
+
         self.parameters['x'] = [(x + 0.5)/24 * 68.04 for x in list(range(self.parameters['n_el']))]
         print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
         # geometric
@@ -192,6 +196,10 @@ class StraightBeam(object):
             # (self.parameters['g'] * self.parameters['a_sz']
             #  * self.parameters['lx_i']**2)
 
+        # NOTE: Bernoulli beam
+        # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
+        # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
+        
         # NOTE: to check mass
         total_mass = 0.0
         for i in range(len(self.parameters['x'])):
