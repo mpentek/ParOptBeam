@@ -48,24 +48,24 @@ eigenvalue_analysis.solve()
 
 #============================================
 # #static analysis 
-#static_force = 100000 * np.ones(150)
-static_force = np.zeros(150)
-static_force[127] = 10000
+static_force = 10 * np.ones(150) # Note :  the forces in the BC nodes are also included 
+#static_force = np.zeros(150)
+#static_force[127] = 10000
 static_analysis = StaticAnalysis(beam_model)
 static_analysis.solve(static_force)
 static_analysis.plot_solve_result()
 
-#===========================================
+# ===========================================
 # Dynamic analysis 
-# array_time = np.load('array_time.npy')
-# dynamic_force = np.load('force_dynamic.npy')
-# dt = array_time[1] - array_time[0]
-# # initial condition # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
-# dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
-#                         "GenAlpha" )
-# dynamic_analysis.solve()
-# dynamic_analysis.plot_selected_time_step(125)
-# dynamic_analysis.animate_time_history()
-# dynamic_analysis.write_result_at_dof(31, 'displacement')
-# dynamic_analysis.plot_result_at_dof(31, 'acceleration')
-# dynamic_analysis.plot_result_at_dof(31, 'displacement')
+array_time = np.load('array_time.npy')
+dynamic_force = np.load('force_dynamic.npy')
+dt = array_time[1] - array_time[0]
+# initial condition # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
+dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
+                        "GenAlpha" )
+dynamic_analysis.solve()
+dynamic_analysis.plot_selected_time_step(125)
+dynamic_analysis.animate_time_history()
+dynamic_analysis.write_result_at_dof(31, 'displacement')
+dynamic_analysis.plot_result_at_dof(31, 'acceleration')
+dynamic_analysis.plot_result_at_dof(31, 'displacement')

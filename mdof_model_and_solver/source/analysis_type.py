@@ -73,21 +73,21 @@ class StaticAnalysis(AnalysisType):
     def solve(self, ext_force):
         print("Solving for ext_force in StaticAnalysis derived class \n")
         self.force = ext_force
+        force = self.structure_model.apply_bc_by_reduction(self.force,'row_vector')
+        
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        
-        self.static_result = np.linalg.solve(k, self.force)
-        
-
+        self.static_result = np.linalg.solve(k, force)    
         self.static_result = self.structure_model.recuperate_bc_by_extension(self.static_result, 'row_vector')
-        self.force = self.structure_model.recuperate_bc_by_extension(self.force, 'row_vector')
         self.force_action = {"x": np.zeros(0),
                         "y": np.zeros(0),
                         "z": np.zeros(0),
                         "a": np.zeros(0),
                         "b": np.zeros(0),
                         "g": np.zeros(0)}
-        self.resisting_force = - np.matmul(self.structure_model.k,self.static_result)
+
+        #self.force = self.structure_model.recuperate_bc_by_extension(self.force,'row_vector')
+        self.resisting_force = self.force - np.matmul(self.structure_model.k,self.static_result)
         ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
         self.resisting_force[ixgrid] = 0
         self.reaction = {"x": np.zeros(0),
@@ -116,7 +116,7 @@ class StaticAnalysis(AnalysisType):
             stop = self.static_result.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
                                                                            1:step][:,0]
-            self.force_action[label] = self.force[start:stop + 1:step][:,0]
+            self.force_action[label] = self.force[start:stop + 1:step]
             self.reaction[label] = self.resisting_force[start:stop + 1:step][:,0]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
@@ -402,7 +402,6 @@ class DynamicAnalysis(AnalysisType):
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force
-
         self.dt = dt 
         #self.time = time
         self.array_time = np.asarray(array_time) #np.arange(self.time[0], self.time[1] + self.dt, self.dt)
@@ -423,7 +422,7 @@ class DynamicAnalysis(AnalysisType):
         self.velocity = np.zeros((rows, cols))
         self.acceleration = np.zeros((rows, cols))
 
-        if self.force.shape[1] != len(self.array_time):
+        if force.shape[1] != len(self.array_time):
             err_msg = "The time step for forces does not match the time step defined"
             raise Exception(err_msg)
 
@@ -447,10 +446,11 @@ class DynamicAnalysis(AnalysisType):
 
     def solve(self):
         print("Solving the structure for dynamic loads \n")
+        force = self.structure_model.apply_bc_by_reduction(self.force,'row')
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
-            self.solver.solve_structure(self.force[:, i])
+            self.solver.solve_structure(force[:, i])
 
             # appending results to the list
             self.displacement[:, i] = self.solver.get_displacement()
@@ -466,7 +466,7 @@ class DynamicAnalysis(AnalysisType):
 
     def compute_reactions(self):
         # forward multiplying to compute the forces and reactions 
-        self.dynamic_reaction = -np.matmul(self.structure_model.m,self.displacement)
+        self.dynamic_reaction = self.force - np.matmul(self.structure_model.m,self.displacement)
         -np.matmul(self.structure_model.b, self.velocity)
         -np.matmul(self.structure_model.k, self.displacement)
         

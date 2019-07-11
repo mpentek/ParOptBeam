@@ -229,7 +229,7 @@ class StraightBeam(object):
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
 
-    def apply_bc_by_reduction(self, matrix):
+    def apply_bc_by_reduction(self, matrix, axis='both'):
         '''
         list of dofs to apply bc's to provided by self.bc_dofs
         convert prescribed bc's to global dof number
@@ -239,11 +239,34 @@ class StraightBeam(object):
 
         # NOTE: should be quite robust
         # TODO: test
-
-        # make a grid of indices on interest
-        ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+        if axis == 'row':
+            rows = len(self.all_dofs_global)
+            cols = matrix.shape[1]
+            # make a grid of indices on interest
+            ixgrid = np.ix_(self.bcs_to_keep, np.arange(matrix.shape[1]))
+        elif axis == 'column':
+            rows = matrix.shape[0]
+            cols = len(self.all_dofs_global)
+            # make a grid of indices on interest
+            ixgrid = np.ix_(np.arange(matrix.shape[0]), self.bcs_to_keep)
+        elif axis == 'both':
+            rows = len(self.all_dofs_global)
+            cols = rows
+            # make a grid of indices on interest
+            ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+        elif axis == 'row_vector':
+            rows = len(self.all_dofs_global)
+            cols = 1
+            ixgrid = np.ix_(self.bcs_to_keep, [0])
+            matrix = matrix.reshape([len(matrix),1])
+        else:
+            err_msg = "The reduction mode with input \"" + axis
+            err_msg += "\" for axis is not avaialbe \n"
+            err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
+            raise Exception(err_msg)
 
         return matrix[ixgrid]
+    
 
     def recuperate_bc_by_extension(self, matrix, axis='row'):
         '''

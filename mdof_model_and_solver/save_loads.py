@@ -39,42 +39,28 @@ parameters = json.loads(parameter_file.read())
 
 beam_model = StraightBeam(parameters)
 
-#==============================================
-# #eigen value analysis
-# eigenvalue_analysis = EigenvalueAnalysis(beam_model)
-# eigenvalue_analysis.solve()
-# eigenvalue_analysis.write_output_file()
-# igenvalue_analysis.plot_selected_eigenmode(1)
-# eigenvalue_analysis.plot_selected_eigenmode(4)
-# eigenvalue_analysis.plot_selected_first_n_eigenmodes(3)
-# eigenvalue_analysis.animate_selected_eigenmode(1)
 
-
-#============================================
-# #static analysis 
-# static_force = 100000 * np.ones(120)
-# print(static_force)
-# static_analysis = StaticAnalysis(beam_model)
-# static_analysis.solve(static_force)
-# static_analysis.write_output_file() # TODO : write the function to write out outputs 
-# static_analysis.plot_solve_result()
-
-#===========================================
-# Dynamic analysis 
-# # time parameters
 number_of_elements = parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]
 #  only applicable to fixed boundary condition 
 force_data_folder = 'level_force'
 
 array_time = np.loadtxt(force_data_folder+'/level_0.dat', usecols=(0,), skiprows=7)
-dynamic_force = np.zeros([len(beam_model.bcs_to_keep), len(array_time)])
+dynamic_force = np.zeros([len(beam_model.all_dofs_global), len(array_time)])
 num_dof = beam_model.DOFS_PER_NODE[beam_model.domain_size]
 # extracting the forces from the files
 for level in np.arange(number_of_elements):
     array_time_i = np.loadtxt(force_data_folder+'/level_'+str(level)+'.dat', usecols=(0,), skiprows=7)
-    force_i = np.loadtxt(force_data_folder+'/level_'+str(level)+'.dat', usecols=(1,2,3,4,5,6), skiprows=7)
+    force_i = np.zeros([num_dof,len(array_time)])
+    force_from_file = np.loadtxt(force_data_folder+'/level_'+str(level)+'.dat', usecols=(1,2,3,4,5,6), skiprows=7)
+    force_i[0,:] = force_from_file[:,2]
+    force_i[1,:] = force_from_file[:,0]
+    force_i[2,:] = force_from_file[:,1]
+    force_i[3,:] = force_from_file[:,5]
+    force_i[4,:] = force_from_file[:,3]
+    force_i[5,:] = force_from_file[:,4]
+    # TODO : check better ways tto do this 
     if np.array_equal(array_time,array_time_i): 
-        dynamic_force[level*num_dof:(level+1)*num_dof,:] = np.transpose(force_i)
+        dynamic_force[level*num_dof:(level+1)*num_dof,:] = force_i
     else:
         err_msg = "The time array doesnt match : please check the data"
         raise Exception(err_msg)
