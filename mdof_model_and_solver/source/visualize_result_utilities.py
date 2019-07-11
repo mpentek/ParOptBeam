@@ -58,12 +58,12 @@ use version (2) for animating
 
 # only a maximum number of line plots is available
 # these are formatted for : undefomed, (primary) deformed 0, (other) deformed 1, 2, 3
-LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue"],
-                   "linestyle":      ["--",    "-",  "-",    "-",   "-"],
-                   "marker":         ["o",    "s",  "^",    "p",   "x"],
-                   "markeredgecolor": ["grey", "black", "red", "green", "blue"],
-                   "markerfacecolor": ["grey", "black", "red", "green", "blue"],
-                   "markersize":     [4,      4,    4,      4,    4, ]}
+LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "magenta"],
+                   "linestyle":      ["--",    "-",  "-",    "-",   "-",   "-"],
+                   "marker":         ["o",    "s",  "^",    "p",   "x", "*"],
+                   "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
+                   "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
+                   "markersize":     [4,      4,    4,      4,    4,    4 ]}
 
 '''
 geometry = {"undeformed":...,
@@ -196,7 +196,7 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
 
     # TODO: make generic and compatible with all possible DoFs
     # multiple func in one plot
-    elif (n_data < 4):
+    elif (n_data < 5):
         for i in range(n_data):
             # TODO not using current formatting yet, needs update
             ax.plot(geometry["deformed"][0][:, i],
@@ -212,7 +212,7 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
 
     else:
         raise Exception(" Plot format not supported for the request " +
-                        str(n_data) + ", maximum 4 allowed.")
+                        str(n_data) + ", maximum 5 allowed.")
 
     # we do not have legend -> uncomnneted line ax.legend() to avoid waring: No labelleb objects found
     ax.legend()

@@ -131,50 +131,74 @@ class StraightBeam(object):
         # NOTE: for now using the assumption of the prismatic homogenous isotropic beam
         self.parameters = {
             # material
-            'rho': parameters["model_parameters"]["system_parameters"]["material"]["density"],
-            'e': parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
+            'rho': 25 * 10**3 / 9.81, # parameters["model_parameters"]["system_parameters"]["material"]["density"],
+            'e': 2.1 * 10**4 * 10**6, #parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
             'nu': parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
-            'lx': parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
-            'ly': parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
-            'lz': parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            'n_el': parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'lx': 68.03, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
+            'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
+            'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
+            'n_el': 24} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
         # shear modulus
-        self.parameters['g'] = self.parameters['e'] / \
-            2 / (1+self.parameters['nu'])
+        self.parameters['g'] = 8.75 * 10**3 * 10**6 #self.parameters['e'] / \
+            # 2 / (1+self.parameters['nu'])
 
+        self.parameters['x'] = [(x + 0.5)/24 * 68.04 for x in list(range(self.parameters['n_el']))]
+        print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
         # geometric
         # area
-        self.parameters['a'] = self.parameters['ly'] * self.parameters['lz']
+        self.parameters['a'] = [0.0000060281 * x**4 - 0.0008930429 * x**3 + 0.0539574856 * x**2 - 1.2982109704 * x + 20.1996417966 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
+        print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
         # effective area of shear
-        self.parameters['a_sy'] = 5/6 * self.parameters['a']
-        self.parameters['a_sz'] = 5/6 * self.parameters['a']
+        self.parameters['a_sy'] = [0.0000023084 * x**4 - 0.0003362862 * x**3 + 0.0243551052 * x**2 - 0.6726587828 * x + 14.7362127339 for x in self.parameters['x']] # 5/6 * self.parameters['a']
+        self.parameters['a_sz'] = [0.0000045286 * x**4 - 0.0006672992 * x**3 + 0.0409716148 * x**2 - 1.0044002521 * x + 16.0508221515 for x in self.parameters['x']] # 5/6 * self.parameters['a']
+        print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
+        print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
         # second moment of inertia
-        self.parameters['iy'] = 1/12 * \
-            self.parameters['ly'] * self.parameters['lz']**3
-        self.parameters['iz'] = 1/12 * \
-            self.parameters['ly']**3 * self.parameters['lz']
+        self.parameters['iy'] = [0.0000000828 * x**6 - 0.0000185982 * x**5 + 0.0016366257 * x**4 - 0.0710808080 * x**3 + 1.5820646001 * x**2 - 16.7453124616 * x + 70.2375434629 for x in self.parameters['x']] # 1/12 * \
+            # self.parameters['ly'] * self.parameters['lz']**3
+        self.parameters['iz'] = [0.0000230055 * x**4 - 0.0022742832 * x**3 + 0.0985530843 * x**2 - 1.9650019003 * x + 26.4698461261 for x in self.parameters['x']] # 1/12 * \
+            # self.parameters['ly']**3 * self.parameters['lz']
+        print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
+        print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
+
         # polar moment of inertia
-        self.parameters['ip'] = 1/12 * self.parameters['ly'] * \
+        val = 1/12 * self.parameters['ly'] * \
             self.parameters['lz'] * \
             (self.parameters['ly']**2 + self.parameters['lz']**2)
+        ###    
+        #val = 0.0
+        # NOTE: maybe substitute val = 0.0 as according to Sofistik??
+        self.parameters['ip'] = [val for x in self.parameters['x']]
+        print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')
         # torsion constant
-        self.parameters['it'] = min(self.parameters['ly'], self.parameters['lz'])**3 * max(
-            self.parameters['ly'], self.parameters['lz'])/7
+        self.parameters['it'] = [0.0000226224 * x**4 - 0.0028431733 * x**3 + 0.1550260253 * x**2 - 3.5912285380 * x + 42.1805557663 for x in self.parameters['x']] # min(self.parameters['ly'], self.parameters['lz'])**3 * max(
+            # self.parameters['ly'], self.parameters['lz'])/7
+        print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
         # length of one element
         self.parameters['lx_i'] = self.parameters['lx'] / \
             self.parameters['n_el']
         # relative importance of the shear deformation to the bending one
-        self.parameters['py'] = 12 * self.parameters['e'] * self.parameters['iz'] / \
-            (self.parameters['g'] * self.parameters['a_sy']
-             * self.parameters['lx_i']**2)
-        self.parameters['pz'] = 12 * self.parameters['e'] * self.parameters['iy'] / \
-            (self.parameters['g'] * self.parameters['a_sz']
-             * self.parameters['lx_i']**2)
+        self.parameters['py'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
+            # 12 * self.parameters['e'] * self.parameters['iz'] / \
+            # (self.parameters['g'] * self.parameters['a_sy']
+            #  * self.parameters['lx_i']**2)
+        self.parameters['pz'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
+            # 12 * self.parameters['e'] * self.parameters['iy'] / \
+            # (self.parameters['g'] * self.parameters['a_sz']
+            #  * self.parameters['lx_i']**2)
+
+        # NOTE: to check mass
+        total_mass = 0.0
+        for i in range(len(self.parameters['x'])):
+            total_mass += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
+        print('total m: ', total_mass)
+        # NOTE: is 2565971.048 -> should be 2414220.000        
+        wait = input('check...')
 
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -414,7 +438,7 @@ class StraightBeam(object):
         return m_el
 
 
-    def __get_el_mass_3D(self):
+    def __get_el_mass_3D(self, i):
         """
         Getting the consistant mass matrix based on analytical integration
 
@@ -425,7 +449,7 @@ class StraightBeam(object):
         https://link.springer.com/content/pdf/bbm%3A978-3-319-56493-7%2F1.pdf
         """
 
-        m_const = self.parameters['rho'] * self.parameters['a'] * self.parameters['lx_i']
+        m_const = self.parameters['rho'] * self.parameters['a'][i] * self.parameters['lx_i']
 
         #
         # mass values for one level
@@ -438,7 +462,7 @@ class StraightBeam(object):
         m_el_x = m_x * np.array([[m_x_11, m_x_12],
                                  [m_x_12, m_x_11]])
         # torsion inertia - around axis x - here marked as alpha - a
-        m_a = m_const * self.parameters['ip']/self.parameters['a'] / 6.0 
+        m_a = m_const * self.parameters['ip'][i]/self.parameters['a'][i] / 6.0 
         m_a_11 = 2
         m_a_12 = 1
         m_el_a = m_a * np.array([[m_a_11, m_a_12],
@@ -446,7 +470,7 @@ class StraightBeam(object):
 
         # bending - inertia along axis y, rotations around axis z - here marked as gamma - g
         # translation
-        Py = self.parameters['py']
+        Py = self.parameters['py'][i]
         m_yg = m_const / 210 / (1+Py)**2        
         #
         m_yg_11 = 70*Py**2 + 147*Py + 78
@@ -468,7 +492,7 @@ class StraightBeam(object):
                                          [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
                                          [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
         # rotation
-        m_yg = self.parameters['rho']*self.parameters['iz'] / 30 / (1+Py)**2 / self.parameters['lx_i']        
+        m_yg = self.parameters['rho']*self.parameters['iz'][i] / 30 / (1+Py)**2 / self.parameters['lx_i']        
         #
         m_yg_11 = 36
         m_yg_12 = -(15*Py-3) * self.parameters['lx_i']
@@ -494,7 +518,7 @@ class StraightBeam(object):
 
         # bending - inertia along axis z, rotations around axis y - here marked as beta - b
         # translation
-        Pz = self.parameters['pz']
+        Pz = self.parameters['pz'][i]
         m_zb = m_const / 210 / (1+Pz)**2        
         #
         m_zb_11 = 70*Pz**2 + 147*Pz + 78
@@ -516,7 +540,7 @@ class StraightBeam(object):
                                          [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
                                          [m_zb_14, m_zb_24, m_zb_34, m_zb_44]])
         # rotation
-        m_zb = self.parameters['rho']*self.parameters['iy'] / 30 / (1+Pz)**2 / self.parameters['lx_i']        
+        m_zb = self.parameters['rho']*self.parameters['iy'][i] / 30 / (1+Pz)**2 / self.parameters['lx_i']        
         #
         m_zb_11 = 36
         m_zb_12 = (15*Pz-3) * self.parameters['lx_i']
@@ -558,15 +582,27 @@ class StraightBeam(object):
         return m_el
 
     def _get_mass(self):
-        if self.domain_size == '2D':
-            m_el = self.__get_el_mass_2D()
-        elif self.domain_size == '3D':
-            m_el = self.__get_el_mass_3D()
-        else:
-            pass
 
-        # return stiffness matrix
-        return self._assemble_el_into_glob(m_el)
+        # global stiffness matrix initialization with zeros
+        glob_matrix = np.zeros((self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size]))
+
+        # fill global stiffness matix entries
+        for i in range(self.parameters['n_el']):
+            el_matrix = self.__get_el_mass_3D(i)
+            glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+                        StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
+        return glob_matrix
+
+        # if self.domain_size == '2D':
+        #     m_el = self.__get_el_mass_2D()
+        # elif self.domain_size == '3D':
+        #     m_el = self.__get_el_mass_3D()
+        # else:
+        #     pass
+
+        # # return stiffness matrix
+        # return self._assemble_el_into_glob(m_el)
 
 
     def __get_el_stiffness_2D(self):
@@ -623,7 +659,7 @@ class StraightBeam(object):
 
         return k_el
 
-    def __get_el_stiffness_3D(self):
+    def __get_el_stiffness_3D(self, i):
         """
         stiffness values for one level
         VERSION 2
@@ -634,20 +670,20 @@ class StraightBeam(object):
         """
 
         # axial stiffness - along axis x - here marked as x
-        k_x = self.parameters['e']*self.parameters['a']/self.parameters['lx_i']
+        k_x = self.parameters['e']*self.parameters['a'][i]/self.parameters['lx_i']
         k_x_11 = 1.0
         k_x_12 = -1.0
         k_el_x = k_x * np.array([[k_x_11, k_x_12],
                                  [k_x_12, k_x_11]])
         # torsion stiffness - around axis x - here marked as alpha - a
-        k_a = self.parameters['g']*self.parameters['it']/self.parameters['lx_i']
+        k_a = self.parameters['g']*self.parameters['it'][i]/self.parameters['lx_i']
         k_a_11 = 1.0
         k_a_12 = -1.0
         k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                  [k_a_12, k_a_11]])
         # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
-        beta_yg = self.parameters['py']
-        k_yg = self.parameters['e']*self.parameters['iz']/(1+beta_yg)/self.parameters['lx_i']**3
+        beta_yg = self.parameters['py'][i]
+        k_yg = self.parameters['e']*self.parameters['iz'][i]/(1+beta_yg)/self.parameters['lx_i']**3
         #
         k_yg_11 = 12.
         k_yg_12 = 6. * self.parameters['lx_i']
@@ -669,8 +705,8 @@ class StraightBeam(object):
                                    [k_yg_14, k_yg_24, k_yg_34, k_yg_44]])
 
         # bending - displacement along axis z, rotations around axis y - here marked as beta - b
-        beta_zb = self.parameters['pz']
-        k_zb = self.parameters['e']*self.parameters['iy']/(1+beta_zb)/self.parameters['lx_i']**3
+        beta_zb = self.parameters['pz'][i]
+        k_zb = self.parameters['e']*self.parameters['iy'][i]/(1+beta_zb)/self.parameters['lx_i']**3
         #
         k_zb_11 = 12.
         k_zb_12 = -6. * self.parameters['lx_i']
@@ -709,15 +745,26 @@ class StraightBeam(object):
         return k_el
 
     def _get_stiffness(self):
-        if self.domain_size == '2D':
-            k_el = self.__get_el_stiffness_2D()
-        elif self.domain_size == '3D':
-            k_el = self.__get_el_stiffness_3D()
-        else:
-            pass
+        # global stiffness matrix initialization with zeros
+        glob_matrix = np.zeros((self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
-        # return stiffness matrix
-        return self._assemble_el_into_glob(k_el)
+        # fill global stiffness matix entries
+        for i in range(self.parameters['n_el']):
+            el_matrix = self.__get_el_stiffness_3D(i)
+            glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
+                        StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
+        return glob_matrix
+
+        # if self.domain_size == '2D':
+        #     k_el = self.__get_el_stiffness_2D()
+        # elif self.domain_size == '3D':
+        #     k_el = self.__get_el_stiffness_3D()
+        # else:
+        #     pass
+
+        # # return stiffness matrix
+        # return self._assemble_el_into_glob(k_el)
 
     def _get_damping(self):
         """
