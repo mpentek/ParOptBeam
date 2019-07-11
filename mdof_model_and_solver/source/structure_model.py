@@ -137,8 +137,8 @@ class StraightBeam(object):
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
             'lx': 68.03, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
-            'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
-            'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
+            #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
+            #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
             'n_el': 24} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
@@ -150,6 +150,11 @@ class StraightBeam(object):
         self.parameters['x'] = [(x + 0.5)/24 * 68.04 for x in list(range(self.parameters['n_el']))]
         print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
         # geometric
+        # characteristics lengths
+        self.parameters['ly'] = [0.0000000166 * x**4 - 0.0000023653 * x**3 + 0.0017200137 * x**2 - 0.1353959268 * x + 7.2500198110 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
+        self.parameters['lz'] = [0.0000000021 * x**4 - 0.0000005030 * x**3 + 0.0006713982 * x**2 - 0.0480866726 * x + 4.0899851436 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
+        print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
+        print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
         # area
         self.parameters['a'] = [0.0000060281 * x**4 - 0.0008930429 * x**3 + 0.0539574856 * x**2 - 1.2982109704 * x + 20.1996417966 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
         print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
@@ -167,13 +172,8 @@ class StraightBeam(object):
         print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
 
         # polar moment of inertia
-        val = 1/12 * self.parameters['ly'] * \
-            self.parameters['lz'] * \
-            (self.parameters['ly']**2 + self.parameters['lz']**2)
-        ###    
-        #val = 0.0
         # NOTE: maybe substitute val = 0.0 as according to Sofistik??
-        self.parameters['ip'] = [val for x in self.parameters['x']]
+        self.parameters['ip'] = [1/12 * a * b * (a**2 + b**2) for a,b in zip (self.parameters['ly'],self.parameters['lz'])] 
         print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')
         # torsion constant
         self.parameters['it'] = [0.0000226224 * x**4 - 0.0028431733 * x**3 + 0.1550260253 * x**2 - 3.5912285380 * x + 42.1805557663 for x in self.parameters['x']] # min(self.parameters['ly'], self.parameters['lz'])**3 * max(
