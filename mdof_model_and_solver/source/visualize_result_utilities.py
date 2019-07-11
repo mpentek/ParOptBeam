@@ -226,6 +226,7 @@ def animate_result(title, array_time, geometry, force, scaling):
     #
     # First set up the figure, the axis, and the plot element we want to
     # animate
+    skip = 20
 
     fig = plt.figure()
     ax = Axes3D(fig)  # fig.gca(projection='3d')
@@ -316,11 +317,11 @@ def animate_result(title, array_time, geometry, force, scaling):
     def animate(i):
         undeformed_line.set_data(geometry["undeformed"][0],
                                  geometry["undeformed"][1])
-        deformed_line.set_data(geometry["deformed"][0][:, i],
-                               geometry["deformed"][1][:, i])
+        deformed_line.set_data(geometry["deformed"][0][:, skip * i],
+                               geometry["deformed"][1][:, skip * i])
         # NOTE: there is no .set_data() for 3 dim data...
         undeformed_line.set_3d_properties(geometry["undeformed"][2])
-        deformed_line.set_3d_properties(geometry["deformed"][2][:, i])
+        deformed_line.set_3d_properties(geometry["deformed"][2][:, skip * i])
 
         text.set_text('{0:.2f}'.format(array_time[i]) + "[s]")
 
