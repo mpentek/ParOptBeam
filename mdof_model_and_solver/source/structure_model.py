@@ -142,7 +142,7 @@ class StraightBeam(object):
             #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
             #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
             # 2^0, 2^1, 2^2, 2^3 * 6 = 6, 12, 24, 48 
-            'n_el': 2**2 *6} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'n_el': 2**0 *6} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
@@ -225,10 +225,24 @@ class StraightBeam(object):
         self.parameters['m_tot'] = 0.0
         for i in range(len(self.parameters['x'])):
             self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
+        print('INITIAL:')
         print('total m: ', self.parameters['m_tot'])
-        # NOTE: is 2565971.048 -> should be 2414220.000        
-        wait = input('check...')
+        print('rho: ', self.parameters['rho'])
 
+        # NOTE: should be 2414220.000 -> set as target        
+        target_m_tot = 2414220.000
+        cor_fctr = target_m_tot / self.parameters['m_tot']
+        self.parameters['rho'] *= cor_fctr
+
+        self.parameters['m_tot'] = 0.0
+        for i in range(len(self.parameters['x'])):
+            self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
+        print('CORRECTED:')
+        print('total m: ', self.parameters['m_tot'])
+        print('rho: ', self.parameters['rho'])
+        print()
+        wait = input('check...')
+        
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
 
