@@ -133,25 +133,27 @@ class StraightBeam(object):
             # material
             'rho': 25 * 10**3 / 9.81, # parameters["model_parameters"]["system_parameters"]["material"]["density"],
             'e': 2.1 * 10**4 * 10**6, #parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
-            'nu': parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
+            'nu': 0.2, #parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
             'lx': 68.03, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
             #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
             #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            'n_el': 24} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'n_el': 2*24} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
         # shear modulus
         self.parameters['g'] = 8.75 * 10**3 * 10**6 #self.parameters['e'] / \
             # 2 / (1+self.parameters['nu'])
+        self.parameters['g'] = self.parameters['e'] / \
+            2 / (1+self.parameters['nu'])
 
         # NOTE: trying out the other configuration
         #self.parameters['e'] = 4.75 * 10**4 * 10**6
         #self.parameters['g'] = self.parameters['e'] / 2 / (1+0.2)
 
-        self.parameters['x'] = [(x + 0.5)/24 * 68.04 for x in list(range(self.parameters['n_el']))]
+        self.parameters['x'] = [(x + 0.5)/self.parameters['n_el'] * self.parameters['lx'] for x in list(range(self.parameters['n_el']))]
         print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
         # geometric
         # characteristics lengths
@@ -177,7 +179,7 @@ class StraightBeam(object):
 
         # polar moment of inertia
         # NOTE: maybe substitute val = 0.0 as according to Sofistik??
-        self.parameters['ip'] = [1/12 * a * b * (a**2 + b**2) for a,b in zip (self.parameters['ly'],self.parameters['lz'])] 
+        self.parameters['ip'] = [a + b for a,b in zip(self.parameters['iy'],self.parameters['iz'])]#[1/12 * a * b * (a**2 + b**2) for a,b in zip (self.parameters['ly'],self.parameters['lz'])] 
         print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')
         # torsion constant
         self.parameters['it'] = [0.0000226224 * x**4 - 0.0028431733 * x**3 + 0.1550260253 * x**2 - 3.5912285380 * x + 42.1805557663 for x in self.parameters['x']] # min(self.parameters['ly'], self.parameters['lz'])**3 * max(
