@@ -26,6 +26,7 @@ from scipy import linalg
 from scipy.optimize import minimize
 from functools import partial
 import math
+import matplotlib.pyplot as plt
 
 
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
@@ -132,6 +133,7 @@ class StraightBeam(object):
         self.parameters = {
             # material
             'rho': 25 * 10**3 / 9.81, # parameters["model_parameters"]["system_parameters"]["material"]["density"],
+            # 4.75, 2.1, 3.35 * 10^10
             'e': 2.1 * 10**4 * 10**6, #parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
             'nu': 0.2, #parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
@@ -139,13 +141,14 @@ class StraightBeam(object):
             'lx': 68.03, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
             #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
             #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            'n_el': 2*24} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            # 2^0, 2^1, 2^2, 2^3 * 6 = 6, 12, 24, 48 
+            'n_el': 2**2 *6} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
         # shear modulus
-        self.parameters['g'] = 8.75 * 10**3 * 10**6 #self.parameters['e'] / \
-            # 2 / (1+self.parameters['nu'])
+        # self.parameters['g'] = 8.75 * 10**3 * 10**6 #self.parameters['e'] / \
+        #     # 2 / (1+self.parameters['nu'])
         self.parameters['g'] = self.parameters['e'] / \
             2 / (1+self.parameters['nu'])
 
@@ -157,56 +160,72 @@ class StraightBeam(object):
         print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
         # geometric
         # characteristics lengths
+        # from CAD
         self.parameters['ly'] = [0.0000000166 * x**4 - 0.0000023653 * x**3 + 0.0017200137 * x**2 - 0.1353959268 * x + 7.2500198110 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
         self.parameters['lz'] = [0.0000000021 * x**4 - 0.0000005030 * x**3 + 0.0006713982 * x**2 - 0.0480866726 * x + 4.0899851436 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
         print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
         print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
-        # area
-        self.parameters['a'] = [0.0000060281 * x**4 - 0.0008930429 * x**3 + 0.0539574856 * x**2 - 1.2982109704 * x + 20.1996417966 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
-        print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
-        # effective area of shear
-        self.parameters['a_sy'] = [0.0000023084 * x**4 - 0.0003362862 * x**3 + 0.0243551052 * x**2 - 0.6726587828 * x + 14.7362127339 for x in self.parameters['x']] # 5/6 * self.parameters['a']
-        self.parameters['a_sz'] = [0.0000045286 * x**4 - 0.0006672992 * x**3 + 0.0409716148 * x**2 - 1.0044002521 * x + 16.0508221515 for x in self.parameters['x']] # 5/6 * self.parameters['a']
-        print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
-        print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
-        # second moment of inertia
-        self.parameters['iy'] = [0.0000000828 * x**6 - 0.0000185982 * x**5 + 0.0016366257 * x**4 - 0.0710808080 * x**3 + 1.5820646001 * x**2 - 16.7453124616 * x + 70.2375434629 for x in self.parameters['x']] # 1/12 * \
-            # self.parameters['ly'] * self.parameters['lz']**3
-        self.parameters['iz'] = [0.0000230055 * x**4 - 0.0022742832 * x**3 + 0.0985530843 * x**2 - 1.9650019003 * x + 26.4698461261 for x in self.parameters['x']] # 1/12 * \
-            # self.parameters['ly']**3 * self.parameters['lz']
-        print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
-        print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
+        
+        input_case = ['Sofi','Cad']
+        ic = input_case[0]
+        if ic == 'Sofi':
+            print("Using SOFI input case")
+            # area
+            self.parameters['a'] = [0.0000060281 * x**4 - 0.0007294367 * x**3 + 0.0374443836 * x**2 - 1.1790078600 * x + 28.6501654191 for x in self.parameters['x']]
+            # effective area of shear
+            self.parameters['a_sy'] = [0.0000023084 * x**4 - 0.0002850235 * x**3 + 0.0191810525 * x**2 - 0.8502579234 * x + 24.6157629681 for x in self.parameters['x']] # 5/6 * self.parameters['a']
+            self.parameters['a_sz'] = [0.0000045286 * x**4 - 0.0005515757 * x**3 + 0.0292914121 * x**2 - 0.9641235849 * x + 23.5097808450 for x in self.parameters['x']] # 5/6 * self.parameters['a']
+            # second moment of inertia
+            self.parameters['iy'] = [0.0000000828 * x**6 - 0.0000148434 * x**5 + 0.0010049937 * x**4 - 0.0320629749 * x**3 + 0.5037407914 * x**2 - 4.3616475903 * x + 35.7063360580 for x in self.parameters['x']]
+            self.parameters['iz'] = [0.0000230055 * x**4 - 0.0039176863 * x**3 + 0.2644250411 * x**2 - 8.4414577319 * x + 119.1946756840 for x in self.parameters['x']]
+            # torsion constant
+            self.parameters['it'] = [0.0000226224 * x**4 - 0.0032456919 * x**3 + 0.1956530402 * x**2 - 6.2210631749 * x + 100.0010593872 for x in self.parameters['x']]
+        
+        elif ic == 'Cad':
+            print("Using CAD input case")
+            # area
+            self.parameters['a'] = [0.0000006495 * x**4 - 0.0001008156 * x**3 + 0.0143578416 * x**2 - 0.8363109933 * x + 25.0990695754 for x in self.parameters['x']]
+            # effective area of shear
+            # estimate - using an rectangle as model
+            self.parameters['a_sy'] = [5/6 * val for val in self.parameters['a']]
+            self.parameters['a_sz'] = [5/6 * val for val in self.parameters['a']] 
+            # second moment of inertia
+            self.parameters['iy'] = [0.0000151115 * x**4 - 0.0025004387 * x**3 + 0.1748022478 * x**2 - 5.8795406434 * x + 88.3366340200 for x in self.parameters['x']]
+            self.parameters['iz'] = [0.0000042220 * x**4 - 0.0006586118 * x**3 + 0.0470568000 * x**2 - 1.6804154451 * x + 28.7082132596 for x in self.parameters['x']]
+            # torsion constant
+            # estimate - using an ellipse as model as in https://en.wikipedia.org/wiki/Torsion_constant
+            self.parameters['it'] = [3.14 * a**3 * b**3 / (a**2 + b**2) for a,b in zip(self.parameters['ly'],self.parameters['lz'])]
+        else:
+            pass
 
         # polar moment of inertia
-        # NOTE: maybe substitute val = 0.0 as according to Sofistik??
-        self.parameters['ip'] = [a + b for a,b in zip(self.parameters['iy'],self.parameters['iz'])]#[1/12 * a * b * (a**2 + b**2) for a,b in zip (self.parameters['ly'],self.parameters['lz'])] 
-        print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')
-        # torsion constant
-        self.parameters['it'] = [0.0000226224 * x**4 - 0.0028431733 * x**3 + 0.1550260253 * x**2 - 3.5912285380 * x + 42.1805557663 for x in self.parameters['x']] # min(self.parameters['ly'], self.parameters['lz'])**3 * max(
-            # self.parameters['ly'], self.parameters['lz'])/7
+        self.parameters['ip'] = [a + b for a,b in zip(self.parameters['iy'],self.parameters['iz'])]
+
+        print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
+        print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
+        print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
+        
+        print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
+        print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
+        print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
         print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
+        
         # length of one element
         self.parameters['lx_i'] = self.parameters['lx'] / \
             self.parameters['n_el']
         # relative importance of the shear deformation to the bending one
         self.parameters['py'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
-            # 12 * self.parameters['e'] * self.parameters['iz'] / \
-            # (self.parameters['g'] * self.parameters['a_sy']
-            #  * self.parameters['lx_i']**2)
         self.parameters['pz'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
-            # 12 * self.parameters['e'] * self.parameters['iy'] / \
-            # (self.parameters['g'] * self.parameters['a_sz']
-            #  * self.parameters['lx_i']**2)
 
         # NOTE: Bernoulli beam
         # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
         
         # NOTE: to check mass
-        total_mass = 0.0
+        self.parameters['m_tot'] = 0.0
         for i in range(len(self.parameters['x'])):
-            total_mass += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
-        print('total m: ', total_mass)
+            self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
+        print('total m: ', self.parameters['m_tot'])
         # NOTE: is 2565971.048 -> should be 2414220.000        
         wait = input('check...')
 
@@ -262,6 +281,36 @@ class StraightBeam(object):
         self.k = self._get_stiffness()
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
+
+    def plot_model_properties(self):
+        fig = plt.figure(1)
+        plt.plot(self.parameters['x'], self.parameters['a'], 'k-',marker='o', label='a')
+        plt.plot(self.parameters['x'], self.parameters['a_sy'], 'r-',marker='*', label='a_sy')
+        plt.plot(self.parameters['x'], self.parameters['a_sz'], 'g-',marker='^', label='a_sz')
+        plt.legend()
+        plt.grid()
+
+        fig = plt.figure(2)
+        plt.plot(self.parameters['x'], self.parameters['it'], 'k-',marker='o', label='it')
+        plt.plot(self.parameters['x'], self.parameters['iy'], 'r-',marker='*', label='iy')
+        plt.plot(self.parameters['x'], self.parameters['iz'], 'g-',marker='^', label='iz')
+        plt.plot(self.parameters['x'], self.parameters['ip'], 'c-',marker='|', label='ip')
+        plt.legend()
+        plt.grid()
+
+        fig = plt.figure(3)
+        plt.plot(self.parameters['x'], self.parameters['ly'], 'r-',marker='*', label='ly')
+        plt.plot(self.parameters['x'], self.parameters['lz'], 'g-',marker='^', label='lz')
+        plt.legend()
+        plt.grid()
+
+        fig = plt.figure(4)
+        plt.plot(self.parameters['x'], self.parameters['py'], 'r-',marker='*', label='py')
+        plt.plot(self.parameters['x'], self.parameters['pz'], 'g-',marker='^', label='pz')
+        plt.legend()
+        plt.grid()
+
+        #plt.show()
 
     def apply_bc_by_reduction(self, matrix, axis='both'):
         '''

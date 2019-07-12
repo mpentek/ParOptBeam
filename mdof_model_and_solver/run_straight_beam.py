@@ -34,6 +34,7 @@ parameter_file = open('ProjectParameters3DBeam.json', 'r')
 parameters = json.loads(parameter_file.read())
 
 beam_model = StraightBeam(parameters)
+#beam_model.plot_model_properties()
 
 # ==============================================
 # #eigen value analysis
