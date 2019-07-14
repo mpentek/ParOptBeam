@@ -141,8 +141,8 @@ class StraightBeam(object):
             'lx': 68.03, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
             #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
             #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            # 2^0, 2^1, 2^2, 2^3 * 6 = 6, 12, 24, 48 
-            'n_el': 2**0 *6} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            # 2^0, 2^1, 2^2, 2^3, 2^4, 2^5 * 3 = 3, 6, 12, 24, 48, 96 
+            'n_el': 2**3 *3} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
@@ -167,7 +167,7 @@ class StraightBeam(object):
         print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
         
         input_case = ['Sofi','Cad']
-        ic = input_case[0]
+        ic = input_case[1]
         if ic == 'Sofi':
             print("Using SOFI input case")
             # area
@@ -192,9 +192,23 @@ class StraightBeam(object):
             # second moment of inertia
             self.parameters['iy'] = [0.0000151115 * x**4 - 0.0025004387 * x**3 + 0.1748022478 * x**2 - 5.8795406434 * x + 88.3366340200 for x in self.parameters['x']]
             self.parameters['iz'] = [0.0000042220 * x**4 - 0.0006586118 * x**3 + 0.0470568000 * x**2 - 1.6804154451 * x + 28.7082132596 for x in self.parameters['x']]
+            
             # torsion constant
-            # estimate - using an ellipse as model as in https://en.wikipedia.org/wiki/Torsion_constant
-            self.parameters['it'] = [3.14 * a**3 * b**3 / (a**2 + b**2) for a,b in zip(self.parameters['ly'],self.parameters['lz'])]
+            # https://en.wikipedia.org/wiki/Torsion_constant
+            # estimate - using an ellipse as model 
+            # reduction factor chosen such as eigenmode of torsion matches solid model
+            # which is to be considered as reference
+            # reduction factor as cross section is not an ellipse
+            e_fctr = 0.95
+            echiv_ellipse = [3.14 * (e_fctr * a/2)**3 * (e_fctr * b/2)**3 / ((e_fctr * a/2)**2 + (e_fctr * b/2)**2) for a,b in zip(self.parameters['ly'],self.parameters['lz'])] 
+            # estimate - using a rectangle as model 
+            # reduction factor as cross section is not an rectangle
+            r_fctr = 0.9
+            # for a/b=1.6
+            beta = 0.2 
+            echiv_rectangle = [beta * (r_fctr * a) * (r_fctr * b)**3 for a,b in zip(self.parameters['ly'],self.parameters['lz'])]
+            # taking the average of the 2 assumptions
+            self.parameters['it'] = [ (a+b)/ 2 for a,b in zip(echiv_ellipse, echiv_rectangle)]
         else:
             pass
 
