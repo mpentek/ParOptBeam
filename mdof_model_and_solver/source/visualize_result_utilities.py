@@ -133,6 +133,7 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
+    ax.set_zlabel('z')
 
     # set axes, grid
     #ax.set_xlim(plot_limits["x"][0], plot_limits["x"][1])

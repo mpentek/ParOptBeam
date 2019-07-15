@@ -77,6 +77,7 @@ class StaticAnalysis(AnalysisType):
         
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
+        print(k)
         self.static_result = np.linalg.solve(k, force)    
         self.static_result = self.structure_model.recuperate_bc_by_extension(self.static_result, 'row_vector')
         self.force_action = {"x": np.zeros(0),
@@ -467,7 +468,7 @@ class DynamicAnalysis(AnalysisType):
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
-            self.solver.solve_structure(force[:, i])
+            self.solver.solve_structure(force[:, i]-force[:, i-1])
 
             # appending results to the list
             self.displacement[:, i] = self.solver.get_displacement()

@@ -40,7 +40,7 @@ def load_type(force_dynamic, array_time, num_of_levels, freq=10, force_static=1)
 
     elif (force_dynamic == "signalSin"):
         # sine with given amplitude = 1 and frequency
-        amplSin = 1 * np.ones([num_of_levels,1])
+        amplSin = force_static[:,np.newaxis]
         force_dynamic = amplSin * np.sin( 2*np.pi*freq * array_time)
 
     elif (force_dynamic == "signalRand"):

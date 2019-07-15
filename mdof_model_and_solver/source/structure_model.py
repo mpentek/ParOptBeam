@@ -134,7 +134,7 @@ class StraightBeam(object):
             # material
             'rho': 25 * 10**3 / 9.81, # parameters["model_parameters"]["system_parameters"]["material"]["density"],
             # 4.75, 2.1, 3.35 * 10^10
-            'e': 2.1 * 10**4 * 10**6, #parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
+            'e': 4.75 * 10**4 * 10**6, #parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
             'nu': 0.2, #parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
@@ -142,7 +142,7 @@ class StraightBeam(object):
             #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
             #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
             # 2^0, 2^1, 2^2, 2^3, 2^4, 2^5 * 3 = 3, 6, 12, 24, 48, 96 
-            'n_el': 2**3 *3} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'n_el': 1} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
@@ -255,7 +255,7 @@ class StraightBeam(object):
         print('total m: ', self.parameters['m_tot'])
         print('rho: ', self.parameters['rho'])
         print()
-        wait = input('check...')
+        #wait = input('check...')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
