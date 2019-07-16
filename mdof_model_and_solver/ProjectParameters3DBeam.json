@@ -6,7 +6,8 @@
                 "density": 160.0,
                 "youngs_modulus": 2.861e8,
                 "poisson_ratio": 0.3,
-                "damping_ratio": 0.0125
+
+                "damping_ratio": 0.025
             },
             "geometry": {
                 "length_x": 68.03 ,

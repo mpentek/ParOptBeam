@@ -142,7 +142,7 @@ class StraightBeam(object):
             #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
             #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
             # 2^0, 2^1, 2^2, 2^3, 2^4, 2^5 * 3 = 3, 6, 12, 24, 48, 96 
-            'n_el': 1} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'n_el': 25} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
 
         # TODO: later probably move to an initalize function
         # material
@@ -868,13 +868,16 @@ class StraightBeam(object):
         # TODO: also here add the reduction and exteisnon, otherwise rigid body modes will be taken into account
 
         # raw results
-        eig_values_raw, eigen_modes_raw = linalg.eigh(self.k, self.m)
+        eig_values_raw, eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(self.k), self.apply_bc_by_reduction(self.m))
         # rad/s
         eig_values = np.sqrt(np.real(eig_values_raw))
+        print(eig_values)
         # 1/s = Hz
         eig_freqs = eig_values / 2. / np.pi
         # sort eigenfrequencies
         eig_freqs_sorted_indices = np.argsort(eig_freqs)
+        print(eig_freqs)
+        input('eigen')
         #
 
         a = np.linalg.solve(0.5 *
@@ -887,7 +890,7 @@ class StraightBeam(object):
                                      eig_freqs_sorted_indices[
                                          mode_j]]]]),
                             [zeta_i, zeta_j])
-        return a[0] * self.m + a[1] * self.k
+        return a[0] * self.apply_bc_by_reduction(self.m) + a[1] * self.apply_bc_by_reduction(self.k)
 
 
 '''

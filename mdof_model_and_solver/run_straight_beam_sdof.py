@@ -41,7 +41,7 @@ beam_model = StraightBeam(parameters)
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
 # # eigenvalue_analysis.write_output_file()
-# eigenvalue_analysis.plot_selected_eigenmode(1)
+eigenvalue_analysis.plot_selected_eigenmode(1)
 # eigenvalue_analysis.plot_selected_eigenmode(2)
 # eigenvalue_analysis.plot_selected_eigenmode(3)
 # eigenvalue_analysis.plot_selected_eigenmode(4)
@@ -57,7 +57,7 @@ eigenvalue_analysis.solve()
 # #static analysis 
 #static_force = 10 * np.ones(150) # Note :  the forces in the BC nodes are also included 
 static_force = np.zeros(12)
-static_force[7] = 10000000000
+static_force[7] = 1000
 # static_analysis = StaticAnalysis(beam_model)
 # static_analysis.solve(static_force)
 # static_analysis.plot_solve_result()
@@ -66,8 +66,8 @@ static_force[7] = 10000000000
 # Dynamic analysis 
 # time parameters 
 start_time = 0
-end_time = 0.1
-dt = 0.01
+end_time = 30.0
+dt = 0.1
 array_time = np.arange (start_time,end_time + dt, dt)
 
 # dynamic forces
@@ -78,7 +78,7 @@ for free vibration choose "signalNone"
     
 # external dynamic force acting on the system
 freq = 10
-force_dynamic = load_type("signalSin", array_time, 1, freq, static_force)
+force_dynamic = load_type("signalConst", array_time, 1, freq, static_force)
 force_dynamic[:,0]=0
 force_dynamic[:,1]=0
 force_dynamic[:,2]=0

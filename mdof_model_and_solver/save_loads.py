@@ -53,11 +53,11 @@ for level in np.arange(number_of_elements):
     force_i = np.zeros([num_dof,len(array_time)])
     force_from_file = np.loadtxt(force_data_folder+'/level_'+str(level)+'.dat', usecols=(1,2,3,4,5,6), skiprows=7)
     force_i[0,:] = force_from_file[:,2]
-    force_i[1,:] = force_from_file[:,0]
-    force_i[2,:] = force_from_file[:,1]
-    force_i[3,:] = force_from_file[:,5]
-    force_i[4,:] = force_from_file[:,3]
-    force_i[5,:] = force_from_file[:,4]
+    force_i[1,:] = force_from_file[:,1]
+    force_i[2,:] = force_from_file[:,0]
+    force_i[3,:] = -force_from_file[:,5]
+    force_i[4,:] = force_from_file[:,4]
+    force_i[5,:] = force_from_file[:,3]
     # TODO : check better ways tto do this 
     if np.array_equal(array_time,array_time_i): 
         dynamic_force[level*num_dof:(level+1)*num_dof,:] = force_i

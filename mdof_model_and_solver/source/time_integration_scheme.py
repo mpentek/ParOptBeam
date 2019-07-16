@@ -103,7 +103,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         
         # mass, damping and spring stiffness
         self.M = structure.apply_bc_by_reduction(structure.m)
-        self.B = structure.apply_bc_by_reduction(structure.b)
+        self.B = structure.b
         self.K = structure.apply_bc_by_reduction(structure.k)
 			             
         # generalized alpha parameters (to ensure unconditional stability, 2nd order accuracy)

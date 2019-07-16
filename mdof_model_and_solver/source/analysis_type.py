@@ -468,7 +468,7 @@ class DynamicAnalysis(AnalysisType):
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
-            self.solver.solve_structure(force[:, i]-force[:, i-1])
+            self.solver.solve_structure(force[:, i])
 
             # appending results to the list
             self.displacement[:, i] = self.solver.get_displacement()
