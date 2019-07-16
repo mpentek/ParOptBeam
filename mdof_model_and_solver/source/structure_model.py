@@ -310,7 +310,7 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
-        #plt.show()
+        plt.show()
 
     def apply_bc_by_reduction(self, matrix, axis='both'):
         '''
@@ -860,8 +860,7 @@ class StraightBeam(object):
                                      eig_freqs_sorted_indices[
                                          mode_j]]]]),
                             [zeta_i, zeta_j])
-        print(a)
-        wait = input('check a...')
+
         # return back the whole matrix - without BCs applied
         return a[0] * self.m + a[1] * self.k
 

@@ -36,7 +36,7 @@ parameter_file = open('ProjectParameters3DPylonCadBeam.json', 'r')
 parameters = json.loads(parameter_file.read())
 
 beam_model = StraightBeam(parameters)
-#beam_model.plot_model_properties()
+# beam_model.plot_model_properties()
 
 # # ==============================================
 # # Eigenvalue analysis
@@ -71,12 +71,12 @@ dynamic_analysis.solve()
 #dynamic_analysis.plot_selected_time_step(125)
 #dynamic_analysis.animate_time_history()
 
-# accroswind
-dynamic_analysis.plot_result_at_dof(145, 'acceleration')
+# alongwind
+#dynamic_analysis.plot_result_at_dof(145, 'acceleration')
 dynamic_analysis.plot_result_at_dof(145, 'displacement')
 
-# alongwind
-dynamic_analysis.plot_result_at_dof(146, 'acceleration')
+# acrosswind
+#dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 dynamic_analysis.plot_result_at_dof(146, 'displacement')
 
 
