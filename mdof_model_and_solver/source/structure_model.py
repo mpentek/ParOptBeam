@@ -63,6 +63,13 @@ def shift_normalize(val, base=10**3):
 def shape_function_exp(val, exp=CUST_MAGNITUDE): return (1-val)**exp
 
 
+def evaluate_polynomial(x, coefs):
+    val = 0.0
+    for idx, coef in enumerate(coefs):
+        val += coef * x**idx
+    return val
+
+
 class StraightBeam(object):
     """
     A 2D/3D prismatic homogenous isotropic Timoshenko beam element
@@ -132,87 +139,54 @@ class StraightBeam(object):
         # NOTE: for now using the assumption of the prismatic homogenous isotropic beam
         self.parameters = {
             # material
-            'rho': 25 * 10**3 / 9.81, # parameters["model_parameters"]["system_parameters"]["material"]["density"],
-            # 4.75, 2.1, 3.35 * 10^10
-            'e': 4.75 * 10**4 * 10**6, #parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
-            'nu': 0.2, #parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
+            'rho': parameters["model_parameters"]["system_parameters"]["material"]["density"],
+            'e': parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
+            'nu': parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
-            'lx': 68.03, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
-            #'ly': 3.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
-            #'lz': 4.5, # parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            # 2^0, 2^1, 2^2, 2^3, 2^4, 2^5 * 3 = 3, 6, 12, 24, 48, 96 
-            'n_el': 24} #parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]}
+            'lx': parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
+            'n_el': 24,
+            # further quantities defined by polynomial coefficient as a function of running coord x
+            'c_ly' : parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
+            'c_lz' : parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
+            'c_a' : parameters["model_parameters"]["system_parameters"]["geometry"]["area"],
+            'c_a_sy' : parameters["model_parameters"]["system_parameters"]["geometry"]["shear_area_y"],
+            'c_a_sz' : parameters["model_parameters"]["system_parameters"]["geometry"]["shear_area_z"],
+            'c_iy' : parameters["model_parameters"]["system_parameters"]["geometry"]["moment_of_inertia_y"],
+            'c_iz' : parameters["model_parameters"]["system_parameters"]["geometry"]["moment_of_inertia_z"],
+            'c_it' : parameters["model_parameters"]["system_parameters"]["geometry"]["torsional_moment_of_inertia"]} 
 
         # TODO: later probably move to an initalize function
         # material
         # shear modulus
-        # self.parameters['g'] = 8.75 * 10**3 * 10**6 #self.parameters['e'] / \
-        #     # 2 / (1+self.parameters['nu'])
         self.parameters['g'] = self.parameters['e'] / \
             2 / (1+self.parameters['nu'])
 
-        # NOTE: trying out the other configuration
-        #self.parameters['e'] = 4.75 * 10**4 * 10**6
-        #self.parameters['g'] = self.parameters['e'] / 2 / (1+0.2)
-
         self.parameters['x'] = [(x + 0.5)/self.parameters['n_el'] * self.parameters['lx'] for x in list(range(self.parameters['n_el']))]
         print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
+        # length of one element
+        self.parameters['lx_i'] = self.parameters['lx'] / \
+            self.parameters['n_el']
+        
         # geometric
         # characteristics lengths
-        # from CAD
-        self.parameters['ly'] = [0.0000000166 * x**4 - 0.0000023653 * x**3 + 0.0017200137 * x**2 - 0.1353959268 * x + 7.2500198110 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
-        self.parameters['lz'] = [0.0000000021 * x**4 - 0.0000005030 * x**3 + 0.0006713982 * x**2 - 0.0480866726 * x + 4.0899851436 for x in self.parameters['x']] #self.parameters['ly'] * self.parameters['lz']
+        self.parameters['ly'] = [evaluate_polynomial(x, self.parameters['c_ly']) for x in self.parameters['x']]
+        self.parameters['lz'] = [evaluate_polynomial(x, self.parameters['c_lz']) for x in self.parameters['x']]
         print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
         print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
         
-        input_case = ['Sofi','Cad']
-        ic = input_case[1]
-        if ic == 'Sofi':
-            print("Using SOFI input case")
-            # area
-            self.parameters['a'] = [0.0000060281 * x**4 - 0.0007294367 * x**3 + 0.0374443836 * x**2 - 1.1790078600 * x + 28.6501654191 for x in self.parameters['x']]
-            # effective area of shear
-            self.parameters['a_sy'] = [0.0000023084 * x**4 - 0.0002850235 * x**3 + 0.0191810525 * x**2 - 0.8502579234 * x + 24.6157629681 for x in self.parameters['x']] # 5/6 * self.parameters['a']
-            self.parameters['a_sz'] = [0.0000045286 * x**4 - 0.0005515757 * x**3 + 0.0292914121 * x**2 - 0.9641235849 * x + 23.5097808450 for x in self.parameters['x']] # 5/6 * self.parameters['a']
-            # second moment of inertia
-            self.parameters['iy'] = [0.0000000828 * x**6 - 0.0000148434 * x**5 + 0.0010049937 * x**4 - 0.0320629749 * x**3 + 0.5037407914 * x**2 - 4.3616475903 * x + 35.7063360580 for x in self.parameters['x']]
-            self.parameters['iz'] = [0.0000230055 * x**4 - 0.0039176863 * x**3 + 0.2644250411 * x**2 - 8.4414577319 * x + 119.1946756840 for x in self.parameters['x']]
-            # torsion constant
-            self.parameters['it'] = [0.0000226224 * x**4 - 0.0032456919 * x**3 + 0.1956530402 * x**2 - 6.2210631749 * x + 100.0010593872 for x in self.parameters['x']]
-        
-        elif ic == 'Cad':
-            print("Using CAD input case")
-            # area
-            self.parameters['a'] = [0.0000006495 * x**4 - 0.0001008156 * x**3 + 0.0143578416 * x**2 - 0.8363109933 * x + 25.0990695754 for x in self.parameters['x']]
-            # effective area of shear
-            # estimate - using an rectangle as model
-            self.parameters['a_sy'] = [5/6 * val for val in self.parameters['a']]
-            self.parameters['a_sz'] = [5/6 * val for val in self.parameters['a']] 
-            # second moment of inertia
-            self.parameters['iy'] = [0.0000151115 * x**4 - 0.0025004387 * x**3 + 0.1748022478 * x**2 - 5.8795406434 * x + 88.3366340200 for x in self.parameters['x']]
-            self.parameters['iz'] = [0.0000042220 * x**4 - 0.0006586118 * x**3 + 0.0470568000 * x**2 - 1.6804154451 * x + 28.7082132596 for x in self.parameters['x']]
-            
-            # torsion constant
-            # https://en.wikipedia.org/wiki/Torsion_constant
-            # estimate - using an ellipse as model 
-            # reduction factor chosen such as eigenmode of torsion matches solid model
-            # which is to be considered as reference
-            # reduction factor as cross section is not an ellipse
-            e_fctr = 0.95
-            echiv_ellipse = [3.14 * (e_fctr * a/2)**3 * (e_fctr * b/2)**3 / ((e_fctr * a/2)**2 + (e_fctr * b/2)**2) for a,b in zip(self.parameters['ly'],self.parameters['lz'])] 
-            # estimate - using a rectangle as model 
-            # reduction factor as cross section is not an rectangle
-            r_fctr = 0.9
-            # for a/b=1.6
-            beta = 0.2 
-            echiv_rectangle = [beta * (r_fctr * a) * (r_fctr * b)**3 for a,b in zip(self.parameters['ly'],self.parameters['lz'])]
-            # taking the average of the 2 assumptions
-            self.parameters['it'] = [ (a+b)/ 2 for a,b in zip(echiv_ellipse, echiv_rectangle)]
-        else:
-            pass
-
+        # area
+        self.parameters['a'] = [evaluate_polynomial(x, self.parameters['c_a']) for x in self.parameters['x']]
+        # effective area of shear
+        self.parameters['a_sy'] = [evaluate_polynomial(x, self.parameters['c_a_sy']) for x in self.parameters['x']]
+        self.parameters['a_sz'] = [evaluate_polynomial(x, self.parameters['c_a_sz']) for x in self.parameters['x']]
+        # second moment of inertia
+        self.parameters['iy'] = [evaluate_polynomial(x, self.parameters['c_iy']) for x in self.parameters['x']]
+        self.parameters['iz'] = [evaluate_polynomial(x, self.parameters['c_iz']) for x in self.parameters['x']]
+        # torsion constant
+        self.parameters['it'] = [evaluate_polynomial(x, self.parameters['c_it']) for x in self.parameters['x']]
         # polar moment of inertia
+        # assuming equivalency with circle 
         self.parameters['ip'] = [a + b for a,b in zip(self.parameters['iy'],self.parameters['iz'])]
 
         print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
@@ -224,14 +198,11 @@ class StraightBeam(object):
         print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
         print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
         
-        # length of one element
-        self.parameters['lx_i'] = self.parameters['lx'] / \
-            self.parameters['n_el']
         # relative importance of the shear deformation to the bending one
         self.parameters['py'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         self.parameters['pz'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
 
-        # NOTE: Bernoulli beam
+        # NOTE: Bernoulli beam set to 0.0
         # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
         
@@ -243,19 +214,20 @@ class StraightBeam(object):
         print('total m: ', self.parameters['m_tot'])
         print('rho: ', self.parameters['rho'])
 
-        # NOTE: should be 2414220.000 -> set as target        
-        target_m_tot = 2414220.000
-        cor_fctr = target_m_tot / self.parameters['m_tot']
-        self.parameters['rho'] *= cor_fctr
+        # # NOTE: should be 2414220.000 -> set as target        
+        # target_m_tot = 2414220.000
+        # cor_fctr = target_m_tot / self.parameters['m_tot']
+        # self.parameters['rho'] *= cor_fctr
 
-        self.parameters['m_tot'] = 0.0
-        for i in range(len(self.parameters['x'])):
-            self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
-        print('CORRECTED:')
-        print('total m: ', self.parameters['m_tot'])
-        print('rho: ', self.parameters['rho'])
-        print()
-        #wait = input('check...')
+        # self.parameters['m_tot'] = 0.0
+        # for i in range(len(self.parameters['x'])):
+        #     self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
+        # print('CORRECTED:')
+        # print('total m: ', self.parameters['m_tot'])
+        # print('rho: ', self.parameters['rho'])
+        # print()
+        
+        wait = input('check...')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
