@@ -64,40 +64,24 @@ static_force[7] = 10000000000
 
 # ===========================================
 # Dynamic analysis 
-# # time parameters 
-# start_time = 0
-# end_time = 0.1
-# dt = 0.01
-# array_time = np.arange (start_time,end_time + dt, dt)
-
-# dynamic forces
-"""
-Choose from "signalSin", "signalRand", "signalConst", "signalSuperposed" or 
-for free vibration choose "signalNone" 
-"""
-    
-# external dynamic force acting on the system
-# freq = 10
-# force_dynamic = load_type("signalSin", array_time, 1, freq, static_force)
-# force_dynamic[:,0]=0
-# force_dynamic[:,1]=0
-# force_dynamic[:,2]=0
-# print(force_dynamic)
+   
 array_time = np.load('array_time.npy')
 dynamic_force = np.load('force_dynamic.npy')#
 dt = array_time[1] - array_time[0]
 # initial condition # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
 dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
                         "GenAlpha" )
+
+# dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
+#                         "Euler12" )
+
 dynamic_analysis.solve()
 #dynamic_analysis.plot_selected_time_step(125)
 #dynamic_analysis.animate_time_history()
-# #dynamic_analysis.write_result_at_dof(31, 'displacement')
+
+# accroswind
 dynamic_analysis.plot_result_at_dof(145, 'acceleration')
 dynamic_analysis.plot_result_at_dof(145, 'displacement')
+
 dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 dynamic_analysis.plot_result_at_dof(146, 'displacement')
-# dynamic_analysis.plot_result_at_dof(148, 'acceleration')
-# dynamic_analysis.plot_result_at_dof(148, 'displacement')
-# dynamic_analysis.plot_result_at_dof(149, 'acceleration')
-# dynamic_analysis.plot_result_at_dof(149, 'displacement')

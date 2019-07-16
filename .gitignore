@@ -1,6 +1,8 @@
 
 time_schemes/one_variable/statics_env/lib/python3\.6/site-packages/bleach/__pycache__/
 
+mdof_model_and_solver/.vscode
+
 *.pyc
 *.idea
 

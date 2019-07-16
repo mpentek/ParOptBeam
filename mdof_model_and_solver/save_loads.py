@@ -55,7 +55,7 @@ for level in np.arange(number_of_elements):
     force_i[0,:] = force_from_file[:,2]
     force_i[1,:] = force_from_file[:,1]
     force_i[2,:] = force_from_file[:,0]
-    force_i[3,:] = -force_from_file[:,5]
+    force_i[3,:] = force_from_file[:,5]
     force_i[4,:] = force_from_file[:,4]
     force_i[5,:] = force_from_file[:,3]
     # TODO : check better ways tto do this 
