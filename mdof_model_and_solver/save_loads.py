@@ -32,25 +32,26 @@ import json
 import sys
 import time
 
-start_time = time.time()
+'''
+This save load functionality only applies for a certain example
+the one of the bridge pylon
+for which during CFD forces for 25 nodes were recorded
+'''
 
-parameter_file = open('ProjectParameters3DBeam.json', 'r')
-parameters = json.loads(parameter_file.read())
+number_of_elements = 24
+number_of_nodes = number_of_elements + 1
+dofs_per_node = 6
 
-beam_model = StraightBeam(parameters)
-
-
-number_of_elements = parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]
 #  only applicable to fixed boundary condition 
 force_data_folder = 'level_force'
 
 array_time = np.loadtxt(force_data_folder+'/level_0.dat', usecols=(0,), skiprows=7)
-dynamic_force = np.zeros([len(beam_model.all_dofs_global), len(array_time)])
-num_dof = beam_model.DOFS_PER_NODE[beam_model.domain_size]
+dynamic_force = np.zeros([number_of_nodes * dofs_per_node, len(array_time)])
+
 # extracting the forces from the files
 for level in np.arange(number_of_elements):
     array_time_i = np.loadtxt(force_data_folder+'/level_'+str(level)+'.dat', usecols=(0,), skiprows=7)
-    force_i = np.zeros([num_dof,len(array_time)])
+    force_i = np.zeros([dofs_per_node,len(array_time)])
     force_from_file = np.loadtxt(force_data_folder+'/level_'+str(level)+'.dat', usecols=(1,2,3,4,5,6), skiprows=7)
     force_i[0,:] = force_from_file[:,2]
     force_i[1,:] = force_from_file[:,1]
@@ -60,7 +61,7 @@ for level in np.arange(number_of_elements):
     force_i[5,:] = force_from_file[:,3]
     # TODO : check better ways tto do this 
     if np.array_equal(array_time,array_time_i): 
-        dynamic_force[level*num_dof:(level+1)*num_dof,:] = force_i
+        dynamic_force[level*dofs_per_node:(level+1)*dofs_per_node,:] = force_i
     else:
         err_msg = "The time array doesnt match : please check the data"
         raise Exception(err_msg)

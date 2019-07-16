@@ -227,7 +227,7 @@ class StraightBeam(object):
         # print('rho: ', self.parameters['rho'])
         # print()
         
-        wait = input('check...')
+        #wait = input('check...')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -860,7 +860,8 @@ class StraightBeam(object):
                                      eig_freqs_sorted_indices[
                                          mode_j]]]]),
                             [zeta_i, zeta_j])
-
+        print(a)
+        wait = input('check a...')
         # return back the whole matrix - without BCs applied
         return a[0] * self.m + a[1] * self.k
 

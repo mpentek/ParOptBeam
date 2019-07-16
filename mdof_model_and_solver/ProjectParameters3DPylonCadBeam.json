@@ -3,10 +3,10 @@
         "domain_size": "3D",
         "system_parameters": {
             "material": {
-                "density": 2600.2,
-                "youngs_modulus": 3.35e10,
+                "density": 2601.4,
+                "youngs_modulus": 4.75e10,
                 "poisson_ratio": 0.2,
-                "damping_ratio": 0.0
+                "damping_ratio": 0.025
             },
             "geometry": {
                 "length_x": 68.03 ,
