@@ -88,6 +88,7 @@ TODO: check eigenvalue analysis with number of elements
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
 # eigenvalue_analysis.write_output_file()
+
 # eigenvalue_analysis.plot_selected_eigenmode(1)
 # eigenvalue_analysis.plot_selected_eigenmode(2)
 # eigenvalue_analysis.plot_selected_eigenmode(3)
