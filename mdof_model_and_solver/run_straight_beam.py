@@ -97,6 +97,7 @@ eigenvalue_analysis.solve()
 # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 # TODO: remedy animation bug
 eigenvalue_analysis.animate_selected_eigenmode(1)
+eigenvalue_analysis.animate_selected_eigenmode(3)
 
 
 # ===========================================
@@ -125,10 +126,10 @@ dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
                         "GenAlpha" )
 
 dynamic_analysis.solve()
-dynamic_analysis.plot_selected_time_step(15000)
+dynamic_analysis.plot_selected_time(250)
 
 # TODO: remedy animation bug
-#dynamic_analysis.animate_time_history()
+dynamic_analysis.animate_time_history()
 
 # NOTE: for comparison the relevant DOFs have been selected
 # alongwind

@@ -227,7 +227,10 @@ def animate_result(title, array_time, geometry, force, scaling):
     #
     # First set up the figure, the axis, and the plot element we want to
     # animate
-    skip = 20
+
+    # TODO: animation needs a step and the number of frames in animate needs to take this into consideration
+    # make more generic and robust
+    step = 5
 
     fig = plt.figure()
     ax = Axes3D(fig)  # fig.gca(projection='3d')
@@ -318,11 +321,14 @@ def animate_result(title, array_time, geometry, force, scaling):
     def animate(i):
         undeformed_line.set_data(geometry["undeformed"][0],
                                  geometry["undeformed"][1])
-        deformed_line.set_data(geometry["deformed"][0][:, skip * i],
-                               geometry["deformed"][1][:, skip * i])
+
+        deformed_line.set_data(geometry["deformed"][0][:, step * i],
+                                geometry["deformed"][1][:, step * i])
+
         # NOTE: there is no .set_data() for 3 dim data...
         undeformed_line.set_3d_properties(geometry["undeformed"][2])
-        deformed_line.set_3d_properties(geometry["deformed"][2][:, skip * i])
+        deformed_line.set_3d_properties(geometry["deformed"][2][:, step * i])
+
 
         text.set_text('{0:.2f}'.format(array_time[i]) + "[s]")
 
@@ -332,7 +338,7 @@ def animate_result(title, array_time, geometry, force, scaling):
     # changed.
     # frames = number of columns in result
     anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                   frames=len(array_time)-1, interval=20, blit=True)
+                                   frames=len(array_time[::step])-1, interval=20, blit=True)
 
     plt.show()
 
