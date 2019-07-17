@@ -11,14 +11,16 @@
             "geometry": {
                 "length_x": 180,
                 "number_of_elements": 24,
-                "length_y": [45.0],
-                "length_z": [30.0],
-                "area"    : [1350.0],
-                "shear_area_y" : [1125.0],
-                "shear_area_z" : [1125.0],
-                "moment_of_inertia_y" : [101250.0],
-                "moment_of_inertia_z" : [227812.5],
-                "torsional_moment_of_inertia" : [238140.0]
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0, "End"],
+                    "length_y": [45.0],
+                    "length_z": [30.0],
+                    "area"    : [1350.0],
+                    "shear_area_y" : [1125.0],
+                    "shear_area_z" : [1125.0],
+                    "moment_of_inertia_y" : [101250.0],
+                    "moment_of_inertia_z" : [227812.5],
+                    "torsional_moment_of_inertia" : [238140.0]}]
             }
         },
         "boundary_conditions": "fixed-free"

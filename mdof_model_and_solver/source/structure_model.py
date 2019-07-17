@@ -145,16 +145,23 @@ class StraightBeam(object):
             'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
             # geometric
             'lx': parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
-            'n_el': 24,
-            # further quantities defined by polynomial coefficient as a function of running coord x
-            'c_ly' : parameters["model_parameters"]["system_parameters"]["geometry"]["length_y"],
-            'c_lz' : parameters["model_parameters"]["system_parameters"]["geometry"]["length_z"],
-            'c_a' : parameters["model_parameters"]["system_parameters"]["geometry"]["area"],
-            'c_a_sy' : parameters["model_parameters"]["system_parameters"]["geometry"]["shear_area_y"],
-            'c_a_sz' : parameters["model_parameters"]["system_parameters"]["geometry"]["shear_area_z"],
-            'c_iy' : parameters["model_parameters"]["system_parameters"]["geometry"]["moment_of_inertia_y"],
-            'c_iz' : parameters["model_parameters"]["system_parameters"]["geometry"]["moment_of_inertia_z"],
-            'c_it' : parameters["model_parameters"]["system_parameters"]["geometry"]["torsional_moment_of_inertia"]} 
+            'n_el': parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]} 
+        
+        # defined on intervals as piecewise continous function on an interval starting from 0.0
+        self.parameters['intervals'] = []
+        for val in parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"]:
+            self.parameters["intervals"].append({
+                'bounds': val['interval_bounds'],
+                # further quantities defined by polynomial coefficient as a function of running coord x
+                'c_ly' : val["length_y"],
+                'c_lz' : val["length_z"],
+                'c_a' : val["area"],
+                'c_a_sy' : val["shear_area_y"],
+                'c_a_sz' : val["shear_area_z"],
+                'c_iy' : val["moment_of_inertia_y"],
+                'c_iz' : val["moment_of_inertia_z"],
+                'c_it' : val["torsional_moment_of_inertia"]
+            })
 
         # TODO: later probably move to an initalize function
         # material
@@ -162,42 +169,32 @@ class StraightBeam(object):
         self.parameters['g'] = self.parameters['e'] / \
             2 / (1+self.parameters['nu'])
 
+        # running coordinate x - in the middle of each beam element
         self.parameters['x'] = [(x + 0.5)/self.parameters['n_el'] * self.parameters['lx'] for x in list(range(self.parameters['n_el']))]
-        print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
-        # length of one element
+
+        # length of one element - assuming an equidistant grid
         self.parameters['lx_i'] = self.parameters['lx'] / \
             self.parameters['n_el']
         
         # geometric
         # characteristics lengths
-        self.parameters['ly'] = [evaluate_polynomial(x, self.parameters['c_ly']) for x in self.parameters['x']]
-        self.parameters['lz'] = [evaluate_polynomial(x, self.parameters['c_lz']) for x in self.parameters['x']]
-        print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
-        print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
-        
+        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(x, 'c_ly') for x in self.parameters['x']]
+        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(x, 'c_lz') for x in self.parameters['x']]
+      
         # area
-        self.parameters['a'] = [evaluate_polynomial(x, self.parameters['c_a']) for x in self.parameters['x']]
+        self.parameters['a'] = [self.evaluate_characteristic_on_interval(x, 'c_a') for x in self.parameters['x']]
         # effective area of shear
-        self.parameters['a_sy'] = [evaluate_polynomial(x, self.parameters['c_a_sy']) for x in self.parameters['x']]
-        self.parameters['a_sz'] = [evaluate_polynomial(x, self.parameters['c_a_sz']) for x in self.parameters['x']]
+        self.parameters['a_sy'] = [self.evaluate_characteristic_on_interval(x, 'c_a_sy') for x in self.parameters['x']]
+        self.parameters['a_sz'] = [self.evaluate_characteristic_on_interval(x, 'c_a_sz') for x in self.parameters['x']]
         # second moment of inertia
-        self.parameters['iy'] = [evaluate_polynomial(x, self.parameters['c_iy']) for x in self.parameters['x']]
-        self.parameters['iz'] = [evaluate_polynomial(x, self.parameters['c_iz']) for x in self.parameters['x']]
+        self.parameters['iy'] = [self.evaluate_characteristic_on_interval(x, 'c_iy') for x in self.parameters['x']]
+        self.parameters['iz'] = [self.evaluate_characteristic_on_interval(x, 'c_iz') for x in self.parameters['x']]
         # torsion constant
-        self.parameters['it'] = [evaluate_polynomial(x, self.parameters['c_it']) for x in self.parameters['x']]
+        self.parameters['it'] = [self.evaluate_characteristic_on_interval(x, 'c_it') for x in self.parameters['x']]
         # polar moment of inertia
         # assuming equivalency with circle 
         self.parameters['ip'] = [a + b for a,b in zip(self.parameters['iy'],self.parameters['iz'])]
 
-        print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
-        print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
-        print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
-        
-        print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
-        print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
-        print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
-        print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
-        
         # relative importance of the shear deformation to the bending one
         self.parameters['py'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         self.parameters['pz'] = [12 * self.parameters['e'] * a / (self.parameters['g'] * b * self.parameters['lx_i']**2) for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
@@ -206,6 +203,20 @@ class StraightBeam(object):
         # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
         
+        # NOTE: use to bedug lists
+        # print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
+        # print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
+        # print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
+
+        # print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
+        # print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
+        # print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
+        
+        # print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
+        # print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
+        # print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
+        # print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
+
         # NOTE: to check mass
         self.parameters['m_tot'] = 0.0
         for i in range(len(self.parameters['x'])):
@@ -214,11 +225,11 @@ class StraightBeam(object):
         print('total m: ', self.parameters['m_tot'])
         print('rho: ', self.parameters['rho'])
 
-        # # NOTE: should be 2414220.000 -> set as target        
+        # NOTE: use to adjust density to get to target total mass
+        # should be 2414220.000 -> set as target        
         # target_m_tot = 2414220.000
         # cor_fctr = target_m_tot / self.parameters['m_tot']
         # self.parameters['rho'] *= cor_fctr
-
         # self.parameters['m_tot'] = 0.0
         # for i in range(len(self.parameters['x'])):
         #     self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
@@ -226,8 +237,7 @@ class StraightBeam(object):
         # print('total m: ', self.parameters['m_tot'])
         # print('rho: ', self.parameters['rho'])
         # print()
-        
-        #wait = input('check...')
+        # wait = input('check...')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -281,6 +291,23 @@ class StraightBeam(object):
         self.k = self._get_stiffness()
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
+
+    def evaluate_characteristic_on_interval(self, running_coord, characteristic_identifier):
+        '''
+        NOTE: continous polynomial defined within interval
+        starting from the local coordinate 0.0
+        so a shift is needed
+        see shifted coordinate defined as: running_coord-val['bounds'][0]
+
+        TODO: might not be robust enough with end-check -> add some tolerance
+        '''
+        for val in self.parameters['intervals']:
+            if "End" not in val['bounds']:
+                if val['bounds'][0] <= running_coord and running_coord < val['bounds'][1]:
+                    return evaluate_polynomial(running_coord-val['bounds'][0], val[characteristic_identifier])
+            elif "End" in val['bounds']:
+                if val['bounds'][0] <= running_coord and running_coord <= self.parameters['lx']:
+                    return evaluate_polynomial(running_coord-val['bounds'][0], val[characteristic_identifier])
 
     def plot_model_properties(self):
         fig = plt.figure(1)
