@@ -130,32 +130,33 @@ dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
                         "GenAlpha" )
 
 dynamic_analysis.solve()
+dynamic_analysis.plot_reaction()
 
 selected_time = 250
 dynamic_analysis.plot_selected_time(selected_time)
 
 # TODO: remedy animation bug
-dynamic_analysis.animate_time_history()
+# dynamic_analysis.animate_time_history()
 
 # NOTE: for comparison the relevant DOFs have been selected
-# alongwind
-dynamic_analysis.plot_result_at_dof(145, 'displacement')
-dynamic_analysis.plot_result_at_dof(145, 'velocity')
-dynamic_analysis.plot_result_at_dof(145, 'acceleration')
+# # alongwind
+# dynamic_analysis.plot_result_at_dof(145, 'displacement')
+# dynamic_analysis.plot_result_at_dof(145, 'velocity')
+# dynamic_analysis.plot_result_at_dof(145, 'acceleration')
 
-# acrosswind
-dynamic_analysis.plot_result_at_dof(146, 'displacement')
-dynamic_analysis.plot_result_at_dof(146, 'velocity')
-dynamic_analysis.plot_result_at_dof(146, 'acceleration')
+# # acrosswind
+# dynamic_analysis.plot_result_at_dof(146, 'displacement')
+# dynamic_analysis.plot_result_at_dof(146, 'velocity')
+# dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 
 
 # ============================================
 # Static analysis 
 
 
-selected_time_step = 15000
-static_force = dynamic_force[:, selected_time_step]
+# selected_time_step = 15000
+# static_force = dynamic_force[:, selected_time_step]
 
-static_analysis = StaticAnalysis(beam_model)
-static_analysis.solve(static_force)
-static_analysis.plot_solve_result()
+# static_analysis = StaticAnalysis(beam_model)
+# static_analysis.solve(static_force)
+# static_analysis.plot_solve_result()

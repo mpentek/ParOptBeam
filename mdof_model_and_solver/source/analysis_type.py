@@ -468,6 +468,7 @@ class DynamicAnalysis(AnalysisType):
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
+            
             self.solver.solve_structure(force[:, i])
 
             # appending results to the list
@@ -485,10 +486,12 @@ class DynamicAnalysis(AnalysisType):
     def compute_reactions(self):
         # forward multiplying to compute the forces and reactions  
         ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
-        f1 = np.matmul(self.structure_model.m,self.displacement)
+
+        f1 = np.matmul(self.structure_model.m, self.acceleration)
         f2 = np.matmul(self.structure_model.b, self.velocity)
         f3 = np.matmul(self.structure_model.k, self.displacement)
         self.dynamic_reaction = self.force- f1 -f2 -f3
+
         
     def write_result_at_dof(self, dof, selected_result):
         """"
