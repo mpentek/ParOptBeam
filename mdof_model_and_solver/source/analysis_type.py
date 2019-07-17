@@ -546,7 +546,7 @@ class DynamicAnalysis(AnalysisType):
             plot_title = 'REACTION at DoF ' + str(dof)
             visualize_result_utilities.plot_dynamic_result(plot_title, self.dynamic_reaction[dof,:], self.array_time)
 
-    def plot_selected_time_step(self, selected_time_step):
+    def plot_selected_time(self, selected_time):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -557,7 +557,7 @@ class DynamicAnalysis(AnalysisType):
         print("Plotting result for a selected time step in DynamicAnalysis \n")
 
         # find closesed time step
-        idx_time = (np.abs(self.array_time-selected_time_step)).argmin()
+        idx_time = np.where(self.array_time >= selected_time)[0][0]
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
                               StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
@@ -582,7 +582,7 @@ class DynamicAnalysis(AnalysisType):
                    "force": 1}
 
         plot_title = "Dyanimc Analyis: Deformation at t = " + \
-            str(selected_time_step) + " [s]"
+            str(selected_time) + " [s]"
 
         visualize_result_utilities.plot_result(plot_title,
                                                geometry,
