@@ -20,6 +20,8 @@ Note:   UPDATE: The script has been written using publicly available information
 Created on:  22.11.2017
 Last update: 09.07.2019
 '''
+
+
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
@@ -94,10 +96,10 @@ eigenvalue_analysis.solve()
 # eigenvalue_analysis.plot_selected_eigenmode(6)
 # eigenvalue_analysis.plot_selected_eigenmode(7)
 
-# eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
+eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 # TODO: remedy animation bug
-eigenvalue_analysis.animate_selected_eigenmode(1)
-eigenvalue_analysis.animate_selected_eigenmode(3)
+# eigenvalue_analysis.animate_selected_eigenmode(1)
+# eigenvalue_analysis.animate_selected_eigenmode(3)
 
 
 # ===========================================
@@ -118,15 +120,18 @@ valid only for the pylon model
 can be used for testing the caarc model as well
 '''
 array_time = np.load('array_time.npy')
-dynamic_force = np.load('force_dynamic.npy')#
+dynamic_force = np.load('force_dynamic.npy')
 dt = array_time[1] - array_time[0]
+
 # initial condition 
 # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
 dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
                         "GenAlpha" )
 
 dynamic_analysis.solve()
-dynamic_analysis.plot_selected_time(250)
+
+selected_time = 250
+dynamic_analysis.plot_selected_time(selected_time)
 
 # TODO: remedy animation bug
 dynamic_analysis.animate_time_history()
@@ -147,7 +152,9 @@ dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 # Static analysis 
 
 
-static_force = dynamic_force[:, 15000]
+selected_time_step = 15000
+static_force = dynamic_force[:, selected_time_step]
+
 static_analysis = StaticAnalysis(beam_model)
 static_analysis.solve(static_force)
 static_analysis.plot_solve_result()
