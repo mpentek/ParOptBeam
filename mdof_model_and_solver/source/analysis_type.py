@@ -88,7 +88,7 @@ class StaticAnalysis(AnalysisType):
                         "g": np.zeros(0)}
 
         #self.force = self.structure_model.recuperate_bc_by_extension(self.force,'row_vector')
-        self.resisting_force = self.force - np.matmul(self.structure_model.k,self.static_result)
+        self.resisting_force = self.force - np.dot(self.structure_model.k,self.static_result) # 
         ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
         self.resisting_force[ixgrid] = 0
         self.reaction = {"x": np.zeros(0),
@@ -483,10 +483,12 @@ class DynamicAnalysis(AnalysisType):
         self.acceleration = self.structure_model.recuperate_bc_by_extension(self.acceleration)
 
     def compute_reactions(self):
-        # forward multiplying to compute the forces and reactions 
-        self.dynamic_reaction = self.force - np.matmul(self.structure_model.m,self.displacement)
-        -np.matmul(self.structure_model.b, self.velocity)
-        -np.matmul(self.structure_model.k, self.displacement)
+        # forward multiplying to compute the forces and reactions  
+        ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
+        f1 = np.matmul(self.structure_model.m,self.displacement)
+        f2 = np.matmul(self.structure_model.b, self.velocity)
+        f3 = np.matmul(self.structure_model.k, self.displacement)
+        self.dynamic_reaction = self.force- f1 -f2 -f3
         
     def write_result_at_dof(self, dof, selected_result):
         """"
@@ -533,6 +535,16 @@ class DynamicAnalysis(AnalysisType):
 
         visualize_result_utilities.plot_dynamic_result(plot_title, result_data, self.array_time)
 
+    def plot_reaction(self):
+        self.compute_reactions()
+        """
+        Pass to plot function:
+            Plots the time series of required quantitiy 
+        """
+        print('Plotting reactions for in dynamic analysis \n')
+        for dof in self.structure_model.bc_dofs: 
+            plot_title = 'REACTION at DoF ' + str(dof)
+            visualize_result_utilities.plot_dynamic_result(plot_title, self.dynamic_reaction[dof,:], self.array_time)
 
     def plot_selected_time_step(self, selected_time_step):
         """

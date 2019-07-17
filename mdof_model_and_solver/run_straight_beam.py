@@ -67,7 +67,7 @@ to define altering geometric properties
 parameters = json.loads(parameter_file.read())
 
 beam_model = StraightBeam(parameters)
-beam_model.plot_model_properties()
+# beam_model.plot_model_properties()
 
 
 # ==============================================
@@ -76,16 +76,16 @@ beam_model.plot_model_properties()
 
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
-# eigenvalue_analysis.write_output_file()
-eigenvalue_analysis.plot_selected_eigenmode(1)
-eigenvalue_analysis.plot_selected_eigenmode(2)
-eigenvalue_analysis.plot_selected_eigenmode(3)
-eigenvalue_analysis.plot_selected_eigenmode(4)
-eigenvalue_analysis.plot_selected_eigenmode(5)
-eigenvalue_analysis.plot_selected_eigenmode(6)
-eigenvalue_analysis.plot_selected_eigenmode(7)
+# # eigenvalue_analysis.write_output_file()
+# eigenvalue_analysis.plot_selected_eigenmode(1)
+# eigenvalue_analysis.plot_selected_eigenmode(2)
+# eigenvalue_analysis.plot_selected_eigenmode(3)
+# eigenvalue_analysis.plot_selected_eigenmode(4)
+# eigenvalue_analysis.plot_selected_eigenmode(5)
+# eigenvalue_analysis.plot_selected_eigenmode(6)
+# eigenvalue_analysis.plot_selected_eigenmode(7)
 
-eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
+# eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 # TODO: seems to have a bug
 # eigenvalue_analysis.animate_selected_eigenmode(1)
 
@@ -101,27 +101,30 @@ valid only for the pylon model
 can be used for testing the caarc model as well
 '''
 array_time = np.load('array_time.npy')
+#array_time = array_time[:5]
 dynamic_force = np.load('force_dynamic.npy')#
+#dynamic_force = dynamic_force[:,:5]
 dt = array_time[1] - array_time[0]
 # initial condition # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
 # dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
 #                         "GenAlpha" )
 
 dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
-                        "Euler12" )
+                        "GenAlpha" )
 
 dynamic_analysis.solve()
+dynamic_analysis.plot_reaction()
 #dynamic_analysis.plot_selected_time_step(125)
 #dynamic_analysis.animate_time_history()
 
-# alongwind
-dynamic_analysis.plot_result_at_dof(145, 'displacement')
-dynamic_analysis.plot_result_at_dof(145, 'acceleration')
+# # alongwind
+# dynamic_analysis.plot_result_at_dof(145, 'displacement')
+# dynamic_analysis.plot_result_at_dof(145, 'acceleration')
 
 
-# acrosswind
-dynamic_analysis.plot_result_at_dof(146, 'displacement')
-dynamic_analysis.plot_result_at_dof(146, 'acceleration')
+# # acrosswind
+# dynamic_analysis.plot_result_at_dof(146, 'displacement')
+# dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 
 
 
@@ -129,7 +132,7 @@ dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 # Static analysis 
 
 
-# static_force = dynamic_force[:, 15000]
-# static_analysis = StaticAnalysis(beam_model)
-# static_analysis.solve(static_force)
-# static_analysis.plot_solve_result()
+static_force = dynamic_force[:, 4000]
+static_analysis = StaticAnalysis(beam_model)
+static_analysis.solve(static_force)
+static_analysis.plot_solve_result()

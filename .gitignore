@@ -11,3 +11,5 @@ mdof_model_and_solver/level_force/
 *.npy
 
 *.avi
+
+mdof_model_and_solver/run_straight_beam\.py
