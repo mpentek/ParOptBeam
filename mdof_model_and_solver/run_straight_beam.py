@@ -87,6 +87,7 @@ TODO: check eigenvalue analysis with number of elements
 
 eigenvalue_analysis = EigenvalueAnalysis(beam_model)
 eigenvalue_analysis.solve()
+
 # eigenvalue_analysis.write_output_file()
 
 # eigenvalue_analysis.plot_selected_eigenmode(1)
@@ -97,8 +98,8 @@ eigenvalue_analysis.solve()
 # eigenvalue_analysis.plot_selected_eigenmode(6)
 # eigenvalue_analysis.plot_selected_eigenmode(7)
 
-eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
-# TODO: remedy animation bug
+# eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
+
 # eigenvalue_analysis.animate_selected_eigenmode(1)
 # eigenvalue_analysis.animate_selected_eigenmode(3)
 
@@ -130,12 +131,26 @@ dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
                         "GenAlpha" )
 
 dynamic_analysis.solve()
-dynamic_analysis.plot_reaction()
+
+# reaction
+# forces
+# beam local Fy -> in CFD and OWC Fx
+dynamic_analysis.plot_reaction(1)
+# beam local Fz -> in CFD and OWC Fy
+dynamic_analysis.plot_reaction(2)
+# beam local Fx -> in CFD and OWC Fz
+dynamic_analysis.plot_reaction(0)
+# moments
+# beam local My -> in CFD and OWC Mx
+dynamic_analysis.plot_reaction(4)
+# beam local Mz -> in CFD and OWC My
+dynamic_analysis.plot_reaction(5)
+# beam local Mx -> in CFD and OWC Mz
+dynamic_analysis.plot_reaction(3)
 
 selected_time = 250
 dynamic_analysis.plot_selected_time(selected_time)
 
-# TODO: remedy animation bug
 # dynamic_analysis.animate_time_history()
 
 # NOTE: for comparison the relevant DOFs have been selected

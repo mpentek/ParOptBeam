@@ -538,16 +538,21 @@ class DynamicAnalysis(AnalysisType):
 
         visualize_result_utilities.plot_dynamic_result(plot_title, result_data, self.array_time)
 
-    def plot_reaction(self):
+    def plot_reaction(self, dof):
         self.compute_reactions()
         """
         Pass to plot function:
             Plots the time series of required quantitiy 
         """
         print('Plotting reactions for in dynamic analysis \n')
-        for dof in self.structure_model.bc_dofs: 
+        if dof in self.structure_model.bc_dofs: 
             plot_title = 'REACTION at DoF ' + str(dof)
             visualize_result_utilities.plot_dynamic_result(plot_title, self.dynamic_reaction[dof,:], self.array_time)
+        else:
+            err_msg = "The selected DoF \"" + str(dof)
+            err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
+            err_msg += "Choose one of: " + ", ".join([str(val) for val in self.structure_model.bc_dofs])
+            raise Exception(err_msg)
 
     def plot_selected_time(self, selected_time):
         """
