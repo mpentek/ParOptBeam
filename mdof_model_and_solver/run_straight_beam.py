@@ -98,7 +98,7 @@ eigenvalue_analysis.solve()
 # eigenvalue_analysis.plot_selected_eigenmode(6)
 # eigenvalue_analysis.plot_selected_eigenmode(7)
 
-# eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
+eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 
 # eigenvalue_analysis.animate_selected_eigenmode(1)
 # eigenvalue_analysis.animate_selected_eigenmode(3)
@@ -154,24 +154,24 @@ dynamic_analysis.plot_selected_time(selected_time)
 # dynamic_analysis.animate_time_history()
 
 # NOTE: for comparison the relevant DOFs have been selected
-# # alongwind
-# dynamic_analysis.plot_result_at_dof(145, 'displacement')
-# dynamic_analysis.plot_result_at_dof(145, 'velocity')
-# dynamic_analysis.plot_result_at_dof(145, 'acceleration')
+# alongwind
+dynamic_analysis.plot_result_at_dof(145, 'displacement')
+dynamic_analysis.plot_result_at_dof(145, 'velocity')
+dynamic_analysis.plot_result_at_dof(145, 'acceleration')
 
-# # acrosswind
-# dynamic_analysis.plot_result_at_dof(146, 'displacement')
-# dynamic_analysis.plot_result_at_dof(146, 'velocity')
-# dynamic_analysis.plot_result_at_dof(146, 'acceleration')
+# acrosswind
+dynamic_analysis.plot_result_at_dof(146, 'displacement')
+dynamic_analysis.plot_result_at_dof(146, 'velocity')
+dynamic_analysis.plot_result_at_dof(146, 'acceleration')
 
 
 # ============================================
 # Static analysis 
 
 
-# selected_time_step = 15000
-# static_force = dynamic_force[:, selected_time_step]
+selected_time_step = 15000
+static_force = dynamic_force[:, selected_time_step]
 
-# static_analysis = StaticAnalysis(beam_model)
-# static_analysis.solve(static_force)
-# static_analysis.plot_solve_result()
+static_analysis = StaticAnalysis(beam_model)
+static_analysis.solve(static_force)
+static_analysis.plot_solve_result()
