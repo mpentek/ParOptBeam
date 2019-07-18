@@ -4,6 +4,7 @@ from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import numpy as np
 from visualize_skin_model.Mapper import Mapper
+from matplotlib import animation
 
 plt.rcParams['legend.fontsize'] = 16
 
@@ -30,19 +31,20 @@ class Visualiser:
         self.factor = 150.
 
         self.fig = plt.figure(figsize=(10, 10))
+        # self.ax = Axes3D(self.fig)
         self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-90, elev=10)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
-        self.update()
-        self.visualise_structure()
-        self.visualise_line_structure()
-        self.visualise_interpolated_line_structure()
 
-        plt.tight_layout()
-        plt.show()
+        self.mapper.map_interpolated_line_structure_to_structure_floor()
+        self.line_structure.apply_transformation_for_line_structure()
+        self.interpolated_line_structure.apply_transformation_for_line_structure()
+        self.structure.apply_transformation_for_structure()
+
+        self.animate()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(mutation_scale=20, arrowstyle='->', shrinkA=0, shrinkB=0)
@@ -74,22 +76,22 @@ class Visualiser:
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
 
     def visualise_line_structure(self):
-        x_vec = self.line_structure.x0_vec + np.subtract(self.line_structure.x_vec, self.line_structure.x0_vec) * self.factor
-        y_vec = self.line_structure.y0_vec + np.subtract(self.line_structure.y_vec, self.line_structure.y0_vec) * self.factor
-        z_vec = self.line_structure.z0_vec + np.subtract(self.line_structure.z_vec, self.line_structure.z0_vec) * self.factor
+        x_vec = self.line_structure.x0_vec + np.subtract(self.line_structure.x_vec, self.line_structure.x0_vec) * self.scale
+        y_vec = self.line_structure.y0_vec + np.subtract(self.line_structure.y_vec, self.line_structure.y0_vec) * self.scale
+        z_vec = self.line_structure.z0_vec + np.subtract(self.line_structure.z_vec, self.line_structure.z0_vec) * self.scale
 
         z = np.array([z_vec, z_vec])
         self.ax.plot_wireframe(x_vec, y_vec, z, color='b', linewidth=3)
         for node in self.line_structure.nodes:
-            x = node.x0 + (node.x - node.x0) * self.factor
-            y = node.y0 + (node.y - node.y0) * self.factor
-            z = node.z0 + (node.z - node.z0) * self.factor
-            self.ax.scatter(x, y, z, marker='o', c='r', s=100)
+            x = node.x0 + (node.x - node.x0) * self.scale
+            y = node.y0 + (node.y - node.y0) * self.scale
+            z = node.z0 + (node.z - node.z0) * self.scale
+            self.ax.scatter(x, y, z, marker='o', c='r', s=50)
 
     def visualise_interpolated_line_structure(self):
-        x_vec = self.interpolated_line_structure.x0_vec + np.subtract(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.x0_vec) * self.factor
-        y_vec = self.interpolated_line_structure.y0_vec + np.subtract(self.interpolated_line_structure.y_vec, self.interpolated_line_structure.y0_vec) * self.factor
-        z_vec = self.interpolated_line_structure.z0_vec + np.subtract(self.interpolated_line_structure.z_vec, self.interpolated_line_structure.z0_vec) * self.factor
+        x_vec = self.interpolated_line_structure.x0_vec + np.subtract(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.x0_vec) * self.scale
+        y_vec = self.interpolated_line_structure.y0_vec + np.subtract(self.interpolated_line_structure.y_vec, self.interpolated_line_structure.y0_vec) * self.scale
+        z_vec = self.interpolated_line_structure.z0_vec + np.subtract(self.interpolated_line_structure.z_vec, self.interpolated_line_structure.z0_vec) * self.scale
 
         z = np.array([z_vec, z_vec])
         self.ax.plot_wireframe(x_vec, y_vec, z,
@@ -103,9 +105,9 @@ class Visualiser:
 
     def visualise_element(self):
         for element in self.structure.elements:
-            x_vec = element.x0_vec + np.subtract(element.x_vec, element.x0_vec) * self.factor
-            y_vec = element.y0_vec + np.subtract(element.y_vec, element.y0_vec) * self.factor
-            z_vec = element.z0_vec + np.subtract(element.z_vec, element.z0_vec) * self.factor
+            x_vec = element.x0_vec + np.subtract(element.x_vec, element.x0_vec) * self.scale
+            y_vec = element.y0_vec + np.subtract(element.y_vec, element.y0_vec) * self.scale
+            z_vec = element.z0_vec + np.subtract(element.z_vec, element.z0_vec) * self.scale
 
             x_vec = np.append(x_vec, x_vec[0])
             y_vec = np.append(y_vec, y_vec[0])
@@ -117,9 +119,9 @@ class Visualiser:
 
     def visualize_frame(self):
         for frame in self.structure.frames:
-            x_vec = frame.x0_vec + np.subtract(frame.x_vec, frame.x0_vec) * self.factor
-            y_vec = frame.y0_vec + np.subtract(frame.y_vec, frame.y0_vec) * self.factor
-            z_vec = frame.z0_vec + np.subtract(frame.z_vec, frame.z0_vec) * self.factor
+            x_vec = frame.x0_vec + np.subtract(frame.x_vec, frame.x0_vec) * self.scale
+            y_vec = frame.y0_vec + np.subtract(frame.y_vec, frame.y0_vec) * self.scale
+            z_vec = frame.z0_vec + np.subtract(frame.z_vec, frame.z0_vec) * self.scale
 
             z = np.array([z_vec, z_vec])
             self.ax.plot_wireframe(x_vec, y_vec, z, color='black')
@@ -128,16 +130,22 @@ class Visualiser:
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(fig, self.update, 40, repeat=False)
-        # a.save("structure_displacement.avi")
+        a = animation.FuncAnimation(self.fig, self.update, 40, repeat=False)
+        a.save("structure_displacement.mp4")
+        plt.tight_layout()
         plt.show()
 
-    def update(self):
+    def update(self, t):
         """
         plotting the deformed structure with respect to the displacement
         """
-        # self.ax.cla()
-        self.mapper.map_interpolated_line_structure_to_structure_floor()
-        self.line_structure.apply_transformation_for_line_structure()
-        self.interpolated_line_structure.apply_transformation_for_line_structure()
-        self.structure.apply_transformation_for_structure()
+        wframe = self.fig.gca()
+        if wframe is not None:
+            self.ax.cla()
+        self.scale = self.factor * np.sin(t)
+        self.visualise_structure()
+        self.visualise_line_structure()
+        self.visualise_interpolated_line_structure()
+        self.set_coordinate_in_real_size()
+
+
