@@ -25,6 +25,7 @@ Last update: 09.07.2019
 # ===============================================================================
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 from source.structure_model import*
 from source.analysis_type import*
@@ -120,9 +121,26 @@ NOTE: this analysis with the force_dynamic.npy can for now only be use
 with 24 elements as loads are defined and recorded at 25 nodes
 valid only for the pylon model
 can be used for testing the caarc model as well
+
+NOW AVAILABLE for
+1 elements - 2 nodes
+3 elements - 4 nodes
+6 elements - 7 nodes
+12 elements - 13 nodes
+24 elements - 25 nodes
 '''
-array_time = np.load('array_time.npy')
-dynamic_force = np.load('force_dynamic.npy')
+
+possible_n_el_cases = [1, 3, 6, 12, 24]
+if beam_model.parameters['n_el'] not in possible_n_el_cases:
+    err_msg = "The number of element input \"" + str(beam_model.parameters['n_el'])
+    err_msg += "\" is not allowed for Dynamic Analysis \n"
+    err_msg += "Choose one of: "
+    err_msg += ', '.join([str(x) for x in possible_n_el_cases])
+    raise Exception(err_msg)
+
+
+array_time = np.load(os.path.join('level_force','array_time.npy'))
+dynamic_force = np.load(os.path.join('level_force','force_dynamic' + str(beam_model.parameters['n_el']+1)+ '.npy'))
 dt = array_time[1] - array_time[0]
 
 # initial condition 
@@ -155,14 +173,14 @@ dynamic_analysis.animate_time_history()
 
 # NOTE: for comparison the relevant DOFs have been selected
 # alongwind
-dynamic_analysis.plot_result_at_dof(145, 'displacement')
-dynamic_analysis.plot_result_at_dof(145, 'velocity')
-dynamic_analysis.plot_result_at_dof(145, 'acceleration')
+dynamic_analysis.plot_result_at_dof(-5, 'displacement')
+dynamic_analysis.plot_result_at_dof(-5, 'velocity')
+dynamic_analysis.plot_result_at_dof(-5, 'acceleration')
 
 # acrosswind
-dynamic_analysis.plot_result_at_dof(146, 'displacement')
-dynamic_analysis.plot_result_at_dof(146, 'velocity')
-dynamic_analysis.plot_result_at_dof(146, 'acceleration')
+dynamic_analysis.plot_result_at_dof(-4, 'displacement')
+dynamic_analysis.plot_result_at_dof(-4, 'velocity')
+dynamic_analysis.plot_result_at_dof(-4, 'acceleration')
 
 
 # ============================================
