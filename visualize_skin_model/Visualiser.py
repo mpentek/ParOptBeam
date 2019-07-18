@@ -84,7 +84,7 @@ class Visualiser:
             x = node.x0 + (node.x - node.x0) * self.factor
             y = node.y0 + (node.y - node.y0) * self.factor
             z = node.z0 + (node.z - node.z0) * self.factor
-            self.ax.scatter(x, y, z, marker='o', c='r', s=100)
+            self.ax.scatter(x, y, z, marker='o', c='r', s=50)
 
     def visualise_interpolated_line_structure(self):
         x_vec = self.interpolated_line_structure.x0_vec + np.subtract(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.x0_vec) * self.factor
