@@ -5,11 +5,9 @@ mdof_model_and_solver/.vscode
 
 *.pyc
 *.idea
+*.vscode
 
-mdof_model_and_solver/level_force/
-
-*.npy
+mdof_model_and_solver/level_force/25/
 
 *.avi
 
-mdof_model_and_solver/run_straight_beam\.py
