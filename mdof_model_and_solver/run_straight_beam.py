@@ -124,13 +124,14 @@ can be used for testing the caarc model as well
 
 NOW AVAILABLE for
 1 elements - 2 nodes
+2 elements - 3 nodes
 3 elements - 4 nodes
 6 elements - 7 nodes
 12 elements - 13 nodes
 24 elements - 25 nodes
 '''
 
-possible_n_el_cases = [1, 3, 6, 12, 24]
+possible_n_el_cases = [1, 2, 3, 6, 12, 24]
 if beam_model.parameters['n_el'] not in possible_n_el_cases:
     err_msg = "The number of element input \"" + str(beam_model.parameters['n_el'])
     err_msg += "\" is not allowed for Dynamic Analysis \n"

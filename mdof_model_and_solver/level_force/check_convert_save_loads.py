@@ -156,7 +156,8 @@ wait = input("check...")
 # PARAMETRIZATION
 
 
-number_of_sampling_interval_cases = [1+1, 3+1, 6+1, 12+1, 24+1]
+# number_of_sampling_interval_cases = [1+1, 2+1, 3+1, 6+1, 12+1, 24+1]
+number_of_sampling_interval_cases = [2+1]
 
 for number_of_sampling_intervals in number_of_sampling_interval_cases:
     print("RESULTS FOR CASE ", str(number_of_sampling_intervals))
