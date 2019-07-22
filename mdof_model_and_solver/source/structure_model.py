@@ -216,28 +216,6 @@ class StraightBeam(object):
         # print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
         # print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
         # print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
-
-        # NOTE: to check mass
-        self.parameters['m_tot'] = 0.0
-        for i in range(len(self.parameters['x'])):
-            self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
-        print('INITIAL:')
-        print('total m: ', self.parameters['m_tot'])
-        print('rho: ', self.parameters['rho'])
-
-        # NOTE: use to adjust density to get to target total mass
-        # should be 2414220.000 -> set as target        
-        # target_m_tot = 2414220.000
-        # cor_fctr = target_m_tot / self.parameters['m_tot']
-        # self.parameters['rho'] *= cor_fctr
-        # self.parameters['m_tot'] = 0.0
-        # for i in range(len(self.parameters['x'])):
-        #     self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i'] 
-        # print('CORRECTED:')
-        # print('total m: ', self.parameters['m_tot'])
-        # print('rho: ', self.parameters['rho'])
-        # print()
-        # wait = input('check...')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -284,13 +262,83 @@ class StraightBeam(object):
         self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
         #AK :is it better to rename it to dof_to_keep than bc_to_keep ??
 
-        # structural properties
+        self.calculate_global_matrices()
+
+    def calculate_total_mass(self, print_to_console=False):
+        self.parameters['m_tot'] = 0.0
+        for i in range(len(self.parameters['x'])):
+            self.parameters['m_tot'] += self.parameters['a'][i] * self.parameters['rho'] * self.parameters['lx_i']
+
+        if print_to_console:
+            print('CURRENT:')
+            print('total mass ', self.parameters['m_tot'])
+            print('density: ', self.parameters['rho'])
+            print()
+
+    def adjust_density_for_target_total_mass(self, target_total_mass):
+
+        # calculate to be sure to have most current
+        self.calculate_total_mass(True)
+
+        corr_fctr = target_total_mass / self.parameters['m_tot']
+
+        self.parameters['rho'] *= corr_fctr
+
+        # re-calculate and print to console
+        print('AFTER TUNED DENSITY')
+        self.calculate_total_mass(True)
+
+    def adjust_e_modul_for_taget_eigenfreq(self, target_freq, target_mode, print_to_console=False):
+        initial_e = self.parameters['e']
+
+        # using partial to fix some parameters for the
+        optimizable_function = partial(self.stiffness_objective_function,
+                                       target_freq, 
+                                       target_mode)
+
+        # optimize optimizable function 
+        #print("Optimization for the target k matrix in MDoFBeamModel \n")
+        minimization_result = minimize(optimizable_function,
+                                       initial_e, 
+                                       method='Powell',
+                                       options={'disp': True})
+
+        # returning only one value!
+        opt_e = minimization_result.x
+
+        if print_to_console:
+            print('INITIAL e:', initial_e)
+            print('OPTIMIZED e: ', opt_e)
+            print()
+
+    def calculate_global_matrices(self):
         # mass matrix
         self.m = self._get_mass()
         # stiffness matrix
         self.k = self._get_stiffness()
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
+
+    def stiffness_objective_function(self, target_freq, target_mode, e_modul):
+
+        self.parameters['e'] = e_modul
+
+        # re-evaluate
+        self.calculate_global_matrices()
+
+        # TODO: try to avoid this code duplication
+        # TODO: also here add the reduction and exteisnon, otherwise rigid body modes will be taken into account
+
+        # raw results
+        # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
+        eig_values_raw, eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(self.k), self.apply_bc_by_reduction(self.m))
+        # rad/s
+        eig_values = np.sqrt(np.real(eig_values_raw))
+        eig_freqs = eig_values / 2. / np.pi
+        # sort eigenfrequencies
+        eig_freqs_sorted_indices = np.argsort(eig_freqs)
+
+        return (eig_freqs[eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
     def evaluate_characteristic_on_interval(self, running_coord, characteristic_identifier):
         '''

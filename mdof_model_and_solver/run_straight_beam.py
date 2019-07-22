@@ -74,8 +74,15 @@ to define altering geometric properties
 
 parameters = json.loads(parameter_file.read())
 beam_model = StraightBeam(parameters)
-# beam_model.plot_model_properties()
+beam_model.plot_model_properties()
 
+beam_model.calculate_total_mass(True)
+target_total_mass = 2414220.0
+beam_model.adjust_density_for_target_total_mass(target_total_mass)
+
+target_mode = 1
+target_freq = 0.51
+beam_model.adjust_e_modul_for_taget_eigenfreq(target_freq, target_mode, True)
 
 # ==============================================
 # Eigenvalue analysis
