@@ -358,6 +358,10 @@ class StraightBeam(object):
 
         self.parameters['e'] = e_modul
 
+        # NOTE: do not forget to update G as well
+        self.parameters['g'] = self.parameters['e'] / \
+            2 / (1+self.parameters['nu'])
+
         # re-evaluate
         self.calculate_global_matrices()
 

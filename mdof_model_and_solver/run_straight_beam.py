@@ -52,7 +52,7 @@ and matching structural to the solid models used for one-way coupling
 Pylon model with geometry data from the sofistik beam
 material parameters also from sofistik sheet 
 '''
-#parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
+parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
 
 parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
 parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationMid.json', 'r')
@@ -86,7 +86,7 @@ target_total_mass = 2421100 #2414220.0
 beam_model.adjust_density_for_target_total_mass(target_total_mass)
 
 target_mode = 1
-target_freq = 0.40 #48
+target_freq = 0.4
 beam_model.adjust_e_modul_for_taget_eigenfreq(target_freq, target_mode, True)
 
 
