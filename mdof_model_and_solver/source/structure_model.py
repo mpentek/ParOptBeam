@@ -23,7 +23,7 @@ Last update: 09.07.2018
 
 import numpy as np
 from scipy import linalg
-from scipy.optimize import minimize
+from scipy.optimize import minimize, minimize_scalar
 from functools import partial
 import math
 import matplotlib.pyplot as plt
@@ -130,7 +130,7 @@ class StraightBeam(object):
 
     NODES_PER_LEVEL = 2
 
-    def __init__(self, parameters):
+    def __init__(self, parameters,print_debug=False):
 
         # TODO: add domain size check
         self.domain_size = parameters["model_parameters"]["domain_size"]
@@ -203,19 +203,19 @@ class StraightBeam(object):
         # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
         
-        # NOTE: use to bedug lists
-        # print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
-        # print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
-        # print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
+        if print_debug:
+            print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
+            print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
+            print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
 
-        # print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
-        # print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
-        # print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
-        
-        # print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
-        # print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
-        # print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
-        # print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
+            print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
+            print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
+            print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
+            
+            print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
+            print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
+            print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
+            print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -251,6 +251,36 @@ class StraightBeam(object):
             err_msg += ', '.join(StraightBeam.AVAILABLE_BCS)
             raise Exception(err_msg)
 
+        # handle potential elastic BCs
+
+        self.elastic_bc_dofs = {}
+        if 'elastic_fixtiy_dofs' in parameters["model_parameters"]:
+            elastic_bc_dofs_tmp = parameters["model_parameters"]["elastic_fixtiy_dofs"]
+        else:
+            print('parameters["model_parameters"] does not have "elastic_fixtiy_dofs"')
+            elastic_bc_dofs_tmp = {}
+        
+        for key in elastic_bc_dofs_tmp:
+            #TODO: check if type cast to int is robust enough
+            if int(key) not in self.bc_dofs:
+                err_msg = "The elastic BC dof for input \"" + key
+                err_msg += "\" is not available for "+ \
+                    parameters["model_parameters"]["boundary_conditions"] + "\n"
+                err_msg += "Choose one of: "
+                err_msg += ', '.join([str(val) for val in self.bc_dofs])
+                raise Exception(err_msg)
+            else:
+                print('Valid DoF ' + key + ' for elastic constraint, removing from constrained DoFs')
+                self.bc_dofs.remove(int(key))
+
+                # updating elastic bc dofs to global numbering with int type
+                val = int(key)
+                if val < 0:
+                    val += len(self.all_dofs_global)
+
+                # add new element
+                self.elastic_bc_dofs[val] = elastic_bc_dofs_tmp[key]
+
         # list copy by slicing -> [:] -> to have a copy by value
         bc_dofs_global = self.bc_dofs[:]
         for idx, dof in enumerate(bc_dofs_global):
@@ -258,9 +288,9 @@ class StraightBeam(object):
             if dof < 0:
                 bc_dofs_global[idx] = dof + len(self.all_dofs_global)
 
-        # only take bc's of interes
+        # only take bc's of interest
         self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
-        #AK :is it better to rename it to dof_to_keep than bc_to_keep ??
+        #TODO: AK :is it better to rename it to dof_to_keep than bc_to_keep ??
 
         self.calculate_global_matrices()
 
@@ -298,10 +328,15 @@ class StraightBeam(object):
 
         # optimize optimizable function 
         #print("Optimization for the target k matrix in MDoFBeamModel \n")
-        minimization_result = minimize(optimizable_function,
-                                       initial_e, 
-                                       method='Powell',
-                                       options={'disp': True})
+        # minimization_result = minimize(optimizable_function,
+        #                                initial_e, 
+        #                                #method='Powell',
+        #                                method='Nelder-Mead',
+        #                                options={'disp': True})
+
+        minimization_result = minimize_scalar(optimizable_function,
+                                       method='Bounded',
+                                       bounds=(initial_e/100,initial_e*100))
 
         # returning only one value!
         opt_e = minimization_result.x
@@ -888,6 +923,16 @@ class StraightBeam(object):
             el_matrix = self.__get_el_stiffness_3D(i)
             glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
                         StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
+        
+
+        if self.elastic_bc_dofs is not None:
+            print('Applying elastic constraint values to stiffness matrix')
+            for key in self.elastic_bc_dofs:
+                print('Stiffness value for global dof ' + str(key) + ' before update: ' + str(glob_matrix[key, key]))
+                glob_matrix[key, key] = glob_matrix[key,key] + self.elastic_bc_dofs[key]
+                print('Stiffness value for global dof ' + str(key) + ' after update: ' + str(glob_matrix[key, key]))
+                print()
+  
         return glob_matrix
 
         # if self.domain_size == '2D':

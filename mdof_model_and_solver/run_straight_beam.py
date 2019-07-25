@@ -46,13 +46,17 @@ TODO: check model parameters for correctness
 Pylon model with the extracted geometry from the CAD model
 and matching structural to the solid models used for one-way coupling
 '''
-parameter_file = open('ProjectParameters3DPylonCadBeam.json', 'r')
+#parameter_file = open('ProjectParameters3DPylonCadBeam.json', 'r')
 
 ''' 
 Pylon model with geometry data from the sofistik beam
 material parameters also from sofistik sheet 
 '''
 #parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
+
+parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
+parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationMid.json', 'r')
+parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationHard.json', 'r')
 
 '''
 Equivalent beam model of the CAARC building B
@@ -74,15 +78,17 @@ to define altering geometric properties
 
 parameters = json.loads(parameter_file.read())
 beam_model = StraightBeam(parameters)
-beam_model.plot_model_properties()
+
+#beam_model.plot_model_properties()
 
 beam_model.calculate_total_mass(True)
-target_total_mass = 2414220.0
+target_total_mass = 2421100 #2414220.0
 beam_model.adjust_density_for_target_total_mass(target_total_mass)
 
 target_mode = 1
-target_freq = 0.51
+target_freq = 0.40 #48
 beam_model.adjust_e_modul_for_taget_eigenfreq(target_freq, target_mode, True)
+
 
 # ==============================================
 # Eigenvalue analysis
@@ -109,7 +115,6 @@ eigenvalue_analysis.plot_selected_eigenmode(1)
 eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 
 eigenvalue_analysis.animate_selected_eigenmode(1)
-# eigenvalue_analysis.animate_selected_eigenmode(3)
 
 
 # ===========================================
@@ -147,57 +152,57 @@ if beam_model.parameters['n_el'] not in possible_n_el_cases:
     raise Exception(err_msg)
 
 
-array_time = np.load(os.path.join('level_force','array_time.npy'))
-dynamic_force = np.load(os.path.join('level_force','force_dynamic' + str(beam_model.parameters['n_el']+1)+ '.npy'))
-dt = array_time[1] - array_time[0]
+# array_time = np.load(os.path.join('level_force','array_time.npy'))
+# dynamic_force = np.load(os.path.join('level_force','force_dynamic' + str(beam_model.parameters['n_el']+1)+ '.npy'))
+# dt = array_time[1] - array_time[0]
 
-# initial condition 
-# TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
-dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
-                        "GenAlpha" )
+# # initial condition 
+# # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
+# dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
+#                         "GenAlpha" )
 
-dynamic_analysis.solve()
+# dynamic_analysis.solve()
 
-# reaction
-# forces
-# beam local Fy -> in CFD and OWC Fx
-dynamic_analysis.plot_reaction(1)
-# beam local Fz -> in CFD and OWC Fy
-dynamic_analysis.plot_reaction(2)
-# beam local Fx -> in CFD and OWC Fz
-dynamic_analysis.plot_reaction(0)
-# moments
-# beam local My -> in CFD and OWC Mx
-dynamic_analysis.plot_reaction(4)
-# beam local Mz -> in CFD and OWC My
-dynamic_analysis.plot_reaction(5)
-# beam local Mx -> in CFD and OWC Mz
-dynamic_analysis.plot_reaction(3)
+# # reaction
+# # forces
+# # beam local Fy -> in CFD and OWC Fx
+# dynamic_analysis.plot_reaction(1)
+# # beam local Fz -> in CFD and OWC Fy
+# dynamic_analysis.plot_reaction(2)
+# # beam local Fx -> in CFD and OWC Fz
+# dynamic_analysis.plot_reaction(0)
+# # moments
+# # beam local My -> in CFD and OWC Mx
+# dynamic_analysis.plot_reaction(4)
+# # beam local Mz -> in CFD and OWC My
+# dynamic_analysis.plot_reaction(5)
+# # beam local Mx -> in CFD and OWC Mz
+# dynamic_analysis.plot_reaction(3)
 
-selected_time = 250
-dynamic_analysis.plot_selected_time(selected_time)
+# selected_time = 250
+# dynamic_analysis.plot_selected_time(selected_time)
 
-dynamic_analysis.animate_time_history()
+# dynamic_analysis.animate_time_history()
 
-# NOTE: for comparison the relevant DOFs have been selected
-# alongwind
-dynamic_analysis.plot_result_at_dof(-5, 'displacement')
-dynamic_analysis.plot_result_at_dof(-5, 'velocity')
-dynamic_analysis.plot_result_at_dof(-5, 'acceleration')
+# # NOTE: for comparison the relevant DOFs have been selected
+# # alongwind
+# dynamic_analysis.plot_result_at_dof(-5, 'displacement')
+# dynamic_analysis.plot_result_at_dof(-5, 'velocity')
+# dynamic_analysis.plot_result_at_dof(-5, 'acceleration')
 
-# acrosswind
-dynamic_analysis.plot_result_at_dof(-4, 'displacement')
-dynamic_analysis.plot_result_at_dof(-4, 'velocity')
-dynamic_analysis.plot_result_at_dof(-4, 'acceleration')
+# # acrosswind
+# dynamic_analysis.plot_result_at_dof(-4, 'displacement')
+# dynamic_analysis.plot_result_at_dof(-4, 'velocity')
+# dynamic_analysis.plot_result_at_dof(-4, 'acceleration')
 
 
 # ============================================
 # Static analysis 
 
 
-selected_time_step = 15000
-static_force = dynamic_force[:, selected_time_step]
+# selected_time_step = 15000
+# static_force = dynamic_force[:, selected_time_step]
 
-static_analysis = StaticAnalysis(beam_model)
-static_analysis.solve(static_force)
-static_analysis.plot_solve_result()
+# static_analysis = StaticAnalysis(beam_model)
+# static_analysis.solve(static_force)
+# static_analysis.plot_solve_result()
