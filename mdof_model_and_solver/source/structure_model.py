@@ -216,20 +216,11 @@ class StraightBeam(object):
         # torsion constant
         self.parameters['it'] = [self.evaluate_characteristic_on_interval(
             x, 'c_it') for x in self.parameters['x']]
-        # polar moment of inertia
-        # assuming equivalency with circle 
-        self.parameters['ip'] = [a + b for a,
-                                 b in zip(self.parameters['iy'], self.parameters['iz'])]
+
+        self.evaluate_torsional_inertia()
 
         # relative importance of the shear deformation to the bending one
-        self.parameters['py'] = [12 * self.parameters['e'] * a / (
-            self.parameters['g'] * b * self.parameters['lx_i']**2) for a, b in zip(self.parameters['iz'], self.parameters['a_sy'])]
-        self.parameters['pz'] = [12 * self.parameters['e'] * a / (
-            self.parameters['g'] * b * self.parameters['lx_i']**2) for a, b in zip(self.parameters['iy'], self.parameters['a_sz'])]
-
-        # NOTE: Bernoulli beam set to 0.0
-        # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
-        # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
+        self.evaluate_relative_importance_of_shear()
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -342,62 +333,81 @@ class StraightBeam(object):
                     err_msg += ', '.join(modes_possible_to_consider) + "\"\n"
                     raise Exception(err_msg)
                 
-                for idx, decomposed_mode in enumerate(parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]):
-                    # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order 
-                    #TODO: check dependencies for order of execution and necessery updates
+                # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order 
+                #TODO: check dependencies for order of execution and necessery updates
 
-                    # 1. LONGITUDINAL
-                    #TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
-                    if 'longitudinal' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                        identifier = 'longitudinal'
+                # 1. LONGITUDINAL
+                #TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
+                if 'longitudinal' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    identifier = 'longitudinal'
 
-                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
 
-                        
-                        print()
-                        pass
+                    # update dependencies
+                    # for a_sy and a_sz assuming linear dependency with a -> using same scaling factor
+                    self.evaluate_relative_importance_of_shear()
+                    print()
+                    pass
 
-                    # 2. and 3. - on of SWAY_Y and/or SWAY_Z
-                    #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz) -> update ip with new values, also pz, py
-                    if 'sway_y' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                        identifier = 'sway_y'
+                # 2. and 3. - on of SWAY_Y and/or SWAY_Z
+                #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz -> multi design param opt) -> update ip with new values, also pz, py
+                if 'sway_y' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    identifier = 'sway_y'
 
-                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                        
-                        
-                        print()
-                        pass
+                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                    
+                    # update dependencies
+                    self.evaluate_torsional_inertia()
+                    print()
+                    pass
 
-                    if 'sway_z' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                        identifier = 'sway_z'
+                if 'sway_z' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    identifier = 'sway_z'
 
-                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                        
-                        print()
-                        pass
+                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                    
+                    # update dependencies
+                    self.evaluate_torsional_inertia()
+                    print()
+                    pass
 
-                    # 4. TORSIONAL
-                    #TODO: optimize for it -> needs updated model from previous cases
-                    if 'torsional' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                        identifier = 'torsional'
+                # 4. TORSIONAL
+                #TODO: optimize for it -> needs updated model from previous cases
+                if 'torsional' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    identifier = 'torsional'
 
-                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                        
-                        print()
-                        pass
-
+                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                    
+                    print()
                     pass
 
         else:
             print('No need found for adapting structure for target values')
+
+    def evaluate_relative_importance_of_shear(self, is_bernoulli=False):
+        self.parameters['py'] = [12 * self.parameters['e'] * a / (
+            self.parameters['g'] * b * self.parameters['lx_i']**2) for a, b in zip(self.parameters['iz'], self.parameters['a_sy'])]
+        self.parameters['pz'] = [12 * self.parameters['e'] * a / (
+            self.parameters['g'] * b * self.parameters['lx_i']**2) for a, b in zip(self.parameters['iy'], self.parameters['a_sz'])]
+
+        if is_bernoulli:
+            # NOTE: Bernoulli beam set to 0.0
+            self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
+            self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
+
+    def evaluate_torsional_inertia(self):
+        # polar moment of inertia
+        # assuming equivalency with circle 
+        self.parameters['ip'] = [a + b for a,
+                                b in zip(self.parameters['iy'], self.parameters['iz'])]
 
     def calculate_total_mass(self, print_to_console=False):
         self.parameters['m_tot'] = 0.0
@@ -457,9 +467,11 @@ class StraightBeam(object):
 
         self.parameters['e'] = multiplier_fctr * initial_e
 
-        # NOTE: do not forget to update G as well
+        # NOTE: do not forget to update G and further dependencies
         self.parameters['g'] = self.parameters['e'] / \
             2 / (1+self.parameters['nu'])
+        self.evaluate_relative_importance_of_shear()
+
 
         # re-evaluate
         self.calculate_global_matrices()
