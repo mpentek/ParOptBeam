@@ -207,19 +207,7 @@ class StraightBeam(object):
         # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
         
-        if print_debug:
-            print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
-            print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
-            print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
 
-            print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
-            print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
-            print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
-            
-            print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
-            print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
-            print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
-            print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -411,7 +399,22 @@ class StraightBeam(object):
                 if val['bounds'][0] <= running_coord and running_coord <= self.parameters['lx']:
                     return evaluate_polynomial(running_coord-val['bounds'][0], val[characteristic_identifier])
 
-    def plot_model_properties(self):
+    def plot_model_properties(self, print_to_console=False):
+
+        if print_to_console:
+            print('x: ',['{:.2f}'.format(x) for x in self.parameters['x']],'\n')
+            print('ly: ',['{:.2f}'.format(x) for x in self.parameters['ly']],'\n')
+            print('lz: ',['{:.2f}'.format(x) for x in self.parameters['lz']],'\n')
+
+            print('a: ',['{:.2f}'.format(x) for x in self.parameters['a']],'\n')
+            print('a_sy: ',['{:.2f}'.format(x) for x in self.parameters['a_sy']],'\n')
+            print('a_sz: ',['{:.2f}'.format(x) for x in self.parameters['a_sz']],'\n')   
+            
+            print('iy: ',['{:.2f}'.format(x) for x in self.parameters['iy']],'\n')
+            print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
+            print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
+            print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
+                
         fig = plt.figure(1)
         plt.plot(self.parameters['x'], self.parameters['a'], 'k-',marker='o', label='a')
         plt.plot(self.parameters['x'], self.parameters['a_sy'], 'r-',marker='*', label='a_sy')
