@@ -70,7 +70,8 @@ distribution along the heigth (length of the beam in local coordinates)
 A prototype alternative to the CAARC building B with 3 intervals
 to define altering geometric properties
 '''
-parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
+# parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
+parameter_file = open('ProjectParameters3DCaarcBeamPrototypeOptimizable.json', 'r')
 
 
 # ==============================================
@@ -80,9 +81,10 @@ parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
 parameters = json.loads(parameter_file.read())
 beam_model = StraightBeam(parameters)
 
-beam_model.identify_decoupled_eigenmodes(25,True)
+# beam_model.plot_model_properties()
 
-#beam_model.plot_model_properties()
+# beam_model.identify_decoupled_eigenmodes(25,True)
+
 
 # ==============================================
 # Eigenvalue analysis
