@@ -372,7 +372,7 @@ class StraightBeam(object):
 
         return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
-    def identify_decoupled_eigenmodes(self, considered_modes=25):
+    def identify_decoupled_eigenmodes(self, considered_modes=25, print_to_console=False):
         self.eigenvalue_solve()
         
         IDENTIFICATION = {'2D' : {
@@ -400,8 +400,8 @@ class StraightBeam(object):
 
             for case_id in IDENTIFICATION[self.domain_size]:
                 match_for_case_id = False
-                for dof_contribution_id in IDENTIFICATION[self.domain_size][case_id]:
 
+                for dof_contribution_id in IDENTIFICATION[self.domain_size][case_id]:
                     if linalg.norm(decomposed_eigenmode[dof_contribution_id]) > StraightBeam.THRESHOLD:
                         match_for_case_id = True
                 
@@ -411,9 +411,14 @@ class StraightBeam(object):
                     else:
                         self.mode_identification_results[case_id] = [selected_mode+1]
 
-                    print()
-        print()
-
+        if print_to_console:
+            print('Result of decoupled eigenmode identification for the first ' + str(considered_modes) + ' mode(s)')
+            for mode, mode_ids in self.mode_identification_results.items():
+                print('  Mode:', mode)
+                for mode_id in mode_ids:
+                    print('    Eigenform ' + str(mode_id) + ' with eigenfrequency ' + '{:.2f}'.format(self.eig_freqs[self.eig_freqs_sorted_indices[mode_id-1]]) + ' Hz')
+            print()
+            
     def eigenvalue_solve(self):
         # raw results
         # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
