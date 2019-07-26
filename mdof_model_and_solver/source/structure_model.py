@@ -134,6 +134,8 @@ class StraightBeam(object):
     # 1/OPT_FCTR to OPT_FCTR as multiplier of the parameter
     OPT_FCTR = 5
 
+    THRESHOLD = 1e-8
+
     def __init__(self, parameters,print_debug=False):
 
         # TODO: add domain size check
@@ -206,8 +208,6 @@ class StraightBeam(object):
         # NOTE: Bernoulli beam set to 0.0
         # self.parameters['py'] = [0.0 for a,b in zip(self.parameters['iz'], self.parameters['a_sy'])]
         # self.parameters['pz'] = [0.0 for a,b in zip(self.parameters['iy'], self.parameters['a_sz'])] 
-        
-
         
         length_coords = self.parameters['lx_i'] * \
             np.arange(self.parameters['n_el']+1)
@@ -371,6 +371,48 @@ class StraightBeam(object):
         self.eigenvalue_solve()
 
         return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
+
+    def identify_decoupled_eigenmodes(self, considered_modes=25):
+        self.eigenvalue_solve()
+        
+        IDENTIFICATION = {'2D' : {
+                             'longitudinal' : ['x'],  
+                             'sway_y' : ['z', 'b']},
+                          '3D' : {
+                              'longitudinal' : ['x'],  
+                              'torsional' : ['a'], 
+                              'sway_y' : ['z', 'b'], 
+                              'sway_z' : ['y', 'g']}}
+
+        self.mode_identification_results = {}
+
+        for i in range(considered_modes):
+            decomposed_eigenmode = {}
+            selected_mode = self.eig_freqs_sorted_indices[i]
+
+            for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.domain_size])),
+                                StraightBeam.DOF_LABELS[self.domain_size]):
+                start = idx
+                step = StraightBeam.DOFS_PER_NODE[self.domain_size]
+                stop = self.eigen_modes_raw.shape[0] + idx - step
+                decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
+                                                                            1:step][:, selected_mode]
+
+            for case_id in IDENTIFICATION[self.domain_size]:
+                match_for_case_id = False
+                for dof_contribution_id in IDENTIFICATION[self.domain_size][case_id]:
+
+                    if linalg.norm(decomposed_eigenmode[dof_contribution_id]) > StraightBeam.THRESHOLD:
+                        match_for_case_id = True
+                
+                if match_for_case_id:
+                    if case_id in self.mode_identification_results:
+                        self.mode_identification_results[case_id].append(selected_mode+1)
+                    else:
+                        self.mode_identification_results[case_id] = [selected_mode+1]
+
+                    print()
+        print()
 
     def eigenvalue_solve(self):
         # raw results

@@ -80,6 +80,8 @@ parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
 parameters = json.loads(parameter_file.read())
 beam_model = StraightBeam(parameters)
 
+beam_model.identify_decoupled_eigenmodes()
+
 #beam_model.plot_model_properties()
 
 # ==============================================
