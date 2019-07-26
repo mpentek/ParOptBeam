@@ -276,113 +276,117 @@ class StraightBeam(object):
         self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
         # TODO: AK :is it better to rename it to dof_to_keep than bc_to_keep ??
 
+        # after initial setup
         self.calculate_global_matrices()
 
+
+        # additional changes due to optimization
         if 'adapt_for_target_values' in parameters["model_parameters"]:
-        
-            print('BEFORE OPTIMIZATION')
-            self.identify_decoupled_eigenmodes(print_to_console=True)
-            print()
-
-            print('Found need for adapting structure for target values')
-            
-            # if a target mass is set, the density will be adjusted, no additional dependencies
-            if 'density_for_total_mass' in parameters["model_parameters"]["adapt_for_target_values"]:
-                print('DENSITY OPTIMIZATION')
-
-                target_total_mass = parameters["model_parameters"]["adapt_for_target_values"]["density_for_total_mass"]
-                print('Adapting density for target total mass: ', target_total_mass)
-
-                self.adjust_density_for_target_total_mass(target_total_mass)
-            
-            # if generically a target mode and frequency is set, the e-modul will be adjusted, g-modul recomputed
-            if 'youngs_modulus_for' in parameters["model_parameters"]["adapt_for_target_values"]:
-                print('YOUNG\'S MODULS OPTIMIZATION')
-
-                target_mode = parameters["model_parameters"]["adapt_for_target_values"]["youngs_modulus_for"]["eigenmode"]
-                target_freq = parameters["model_parameters"]["adapt_for_target_values"]["youngs_modulus_for"]["eigenfrequency"]
-                print('Adapting young\'s modulus for target eigenfrequency: ' +
-                      str(target_freq) + ' and mode: ' + str(target_mode))
-
-                self.adjust_e_modul_for_target_eigenfreq(
-                    target_freq, target_mode, True)
-                
-            if 'geometric_properties_for' in parameters["model_parameters"]["adapt_for_target_values"]:
-                
-                modes_to_consider = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]
-                modes_possible_to_consider = [*StraightBeam.MODE_CATEGORIZATION[self.domain_size].keys()]
-                diff_list = np.setdiff1d(modes_to_consider, modes_possible_to_consider)
-                if len(diff_list) != 0:
-                    err_msg = "The element(s) \"" + ', '.join(diff_list) +"\"\n" 
-                    err_msg += "in provided modes to consider \"" + ', '.join(modes_to_consider) + "\n"
-                    err_msg += "\" are not available for consideration\n"
-                    err_msg += "Choose one or more of: \""
-                    err_msg += ', '.join(modes_possible_to_consider) + "\"\n"
-                    raise Exception(err_msg)
-                
-                # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order 
-                #TODO: check dependencies for order of execution and necessery updates
-
-                # 1. LONGITUDINAL
-                #TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
-
-                # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
-                if 'longitudinal' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                    print('LONGITUDINAL OPTIMIZATION')
-                    
-                    identifier = 'longitudinal'
-
-                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-
-                    self.adjust_longitudinal_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
-
-                # 2. and 3. - on of SWAY_Y and/or SWAY_Z
-                #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz -> multi design param opt) -> update ip with new values, also pz, py
-                if 'sway_y' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                    print('SWAY_Y OPTIMIZATION')
-                    
-                    identifier = 'sway_y'
-
-                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                    
-                    self.adjust_sway_y_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
-
-
-                if 'sway_z' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                    print('SWAY_Z OPTIMIZATION')
-                    
-                    identifier = 'sway_z'
-
-                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                    
-                    self.adjust_sway_z_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
-
-                # 4. TORSIONAL
-                #TODO: optimize for it -> needs updated model from previous cases
-                if 'torsional' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
-                    print('TORSIONAL OPTIMIZATION')
-                    
-                    identifier = 'torsional'
-
-                    id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
-                    target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
-                    target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-
-                    self.adjust_torsional_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
-
-            print('AFTER OPTIMIZATION')
-            self.identify_decoupled_eigenmodes(print_to_console=True)
-            print()
-
+            self.optimize_initial_model(parameters["model_parameters"]["adapt_for_target_values"])
         else:
             print('No need found for adapting structure for target values')
+    
+    def optimize_initial_model(self, optimization_settings):
 
+        print('BEFORE OPTIMIZATION')
+        self.identify_decoupled_eigenmodes(print_to_console=True)
+        print()
+
+        print('Found need for adapting structure for target values')
+        
+        # if a target mass is set, the density will be adjusted, no additional dependencies
+        if 'density_for_total_mass' in optimization_settings:
+            print('DENSITY OPTIMIZATION')
+
+            target_total_mass = optimization_settings["density_for_total_mass"]
+            print('Adapting density for target total mass: ', target_total_mass)
+
+            self.adjust_density_for_target_total_mass(target_total_mass)
+        
+        # if generically a target mode and frequency is set, the e-modul will be adjusted, g-modul recomputed
+        if 'youngs_modulus_for' in optimization_settings:
+            print('YOUNG\'S MODULS OPTIMIZATION')
+
+            target_mode = optimization_settings["youngs_modulus_for"]["eigenmode"]
+            target_freq = optimization_settings["youngs_modulus_for"]["eigenfrequency"]
+            print('Adapting young\'s modulus for target eigenfrequency: ' +
+                    str(target_freq) + ' and mode: ' + str(target_mode))
+
+            self.adjust_e_modul_for_target_eigenfreq(
+                target_freq, target_mode, True)
+            
+        if 'geometric_properties_for' in optimization_settings:
+            
+            modes_to_consider = optimization_settings["geometric_properties_for"]["consider_decomposed_modes"]
+            modes_possible_to_consider = [*StraightBeam.MODE_CATEGORIZATION[self.domain_size].keys()]
+            diff_list = np.setdiff1d(modes_to_consider, modes_possible_to_consider)
+            if len(diff_list) != 0:
+                err_msg = "The element(s) \"" + ', '.join(diff_list) +"\"\n" 
+                err_msg += "in provided modes to consider \"" + ', '.join(modes_to_consider) + "\n"
+                err_msg += "\" are not available for consideration\n"
+                err_msg += "Choose one or more of: \""
+                err_msg += ', '.join(modes_possible_to_consider) + "\"\n"
+                raise Exception(err_msg)
+            
+            # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order 
+            #TODO: check dependencies for order of execution and necessery updates
+
+            # 1. LONGITUDINAL
+            #TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
+
+            # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
+            if 'longitudinal' in optimization_settings["geometric_properties_for"]["consider_decomposed_modes"]:
+                print('LONGITUDINAL OPTIMIZATION')
+                
+                identifier = 'longitudinal'
+
+                id_idx = optimization_settings["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                target_mode = optimization_settings["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                target_freq = optimization_settings["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+
+                self.adjust_longitudinal_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+
+            # 2. and 3. - on of SWAY_Y and/or SWAY_Z
+            #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz -> multi design param opt) -> update ip with new values, also pz, py
+            if 'sway_y' in optimization_settings["geometric_properties_for"]["consider_decomposed_modes"]:
+                print('SWAY_Y OPTIMIZATION')
+                
+                identifier = 'sway_y'
+
+                id_idx = optimization_settings["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                target_mode = optimization_settings["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                target_freq = optimization_settings["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                
+                self.adjust_sway_y_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+
+
+            if 'sway_z' in optimization_settings["geometric_properties_for"]["consider_decomposed_modes"]:
+                print('SWAY_Z OPTIMIZATION')
+                
+                identifier = 'sway_z'
+
+                id_idx = optimization_settings["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                target_mode = optimization_settings["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                target_freq = optimization_settings["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                
+                self.adjust_sway_z_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+
+            # 4. TORSIONAL
+            #TODO: optimize for it -> needs updated model from previous cases
+            if 'torsional' in optimization_settings["geometric_properties_for"]["consider_decomposed_modes"]:
+                print('TORSIONAL OPTIMIZATION')
+                
+                identifier = 'torsional'
+
+                id_idx = optimization_settings["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                target_mode = optimization_settings["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                target_freq = optimization_settings["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+
+                self.adjust_torsional_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+
+        print('AFTER OPTIMIZATION')
+        self.identify_decoupled_eigenmodes(print_to_console=True)
+        print()
 
     def initialize_user_defined_geometric_parameters(self):
         # geometric
