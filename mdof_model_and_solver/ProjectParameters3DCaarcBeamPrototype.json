@@ -45,9 +45,10 @@
         },
         "boundary_conditions": "fixed-free",
         "adapt_for_target_values": {"density_for_total_mass": 38880000,
-            "youngs_modulus_for": {
-                "eigenmode": 1,
-                "eigenfrequency": 0.2}
+                                    "geometric_properties_for": {
+                                        "decomposed_modes": ["sway_y", "sway_z", "rotation"],
+                                        "corresponding_mode_ids" : [1, 1, 1],
+                                        "corresponding_eigenfrequencies": [0.20,0.23,0.40]}
         }
     }
 }
