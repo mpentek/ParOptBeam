@@ -55,7 +55,7 @@ material parameters also from sofistik sheet
 # parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
 # parameter_file = open('ProjectParameters3DPylonSofiBeamReducedE.json', 'r')
 
-# parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
+parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
 # parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationMid.json', 'r')
 # parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationHard.json', 'r')
 
@@ -71,7 +71,7 @@ A prototype alternative to the CAARC building B with 3 intervals
 to define altering geometric properties
 '''
 # parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
-parameter_file = open('ProjectParameters3DCaarcBeamPrototypeOptimizable.json', 'r')
+# parameter_file = open('ProjectParameters3DCaarcBeamPrototypeOptimizable.json', 'r')
 
 
 # ==============================================

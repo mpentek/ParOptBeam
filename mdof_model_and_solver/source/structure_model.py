@@ -243,6 +243,10 @@ class StraightBeam(object):
                 'parameters["model_parameters"] does not have "elastic_fixity_dofs"')
             elastic_bc_dofs_tmp = {}
         
+        # initialize empty place holders for point stiffness and mass entries
+        self.point_stiffness = {'idxs': [], 'vals': []}
+        self.point_mass = {'idxs': [], 'vals': []}
+
         for key in elastic_bc_dofs_tmp:
             # TODO: check if type cast to int is robust enough
             if int(key) not in self.bc_dofs:
@@ -264,6 +268,12 @@ class StraightBeam(object):
 
                 # add new element
                 self.elastic_bc_dofs[val] = elastic_bc_dofs_tmp[key]
+
+                # now inserting the elastic dofs into the generic formulation
+                # affects only diagonal entries
+                self.point_stiffness['idxs'].append([val,val])
+                # with this additional value
+                self.point_stiffness['vals'].append(elastic_bc_dofs_tmp[key])
 
         # list copy by slicing -> [:] -> to have a copy by value
         bc_dofs_global = self.bc_dofs[:]
@@ -305,7 +315,7 @@ class StraightBeam(object):
         
         # if generically a target mode and frequency is set, the e-modul will be adjusted, g-modul recomputed
         if 'youngs_modulus_for' in optimization_settings:
-            print('YOUNG\'S MODULS OPTIMIZATION')
+            print('YOUNG\'S MODULUS OPTIMIZATION')
 
             target_mode = optimization_settings["youngs_modulus_for"]["eigenmode"]
             target_freq = optimization_settings["youngs_modulus_for"]["eigenfrequency"]
@@ -1185,6 +1195,10 @@ class StraightBeam(object):
             el_matrix = self.__get_el_mass_3D(i)
             glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
                         StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
+        
+        for idx, val in zip(self.point_mass['idxs'], self.point_mass['vals']):
+            glob_matrix[idx[0],idx[1]] = glob_matrix[idx[0],idx[1]] + val
+
         return glob_matrix
 
         # if self.domain_size == '2D':
@@ -1351,17 +1365,9 @@ class StraightBeam(object):
             glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
                         StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
         
-        if self.elastic_bc_dofs is not None:
-            #print('Applying elastic constraint values to stiffness matrix')
-            for key in self.elastic_bc_dofs:
-                # print('Stiffness value for global dof ' + str(key) +
-                #       ' before update: ' + str(glob_matrix[key, key]))
-                glob_matrix[key, key] = glob_matrix[key, key] + \
-                    self.elastic_bc_dofs[key]
-                # print('Stiffness value for global dof ' + str(key) +
-                #       ' after update: ' + str(glob_matrix[key, key]))
-                # print()
-  
+        for idx, val in zip(self.point_stiffness['idxs'], self.point_stiffness['vals']):
+            glob_matrix[idx[0],idx[1]] = glob_matrix[idx[0],idx[1]] + val
+
         return glob_matrix
 
         # if self.domain_size == '2D':
