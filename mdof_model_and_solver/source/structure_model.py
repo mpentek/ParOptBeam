@@ -330,7 +330,72 @@ class StraightBeam(object):
                     target_freq, target_mode, True)
                 
             if 'geometric_properties_for' in parameters["model_parameters"]["adapt_for_target_values"]:
-                pass
+                
+                modes_to_consider = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]
+                modes_possible_to_consider = [*StraightBeam.MODE_CATEGORIZATION[self.domain_size].keys()]
+                diff_list = np.setdiff1d(modes_to_consider, modes_possible_to_consider)
+                if len(diff_list) != 0:
+                    err_msg = "The element(s) \"" + ', '.join(diff_list) +"\"\n" 
+                    err_msg += "in provided modes to consider \"" + ', '.join(modes_to_consider) + "\n"
+                    err_msg += "\" are not available for consideration\n"
+                    err_msg += "Choose one or more of: \""
+                    err_msg += ', '.join(modes_possible_to_consider) + "\"\n"
+                    raise Exception(err_msg)
+                
+                for idx, decomposed_mode in enumerate(parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]):
+                    # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order 
+                    #TODO: check dependencies for order of execution and necessery updates
+
+                    # 1. LONGITUDINAL
+                    #TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
+                    if 'longitudinal' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                        identifier = 'longitudinal'
+
+                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+
+                        
+                        print()
+                        pass
+
+                    # 2. and 3. - on of SWAY_Y and/or SWAY_Z
+                    #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz) -> update ip with new values, also pz, py
+                    if 'sway_y' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                        identifier = 'sway_y'
+
+                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                        
+                        
+                        print()
+                        pass
+
+                    if 'sway_z' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                        identifier = 'sway_z'
+
+                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                        
+                        print()
+                        pass
+
+                    # 4. TORSIONAL
+                    #TODO: optimize for it -> needs updated model from previous cases
+                    if 'torsional' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                        identifier = 'torsional'
+
+                        id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                        target_mode = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
+                        target_freq = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                        
+                        print()
+                        pass
+
+                    pass
+
         else:
             print('No need found for adapting structure for target values')
 
