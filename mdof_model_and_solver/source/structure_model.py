@@ -368,19 +368,19 @@ class StraightBeam(object):
         # re-evaluate
         self.calculate_global_matrices()
 
-        # TODO: try to avoid this code duplication
-        # TODO: also here add the reduction and exteisnon, otherwise rigid body modes will be taken into account
+        self.eigenvalue_solve()
 
+        return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
+
+    def eigenvalue_solve(self):
         # raw results
         # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
-        eig_values_raw, eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(self.k), self.apply_bc_by_reduction(self.m))
+        eig_values_raw, self.eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(self.k), self.apply_bc_by_reduction(self.m))
         # rad/s
-        eig_values = np.sqrt(np.real(eig_values_raw))
-        eig_freqs = eig_values / 2. / np.pi
+        self.eig_values = np.sqrt(np.real(eig_values_raw))
+        self.eig_freqs = self.eig_values / 2. / np.pi
         # sort eigenfrequencies
-        eig_freqs_sorted_indices = np.argsort(eig_freqs)
-
-        return (eig_freqs[eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
+        self.eig_freqs_sorted_indices = np.argsort(self.eig_freqs)
 
     def evaluate_characteristic_on_interval(self, running_coord, characteristic_identifier):
         '''
@@ -414,7 +414,7 @@ class StraightBeam(object):
             print('iz: ',['{:.2f}'.format(x) for x in self.parameters['iz']],'\n')
             print('ip: ',['{:.2f}'.format(x) for x in self.parameters['ip']],'\n')      
             print('it: ',['{:.2f}'.format(x) for x in self.parameters['it']],'\n')
-                
+
         fig = plt.figure(1)
         plt.plot(self.parameters['x'], self.parameters['a'], 'k-',marker='o', label='a')
         plt.plot(self.parameters['x'], self.parameters['a_sy'], 'r-',marker='*', label='a_sy')
@@ -978,28 +978,16 @@ class StraightBeam(object):
         zeta_i = self.parameters['zeta']
         zeta_j = zeta_i
 
-        # TODO: try to avoid this code duplication
-        # TODO: also here add the reduction and exteisnon, otherwise rigid body modes will be taken into account
-
-        # raw results
-        # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
-        eig_values_raw, eigen_modes_raw = linalg.eigh(self.apply_bc_by_reduction(self.k), self.apply_bc_by_reduction(self.m))
-        # rad/s
-        eig_values = np.sqrt(np.real(eig_values_raw))
-        eig_freqs = eig_values / 2. / np.pi
-        # sort eigenfrequencies
-        eig_freqs_sorted_indices = np.argsort(eig_freqs)
-
-        #
+        self.eigenvalue_solve()
 
         a = np.linalg.solve(0.5 *
                             np.array(
-                                [[1 / eig_values[eig_freqs_sorted_indices[mode_i]],
-                                  eig_values[
-                                  eig_freqs_sorted_indices[mode_i]]],
-                                    [1 / eig_values[eig_freqs_sorted_indices[mode_j]],
-                                     eig_values[
-                                     eig_freqs_sorted_indices[
+                                [[1 / self.eig_values[self.eig_freqs_sorted_indices[mode_i]],
+                                  self.eig_values[
+                                  self.eig_freqs_sorted_indices[mode_i]]],
+                                    [1 / self.eig_values[self.eig_freqs_sorted_indices[mode_j]],
+                                     self.eig_values[
+                                     self.eig_freqs_sorted_indices[
                                          mode_j]]]]),
                             [zeta_i, zeta_j])
 
