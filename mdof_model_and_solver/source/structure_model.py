@@ -280,7 +280,7 @@ class StraightBeam(object):
 
         if 'adapt_for_target_values' in parameters["model_parameters"]:
         
-            print('BEFOREs OPTIMIZATION')
+            print('BEFORE OPTIMIZATION')
             self.identify_decoupled_eigenmodes(print_to_console=True)
             print()
 
@@ -288,6 +288,8 @@ class StraightBeam(object):
             
             # if a target mass is set, the density will be adjusted, no additional dependencies
             if 'density_for_total_mass' in parameters["model_parameters"]["adapt_for_target_values"]:
+                print('DENSITY OPTIMIZATION')
+
                 target_total_mass = parameters["model_parameters"]["adapt_for_target_values"]["density_for_total_mass"]
                 print('Adapting density for target total mass: ', target_total_mass)
 
@@ -295,6 +297,8 @@ class StraightBeam(object):
             
             # if generically a target mode and frequency is set, the e-modul will be adjusted, g-modul recomputed
             if 'youngs_modulus_for' in parameters["model_parameters"]["adapt_for_target_values"]:
+                print('YOUNG\'S MODULS OPTIMIZATION')
+
                 target_mode = parameters["model_parameters"]["adapt_for_target_values"]["youngs_modulus_for"]["eigenmode"]
                 target_freq = parameters["model_parameters"]["adapt_for_target_values"]["youngs_modulus_for"]["eigenfrequency"]
                 print('Adapting young\'s modulus for target eigenfrequency: ' +
@@ -324,6 +328,8 @@ class StraightBeam(object):
 
                 # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
                 if 'longitudinal' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    print('LONGITUDINAL OPTIMIZATION')
+                    
                     identifier = 'longitudinal'
 
                     id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
@@ -335,6 +341,8 @@ class StraightBeam(object):
                 # 2. and 3. - on of SWAY_Y and/or SWAY_Z
                 #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz -> multi design param opt) -> update ip with new values, also pz, py
                 if 'sway_y' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    print('SWAY_Y OPTIMIZATION')
+                    
                     identifier = 'sway_y'
 
                     id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
@@ -345,6 +353,8 @@ class StraightBeam(object):
 
 
                 if 'sway_z' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    print('SWAY_Z OPTIMIZATION')
+                    
                     identifier = 'sway_z'
 
                     id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
@@ -356,6 +366,8 @@ class StraightBeam(object):
                 # 4. TORSIONAL
                 #TODO: optimize for it -> needs updated model from previous cases
                 if 'torsional' in parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"]:
+                    print('TORSIONAL OPTIMIZATION')
+                    
                     identifier = 'torsional'
 
                     id_idx = parameters["model_parameters"]["adapt_for_target_values"]["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
@@ -914,6 +926,7 @@ class StraightBeam(object):
 
         return extended_matrix
 
+    # NOTE: not used forn now
     def _assemble_el_into_glob(self, el_matrix):
         # global stiffness matrix initialization with zeros
         glob_matrix = np.zeros((self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size],
@@ -1362,7 +1375,7 @@ class StraightBeam(object):
         Calculate damping b based upon the Rayleigh assumption
         using the first 2 eigemodes - here generically i and i
         """
-        
+
         mode_i = 0
         mode_j = 1
         zeta_i = self.parameters['zeta']
