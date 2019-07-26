@@ -46,17 +46,18 @@ TODO: check model parameters for correctness
 Pylon model with the extracted geometry from the CAD model
 and matching structural to the solid models used for one-way coupling
 '''
-#parameter_file = open('ProjectParameters3DPylonCadBeam.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonCadBeam.json', 'r')
 
 ''' 
 Pylon model with geometry data from the sofistik beam
 material parameters also from sofistik sheet 
 '''
-parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonSofiBeamReducedE.json', 'r')
 
-parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
-parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationMid.json', 'r')
-parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationHard.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationMid.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationHard.json', 'r')
 
 '''
 Equivalent beam model of the CAARC building B
@@ -69,7 +70,7 @@ distribution along the heigth (length of the beam in local coordinates)
 A prototype alternative to the CAARC building B with 3 intervals
 to define altering geometric properties
 '''
-#parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
+parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
 
 
 # ==============================================
@@ -80,15 +81,6 @@ parameters = json.loads(parameter_file.read())
 beam_model = StraightBeam(parameters)
 
 #beam_model.plot_model_properties()
-
-beam_model.calculate_total_mass(True)
-target_total_mass = 2421100 #2414220.0
-beam_model.adjust_density_for_target_total_mass(target_total_mass)
-
-target_mode = 1
-target_freq = 0.4
-beam_model.adjust_e_modul_for_taget_eigenfreq(target_freq, target_mode, True)
-
 
 # ==============================================
 # Eigenvalue analysis

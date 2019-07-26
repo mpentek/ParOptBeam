@@ -43,6 +43,11 @@
                     "torsional_moment_of_inertia" : [122500.0]}]
             }
         },
-        "boundary_conditions": "fixed-free"
+        "boundary_conditions": "fixed-free",
+        "adapt_for_target_values": {"density_for_total_mass": 38880000,
+            "youngs_modulus_for": {
+                "eigenmode": 1,
+                "eigenfrequency": 0.2}
+        }
     }
 }

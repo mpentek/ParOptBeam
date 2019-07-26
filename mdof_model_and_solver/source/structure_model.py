@@ -130,6 +130,10 @@ class StraightBeam(object):
 
     NODES_PER_LEVEL = 2
 
+    # optimization factor - modify design parameter of scalar function within bounds of
+    # 1/OPT_FCTR to OPT_FCTR as multiplier of the parameter
+    OPT_FCTR = 5
+
     def __init__(self, parameters,print_debug=False):
 
         # TODO: add domain size check
@@ -252,12 +256,11 @@ class StraightBeam(object):
             raise Exception(err_msg)
 
         # handle potential elastic BCs
-
         self.elastic_bc_dofs = {}
-        if 'elastic_fixtiy_dofs' in parameters["model_parameters"]:
-            elastic_bc_dofs_tmp = parameters["model_parameters"]["elastic_fixtiy_dofs"]
+        if 'elastic_fixity_dofs' in parameters["model_parameters"]:
+            elastic_bc_dofs_tmp = parameters["model_parameters"]["elastic_fixity_dofs"]
         else:
-            print('parameters["model_parameters"] does not have "elastic_fixtiy_dofs"')
+            print('parameters["model_parameters"] does not have "elastic_fixity_dofs"')
             elastic_bc_dofs_tmp = {}
         
         for key in elastic_bc_dofs_tmp:
@@ -294,6 +297,25 @@ class StraightBeam(object):
 
         self.calculate_global_matrices()
 
+        if 'adapt_for_target_values' in parameters["model_parameters"]:
+            print('Found need for adapting structure for target values')
+            
+            if 'density_for_total_mass' in parameters["model_parameters"]["adapt_for_target_values"]:
+                target_total_mass = parameters["model_parameters"]["adapt_for_target_values"]["density_for_total_mass"]
+                print('Adapting density for target total mass: ', target_total_mass)
+
+                self.adjust_density_for_target_total_mass(target_total_mass)
+            
+            if 'youngs_modulus_for' in parameters["model_parameters"]["adapt_for_target_values"]:
+                target_mode = parameters["model_parameters"]["adapt_for_target_values"]["youngs_modulus_for"]["eigenmode"]
+                target_freq = parameters["model_parameters"]["adapt_for_target_values"]["youngs_modulus_for"]["eigenfrequency"]
+                print('Adapting young\'s modulus for target eigenfrequency: ' + str(target_freq) + ' and mode: ' + str(target_mode))
+
+                self.adjust_e_modul_for_taget_eigenfreq(target_freq, target_mode, True)
+                
+        else:
+            print('No need found for adapting structure for target values')
+
     def calculate_total_mass(self, print_to_console=False):
         self.parameters['m_tot'] = 0.0
         for i in range(len(self.parameters['x'])):
@@ -324,26 +346,19 @@ class StraightBeam(object):
         # using partial to fix some parameters for the
         optimizable_function = partial(self.stiffness_objective_function,
                                        target_freq, 
-                                       target_mode)
-
-        # optimize optimizable function 
-        #print("Optimization for the target k matrix in MDoFBeamModel \n")
-        # minimization_result = minimize(optimizable_function,
-        #                                initial_e, 
-        #                                #method='Powell',
-        #                                method='Nelder-Mead',
-        #                                options={'disp': True})
+                                       target_mode,
+                                       initial_e)
 
         minimization_result = minimize_scalar(optimizable_function,
                                        method='Bounded',
-                                       bounds=(initial_e/100,initial_e*100))
+                                       bounds=(1/StraightBeam.OPT_FCTR, StraightBeam.OPT_FCTR))
 
         # returning only one value!
-        opt_e = minimization_result.x
+        opt_e_fctr = minimization_result.x
 
         if print_to_console:
             print('INITIAL e:', initial_e)
-            print('OPTIMIZED e: ', opt_e)
+            print('OPTIMIZED e: ', opt_e_fctr * initial_e)
             print()
 
     def calculate_global_matrices(self):
@@ -354,9 +369,9 @@ class StraightBeam(object):
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
 
-    def stiffness_objective_function(self, target_freq, target_mode, e_modul):
+    def stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
-        self.parameters['e'] = e_modul
+        self.parameters['e'] = multiplier_fctr * initial_e
 
         # NOTE: do not forget to update G as well
         self.parameters['g'] = self.parameters['e'] / \
