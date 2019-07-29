@@ -55,7 +55,7 @@ material parameters also from sofistik sheet
 # parameter_file = open('ProjectParameters3DPylonSofiBeam.json', 'r')
 # parameter_file = open('ProjectParameters3DPylonSofiBeamReducedE.json', 'r')
 
-parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
+# parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationSoft.json', 'r')
 # parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationMid.json', 'r')
 # parameter_file = open('ProjectParameters3DPylonSofiBeamWithFoundationHard.json', 'r')
 
@@ -71,7 +71,7 @@ A prototype alternative to the CAARC building B with 3 intervals
 to define altering geometric properties
 '''
 # parameter_file = open('ProjectParameters3DCaarcBeamPrototype.json', 'r')
-# parameter_file = open('ProjectParameters3DCaarcBeamPrototypeOptimizable.json', 'r')
+parameter_file = open('ProjectParameters3DCaarcBeamPrototypeOptimizable.json', 'r')
 
 
 # ==============================================
@@ -84,6 +84,11 @@ beam_model = StraightBeam(parameters['model_parameters'])
 # beam_model.plot_model_properties()
 
 # beam_model.identify_decoupled_eigenmodes(25,True)
+
+# ==============================================
+# Analysis wrapper
+from source.analysis_wrapper import *
+analyses_controller = AnalysisWrapper(parameters['analyses_parameters'], beam_model)
 
 
 # ==============================================
@@ -100,7 +105,7 @@ eigenvalue_analysis.solve()
 
 # eigenvalue_analysis.write_output_file()
 
-eigenvalue_analysis.plot_selected_eigenmode(1)
+# eigenvalue_analysis.plot_selected_eigenmode(1)
 # eigenvalue_analysis.plot_selected_eigenmode(2)
 # eigenvalue_analysis.plot_selected_eigenmode(3)
 # eigenvalue_analysis.plot_selected_eigenmode(4)
@@ -110,7 +115,7 @@ eigenvalue_analysis.plot_selected_eigenmode(1)
 
 eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 
-eigenvalue_analysis.animate_selected_eigenmode(1)
+# eigenvalue_analysis.animate_selected_eigenmode(1)
 
 
 # ===========================================
@@ -148,21 +153,21 @@ if beam_model.parameters['n_el'] not in possible_n_el_cases:
     raise Exception(err_msg)
 
 
-# array_time = np.load(os.path.join('level_force','array_time.npy'))
-# dynamic_force = np.load(os.path.join('level_force','force_dynamic' + str(beam_model.parameters['n_el']+1)+ '.npy'))
-# dt = array_time[1] - array_time[0]
+array_time = np.load(os.path.join('level_force','array_time.npy'))
+dynamic_force = np.load(os.path.join('level_force','force_dynamic' + str(beam_model.parameters['n_el']+1)+ '.npy'))
+dt = array_time[1] - array_time[0]
 
-# # initial condition 
-# # TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
-# dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
-#                         "GenAlpha" )
+# initial condition 
+# TODO all the inital displacement and velocity are zeros . to incorporate non zeros values required ? 
+dynamic_analysis = DynamicAnalysis(beam_model, dynamic_force, dt, array_time,
+                        "GenAlpha" )
 
-# dynamic_analysis.solve()
+dynamic_analysis.solve()
 
-# # reaction
-# # forces
-# # beam local Fy -> in CFD and OWC Fx
-# dynamic_analysis.plot_reaction(1)
+# reaction
+# forces
+# beam local Fy -> in CFD and OWC Fx
+dynamic_analysis.plot_reaction(1)
 # # beam local Fz -> in CFD and OWC Fy
 # dynamic_analysis.plot_reaction(2)
 # # beam local Fx -> in CFD and OWC Fz
@@ -182,7 +187,7 @@ if beam_model.parameters['n_el'] not in possible_n_el_cases:
 
 # # NOTE: for comparison the relevant DOFs have been selected
 # # alongwind
-# dynamic_analysis.plot_result_at_dof(-5, 'displacement')
+dynamic_analysis.plot_result_at_dof(-5, 'displacement')
 # dynamic_analysis.plot_result_at_dof(-5, 'velocity')
 # dynamic_analysis.plot_result_at_dof(-5, 'acceleration')
 
@@ -196,9 +201,9 @@ if beam_model.parameters['n_el'] not in possible_n_el_cases:
 # Static analysis 
 
 
-# selected_time_step = 15000
-# static_force = dynamic_force[:, selected_time_step]
+selected_time_step = 15000
+static_force = dynamic_force[:, selected_time_step]
 
-# static_analysis = StaticAnalysis(beam_model)
-# static_analysis.solve(static_force)
-# static_analysis.plot_solve_result()
+static_analysis = StaticAnalysis(beam_model)
+static_analysis.solve(static_force)
+static_analysis.plot_solve_result()

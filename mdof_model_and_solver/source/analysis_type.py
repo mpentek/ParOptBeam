@@ -34,6 +34,7 @@ from source.time_integration_scheme import *
 from source import visualize_result_utilities
 
 
+
 class AnalysisType(object):
     """
     Base class for the different analysis types
