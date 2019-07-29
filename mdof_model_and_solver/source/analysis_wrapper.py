@@ -1,4 +1,5 @@
-from analysis_type import *
+from source.analysis_type import*
+#from analysis_type import *
 
 class AnalysisWrapper(object):
     """
