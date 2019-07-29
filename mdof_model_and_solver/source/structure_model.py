@@ -283,8 +283,7 @@ class StraightBeam(object):
                 bc_dofs_global[idx] = dof + len(self.all_dofs_global)
 
         # only take bc's of interest
-        self.bcs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
-        # TODO: AK :is it better to rename it to dof_to_keep than bc_to_keep ??
+        self.dofs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
 
         # after initial setup
         self.calculate_global_matrices()
@@ -717,7 +716,7 @@ class StraightBeam(object):
 
         return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
-    def identify_decoupled_eigenmodes(self, considered_modes=5, print_to_console=False):
+    def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
         self.eigenvalue_solve()
         
         self.mode_identification_results = {}
@@ -869,21 +868,21 @@ class StraightBeam(object):
             rows = len(self.all_dofs_global)
             cols = matrix.shape[1]
             # make a grid of indices on interest
-            ixgrid = np.ix_(self.bcs_to_keep, np.arange(matrix.shape[1]))
+            ixgrid = np.ix_(self.dofs_to_keep, np.arange(matrix.shape[1]))
         elif axis == 'column':
             rows = matrix.shape[0]
             cols = len(self.all_dofs_global)
             # make a grid of indices on interest
-            ixgrid = np.ix_(np.arange(matrix.shape[0]), self.bcs_to_keep)
+            ixgrid = np.ix_(np.arange(matrix.shape[0]), self.dofs_to_keep)
         elif axis == 'both':
             rows = len(self.all_dofs_global)
             cols = rows
             # make a grid of indices on interest
-            ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+            ixgrid = np.ix_(self.dofs_to_keep, self.dofs_to_keep)
         elif axis == 'row_vector':
             rows = len(self.all_dofs_global)
             cols = 1
-            ixgrid = np.ix_(self.bcs_to_keep, [0])
+            ixgrid = np.ix_(self.dofs_to_keep, [0])
             matrix = matrix.reshape([len(matrix), 1])
         else:
             err_msg = "The reduction mode with input \"" + axis
@@ -904,7 +903,7 @@ class StraightBeam(object):
         # TODO: test
 
         # make a grid of indices on interest
-        #ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+        #ixgrid = np.ix_(self.dofs_to_keep, self.dofs_to_keep)
 
         # create new array with zeros the size it should be
         # with ixgrid take from existing the relevant data and copy to new
@@ -912,21 +911,21 @@ class StraightBeam(object):
             rows = len(self.all_dofs_global)
             cols = matrix.shape[1]
             # make a grid of indices on interest
-            ixgrid = np.ix_(self.bcs_to_keep, np.arange(matrix.shape[1]))
+            ixgrid = np.ix_(self.dofs_to_keep, np.arange(matrix.shape[1]))
         elif axis == 'column':
             rows = matrix.shape[0]
             cols = len(self.all_dofs_global)
             # make a grid of indices on interest
-            ixgrid = np.ix_(np.arange(matrix.shape[0]), self.bcs_to_keep)
+            ixgrid = np.ix_(np.arange(matrix.shape[0]), self.dofs_to_keep)
         elif axis == 'both':
             rows = len(self.all_dofs_global)
             cols = rows
             # make a grid of indices on interest
-            ixgrid = np.ix_(self.bcs_to_keep, self.bcs_to_keep)
+            ixgrid = np.ix_(self.dofs_to_keep, self.dofs_to_keep)
         elif axis == 'row_vector':
             rows = len(self.all_dofs_global)
             cols = 1
-            ixgrid = np.ix_(self.bcs_to_keep, [0])
+            ixgrid = np.ix_(self.dofs_to_keep, [0])
             matrix = matrix.reshape([len(matrix), 1])
         else:
             err_msg = "The extension mode with input \"" + axis
