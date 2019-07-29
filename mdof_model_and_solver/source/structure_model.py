@@ -717,7 +717,7 @@ class StraightBeam(object):
 
         return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
-    def identify_decoupled_eigenmodes(self, considered_modes=25, print_to_console=False):
+    def identify_decoupled_eigenmodes(self, considered_modes=5, print_to_console=False):
         self.eigenvalue_solve()
         
         self.mode_identification_results = {}
@@ -1393,7 +1393,7 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
-        a = np.linalg.solve(0.5 *
+        self.a = np.linalg.solve(0.5 *
                             np.array(
                                 [[1 / self.eig_values[self.eig_freqs_sorted_indices[mode_i]],
                                   self.eig_values[
@@ -1405,4 +1405,4 @@ class StraightBeam(object):
                             [zeta_i, zeta_j])
 
         # return back the whole matrix - without BCs applied
-        return a[0] * self.m + a[1] * self.k
+        return self.a[0] * self.m + self.a[1] * self.k

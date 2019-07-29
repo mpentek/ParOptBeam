@@ -485,13 +485,25 @@ class DynamicAnalysis(AnalysisType):
 
     def compute_reactions(self):
         # forward multiplying to compute the forces and reactions  
-        ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
+        # NOTE: check if this is needed, seems to be unused
+        # ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
 
         f1 = np.matmul(self.structure_model.m, self.acceleration)
         f2 = np.matmul(self.structure_model.b, self.velocity)
         f3 = np.matmul(self.structure_model.k, self.displacement)
         self.dynamic_reaction = self.force- f1 -f2 -f3
 
+        # TODO: check if the treatment of elastic bc dofs is correct
+        for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
+            # assuming a Rayleigh-model
+            damping_val = stiffness_val * self.structure_model.a[1]
+
+            f1 = 0.0 * self.acceleration[dof_id]
+            f2 = damping_val * self.velocity[dof_id]
+            f3 = stiffness_val * self.displacement[dof_id] 
+
+            # overwrite the existing value with one solely from spring stiffness and damping
+            self.dynamic_reaction[dof_id] = f1 + f2 + f3 
         
     def write_result_at_dof(self, dof, selected_result):
         """"
@@ -545,7 +557,8 @@ class DynamicAnalysis(AnalysisType):
             Plots the time series of required quantitiy 
         """
         print('Plotting reactions for in dynamic analysis \n')
-        if dof in self.structure_model.bc_dofs: 
+        # TODO: check if the treatment of elastic bc dofs is correct
+        if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs: 
             plot_title = 'REACTION at DoF ' + str(dof)
             visualize_result_utilities.plot_dynamic_result(plot_title, self.dynamic_reaction[dof,:], self.array_time)
         else:
