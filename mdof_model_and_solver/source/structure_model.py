@@ -149,23 +149,23 @@ class StraightBeam(object):
     def __init__(self, parameters):
 
         # TODO: add domain size check
-        self.domain_size = parameters["model_parameters"]["domain_size"]
+        self.domain_size = parameters["domain_size"]
 
         # TODO: include some assign and validate
         # NOTE: for now using the assumption of the prismatic homogenous isotropic beam
         self.parameters = {
             # material
-            'rho': parameters["model_parameters"]["system_parameters"]["material"]["density"],
-            'e': parameters["model_parameters"]["system_parameters"]["material"]["youngs_modulus"],
-            'nu': parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
-            'zeta': parameters["model_parameters"]["system_parameters"]["material"]["damping_ratio"],
+            'rho': parameters["system_parameters"]["material"]["density"],
+            'e': parameters["system_parameters"]["material"]["youngs_modulus"],
+            'nu': parameters["system_parameters"]["material"]["poisson_ratio"],
+            'zeta': parameters["system_parameters"]["material"]["damping_ratio"],
             # geometric
-            'lx': parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"],
-            'n_el': parameters["model_parameters"]["system_parameters"]["geometry"]["number_of_elements"]} 
+            'lx': parameters["system_parameters"]["geometry"]["length_x"],
+            'n_el': parameters["system_parameters"]["geometry"]["number_of_elements"]} 
         
         # defined on intervals as piecewise continous function on an interval starting from 0.0
         self.parameters['intervals'] = []
-        for val in parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"]:
+        for val in parameters["system_parameters"]["geometry"]["defined_on_intervals"]:
             self.parameters["intervals"].append({
                 'bounds': val['interval_bounds'],
                 # further quantities defined by polynomial coefficient as a function of running coord x
@@ -223,12 +223,12 @@ class StraightBeam(object):
         self.all_dofs_global = np.arange(
             self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size])
         bc = '\"' + \
-            parameters["model_parameters"]["boundary_conditions"] + '\"'
+            parameters["boundary_conditions"] + '\"'
         if bc in StraightBeam.AVAILABLE_BCS:
             self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc]
         else:
             err_msg = "The BC for input \"" + \
-                parameters["model_parameters"]["boundary_conditions"]
+                parameters["boundary_conditions"]
             err_msg += "\" is not available \n"
             err_msg += "Choose one of: "
             err_msg += ', '.join(StraightBeam.AVAILABLE_BCS)
@@ -236,11 +236,11 @@ class StraightBeam(object):
 
         # handle potential elastic BCs
         self.elastic_bc_dofs = {}
-        if 'elastic_fixity_dofs' in parameters["model_parameters"]:
-            elastic_bc_dofs_tmp = parameters["model_parameters"]["elastic_fixity_dofs"]
+        if 'elastic_fixity_dofs' in parameters:
+            elastic_bc_dofs_tmp = parameters["elastic_fixity_dofs"]
         else:
             print(
-                'parameters["model_parameters"] does not have "elastic_fixity_dofs"')
+                'parameters does not have "elastic_fixity_dofs"')
             elastic_bc_dofs_tmp = {}
         
         # initialize empty place holders for point stiffness and mass entries
@@ -252,7 +252,7 @@ class StraightBeam(object):
             if int(key) not in self.bc_dofs:
                 err_msg = "The elastic BC dof for input \"" + key
                 err_msg += "\" is not available for " + \
-                    parameters["model_parameters"]["boundary_conditions"] + "\n"
+                    parameters["boundary_conditions"] + "\n"
                 err_msg += "Choose one of: "
                 err_msg += ', '.join([str(val) for val in self.bc_dofs])
                 raise Exception(err_msg)
@@ -291,8 +291,8 @@ class StraightBeam(object):
 
 
         # additional changes due to optimization
-        if 'adapt_for_target_values' in parameters["model_parameters"]:
-            self.optimize_initial_model(parameters["model_parameters"]["adapt_for_target_values"])
+        if 'adapt_for_target_values' in parameters:
+            self.optimize_initial_model(parameters["adapt_for_target_values"])
         else:
             print('No need found for adapting structure for target values')
     

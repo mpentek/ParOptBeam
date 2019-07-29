@@ -44,6 +44,7 @@
             }
         },
         "boundary_conditions": "fixed-free",
-        "adapt_for_target_values": {"density_for_total_mass": 38880000}
+        "adapt_for_target_values": {
+            "density_for_total_mass": 38880000}
     }
 }

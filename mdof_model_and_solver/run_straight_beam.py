@@ -79,7 +79,7 @@ to define altering geometric properties
 
 
 parameters = json.loads(parameter_file.read())
-beam_model = StraightBeam(parameters)
+beam_model = StraightBeam(parameters['model_parameters'])
 
 # beam_model.plot_model_properties()
 

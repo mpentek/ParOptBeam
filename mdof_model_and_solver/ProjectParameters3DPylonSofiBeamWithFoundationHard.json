@@ -25,11 +25,11 @@
         },
         "boundary_conditions": "fixed-free",
         "elastic_fixity_dofs": {"0":1.0e10, "2":1.613e9, "1":1.695e9, "3":6.25e10, "5":2.5e11, "4":1.0e11},
-        "adapt_for_target_values": {"density_for_total_mass": 2421100,
-                                    "youngs_modulus_for": {
-                                        "eigenmode": 1,
-                                        "eigenfrequency": 0.4}
-                                }
+        "adapt_for_target_values": {
+            "density_for_total_mass": 2421100,
+            "youngs_modulus_for": {
+                "eigenmode": 1,
+                "eigenfrequency": 0.4}}
                                     
     }
 }
