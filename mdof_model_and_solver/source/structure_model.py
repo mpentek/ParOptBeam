@@ -717,6 +717,12 @@ class StraightBeam(object):
         return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
     def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
+        if considered_modes == 'all':
+            considered_modes = len(self.dofs_to_keep)
+        else:
+            if considered_modes > len(self.dofs_to_keep):
+                considered_modes = len(self.dofs_to_keep)
+        
         self.eigenvalue_solve()
         
         self.mode_identification_results = {}
