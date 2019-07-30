@@ -100,7 +100,9 @@ def calculate_and_print_error(cumul_res, ref_res,plot_results=False):
 # REFERENCE RESULTS at base
 
 
-file_name = os.path.join('25','total_force_at_base.dat')
+turb_case = '_no_turb' #'_no_turb
+
+file_name = os.path.join('25' + turb_case,'total_force_at_base.dat')
 ref_results = {
     't':  np.array(np.loadtxt(file_name, usecols=(0,))),
     'fx': np.array(np.loadtxt(file_name, usecols=(1,))),
@@ -118,7 +120,7 @@ ref_results = {
 
 # level force
 case = 25
-folder_name = str(case)
+folder_name = str(case) + turb_case
 file_prefix = 'level_'
 all_level_results = {}
 
@@ -334,7 +336,7 @@ for number_of_sampling_intervals in number_of_sampling_interval_cases:
         # 5 -> my
         dynamic_force[i * dofs_per_node + 5, :] = all_new_level_results[i]['my']
     
-    np.save('force_dynamic' + str(number_of_sampling_intervals), dynamic_force) 
+    np.save('force_dynamic' + turb_case + str(number_of_sampling_intervals), dynamic_force) 
 
 np.save('array_time', all_new_level_results[0]['t'])
 

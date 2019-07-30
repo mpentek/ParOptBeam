@@ -7,7 +7,8 @@ mdof_model_and_solver/.vscode
 *.idea
 *.vscode
 
-mdof_model_and_solver/level_force/25/
+mdof_model_and_solver/level_force/25_turb/
+mdof_model_and_solver/level_force/25_no_turb/
 
 *.avi
 
