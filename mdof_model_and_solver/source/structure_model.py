@@ -225,7 +225,8 @@ class StraightBeam(object):
         bc = '\"' + \
             parameters["boundary_conditions"] + '\"'
         if bc in StraightBeam.AVAILABLE_BCS:
-            self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc]
+            # NOTE: create a copy of the list - useful if some parametric study is done
+            self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc][:]
         else:
             err_msg = "The BC for input \"" + \
                 parameters["boundary_conditions"]
