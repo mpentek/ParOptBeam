@@ -26,9 +26,9 @@ class AnalysisWrapper(object):
                 self.analyses.append(EigenvalueAnalysis(model, analysis_param))
                 pass
 
-            # elif analysis_param['type'] == 'dynamic_analysis':
-            #     from source.analysis.dynamic_analysis import DynamicAnalysis
-            #     self.analyses.append(DynamicAnalysis(model, analysis_param))
+            elif analysis_param['type'] == 'dynamic_analysis':
+                from source.analysis.dynamic_analysis import DynamicAnalysis
+                self.analyses.append(DynamicAnalysis(model, analysis_param))
 
             # elif analysis_param['type'] == 'static_analysis':
             #     from source.analysis.static_analysis import StaticAnalysis

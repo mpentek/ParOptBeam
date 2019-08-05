@@ -1,12 +1,11 @@
 import numpy as np
 import json
+import os
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.visualize_result_utilities as visualize_result_utilities
-
-from source.structure_model import *
-from source.time_integration_scheme import *
+from source.scheme.time_integration_scheme import *
 
 
 class DynamicAnalysis(AnalysisType):
@@ -15,15 +14,50 @@ class DynamicAnalysis(AnalysisType):
 
     """
 
-    def __init__(self, structure_model, force, dt, array_time, time_integration_scheme="GenAlpha", name="DynamicAnalysis"):
+    def __init__(self, structure_model, parameters, name="DynamicAnalysis"):
+
+        # TODO add some validation
+        self.parameters = parameters
+
+        # time parameters
+        time_integration_scheme = self.parameters['settings']['time']['integration_scheme']
+        start = self.parameters['settings']['time']['start']
+        stop = self.parameters['settings']['time']['end']
+        # TODO check if this is the correct way
+        self.dt = self.parameters['settings']['time']['step']
+        steps = int((self.parameters['settings']['time']['end']-self.parameters['settings']
+                     ['time']['start'])/self.dt) + 1
+        self.array_time = np.linspace(start, stop, steps)
+
+        # load parameters
+        '''
+        FOR NOW ONLY AVAILABLE for
+        1 elements - 2 nodes
+        2 elements - 3 nodes
+        3 elements - 4 nodes
+        6 elements - 7 nodes
+        12 elements - 13 nodes
+        24 elements - 25 nodes
+        '''
+        possible_n_el_cases = [1, 2, 3, 6, 12, 24]
+        if structure_model.parameters['n_el'] not in possible_n_el_cases:
+            err_msg = "The number of element input \"" + str(structure_model.parameters['n_el'])
+            err_msg += "\" is not allowed for Dynamic Analysis \n"
+            err_msg += "Choose one of: "
+            err_msg += ', '.join([str(x) for x in possible_n_el_cases])
+            raise Exception(err_msg)
+        # TODO include some specifiers in the parameters, do not hard code
+        force = np.load(os.path.join('level_force', 'force_dynamic' +
+                                     '_turb' + str(structure_model.parameters['n_el']+1) + '.npy'))
+
         super().__init__(structure_model, name)
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force
-        self.dt = dt
+        
         #self.time = time
         # np.arange(self.time[0], self.time[1] + self.dt, self.dt)
-        self.array_time = np.asarray(array_time)
+
         rows = len(self.structure_model.apply_bc_by_reduction(
             self.structure_model.k))
         cols = len(self.array_time)
@@ -46,14 +80,18 @@ class DynamicAnalysis(AnalysisType):
             raise Exception(err_msg)
 
         if time_integration_scheme == "GenAlpha":
+            from source.scheme.generalized_alpha_scheme import GeneralizedAlphaScheme
             self.solver = GeneralizedAlphaScheme(
                 self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "Euler12":
+            from source.scheme.euler12 import Euler12
             self.solver = Euler12(self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "ForwardEuler1":
+            from source.scheme.forward_euler1 import ForwardEuler1
             self.solver = ForwardEuler1(
                 self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "BackwardEuler1":
+            from source.scheme.backward_euler1 import BackwardEuler1
             self.solver = BackwardEuler1(
                 self.dt, structure_model, initial_conditions)
 
@@ -262,4 +300,42 @@ class DynamicAnalysis(AnalysisType):
         Postprocess something
         """
         print("Postprocessing in DynamicAnalysis derived class \n")
+
+        for time in self.parameters['output']['selected_instance']['plot_time']:
+            self.plot_selected_time(time)
+        
+        for time in self.parameters['output']['selected_instance']['write_time']:
+            # self.write_selected_time(time)
+            pass
+
+        for step in self.parameters['output']['selected_instance']['plot_step']:
+            # self.plot_selected_step(time)
+            pass
+        
+        for time in self.parameters['output']['selected_instance']['write_step']:
+            # self.write_selected_step(time)
+            pass
+    
+        if self.parameters['output']['animate_time_history']:
+            self.animate_time_history()
+
+        for idx_dof, dof_id in enumerate(self.parameters['output']['selected_dof']['dof_list']):
+
+            # TODO unify for reaction and kinematics results
+
+            for idx_res, res in enumerate(self.parameters['output']['selected_dof']['result_type'][idx_dof]):
+                if res == 'reaction':
+                    if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
+                        self.plot_reaction(dof_id)
+                    if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
+                        # self.write_reaction(dof_id)
+                        pass
+                elif res in ['displacement', 'velocity', 'acceleration']:
+                    if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
+                        self.plot_result_at_dof(dof_id, res)
+                    if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
+                        # self.write_result_at_dof(dof_id, res)
+                        pass
+                else:
+                    pass
         pass

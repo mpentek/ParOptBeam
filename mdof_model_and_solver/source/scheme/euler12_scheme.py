@@ -1,4 +1,6 @@
-from source.time_integration_scheme import TimeIntegrationScheme
+import numpy as np
+
+from source.scheme.time_integration_scheme import TimeIntegrationScheme
 
 
 class Euler12(TimeIntegrationScheme):

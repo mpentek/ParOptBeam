@@ -20,8 +20,8 @@ class EigenvalueAnalysis(AnalysisType):
         self.frequency = None
         self.period = None
 
+        # TODO add some validation
         self.parameters = parameters
-        print()
 
     def solve(self):
 
@@ -259,7 +259,7 @@ class EigenvalueAnalysis(AnalysisType):
         """
         Postprocess something
         """
-        print("Postprocessing in EigenvalueAnalysis derived class \n")
+        print("Postprocessing in DynamicAnalysis derived class \n")
 
         for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
             self.plot_selected_eigenmode(mode)
