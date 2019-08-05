@@ -24,11 +24,14 @@
             }
         },
         "boundary_conditions": "fixed-free",
+        "elastic_fixity_dofs": {"0":8.475e9, "2":1.333e9, "1":1.408e9, "3":5.5556e10, "5":2.5e11, "4":8.3333e10}
+    },
+    "optimization_parameters": {
         "adapt_for_target_values": {
             "density_for_total_mass": 2421100,
             "youngs_modulus_for": {
                 "eigenmode": 1,
-                "eigenfrequency": 0.48}
+                "eigenfrequency": 0.4}
         }
     }
 }
