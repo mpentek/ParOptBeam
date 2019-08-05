@@ -1,8 +1,9 @@
 import numpy as np
+from scipy import linalg
 import json
 
-from source.analysis_type import AnalysisType
-from source.structure_model import StraightBeam
+from source.analysis.analysis_type import AnalysisType
+from source.model.structure_model import StraightBeam
 import source.visualize_result_utilities as visualize_result_utilities
 
 
@@ -11,7 +12,7 @@ class EigenvalueAnalysis(AnalysisType):
     Derived class for the (dynamic) eigenvalue analysis of a given structure model        
     """
 
-    def __init__(self, structure_model, name="EigenvalueAnalysis"):
+    def __init__(self, structure_model, parameters, name="EigenvalueAnalysis"):
         super().__init__(structure_model, name)
 
         # adding additional attributes to the derived class
@@ -19,12 +20,15 @@ class EigenvalueAnalysis(AnalysisType):
         self.frequency = None
         self.period = None
 
+        self.parameters = parameters
+        print()
+
     def solve(self):
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
         m = self.structure_model.apply_bc_by_reduction(self.structure_model.m)
 
-        eig_values_raw, eig_modes_raw = np.linalg.eigh(k, m)
+        eig_values_raw, eig_modes_raw = linalg.eigh(k, m)
         # rad/s
         eig_values = np.sqrt(np.real(eig_values_raw))
         # 1/s = Hz
@@ -256,4 +260,18 @@ class EigenvalueAnalysis(AnalysisType):
         Postprocess something
         """
         print("Postprocessing in EigenvalueAnalysis derived class \n")
+
+        for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
+            self.plot_selected_eigenmode(mode)
+
+        for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
+            # TODO: implement
+            #self.write_selected_eigenmode(mode)
+            pass
+
+        for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
+            self.animate_selected_eigenmode(mode)
+
+        # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
+
         pass

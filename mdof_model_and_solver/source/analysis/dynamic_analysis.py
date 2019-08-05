@@ -1,8 +1,8 @@
 import numpy as np
 import json
 
-from source.analysis_type import AnalysisType
-from source.structure_model import StraightBeam
+from source.analysis.analysis_type import AnalysisType
+from source.model.structure_model import StraightBeam
 import source.visualize_result_utilities as visualize_result_utilities
 
 from source.structure_model import *
