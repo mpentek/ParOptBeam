@@ -27,7 +27,7 @@ from scipy.optimize import minimize, minimize_scalar
 from functools import partial
 import math
 import matplotlib.pyplot as plt
-from source.structure_model import StraightBeam
+from source.model.structure_model import StraightBeam
 
 
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
@@ -111,9 +111,10 @@ class OptimizableStraightBeam(object):
     def __init__(self, model, parameters):
 
         if not(isinstance(model, StraightBeam)):
-                err_msg = "The proivded model is of type \"" + str(type(model)) +"\"\n" 
-                err_msg += "Has to be of type \"<class \'StraigthBeam\'>\""
-                raise Exception(err_msg)
+            err_msg = "The proivded model is of type \"" + \
+                str(type(model)) + "\"\n"
+            err_msg += "Has to be of type \"<class \'StraigthBeam\'>\""
+            raise Exception(err_msg)
         self.model = model
 
         # TODO: validate and assign parameters
@@ -124,7 +125,7 @@ class OptimizableStraightBeam(object):
         print()
 
         print('Found need for adapting structure for target values')
-        
+
         # if a target mass is set, the density will be adjusted, no additional dependencies
         if 'density_for_total_mass' in self.parameters:
             print('DENSITY OPTIMIZATION')
@@ -133,7 +134,7 @@ class OptimizableStraightBeam(object):
             print('Adapting density for target total mass: ', target_total_mass)
 
             self.adjust_density_for_target_total_mass(target_total_mass)
-        
+
         # if generically a target mode and frequency is set, the e-modul will be adjusted, g-modul recomputed
         if 'youngs_modulus_for' in self.parameters:
             print('YOUNG\'S MODULUS OPTIMIZATION')
@@ -141,79 +142,89 @@ class OptimizableStraightBeam(object):
             target_mode = self.parameters["youngs_modulus_for"]["eigenmode"]
             target_freq = self.parameters["youngs_modulus_for"]["eigenfrequency"]
             print('Adapting young\'s modulus for target eigenfrequency: ' +
-                    str(target_freq) + ' and mode: ' + str(target_mode))
+                  str(target_freq) + ' and mode: ' + str(target_mode))
 
             self.adjust_e_modul_for_target_eigenfreq(
                 target_freq, target_mode, True)
-            
+
         if 'geometric_properties_for' in self.parameters:
-            
+
             modes_to_consider = self.parameters["geometric_properties_for"]["consider_decomposed_modes"]
-            modes_possible_to_consider = [*StraightBeam.MODE_CATEGORIZATION[self.model.domain_size].keys()]
-            diff_list = np.setdiff1d(modes_to_consider, modes_possible_to_consider)
+            modes_possible_to_consider = [
+                *StraightBeam.MODE_CATEGORIZATION[self.model.domain_size].keys()]
+            diff_list = np.setdiff1d(
+                modes_to_consider, modes_possible_to_consider)
             if len(diff_list) != 0:
-                err_msg = "The element(s) \"" + ', '.join(diff_list) +"\"\n" 
-                err_msg += "in provided modes to consider \"" + ', '.join(modes_to_consider) + "\n"
+                err_msg = "The element(s) \"" + ', '.join(diff_list) + "\"\n"
+                err_msg += "in provided modes to consider \"" + \
+                    ', '.join(modes_to_consider) + "\n"
                 err_msg += "\" are not available for consideration\n"
                 err_msg += "Choose one or more of: \""
                 err_msg += ', '.join(modes_possible_to_consider) + "\"\n"
                 raise Exception(err_msg)
-            
-            # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order 
-            #TODO: check dependencies for order of execution and necessery updates
+
+            # IMPORTANT: a adaptation/tuning/optimization has to be done in the follopwing order
+            # TODO: check dependencies for order of execution and necessery updates
 
             # 1. LONGITUDINAL
-            #TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
+            # TODO: optimize for area -> update rho to match total mass, also update a_sy, a_sz
 
             # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
             if 'longitudinal' in self.parameters["geometric_properties_for"]["consider_decomposed_modes"]:
                 print('LONGITUDINAL OPTIMIZATION')
-                
+
                 identifier = 'longitudinal'
 
-                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(
+                    identifier)
                 target_mode = self.parameters["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
                 target_freq = self.parameters["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
 
-                self.adjust_longitudinal_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+                self.adjust_longitudinal_stiffness_for_target_eigenfreq(
+                    target_freq, target_mode, True)
 
             # 2. and 3. - on of SWAY_Y and/or SWAY_Z
-            #TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz -> multi design param opt) -> update ip with new values, also pz, py
+            # TODO: optimize for iz, iy (maybe also extend to a_sy, a_sz -> multi design param opt) -> update ip with new values, also pz, py
             if 'sway_y' in self.parameters["geometric_properties_for"]["consider_decomposed_modes"]:
                 print('SWAY_Y OPTIMIZATION')
-                
+
                 identifier = 'sway_y'
 
-                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(
+                    identifier)
                 target_mode = self.parameters["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
                 target_freq = self.parameters["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                
-                self.adjust_sway_y_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
 
+                self.adjust_sway_y_stiffness_for_target_eigenfreq(
+                    target_freq, target_mode, True)
 
             if 'sway_z' in self.parameters["geometric_properties_for"]["consider_decomposed_modes"]:
                 print('SWAY_Z OPTIMIZATION')
-                
+
                 identifier = 'sway_z'
 
-                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(
+                    identifier)
                 target_mode = self.parameters["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
                 target_freq = self.parameters["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                
-                self.adjust_sway_z_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+
+                self.adjust_sway_z_stiffness_for_target_eigenfreq(
+                    target_freq, target_mode, True)
 
             # 4. TORSIONAL
-            #TODO: optimize for it -> needs updated model from previous cases
+            # TODO: optimize for it -> needs updated model from previous cases
             if 'torsional' in self.parameters["geometric_properties_for"]["consider_decomposed_modes"]:
                 print('TORSIONAL OPTIMIZATION')
-                
+
                 identifier = 'torsional'
 
-                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(identifier)
+                id_idx = self.parameters["geometric_properties_for"]["consider_decomposed_modes"].index(
+                    identifier)
                 target_mode = self.parameters["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
                 target_freq = self.parameters["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
 
-                self.adjust_torsional_stiffness_for_target_eigenfreq(target_freq, target_mode, True)
+                self.adjust_torsional_stiffness_for_target_eigenfreq(
+                    target_freq, target_mode, True)
 
         print('AFTER OPTIMIZATION')
         self.model.identify_decoupled_eigenmodes(print_to_console=True)
@@ -237,13 +248,13 @@ class OptimizableStraightBeam(object):
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.generic_material_stiffness_objective_function,
-                                       target_freq, 
+                                       target_freq,
                                        target_mode,
                                        initial_e)
 
         minimization_result = minimize_scalar(optimizable_function,
-                                       method='Bounded',
-                                       bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
         opt_e_fctr = minimization_result.x
@@ -261,15 +272,15 @@ class OptimizableStraightBeam(object):
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.longitudinal_geometric_stiffness_objective_function,
-                                       target_freq, 
+                                       target_freq,
                                        target_mode,
                                        initial_a,
                                        initial_a_sy,
                                        initial_a_sz)
 
         minimization_result = minimize_scalar(optimizable_function,
-                                       method='Bounded',
-                                       bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
         opt_a_fctr = minimization_result.x
@@ -277,7 +288,8 @@ class OptimizableStraightBeam(object):
         if print_to_console:
             print('INITIAL a:', ', '.join([str(val) for val in initial_a]))
             print()
-            print('OPTIMIZED a: ', ', '.join([str(opt_a_fctr * val) for val in initial_a]))
+            print('OPTIMIZED a: ', ', '.join(
+                [str(opt_a_fctr * val) for val in initial_a]))
             print()
             print('FACTOR: ', opt_a_fctr)
             print()
@@ -286,8 +298,10 @@ class OptimizableStraightBeam(object):
 
         self.parameters['a'] = [multiplier_fctr * val for val in initial_a]
         # assuming a linear dependency of shear areas
-        self.parameters['a_sy'] = [multiplier_fctr * val for val in initial_a_sy]
-        self.parameters['a_sz'] = [multiplier_fctr * val for val in initial_a_sz]
+        self.parameters['a_sy'] = [
+            multiplier_fctr * val for val in initial_a_sy]
+        self.parameters['a_sz'] = [
+            multiplier_fctr * val for val in initial_a_sz]
 
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
@@ -313,13 +327,13 @@ class OptimizableStraightBeam(object):
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_y_geometric_stiffness_objective_function,
-                                       target_freq, 
+                                       target_freq,
                                        target_mode,
                                        initial_iy)
 
         minimization_result = minimize_scalar(optimizable_function,
-                                       method='Bounded',
-                                       bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
         opt_iy_fctr = minimization_result.x
@@ -327,14 +341,16 @@ class OptimizableStraightBeam(object):
         if print_to_console:
             print('INITIAL iy:', ', '.join([str(val) for val in initial_iy]))
             print()
-            print('OPTIMIZED iy: ', ', '.join([str(opt_iy_fctr * val) for val in initial_iy]))
+            print('OPTIMIZED iy: ', ', '.join(
+                [str(opt_iy_fctr * val) for val in initial_iy]))
             print()
             print('FACTOR: ', opt_iy_fctr)
             print()
-    
+
     def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, multiplier_fctr):
 
-        self.model.parameters['iy'] = [multiplier_fctr * val for val in initial_iy]
+        self.model.parameters['iy'] = [
+            multiplier_fctr * val for val in initial_iy]
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
         self.model.evaluate_torsional_inertia()
@@ -356,13 +372,13 @@ class OptimizableStraightBeam(object):
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_z_geometric_stiffness_objective_function,
-                                       target_freq, 
+                                       target_freq,
                                        target_mode,
                                        initial_iz)
 
         minimization_result = minimize_scalar(optimizable_function,
-                                       method='Bounded',
-                                       bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
         opt_iz_fctr = minimization_result.x
@@ -370,14 +386,16 @@ class OptimizableStraightBeam(object):
         if print_to_console:
             print('INITIAL iz:', ', '.join([str(val) for val in initial_iz]))
             print()
-            print('OPTIMIZED iz: ', ', '.join([str(opt_iz_fctr * val) for val in initial_iz]))
+            print('OPTIMIZED iz: ', ', '.join(
+                [str(opt_iz_fctr * val) for val in initial_iz]))
             print()
             print('FACTOR: ', opt_iz_fctr)
             print()
-    
+
     def bending_z_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iz, multiplier_fctr):
 
-        self.model.parameters['iz'] = [multiplier_fctr * val for val in initial_iz]
+        self.model.parameters['iz'] = [
+            multiplier_fctr * val for val in initial_iz]
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
         self.model.evaluate_torsional_inertia()
@@ -392,26 +410,25 @@ class OptimizableStraightBeam(object):
         identifier = 'sway_z'
         mode_ids = self.model.mode_identification_results[identifier]
 
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2    
-
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_it = self.model.parameters['it']
         initial_ip = self.model.parameters['ip']
 
         # NOTE: single parameter optimization seems not to be enough
-        
+
         # using partial to fix some parameters for the
         optimizable_function = partial(self.torsional_geometric_stiffness_objective_function,
-                                       target_freq, 
+                                       target_freq,
                                        target_mode,
                                        initial_it,
                                        initial_ip)
 
         # NOTE: some additional reduction factor so that ip gets changes less
-        
+
         initi_guess = (1.0, 1.0)
-        
+
         # NOTE: this seems not to be enough
         # bnds_it = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)
         # bnds_ip = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)
@@ -431,18 +448,22 @@ class OptimizableStraightBeam(object):
 
         if print_to_console:
             print('INITIAL it:', ', '.join([str(val) for val in initial_it]))
-            print('OPTIMIZED it: ', ', '.join([str(opt_fctr[0] * val) for val in initial_it]))
+            print('OPTIMIZED it: ', ', '.join(
+                [str(opt_fctr[0] * val) for val in initial_it]))
             print()
             print('INITIAL ip:', ', '.join([str(val) for val in initial_ip]))
-            print('OPTIMIZED ip: ', ', '.join([str(opt_fctr[1] * val) for val in initial_ip]))
+            print('OPTIMIZED ip: ', ', '.join(
+                [str(opt_fctr[1] * val) for val in initial_ip]))
             print()
             print('FACTORS: ', ', '.join([str(val) for val in opt_fctr]))
             print()
 
     def torsional_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_it, initial_ip, multiplier_fctr):
 
-        self.model.parameters['it'] = [multiplier_fctr[0] * val for val in initial_it]
-        self.model.parameters['ip'] = [multiplier_fctr[1] * val for val in initial_ip]
+        self.model.parameters['it'] = [
+            multiplier_fctr[0] * val for val in initial_it]
+        self.model.parameters['ip'] = [
+            multiplier_fctr[1] * val for val in initial_ip]
 
         # re-evaluate
         self.model.calculate_global_matrices()
@@ -450,7 +471,6 @@ class OptimizableStraightBeam(object):
         self.model.eigenvalue_solve()
 
         self.model.identify_decoupled_eigenmodes()
-
 
         identifier = 'torsional'
         mode_ids = self.model.mode_identification_results[identifier]
@@ -465,7 +485,6 @@ class OptimizableStraightBeam(object):
         self.parameters['g'] = self.parameters['e'] / \
             2 / (1+self.parameters['nu'])
         self.model.evaluate_relative_importance_of_shear()
-
 
         # re-evaluate
         self.model.calculate_global_matrices()

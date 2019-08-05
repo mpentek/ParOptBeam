@@ -83,7 +83,8 @@ class EigenvalueAnalysis(AnalysisType):
         file = open("beam.txt", "w")
         dict = {}
         dict["length"] = max(self.structure_model.nodal_coordinates["x0"])
-        dict["num_of_elements"] = len(self.structure_model.nodal_coordinates["x0"])
+        dict["num_of_elements"] = len(
+            self.structure_model.nodal_coordinates["x0"])
         for key, val in self.structure_model.nodal_coordinates.items():
             dict[key] = val.tolist()
 
@@ -203,7 +204,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         time_steps = 100
         array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
-            0, self.period[selected_mode], time_steps))  # AK: can this be called an array tiem ? 
+            0, self.period[selected_mode], time_steps))  # AK: can this be called an array tiem ?
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
                               StraightBeam.DOF_LABELS[self.structure_model.domain_size]):

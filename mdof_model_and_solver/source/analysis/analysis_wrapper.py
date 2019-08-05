@@ -7,14 +7,16 @@ class AnalysisWrapper(object):
 
     """
 
-    POSSIBLE_ANALYSES = ['eigenvalue_analysis', 'dynamic_analysis', 'static_analysis']
+    POSSIBLE_ANALYSES = ['eigenvalue_analysis',
+                         'dynamic_analysis', 'static_analysis']
 
     def __init__(self, parameters, model):
-        
+
         if not(isinstance(model, StraightBeam)):
-                err_msg = "The proivded model is of type \"" + str(type(model)) +"\"\n" 
-                err_msg += "Has to be of type \"<class \'StraigthBeam\'>\""
-                raise Exception(err_msg)
+            err_msg = "The proivded model is of type \"" + \
+                str(type(model)) + "\"\n"
+            err_msg += "Has to be of type \"<class \'StraigthBeam\'>\""
+            raise Exception(err_msg)
 
         self.analyses = []
 
@@ -23,12 +25,15 @@ class AnalysisWrapper(object):
                 from source.eigenvalue_analysis import EigenvalueAnalysis
                 self.analyses.append(EigenvalueAnalysis(analysis_param, model))
                 pass
+
             elif analysis_param['type'] == 'dynamic_analysis':
                 from source.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(analysis_param, model))
+
             elif analysis_param['type'] == 'static_analysis':
                 from source.static_analysis import StaticAnalysis
                 self.analyses.append(StaticAnalysis(analysis_param, model))
+
             else:
                 err_msg = "The analysis type \"" + \
                     analysis_param['type']
@@ -36,3 +41,11 @@ class AnalysisWrapper(object):
                 err_msg += "Choose one of: \""
                 err_msg += '\", \"'.join(AnalysisWrapper.POSSIBLE_ANALYSES) + '\"'
                 raise Exception(err_msg)
+
+    def solve(self):
+        for analysis in self.analyses:
+            analysis.solve()
+
+    def postprocess(self):
+        for analysis in self.analyses:
+            analysis.postprocess()

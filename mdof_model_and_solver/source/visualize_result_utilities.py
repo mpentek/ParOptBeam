@@ -63,7 +63,7 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "marker":         ["o",    "s",  "^",    "p",   "x", "*"],
                    "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
-                   "markersize":     [4,      4,    4,      4,    4,    4 ]}
+                   "markersize":     [4,      4,    4,      4,    4,    4]}
 
 '''
 geometry = {"undeformed":...,
@@ -176,20 +176,20 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
         try:
             # TODO: syntax neesds to be updated for quiver and forces
             ax.quiver(geometry["undeformed"][0],
-                       geometry["undeformed"][1],
-                       geometry["undeformed"][2],
-                       force["external"][0],
-                       force["external"][1],
-                       force["external"][2],
-                       color="red")
+                      geometry["undeformed"][1],
+                      geometry["undeformed"][2],
+                      force["external"][0],
+                      force["external"][1],
+                      force["external"][2],
+                      color="red")
 
             ax.quiver(geometry["undeformed"][0],
-                       geometry["undeformed"][1],
-                       geometry["undeformed"][2],
-                       force["reaction"][0],
-                       force["reaction"][1],
-                       force["reaction"][2],
-                       color="green")
+                      geometry["undeformed"][1],
+                      geometry["undeformed"][2],
+                      force["reaction"][0],
+                      force["reaction"][1],
+                      force["reaction"][2],
+                      color="green")
 
         except:
             # forces are None
@@ -323,12 +323,11 @@ def animate_result(title, array_time, geometry, force, scaling):
                                  geometry["undeformed"][1])
 
         deformed_line.set_data(geometry["deformed"][0][:, step * i],
-                                geometry["deformed"][1][:, step * i])
+                               geometry["deformed"][1][:, step * i])
 
         # NOTE: there is no .set_data() for 3 dim data...
         undeformed_line.set_3d_properties(geometry["undeformed"][2])
         deformed_line.set_3d_properties(geometry["deformed"][2][:, step * i])
-
 
         text.set_text('{0:.2f}'.format(array_time[i]) + "[s]")
 
@@ -364,7 +363,8 @@ def get_plot_limits(deformed_geometry, offset_factor=10.):
 
     return plot_limits
 
-def plot_dynamic_result(plot_title, result_data , array_time) : 
+
+def plot_dynamic_result(plot_title, result_data, array_time):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -373,13 +373,13 @@ def plot_dynamic_result(plot_title, result_data , array_time) :
     plt.grid()
     plt.title(plot_title + ' Vs Time')    # set title
     # plot undeformed
-    plt.plot(array_time, 
-            result_data, 
-            color=LINE_TYPE_SETUP["color"][1],
-            linestyle=LINE_TYPE_SETUP["linestyle"][1],
-            marker=LINE_TYPE_SETUP["marker"][1],
-            markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
-            markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
-            markersize=LINE_TYPE_SETUP["markersize"][1])
+    plt.plot(array_time,
+             result_data,
+             color=LINE_TYPE_SETUP["color"][1],
+             linestyle=LINE_TYPE_SETUP["linestyle"][1],
+             marker=LINE_TYPE_SETUP["marker"][1],
+             markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
+             markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
+             markersize=LINE_TYPE_SETUP["markersize"][1])
     ax.legend()
     plt.show()

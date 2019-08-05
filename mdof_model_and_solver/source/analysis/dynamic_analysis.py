@@ -8,6 +8,7 @@ import source.visualize_result_utilities as visualize_result_utilities
 from source.structure_model import *
 from source.time_integration_scheme import *
 
+
 class DynamicAnalysis(AnalysisType):
     """
     Dervied class for the dynamic analysis of a given structure model        
@@ -19,20 +20,21 @@ class DynamicAnalysis(AnalysisType):
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force
-        self.dt = dt 
+        self.dt = dt
         #self.time = time
-        self.array_time = np.asarray(array_time) #np.arange(self.time[0], self.time[1] + self.dt, self.dt)
-        rows = len(self.structure_model.apply_bc_by_reduction(self.structure_model.k))
+        # np.arange(self.time[0], self.time[1] + self.dt, self.dt)
+        self.array_time = np.asarray(array_time)
+        rows = len(self.structure_model.apply_bc_by_reduction(
+            self.structure_model.k))
         cols = len(self.array_time)
 
-        # inital condition of zero displacement and velocity used for the time being. 
+        # inital condition of zero displacement and velocity used for the time being.
         # TODO : to incorporate user defined initial conditions
 
-        u0 = np.zeros(rows) # initial displacement
+        u0 = np.zeros(rows)  # initial displacement
         v0 = np.zeros(rows)  # initial velocity
         a0 = np.zeros(rows)  # initial acceleration
-        initial_conditions = np.array([u0,v0,a0])
-
+        initial_conditions = np.array([u0, v0, a0])
 
         # adding additional attributes to the derived class
         self.displacement = np.zeros((rows, cols))
@@ -63,11 +65,11 @@ class DynamicAnalysis(AnalysisType):
 
     def solve(self):
         print("Solving the structure for dynamic loads \n")
-        force = self.structure_model.apply_bc_by_reduction(self.force,'row')
+        force = self.structure_model.apply_bc_by_reduction(self.force, 'row')
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
-            
+
             self.solver.solve_structure(force[:, i])
 
             # appending results to the list
@@ -77,20 +79,23 @@ class DynamicAnalysis(AnalysisType):
 
             # update results
             self.solver.update_structure_time_step()
-        
-        self.displacement = self.structure_model.recuperate_bc_by_extension(self.displacement)
-        self.velocity = self.structure_model.recuperate_bc_by_extension(self.velocity)
-        self.acceleration = self.structure_model.recuperate_bc_by_extension(self.acceleration)
+
+        self.displacement = self.structure_model.recuperate_bc_by_extension(
+            self.displacement)
+        self.velocity = self.structure_model.recuperate_bc_by_extension(
+            self.velocity)
+        self.acceleration = self.structure_model.recuperate_bc_by_extension(
+            self.acceleration)
 
     def compute_reactions(self):
-        # forward multiplying to compute the forces and reactions  
+        # forward multiplying to compute the forces and reactions
         # NOTE: check if this is needed, seems to be unused
         # ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
 
         f1 = np.matmul(self.structure_model.m, self.acceleration)
         f2 = np.matmul(self.structure_model.b, self.velocity)
         f3 = np.matmul(self.structure_model.k, self.displacement)
-        self.dynamic_reaction = self.force- f1 -f2 -f3
+        self.dynamic_reaction = self.force - f1 - f2 - f3
 
         # TODO: check if the treatment of elastic bc dofs is correct
         for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
@@ -99,11 +104,11 @@ class DynamicAnalysis(AnalysisType):
 
             f1 = 0.0 * self.acceleration[dof_id]
             f2 = damping_val * self.velocity[dof_id]
-            f3 = stiffness_val * self.displacement[dof_id] 
+            f3 = stiffness_val * self.displacement[dof_id]
 
             # overwrite the existing value with one solely from spring stiffness and damping
-            self.dynamic_reaction[dof_id] = f1 + f2 + f3 
-        
+            self.dynamic_reaction[dof_id] = f1 + f2 + f3
+
     def write_result_at_dof(self, dof, selected_result):
         """"
         This function writes out the time history of response at the selected dof
@@ -112,11 +117,11 @@ class DynamicAnalysis(AnalysisType):
         print('Writing out result for selected dof in dynamic analysis \n')
         if selected_result == 'displacement':
             result_data = self.displacement[dof, :]
-        elif selected_result == 'velocity': 
+        elif selected_result == 'velocity':
             result_data = self.velocity[dof, :]
         elif selected_result == 'acceleration':
             result_data = self.acceleration[dof, :]
-        else: 
+        else:
             err_msg = "The selected result \"" + selected_result
             err_msg += "\" is not avaialbe \n"
             err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
@@ -137,17 +142,18 @@ class DynamicAnalysis(AnalysisType):
         plot_title = selected_result.capitalize() + ' at DoF ' + str(dof)
         if selected_result == 'displacement':
             result_data = self.displacement[dof, :]
-        elif selected_result == 'velocity': 
+        elif selected_result == 'velocity':
             result_data = self.velocity[dof, :]
         elif selected_result == 'acceleration':
             result_data = self.acceleration[dof, :]
-        else: 
+        else:
             err_msg = "The selected result \"" + selected_result
             err_msg += "\" is not avaialbe \n"
             err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
             raise Exception(err_msg)
 
-        visualize_result_utilities.plot_dynamic_result(plot_title, result_data, self.array_time)
+        visualize_result_utilities.plot_dynamic_result(
+            plot_title, result_data, self.array_time)
 
     def plot_reaction(self, dof):
         self.compute_reactions()
@@ -157,13 +163,15 @@ class DynamicAnalysis(AnalysisType):
         """
         print('Plotting reactions for in dynamic analysis \n')
         # TODO: check if the treatment of elastic bc dofs is correct
-        if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs: 
+        if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
             plot_title = 'REACTION at DoF ' + str(dof)
-            visualize_result_utilities.plot_dynamic_result(plot_title, self.dynamic_reaction[dof,:], self.array_time)
+            visualize_result_utilities.plot_dynamic_result(
+                plot_title, self.dynamic_reaction[dof, :], self.array_time)
         else:
             err_msg = "The selected DoF \"" + str(dof)
             err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
-            err_msg += "Choose one of: " + ", ".join([str(val) for val in self.structure_model.bc_dofs])
+            err_msg += "Choose one of: " + \
+                ", ".join([str(val) for val in self.structure_model.bc_dofs])
             raise Exception(err_msg)
 
     def plot_selected_time(self, selected_time):
@@ -185,18 +193,18 @@ class DynamicAnalysis(AnalysisType):
             step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
-                                                                           1:step][:, idx_time]
+                                                                              1:step][:, idx_time]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                            self.structure_model.nodal_coordinates["y0"],
-                            self.structure_model.nodal_coordinates["z0"]],
-            "deformation": [self.structure_model.nodal_coordinates["x"],
-                            self.structure_model.nodal_coordinates["y"],
-                            self.structure_model.nodal_coordinates["z"]],
-            "deformed": None}
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
 
-        force = {"external": None ,# [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
-                 "base_reaction": None } #[np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+        force = {"external": None,  # [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
+                 "base_reaction": None}  # [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
 
         scaling = {"deformation": 1,
                    "force": 1}
@@ -218,7 +226,6 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-       
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
                               StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
@@ -226,8 +233,8 @@ class DynamicAnalysis(AnalysisType):
             step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
-                                                                           1:step]
-                                                                                                 
+                                                                              1:step]
+
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
                                    self.structure_model.nodal_coordinates["z0"]],
@@ -235,7 +242,7 @@ class DynamicAnalysis(AnalysisType):
                                     self.structure_model.nodal_coordinates["y"],
                                     self.structure_model.nodal_coordinates["z"]],
                     "deformed": None}
-            
+
         force = {"external": None,
                  "base_reaction": None}
 

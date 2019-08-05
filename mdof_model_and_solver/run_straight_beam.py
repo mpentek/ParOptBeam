@@ -27,9 +27,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-from source.structure_model import*
-from source.optimizable_structure_model import*
-from source.analysis_type import*
+from source.model.structure_model import StraightBeam
+from source.analysis.analysis_wrapper import *
 from source.load_type import*
 
 import json
@@ -97,6 +96,7 @@ for available_model in available_models:
     # additional changes due to optimization
     if 'optimization_parameters' in parameters:
         # return the model of the optimizable instance to preserve what is required by analyzis
+        from source.model.optimizable_structure_model import OptimizableStraightBeam
         beam_model = OptimizableStraightBeam(beam_model, parameters['optimization_parameters']['adapt_for_target_values']).model
     else:
         print('No need found for adapting structure for target values')
@@ -106,10 +106,10 @@ for available_model in available_models:
     beam_model.identify_decoupled_eigenmodes(25,True)
 
     wait = input("check...")
-    
+
     # ==============================================
     # Analysis wrapper
-    from source.analysis_wrapper import *
+
     analyses_controller = AnalysisWrapper(parameters['analyses_parameters'], beam_model)
 
 
