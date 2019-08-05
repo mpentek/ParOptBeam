@@ -29,7 +29,7 @@ import os
 import json
 
 from source.model.structure_model import StraightBeam
-from source.analysis.analysis_wrapper import *
+from source.analysis.analysis_wrapper import AnalysisWrapper
 
 
 # ==============================================
