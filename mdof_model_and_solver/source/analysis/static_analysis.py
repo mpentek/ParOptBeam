@@ -1,5 +1,6 @@
 import numpy as np
 import json
+import os
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -11,13 +12,42 @@ class StaticAnalysis(AnalysisType):
     Dervied class for the static analysis of a given structure model        
     """
 
-    def __init__(self, structure_model, name="StaticAnalysis"):
+    def __init__(self, structure_model, parameters, name="StaticAnalysis"):
+
+        # TODO add some validation
+        self.parameters = parameters
 
         super().__init__(structure_model, name)
 
-    def solve(self, ext_force):
+        selected_time_step = 15000
+
+        # load parameters
+        '''
+        FOR NOW ONLY AVAILABLE for
+        1 elements - 2 nodes
+        2 elements - 3 nodes
+        3 elements - 4 nodes
+        6 elements - 7 nodes
+        12 elements - 13 nodes
+        24 elements - 25 nodes
+        '''
+        possible_n_el_cases = [1, 2, 3, 6, 12, 24]
+        if structure_model.parameters['n_el'] not in possible_n_el_cases:
+            err_msg = "The number of element input \"" + \
+                str(structure_model.parameters['n_el'])
+            err_msg += "\" is not allowed for Dynamic Analysis \n"
+            err_msg += "Choose one of: "
+            err_msg += ', '.join([str(x) for x in possible_n_el_cases])
+            raise Exception(err_msg)
+        # TODO include some specifiers in the parameters, do not hard code
+        self.force = np.load(os.path.join('level_force', 'force_dynamic' +
+                                          '_turb' + str(structure_model.parameters['n_el']+1) + '.npy'))[:, selected_time_step]
+
+
+
+    def solve(self):
         print("Solving for ext_force in StaticAnalysis derived class \n")
-        self.force = ext_force
+        # self.force = ext_force
         force = self.structure_model.apply_bc_by_reduction(
             self.force, 'row_vector')
 
@@ -36,7 +66,7 @@ class StaticAnalysis(AnalysisType):
         #self.force = self.structure_model.recuperate_bc_by_extension(self.force,'row_vector')
         self.resisting_force = self.force - \
             np.dot(self.structure_model.k, self.static_result)
-        ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
+        ixgrid = np.ix_(self.structure_model.dofs_to_keep, [0])
         self.resisting_force[ixgrid] = 0
         self.reaction = {"x": np.zeros(0),
                          "y": np.zeros(0),
@@ -115,4 +145,14 @@ class StaticAnalysis(AnalysisType):
         Postprocess something
         """
         print("Postprocessing in StaticAnalysis derived class \n")
+
+        for plot_result in self.parameters['output']['plot']:
+            if plot_result == 'deformation':
+                self.plot_solve_result()
+            if plot_result == 'forces':
+                pass
+
+        for write_result in self.parameters['output']['write']:
+            pass
+
         pass

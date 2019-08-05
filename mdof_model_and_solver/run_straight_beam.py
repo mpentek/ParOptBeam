@@ -26,12 +26,10 @@ Last update: 09.07.2019
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+import json
 
 from source.model.structure_model import StraightBeam
 from source.analysis.analysis_wrapper import *
-from source.load_type import*
-
-import json
 
 
 # ==============================================
@@ -47,22 +45,22 @@ available_models = [
     and matching structural to the solid models used for one-way coupling
     '''
     'ProjectParameters3DPylonCadBeam.json',
-    
+
     #
     ''' 
     Pylon model with geometry data from the sofistik beam
     material parameters also from sofistik sheet 
     '''
-    
+
     # with various elastic modulus
     'ProjectParameters3DPylonSofiBeam.json', 'r',
     'ProjectParameters3DPylonSofiBeamReducedE.json',
-    
+
     # with elastic foundation
     'ProjectParameters3DPylonSofiBeamWithFoundationSoft.json',
     'ProjectParameters3DPylonSofiBeamWithFoundationMid.json',
     'ProjectParameters3DPylonSofiBeamWithFoundationHard.json',
-    
+
     #
     '''
     Equivalent beam model of the CAARC building B
@@ -70,7 +68,7 @@ available_models = [
     distribution along the heigth (length of the beam in local coordinates)
     '''
     'ProjectParameters3DCaarcBeam.json'
-    
+
     #
     '''
     A prototype alternative to the CAARC building B with 3 intervals
@@ -84,11 +82,11 @@ available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
 
 for available_model in available_models:
-    
+
     # ==============================================
     # Parameter read
-    with open(os.path.join('input',available_model),'r') as parameter_file:
-        parameters = json.loads(parameter_file.read()) 
+    with open(os.path.join('input', available_model), 'r') as parameter_file:
+        parameters = json.loads(parameter_file.read())
 
     # create initial model
     beam_model = StraightBeam(parameters['model_parameters'])
@@ -97,7 +95,8 @@ for available_model in available_models:
     if 'optimization_parameters' in parameters:
         # return the model of the optimizable instance to preserve what is required by analyzis
         from source.model.optimizable_structure_model import OptimizableStraightBeam
-        beam_model = OptimizableStraightBeam(beam_model, parameters['optimization_parameters']['adapt_for_target_values']).model
+        beam_model = OptimizableStraightBeam(
+            beam_model, parameters['optimization_parameters']['adapt_for_target_values']).model
     else:
         print('No need found for adapting structure for target values')
 
@@ -107,7 +106,8 @@ for available_model in available_models:
     # ==============================================
     # Analysis wrapper
 
-    analyses_controller = AnalysisWrapper(beam_model, parameters['analyses_parameters'])
+    analyses_controller = AnalysisWrapper(
+        beam_model, parameters['analyses_parameters'])
     analyses_controller.solve()
     analyses_controller.postprocess()
 
@@ -119,8 +119,7 @@ for available_model in available_models:
     # '''
 
     # # ===========================================
-    # # Dynamic analysis 
-
+    # # Dynamic analysis
 
     # '''
     # TODO: check kinematics at top point for various damping ratios
@@ -132,14 +131,5 @@ for available_model in available_models:
     # valid only for the pylon model
     # can be used for testing the caarc model as well
 
-
     # # ============================================
-    # # Static analysis 
-
-
-    # selected_time_step = 15000
-    # static_force = dynamic_force[:, selected_time_step]
-
-    # static_analysis = StaticAnalysis(beam_model)
-    # static_analysis.solve(static_force)
-    # static_analysis.plot_solve_result()
+    # # Static analysis

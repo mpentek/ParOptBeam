@@ -30,17 +30,17 @@ class AnalysisWrapper(object):
                 from source.analysis.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(model, analysis_param))
 
-            # elif analysis_param['type'] == 'static_analysis':
-            #     from source.analysis.static_analysis import StaticAnalysis
-            #     self.analyses.append(StaticAnalysis(model, analysis_param))
+            elif analysis_param['type'] == 'static_analysis':
+                from source.analysis.static_analysis import StaticAnalysis
+                self.analyses.append(StaticAnalysis(model, analysis_param))
 
-            # else:
-            #     err_msg = "The analysis type \"" + \
-            #         analysis_param['type']
-            #     err_msg += "\" is not available \n"
-            #     err_msg += "Choose one of: \""
-            #     err_msg += '\", \"'.join(AnalysisWrapper.POSSIBLE_ANALYSES) + '\"'
-                # raise Exception(err_msg)
+            else:
+                err_msg = "The analysis type \"" + \
+                    analysis_param['type']
+                err_msg += "\" is not available \n"
+                err_msg += "Choose one of: \""
+                err_msg += '\", \"'.join(AnalysisWrapper.POSSIBLE_ANALYSES) + '\"'
+                raise Exception(err_msg)
 
     def solve(self):
         for analysis in self.analyses:

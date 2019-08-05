@@ -41,7 +41,8 @@ class DynamicAnalysis(AnalysisType):
         '''
         possible_n_el_cases = [1, 2, 3, 6, 12, 24]
         if structure_model.parameters['n_el'] not in possible_n_el_cases:
-            err_msg = "The number of element input \"" + str(structure_model.parameters['n_el'])
+            err_msg = "The number of element input \"" + \
+                str(structure_model.parameters['n_el'])
             err_msg += "\" is not allowed for Dynamic Analysis \n"
             err_msg += "Choose one of: "
             err_msg += ', '.join([str(x) for x in possible_n_el_cases])
@@ -54,7 +55,7 @@ class DynamicAnalysis(AnalysisType):
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force
-        
+
         #self.time = time
         # np.arange(self.time[0], self.time[1] + self.dt, self.dt)
 
@@ -303,7 +304,7 @@ class DynamicAnalysis(AnalysisType):
 
         for time in self.parameters['output']['selected_instance']['plot_time']:
             self.plot_selected_time(time)
-        
+
         for time in self.parameters['output']['selected_instance']['write_time']:
             # self.write_selected_time(time)
             pass
@@ -311,11 +312,11 @@ class DynamicAnalysis(AnalysisType):
         for step in self.parameters['output']['selected_instance']['plot_step']:
             # self.plot_selected_step(time)
             pass
-        
-        for time in self.parameters['output']['selected_instance']['write_step']:
+
+        for step in self.parameters['output']['selected_instance']['write_step']:
             # self.write_selected_step(time)
             pass
-    
+
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
 

@@ -114,7 +114,10 @@
         },{
             "type" : "static_analysis",
             "settings": {}, 
-            "input":{}, 
+            "input":{
+                "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
+                "file_path": "some/path"
+            }, 
             "output":{
                 "plot": ["deformation", "forces"],
                 "write": ["deformation"]
