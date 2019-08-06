@@ -29,6 +29,8 @@ class Visualiser:
         self.mapper = Mapper(structure, line_structure)
         self.interpolated_line_structure = self.mapper.interpolated_line_structure
         self.factor = 150.
+        self.is_record_animation = self.structure.is_record_animation
+        self.is_visualize_line_structure = self.structure.is_visualize_line_structure
 
         self.fig = plt.figure(figsize=(10, 10))
         # self.ax = Axes3D(self.fig)
@@ -132,7 +134,8 @@ class Visualiser:
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
         a = animation.FuncAnimation(self.fig, self.update, 40, repeat=False)
-        # a.save("structure_displacement.mp4")
+        if self.is_record_animation:
+            a.save("results/structure_displacement.mp4")
         plt.tight_layout()
         plt.show()
 
@@ -145,7 +148,8 @@ class Visualiser:
             self.ax.cla()
         self.scale = self.factor * np.sin(t)
         self.visualise_structure()
-        # self.visualise_line_structure()
+        if self.is_visualize_line_structure:
+            self.visualise_line_structure()
         # self.visualise_interpolated_line_structure()
         self.set_coordinate_in_real_size()
 

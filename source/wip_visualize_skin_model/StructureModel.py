@@ -105,6 +105,8 @@ class Structure:
             self.num_of_elements = len(self.scaling_vector)
             self.beam_direction = data["beam_direction"]
             self.element_length = self.beam_length / self.num_of_elements
+            self.is_record_animation = data["record_animation"]
+            self.is_visualize_line_structure = data["visualize_line_structure"]
 
         self.densify_contour(CONTOUR_DENSITY)
         self.print_structure_info()
