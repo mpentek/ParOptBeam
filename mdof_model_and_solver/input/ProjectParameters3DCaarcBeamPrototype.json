@@ -9,7 +9,7 @@
                 "damping_ratio": 0.005
             },
             "geometry": {
-                "length_x": 180,
+                "length_x": 180.0,
                 "number_of_elements": 24,
                 "defined_on_intervals": [{
                     "interval_bounds" : [0.0, 60.0],
@@ -47,6 +47,6 @@
     },
     "optimization_parameters": {
         "adapt_for_target_values": {
-            "density_for_total_mass": 38880000}
+            "density_for_total_mass": 38880000.0}
     }
 }

@@ -28,47 +28,7 @@ from functools import partial
 import math
 import matplotlib.pyplot as plt
 from source.model.structure_model import StraightBeam
-
-
-# TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
-
-CUST_MAGNITUDE = 4
-
-
-def magnitude(x):
-    # NOTE: ceil is supposed to be correct for positive values
-    return int(math.ceil(math.log10(x)))
-
-
-def map_lin_to_log(val, base=10**3):
-    # it has to be defined with a min=0.0 and max=1.0
-    # TODO: implment check
-    return base**(1.0 - val)
-
-
-def shift_normalize(val, base=10**3):
-    # TODO: implment check
-    # it has to be defined with min=0.0
-    shift_val = map_lin_to_log(0.0, base)
-    val -= shift_val
-    # it has to be defined with max=1.0
-    norm_val = map_lin_to_log(1.0, base) - shift_val
-    val /= norm_val
-    return val
-
-
-# def shape_function_lin(val): return 1-val
-
-
-# TODO: try to figure out a good relationship between exp and magnitude_difference
-def shape_function_exp(val, exp=CUST_MAGNITUDE): return (1-val)**exp
-
-
-def evaluate_polynomial(x, coefs):
-    val = 0.0
-    for idx, coef in enumerate(coefs):
-        val += coef * x**idx
-    return val
+from source.validate_and_assign_defaults import validate_and_assign_defaults
 
 
 class OptimizableStraightBeam(object):
@@ -108,6 +68,14 @@ class OptimizableStraightBeam(object):
 
     THRESHOLD = 1e-8
 
+    # using these as default or fallback settings
+    DEFAULT_SETTINGS = {
+        # TODO: will assign this mass if no value provided, figure out bettwe way
+        "density_for_total_mass": 1500.0,
+        "youngs_modulus_for": {},
+        "geometric_properties_for": {}
+                }
+
     def __init__(self, model, parameters):
 
         if not(isinstance(model, StraightBeam)):
@@ -117,7 +85,7 @@ class OptimizableStraightBeam(object):
             raise Exception(err_msg)
         self.model = model
 
-        # TODO: validate and assign parameters
+        validate_and_assign_defaults(OptimizableStraightBeam.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
         print('BEFORE OPTIMIZATION')
@@ -136,7 +104,7 @@ class OptimizableStraightBeam(object):
             self.adjust_density_for_target_total_mass(target_total_mass)
 
         # if generically a target mode and frequency is set, the e-modul will be adjusted, g-modul recomputed
-        if 'youngs_modulus_for' in self.parameters:
+        if 'youngs_modulus_for' in self.parameters and self.parameters['youngs_modulus_for']:
             print('YOUNG\'S MODULUS OPTIMIZATION')
 
             target_mode = self.parameters["youngs_modulus_for"]["eigenmode"]
@@ -147,7 +115,7 @@ class OptimizableStraightBeam(object):
             self.adjust_e_modul_for_target_eigenfreq(
                 target_freq, target_mode, True)
 
-        if 'geometric_properties_for' in self.parameters:
+        if 'geometric_properties_for' in self.parameters and self.parameters['geometric_properties_for']:
 
             modes_to_consider = self.parameters["geometric_properties_for"]["consider_decomposed_modes"]
             modes_possible_to_consider = [

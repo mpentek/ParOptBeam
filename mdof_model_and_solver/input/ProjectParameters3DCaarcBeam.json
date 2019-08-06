@@ -9,7 +9,7 @@
                 "damping_ratio": 0.0
             },
             "geometry": {
-                "length_x": 180,
+                "length_x": 180.0,
                 "number_of_elements": 24,
                 "defined_on_intervals": [{
                     "interval_bounds" : [0.0, "End"],
