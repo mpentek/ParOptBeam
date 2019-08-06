@@ -1,13 +1,14 @@
 import json
 import numpy as np
 from visualize_skin_model.NodeModel import Node
+from visualize_skin_model.Mapper import interpolate_points
 from sympy import Plane
 
 CONTOUR_DENSITY = 1
 
 
 class Element:
-    def __init__(self, geometry, s, beam_direction="x"):
+    def __init__(self, geometry, s, scale=1., beam_direction="x"):
         """
         creating single floor based on the given floor geometry with the floor height
         @:param s: coordinate in the beam direction
@@ -15,17 +16,22 @@ class Element:
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
         self.x0_vec, self.y0_vec, self.z0_vec = [], [], []
+        self.scale = scale
+
         for point in geometry:
             # the beam direction takes a dummy value 0 at the beginning and will be overwritten
-            x = point["x"]
-            y = point["y"]
-            z = point["z"]
+            x = point["x"] * scale
+            y = point["y"] * scale
+            z = point["z"] * scale
             if beam_direction == "x":
                 x = s
             elif beam_direction == "y":
                 y = s
             elif beam_direction == "z":
                 z = s
+            else:
+                x = s
+                print("Unknown beam direction, setting default beam direction to x")
             self.x0_vec.append(x)
             self.y0_vec.append(y)
             self.z0_vec.append(z)
@@ -57,7 +63,7 @@ class Element:
 
 
 class Frame:
-    def __init__(self, floors, index,  beam_direction="x"):
+    def __init__(self, floors, index, beam_direction="x"):
         """
         connecting all points from the same geometry point for each floor
         """
@@ -95,7 +101,8 @@ class Structure:
             self.element_geometry = data["geometry"]
             self.dof_file = data["dofs_file_name"]
             self.beam_length = json.load(open(self.dof_file))["length"]
-            self.num_of_elements = data["num_of_elements"]
+            self.scaling_vector = data["scaling_vector"]
+            self.num_of_elements = len(self.scaling_vector)
             self.beam_direction = data["beam_direction"]
             self.element_length = self.beam_length / self.num_of_elements
 
@@ -115,17 +122,20 @@ class Structure:
 
     def create_elements(self):
         current_length = 0.0
+        current_scale = 1.
         while current_length <= self.beam_length:
-            element = Element(self.element_geometry, current_length, self.beam_direction)
+            current_scale = interpolate_points(current_length, np.linspace(0, self.beam_length, self.num_of_elements),
+                                               self.scaling_vector)
+            element = Element(self.element_geometry, current_length, current_scale, self.beam_direction)
             self.elements.append(element)
             current_length += self.element_length
         if current_length <= self.beam_length:
-            element = Element(self.element_geometry, self.beam_length, self.beam_direction)
+            element = Element(self.element_geometry, self.beam_length, current_scale, self.beam_direction)
             self.elements.append(element)
 
     def create_frames(self):
         for i in range(len(self.element_geometry)):
-            frame = Frame(self.elements, i,  self.beam_direction)
+            frame = Frame(self.elements, i, self.beam_direction)
             self.frames.append(frame)
 
     def densify_contour(self, parts=5):
@@ -136,9 +146,11 @@ class Structure:
 
                 new_floor_geometry += self._get_equidistant_points(
                     [self.element_geometry[i % len(self.element_geometry)]["x"],
-                     self.element_geometry[i % len(self.element_geometry)]["y"]],
+                     self.element_geometry[i % len(self.element_geometry)]["y"],
+                     self.element_geometry[i % len(self.element_geometry)]["z"]],
                     [self.element_geometry[(i + 1) % len(self.element_geometry)]["x"],
-                     self.element_geometry[(i + 1) % len(self.element_geometry)]["y"]],
+                     self.element_geometry[(i + 1) % len(self.element_geometry)]["y"],
+                     self.element_geometry[(i + 1) % len(self.element_geometry)]["z"]],
                     parts)
 
             self.element_geometry = new_floor_geometry

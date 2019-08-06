@@ -32,7 +32,7 @@ class Visualiser:
 
         self.fig = plt.figure(figsize=(10, 10))
         # self.ax = Axes3D(self.fig)
-        self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-90, elev=10)
+        self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-60, elev=10)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
@@ -74,6 +74,7 @@ class Visualiser:
         self.ax.set_xlim(mid_x - max_range, mid_x + max_range)
         self.ax.set_ylim(mid_y - max_range, mid_y + max_range)
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
+        self.visualize_coordinate()
 
     def visualise_line_structure(self):
         x_vec = self.line_structure.x0_vec + np.subtract(self.line_structure.x_vec, self.line_structure.x0_vec) * self.scale
@@ -131,7 +132,7 @@ class Visualiser:
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
         a = animation.FuncAnimation(self.fig, self.update, 40, repeat=False)
-        a.save("structure_displacement.mp4")
+        # a.save("structure_displacement.mp4")
         plt.tight_layout()
         plt.show()
 
@@ -144,8 +145,8 @@ class Visualiser:
             self.ax.cla()
         self.scale = self.factor * np.sin(t)
         self.visualise_structure()
-        self.visualise_line_structure()
-        self.visualise_interpolated_line_structure()
+        # self.visualise_line_structure()
+        # self.visualise_interpolated_line_structure()
         self.set_coordinate_in_real_size()
 
 
