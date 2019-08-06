@@ -35,23 +35,8 @@ from source.analysis.analysis_wrapper import AnalysisWrapper
 # ==============================================
 # Model choice
 
-# NOTE: all currently available files
-available_models = [
-    # TODO: check model parameters for correctness
-   'ProjectParameters3DPylonCadBeam.json',
-    # with various elastic modulus
-    'ProjectParameters3DPylonSofiBeam.json',
-    'ProjectParameters3DPylonSofiBeamReducedE.json',
-    # with elastic foundation
-    'ProjectParameters3DPylonSofiBeamWithFoundationSoft.json',
-    'ProjectParameters3DPylonSofiBeamWithFoundationMid.json',
-    'ProjectParameters3DPylonSofiBeamWithFoundationHard.json',
-    #
-    'ProjectParameters3DCaarcBeam.json',
-    #
-    'ProjectParameters3DCaarcBeamPrototype.json',
-    'ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
-
+# NOTE: using this single (yet extensive) file for testing
+available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
 for available_model in available_models:
 
@@ -63,6 +48,9 @@ for available_model in available_models:
     # create initial model
     beam_model = StraightBeam(parameters['model_parameters'])
 
+    # plot initial model properties
+    # beam_model.plot_model_properties()
+
     # additional changes due to optimization
     if 'optimization_parameters' in parameters:
         # return the model of the optimizable instance to preserve what is required by analyzis
@@ -72,17 +60,36 @@ for available_model in available_models:
     else:
         print('No need found for adapting structure for target values')
 
+    # plot optimized model properties
     # beam_model.plot_model_properties()
-    # beam_model.identify_decoupled_eigenmodes(25,True)
 
-
-    # NOTE: WIP
-
-    
     # ==============================================
     # Analysis wrapper
 
-    # analyses_controller = AnalysisWrapper(
-    #     beam_model, parameters['analyses_parameters'])
-    # analyses_controller.solve()
-    # analyses_controller.postprocess()
+    analyses_controller = AnalysisWrapper(
+        beam_model, parameters['analyses_parameters'])
+    analyses_controller.solve()
+    analyses_controller.postprocess()
+
+    # # ==============================================
+    # # Eigenvalue analysis
+    # '''
+    # TODO: check eigenvalue analysis with number of elements
+    # 3, 6, 12, 24, 48, 96
+    # '''
+
+    # # ===========================================
+    # # Dynamic analysis
+
+    # '''
+    # TODO: check kinematics at top point for various damping ratios
+    # 0.0, 0.001, 0.005, 0.01, 0.0125, 0.025, 0.05
+    # '''
+
+    # '''
+    # NOTE: works on with 1, 2, 3, 6, 12, 24 elements
+    # valid only for the pylon model
+    # can be used for testing the caarc model as well
+
+    # # ============================================
+    # # Static analysis
