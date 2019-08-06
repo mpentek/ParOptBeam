@@ -447,11 +447,11 @@ class OptimizableStraightBeam(object):
 
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
-        self.parameters['e'] = multiplier_fctr * initial_e
+        self.model.parameters['e'] = multiplier_fctr * initial_e
 
         # NOTE: do not forget to update G and further dependencies
-        self.parameters['g'] = self.parameters['e'] / \
-            2 / (1+self.parameters['nu'])
+        self.model.parameters['g'] = self.model.parameters['e'] / \
+            2 / (1+self.model.parameters['nu'])
         self.model.evaluate_relative_importance_of_shear()
 
         # re-evaluate

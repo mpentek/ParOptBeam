@@ -1,6 +1,6 @@
 import json
 import numpy as np
-from source.wip_visualize_skin_model.NodeModel import Node
+from source.postprocess.skin_model.NodeModel import Node
 
 
 class LineStructure:
@@ -24,7 +24,11 @@ class LineStructure:
             with open(structure_file) as json_file:
                 data = json.load(json_file)
                 self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
-                self.dof_file = data["dofs_file_name"]
+                
+                # NOTE for now a workaround for importing
+                import os
+                self.dof_file = os.path.join(*["input","deformation",data["dofs_file_name"]])
+                
                 self.beam_direction = data["beam_direction"]
 
             self.init_nodes()

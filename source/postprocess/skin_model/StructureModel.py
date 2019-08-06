@@ -1,7 +1,7 @@
 import json
 import numpy as np
-from source.wip_visualize_skin_model.NodeModel import Node
-from source.wip_visualize_skin_model.Mapper import interpolate_points
+from source.postprocess.skin_model.NodeModel import Node
+from source.postprocess.skin_model.Mapper import interpolate_points
 
 direction_vector = ["x", "y", "z", "x", "y", "z"]
 beam_direction_index = 0
@@ -99,7 +99,11 @@ class Structure:
         with open(structure_file) as json_file:
             data = json.load(json_file)
             self.element_geometry = data["geometry"]
-            self.dof_file = data["dofs_file_name"]
+            
+            # NOTE for now a workaround for importing
+            import os
+            self.dof_file = os.path.join(*["input","deformation",data["dofs_file_name"]])
+            
             self.beam_length = json.load(open(self.dof_file))["length"]
             self.scaling_vector = data["scaling_vector"]
             self.num_of_elements = len(self.scaling_vector)

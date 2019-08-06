@@ -1,5 +1,5 @@
-from source.wip_visualize_skin_model.NodeModel import Node
-from source.wip_visualize_skin_model.LineStructureModel import LineStructure
+from source.postprocess.skin_model.NodeModel import Node
+from source.postprocess.skin_model.LineStructureModel import LineStructure
 from scipy.interpolate import CubicSpline
 import numpy as np
 

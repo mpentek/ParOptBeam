@@ -108,7 +108,8 @@ class StraightBeam(object):
     DEFAULT_SETTINGS = {
         "domain_size": "3D",
         "system_parameters": {},
-        "boundary_conditions": "fixed-free"}
+        "boundary_conditions": "fixed-free",
+        "elastic_fixity_dofs": {}}
 
     def __init__(self, parameters):
 

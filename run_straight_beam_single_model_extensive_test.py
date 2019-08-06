@@ -35,51 +35,8 @@ from source.analysis.analysis_wrapper import AnalysisWrapper
 # ==============================================
 # Model choice
 
-# NOTE: all currently available files
-available_models = [
-    # TODO: check model parameters for correctness
-
-    #
-    '''
-    Pylon model with the extracted geometry from the CAD model
-    and matching structural to the solid models used for one-way coupling
-    '''
-    'ProjectParameters3DPylonCadBeam.json',
-
-    #
-    ''' 
-    Pylon model with geometry data from the sofistik beam
-    material parameters also from sofistik sheet 
-    '''
-
-    # with various elastic modulus
-    'ProjectParameters3DPylonSofiBeam.json', 'r',
-    'ProjectParameters3DPylonSofiBeamReducedE.json',
-
-    # with elastic foundation
-    'ProjectParameters3DPylonSofiBeamWithFoundationSoft.json',
-    'ProjectParameters3DPylonSofiBeamWithFoundationMid.json',
-    'ProjectParameters3DPylonSofiBeamWithFoundationHard.json',
-
-    #
-    '''
-    Equivalent beam model of the CAARC building B
-    assuming continous mass and stiffness (material and geometric)
-    distribution along the heigth (length of the beam in local coordinates)
-    '''
-    'ProjectParameters3DCaarcBeam.json'
-
-    #
-    '''
-    A prototype alternative to the CAARC building B with 3 intervals
-    to define altering geometric properties
-    '''
-    'ProjectParameters3DCaarcBeamPrototype.json',
-    'ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
-
 # NOTE: using this single (yet extensive) file for testing
 available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
-
 
 for available_model in available_models:
 
