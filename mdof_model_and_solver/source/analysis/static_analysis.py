@@ -5,19 +5,27 @@ import os
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.visualize_result_utilities as visualize_result_utilities
-
+from source.validate_and_assign_defaults import validate_and_assign_defaults
 
 class StaticAnalysis(AnalysisType):
     """
     Dervied class for the static analysis of a given structure model        
     """
+    
+    # using these as default or fallback settings
+    DEFAULT_SETTINGS = {
+            "type" : "static_analysis",
+            "settings": {},
+            "input": {},
+            "output":{}}
 
-    def __init__(self, structure_model, parameters, name="StaticAnalysis"):
+    def __init__(self, structure_model, parameters):
 
-        # TODO add some validation
+        # validating and assign model parameters
+        validate_and_assign_defaults(StaticAnalysis.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
-        super().__init__(structure_model, name)
+        super().__init__(structure_model, self.parameters["type"])
 
         selected_time_step = 15000
 

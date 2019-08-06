@@ -6,17 +6,25 @@ from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.visualize_result_utilities as visualize_result_utilities
 from source.scheme.time_integration_scheme import *
-
+from source.validate_and_assign_defaults import validate_and_assign_defaults
 
 class DynamicAnalysis(AnalysisType):
     """
     Dervied class for the dynamic analysis of a given structure model        
 
     """
+    
+    # using these as default or fallback settings
+    DEFAULT_SETTINGS = {
+            "type" : "dynamic_analysis",
+            "settings": {},
+            "input": {},
+            "output":{}}
 
-    def __init__(self, structure_model, parameters, name="DynamicAnalysis"):
+    def __init__(self, structure_model, parameters):
 
-        # TODO add some validation
+        # validating and assign model parameters
+        validate_and_assign_defaults(DynamicAnalysis.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
         # time parameters
@@ -51,7 +59,7 @@ class DynamicAnalysis(AnalysisType):
         force = np.load(os.path.join('level_force', 'force_dynamic' +
                                      '_turb' + str(structure_model.parameters['n_el']+1) + '.npy'))
 
-        super().__init__(structure_model, name)
+        super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force

@@ -5,6 +5,7 @@ import json
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.visualize_result_utilities as visualize_result_utilities
+from source.validate_and_assign_defaults import validate_and_assign_defaults
 
 
 class EigenvalueAnalysis(AnalysisType):
@@ -12,16 +13,26 @@ class EigenvalueAnalysis(AnalysisType):
     Derived class for the (dynamic) eigenvalue analysis of a given structure model        
     """
 
+    # using these as default or fallback settings
+    DEFAULT_SETTINGS = {
+            "type" : "eigenvalue_analysis",
+            "settings": {},
+            "input": {},
+            "output":{}}
+
     def __init__(self, structure_model, parameters, name="EigenvalueAnalysis"):
-        super().__init__(structure_model, name)
+
+        # validating and assign model parameters
+        validate_and_assign_defaults(EigenvalueAnalysis.DEFAULT_SETTINGS, parameters)
+        self.parameters = parameters
+
+        super().__init__(structure_model, self.parameters["type"])
 
         # adding additional attributes to the derived class
         self.eigenform = None
         self.frequency = None
         self.period = None
 
-        # TODO add some validation
-        self.parameters = parameters
 
     def solve(self):
 

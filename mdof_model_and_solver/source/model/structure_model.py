@@ -28,6 +28,7 @@ from functools import partial
 import math
 import matplotlib.pyplot as plt
 
+from source.validate_and_assign_defaults import validate_and_assign_defaults
 
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
 
@@ -142,7 +143,16 @@ class StraightBeam(object):
 
     THRESHOLD = 1e-8
 
+    # using these as default or fallback settings
+    DEFAULT_SETTINGS = {
+        "domain_size": "3D",
+        "system_parameters": {},
+        "boundary_conditions": "fixed-free"}
+
     def __init__(self, parameters):
+
+        # validating and assign model parameters
+        validate_and_assign_defaults(StraightBeam.DEFAULT_SETTINGS, parameters)
 
         # TODO: add domain size check
         self.domain_size = parameters["domain_size"]
