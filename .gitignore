@@ -1,6 +1,3 @@
-
-time_schemes/one_variable/statics_env/lib/python3\.6/site-packages/bleach/__pycache__/
-
 mdof_model_and_solver/.vscode
 
 *.pyc
@@ -11,4 +8,6 @@ mdof_model_and_solver/level_force/25_turb/
 mdof_model_and_solver/level_force/25_no_turb/
 
 *.avi
+
+local
 
