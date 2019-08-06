@@ -86,26 +86,3 @@ for available_model in available_models:
     #     beam_model, parameters['analyses_parameters'])
     # analyses_controller.solve()
     # analyses_controller.postprocess()
-
-    # # ==============================================
-    # # Eigenvalue analysis
-    # '''
-    # TODO: check eigenvalue analysis with number of elements
-    # 3, 6, 12, 24, 48, 96
-    # '''
-
-    # # ===========================================
-    # # Dynamic analysis
-
-    # '''
-    # TODO: check kinematics at top point for various damping ratios
-    # 0.0, 0.001, 0.005, 0.01, 0.0125, 0.025, 0.05
-    # '''
-
-    # '''
-    # NOTE: works on with 1, 2, 3, 6, 12, 24 elements
-    # valid only for the pylon model
-    # can be used for testing the caarc model as well
-
-    # # ============================================
-    # # Static analysis
