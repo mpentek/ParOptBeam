@@ -3,7 +3,7 @@ Copyright (c)
     
     Mate Pentek, Anoop Kodakkal, Mengjie Zhao
     
-    Chair of Structural Analysis
+    Chair of Structural Analysis,
         TUM Department of Civil, Geo and Environmental Engineering
         Technical University of Munich 
 
