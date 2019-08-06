@@ -2,9 +2,9 @@ import json
 import numpy as np
 from source.wip_visualize_skin_model.NodeModel import Node
 from source.wip_visualize_skin_model.Mapper import interpolate_points
-from sympy import Plane
 
-CONTOUR_DENSITY = 1
+direction_vector = ["x", "y", "z", "x", "y", "z"]
+beam_direction_index = 0
 
 
 class Element:
@@ -23,12 +23,16 @@ class Element:
             x = point["x"] * scale
             y = point["y"] * scale
             z = point["z"] * scale
+
             if beam_direction == "x":
                 x = s
+                beam_direction_index = 0
             elif beam_direction == "y":
                 y = s
+                beam_direction_index = 1
             elif beam_direction == "z":
                 z = s
+                beam_direction_index = 2
             else:
                 x = s
                 print("Unknown beam direction, setting default beam direction to x")
@@ -48,11 +52,6 @@ class Element:
             self.s_vec = self.y_vec
         elif beam_direction == "z":
             self.s_vec = self.z_vec
-
-        self.plane = Plane(
-            (self.nodes[0 * CONTOUR_DENSITY].x, self.nodes[0 * CONTOUR_DENSITY].y, self.nodes[0 * CONTOUR_DENSITY].z),
-            (self.nodes[1 * CONTOUR_DENSITY].x, self.nodes[1 * CONTOUR_DENSITY].y, self.nodes[1 * CONTOUR_DENSITY].z),
-            (self.nodes[2 * CONTOUR_DENSITY].x, self.nodes[2 * CONTOUR_DENSITY].y, self.nodes[2 * CONTOUR_DENSITY].z))
 
     def print_element(self):
         for node in self.nodes:
@@ -96,6 +95,7 @@ class Structure:
         """
         self.elements = []
         self.frames = []
+        self.contour_density = 1
         with open(structure_file) as json_file:
             data = json.load(json_file)
             self.element_geometry = data["geometry"]
@@ -107,8 +107,9 @@ class Structure:
             self.element_length = self.beam_length / self.num_of_elements
             self.is_record_animation = data["record_animation"]
             self.is_visualize_line_structure = data["visualize_line_structure"]
+            self.contour_density = data["contour_density"]
 
-        self.densify_contour(CONTOUR_DENSITY)
+        self.densify_contour(self.contour_density)
         self.print_structure_info()
         self.create_elements()
         self.create_frames()
@@ -147,20 +148,22 @@ class Structure:
                 new_floor_geometry.append(self.element_geometry[i])
 
                 new_floor_geometry += self._get_equidistant_points(
-                    [self.element_geometry[i % len(self.element_geometry)]["x"],
-                     self.element_geometry[i % len(self.element_geometry)]["y"],
-                     self.element_geometry[i % len(self.element_geometry)]["z"]],
-                    [self.element_geometry[(i + 1) % len(self.element_geometry)]["x"],
-                     self.element_geometry[(i + 1) % len(self.element_geometry)]["y"],
-                     self.element_geometry[(i + 1) % len(self.element_geometry)]["z"]],
+                    [self.element_geometry[i % len(self.element_geometry)][direction_vector[beam_direction_index + 1]],
+                     self.element_geometry[i % len(self.element_geometry)][direction_vector[beam_direction_index + 2]]],
+                    [self.element_geometry[(i + 1) % len(self.element_geometry)][
+                         direction_vector[beam_direction_index + 1]],
+                     self.element_geometry[(i + 1) % len(self.element_geometry)][
+                         direction_vector[beam_direction_index + 2]]],
                     parts)
-
+            print(direction_vector[beam_direction_index])
             self.element_geometry = new_floor_geometry
 
     @staticmethod
     def _get_equidistant_points(p1, p2, parts):
-        return [{"x": val1, "y": val2} for val1, val2 in zip(np.linspace(p1[0], p2[0], parts + 1),
-                                                             np.linspace(p1[1], p2[1], parts + 1))]
+        return [{direction_vector[beam_direction_index]: 0.0, direction_vector[beam_direction_index + 1]: val1,
+                 direction_vector[beam_direction_index + 2]: val2} for val1, val2 in
+                zip(np.linspace(p1[0], p2[0], parts + 1),
+                    np.linspace(p1[1], p2[1], parts + 1))]
 
     def apply_transformation_for_structure(self):
         for floor in self.elements:
@@ -169,12 +172,6 @@ class Structure:
                 floor.x_vec[i] = floor.nodes[i].x
                 floor.y_vec[i] = floor.nodes[i].y
                 floor.z_vec[i] = floor.nodes[i].z
-            floor.plane = Plane((floor.nodes[0 * CONTOUR_DENSITY].x, floor.nodes[0 * CONTOUR_DENSITY].y,
-                                 floor.nodes[0 * CONTOUR_DENSITY].z),
-                                (floor.nodes[1 * CONTOUR_DENSITY].x, floor.nodes[1 * CONTOUR_DENSITY].y,
-                                 floor.nodes[1 * CONTOUR_DENSITY].z),
-                                (floor.nodes[2 * CONTOUR_DENSITY].x, floor.nodes[2 * CONTOUR_DENSITY].y,
-                                 floor.nodes[2 * CONTOUR_DENSITY].z))
 
         for frame in self.frames:
             for i in range(len(frame.nodes)):
