@@ -3,7 +3,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 import numpy as np
-from visualize_skin_model.Mapper import Mapper
+from source.wip_visualize_skin_model.Mapper import Mapper
 from matplotlib import animation
 
 plt.rcParams['legend.fontsize'] = 16

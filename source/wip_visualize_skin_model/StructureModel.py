@@ -1,7 +1,7 @@
 import json
 import numpy as np
-from visualize_skin_model.NodeModel import Node
-from visualize_skin_model.Mapper import interpolate_points
+from source.wip_visualize_skin_model.NodeModel import Node
+from source.wip_visualize_skin_model.Mapper import interpolate_points
 from sympy import Plane
 
 CONTOUR_DENSITY = 1

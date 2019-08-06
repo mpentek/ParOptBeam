@@ -1,10 +1,6 @@
 import json
 import numpy as np
-
-try:
-    from visualize_skin_model.NodeModel import Node
-except ModuleNotFoundError:
-    from NodeModel import Node
+from source.wip_visualize_skin_model.NodeModel import Node
 
 
 class LineStructure:
