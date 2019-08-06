@@ -85,7 +85,7 @@ for available_model in available_models:
 
     # ==============================================
     # Parameter read
-    with open(os.path.join('input', available_model), 'r') as parameter_file:
+    with open(os.path.join(*['input','parameters', available_model]), 'r') as parameter_file:
         parameters = json.loads(parameter_file.read())
 
     # create initial model

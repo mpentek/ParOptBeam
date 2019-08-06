@@ -4,25 +4,27 @@ import os
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-import source.visualize_result_utilities as visualize_result_utilities
-from source.validate_and_assign_defaults import validate_and_assign_defaults
+import source.postprocess.visualize_result_utilities as visualize_result_utilities
+from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+
 
 class StaticAnalysis(AnalysisType):
     """
     Dervied class for the static analysis of a given structure model        
     """
-    
+
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
-            "type" : "static_analysis",
-            "settings": {},
-            "input": {},
-            "output":{}}
+        "type": "static_analysis",
+        "settings": {},
+        "input": {},
+        "output": {}}
 
     def __init__(self, structure_model, parameters):
 
         # validating and assign model parameters
-        validate_and_assign_defaults(StaticAnalysis.DEFAULT_SETTINGS, parameters)
+        validate_and_assign_defaults(
+            StaticAnalysis.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
         super().__init__(structure_model, self.parameters["type"])
@@ -48,10 +50,8 @@ class StaticAnalysis(AnalysisType):
             err_msg += ', '.join([str(x) for x in possible_n_el_cases])
             raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        self.force = np.load(os.path.join('level_force', 'force_dynamic' +
-                                          '_turb' + str(structure_model.parameters['n_el']+1) + '.npy'))[:, selected_time_step]
-
-
+        self.force = np.load(os.path.join(*['input', 'force', 'force_dynamic' + '_turb' + str(
+            structure_model.parameters['n_el']+1) + '.npy']))[:, selected_time_step]
 
     def solve(self):
         print("Solving for ext_force in StaticAnalysis derived class \n")

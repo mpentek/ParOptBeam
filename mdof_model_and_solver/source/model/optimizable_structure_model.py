@@ -28,7 +28,7 @@ from functools import partial
 import math
 import matplotlib.pyplot as plt
 from source.model.structure_model import StraightBeam
-from source.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
 class OptimizableStraightBeam(object):

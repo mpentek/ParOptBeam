@@ -28,8 +28,8 @@ from functools import partial
 import math
 import matplotlib.pyplot as plt
 
-from source.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary_functionalities import evaluate_polynomial
+from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
 
 
 class StraightBeam(object):

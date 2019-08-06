@@ -4,27 +4,29 @@ import os
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-import source.visualize_result_utilities as visualize_result_utilities
+import source.postprocess.visualize_result_utilities as visualize_result_utilities
 from source.scheme.time_integration_scheme import *
-from source.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+
 
 class DynamicAnalysis(AnalysisType):
     """
     Dervied class for the dynamic analysis of a given structure model        
 
     """
-    
+
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
-            "type" : "dynamic_analysis",
-            "settings": {},
-            "input": {},
-            "output":{}}
+        "type": "dynamic_analysis",
+        "settings": {},
+        "input": {},
+        "output": {}}
 
     def __init__(self, structure_model, parameters):
 
         # validating and assign model parameters
-        validate_and_assign_defaults(DynamicAnalysis.DEFAULT_SETTINGS, parameters)
+        validate_and_assign_defaults(
+            DynamicAnalysis.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
         # time parameters
@@ -56,8 +58,8 @@ class DynamicAnalysis(AnalysisType):
             err_msg += ', '.join([str(x) for x in possible_n_el_cases])
             raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        force = np.load(os.path.join('level_force', 'force_dynamic' +
-                                     '_turb' + str(structure_model.parameters['n_el']+1) + '.npy'))
+        force = np.load(os.path.join(*['input', 'force', 'force_dynamic' +
+                                       '_turb' + str(structure_model.parameters['n_el']+1) + '.npy']))
 
         super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))

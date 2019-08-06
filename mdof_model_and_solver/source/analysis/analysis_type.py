@@ -28,7 +28,7 @@ import json
 
 
 # import visualize_results_utilities to use it as a python object
-from source import visualize_result_utilities
+from source.postprocess import visualize_result_utilities
 
 
 class AnalysisType(object):
