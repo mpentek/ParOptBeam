@@ -359,8 +359,8 @@ class DynamicAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = "Dyanimc Analyis: Deformation for step = " + str(idx)+ " at t = " + \
-            str(self.array_time[idx]) + " [s]"
+        plot_title = "Dyanimc Analyis: Deformation for step = " + str(idx_time)+ " at t = " + \
+            str(self.array_time[idx_time]) + " [s]"
 
         plotter_utilities.plot_result(plot_title,
                                                geometry,
@@ -404,10 +404,10 @@ class DynamicAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        file_header = "# Dyanimc Analyis: Deformation for step = " + str(idx)+ " at t = " + \
-            str(self.array_time[idx]) + " [s]"
+        file_header = "# Dyanimc Analyis: Deformation for step = " + str(idx_time)+ " at t = " + \
+            str(self.array_time[idx_time]) + " [s]"
 
-        file_name = 'dynamic_analysis_selected_step_' + str(idx) + '.dat'
+        file_name = 'dynamic_analysis_selected_step_' + str(idx_time) + '.dat'
         absolute_folder_path = os.path.join("output",self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
         if not os.path.isdir(absolute_folder_path):
