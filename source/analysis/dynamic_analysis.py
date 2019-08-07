@@ -225,8 +225,8 @@ class DynamicAnalysis(AnalysisType):
             err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
             raise Exception(err_msg)
 
-        file_header = "# Dyanimc Analyis: result " + selected_result
-        file_header = " for DoF " + str(dof) + "over time \n"
+        file_header = "# Dyanimc Analyis result " + selected_result +  "\n"
+        file_header += "# for DoF " + str(dof) + " over time \n"
         # TODO add DoF height coordinate into header
 
         file_name = 'dynamic_analysis_result_' + \
