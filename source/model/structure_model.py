@@ -329,23 +329,6 @@ class StraightBeam(object):
         self.b = self._get_damping()
 
 
-    def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
-
-        self.parameters['e'] = multiplier_fctr * initial_e
-
-        # NOTE: do not forget to update G and further dependencies
-        self.parameters['g'] = self.parameters['e'] / \
-            2 / (1+self.parameters['nu'])
-        self.evaluate_relative_importance_of_shear()
-
-
-        # re-evaluate
-        self.calculate_global_matrices()
-
-        self.eigenvalue_solve()
-
-        return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
-
     def decompose_and_quantify_eigenmodes(self, considered_modes=10):
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
