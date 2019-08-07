@@ -1,5 +1,6 @@
 {
     "model_parameters": {
+        "name": "CaarcBeamPrototypeOptimizable",
         "domain_size": "3D",
         "system_parameters": {
             "material": {

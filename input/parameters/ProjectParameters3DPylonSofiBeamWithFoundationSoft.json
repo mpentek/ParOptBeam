@@ -1,4 +1,5 @@
 {
+    "name": "PylonSofiBeamWithFoundationSoft",
     "model_parameters": {
         "domain_size": "3D",
         "system_parameters": {
