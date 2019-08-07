@@ -5,6 +5,7 @@ import os
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.postprocess.plotter_utilities as plotter_utilities
+import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
@@ -124,11 +125,62 @@ class StaticAnalysis(AnalysisType):
 
         plot_title = "Static Analysis : "
 
-        visualize_result_utilities.plot_result(plot_title,
+        plotter_utilities.plot_result(plot_title,
                                                geometry,
                                                force,
                                                scaling,
                                                1)
+
+    def write_solve_result(self):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.displacmenet
+            self.force
+            self.reaction_force
+        """
+
+        print("Plotting result in StaticAnalysis \n")
+
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                               1:step][:, 0]
+            self.force_action[label] = self.force[start:stop + 1:step]
+            self.reaction[label] = self.resisting_force[start:stop + 1:step][:, 0]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
+
+        force = {"external": [self.force_action["x"],
+                              self.force_action["y"],
+                              self.force_action["z"]],
+                 "reaction": [self.reaction["x"],
+                              self.reaction["y"],
+                              self.reaction["z"]]}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+
+        file_header = "# Static Analysis"
+
+        file_name = 'static_analysis' + '.dat'
+        absolute_folder_path = os.path.join("output",self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not os.path.isdir(absolute_folder_path):
+            os.makedirs(absolute_folder_path)
+
+        writer_utilities.write_result(os.path.join(absolute_folder_path,file_name), file_header,
+                                    geometry, scaling)
 
     def write_output_file(self):
         """"
@@ -161,6 +213,9 @@ class StaticAnalysis(AnalysisType):
                 pass
 
         for write_result in self.parameters['output']['write']:
-            pass
+            if write_result == 'deformation':
+                self.write_solve_result()
+            if write_result == 'forces':
+                pass
 
         pass

@@ -206,7 +206,7 @@ class EigenvalueAnalysis(AnalysisType):
         file_header += "# Period: " + \
             '{0:.2f}'.format(self.period[selected_mode]) + "\n"
 
-        file_name = 'eigenvalue_analyses_selected_eigenmode_' + str(selected_mode)
+        file_name = 'eigenvalue_analysis_selected_eigenmode_' + str(selected_mode) + '.dat'
         absolute_folder_path = os.path.join("output",self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
         if not os.path.isdir(absolute_folder_path):

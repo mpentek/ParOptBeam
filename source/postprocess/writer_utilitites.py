@@ -51,7 +51,6 @@ def write_result(file_name, file_header, geometry, scaling):
         output_file.write(file_header)
         output_file.write(result_label)
         for line in lines:
-            output_file.write(', '.join(line) + '\n')
+            output_file.write(' '.join(line) + '\n')
 
         output_file.close()
-    print()
