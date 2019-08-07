@@ -187,41 +187,32 @@ class StraightBeam(object):
 
         self.n_nodes = self.parameters['n_el']+1
 
-        # TODO: make BC handling cleaner and compact
-        self.all_dofs_global = np.arange(
-            self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size])
-        bc = '\"' + \
-            parameters["boundary_conditions"] + '\"'
-        if bc in StraightBeam.AVAILABLE_BCS:
-            # NOTE: create a copy of the list - useful if some parametric study is done
-            self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc][:]
-        else:
-            err_msg = "The BC for input \"" + \
-                parameters["boundary_conditions"]
-            err_msg += "\" is not available \n"
-            err_msg += "Choose one of: "
-            err_msg += ', '.join(StraightBeam.AVAILABLE_BCS)
-            raise Exception(err_msg)
+        # initialize empty place holders for point stiffness and mass entries
+        self.point_stiffness = {'idxs': [], 'vals': []}
+        self.point_mass = {'idxs': [], 'vals': []}
 
+        self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
+        self.apply_bcs()
+
+        # after initial setup
+        self.calculate_global_matrices()
+
+    def apply_elastic_bcs(self):
         # handle potential elastic BCs
         self.elastic_bc_dofs = {}
-        if 'elastic_fixity_dofs' in parameters:
-            elastic_bc_dofs_tmp = parameters["elastic_fixity_dofs"]
+        if 'elastic_fixity_dofs' in self.parameters:
+            elastic_bc_dofs_tmp = self.parameters["elastic_fixity_dofs"]
         else:
             print(
                 'parameters does not have "elastic_fixity_dofs"')
             elastic_bc_dofs_tmp = {}
         
-        # initialize empty place holders for point stiffness and mass entries
-        self.point_stiffness = {'idxs': [], 'vals': []}
-        self.point_mass = {'idxs': [], 'vals': []}
-
         for key in elastic_bc_dofs_tmp:
             # TODO: check if type cast to int is robust enough
             if int(key) not in self.bc_dofs:
                 err_msg = "The elastic BC dof for input \"" + key
                 err_msg += "\" is not available for " + \
-                    parameters["boundary_conditions"] + "\n"
+                    self.parameters["boundary_conditions"] + "\n"
                 err_msg += "Choose one of: "
                 err_msg += ', '.join([str(val) for val in self.bc_dofs])
                 raise Exception(err_msg)
@@ -244,6 +235,25 @@ class StraightBeam(object):
                 # with this additional value
                 self.point_stiffness['vals'].append(elastic_bc_dofs_tmp[key])
 
+    def apply_bcs(self):
+        # TODO: make BC handling cleaner and compact
+        self.all_dofs_global = np.arange(
+            self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size])
+        bc = '\"' + \
+            self.parameters["boundary_conditions"] + '\"'
+        if bc in StraightBeam.AVAILABLE_BCS:
+            # NOTE: create a copy of the list - useful if some parametric study is done
+            self.bc_dofs = StraightBeam.BC_DOFS[self.domain_size][bc][:]
+        else:
+            err_msg = "The BC for input \"" + \
+                self.parameters["boundary_conditions"]
+            err_msg += "\" is not available \n"
+            err_msg += "Choose one of: "
+            err_msg += ', '.join(StraightBeam.AVAILABLE_BCS)
+            raise Exception(err_msg)
+
+        self.apply_elastic_bcs()
+        
         # list copy by slicing -> [:] -> to have a copy by value
         bc_dofs_global = self.bc_dofs[:]
         for idx, dof in enumerate(bc_dofs_global):
@@ -254,9 +264,6 @@ class StraightBeam(object):
         # only take bc's of interest
         self.dofs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
 
-        # after initial setup
-        self.calculate_global_matrices()
-
     def initialize_user_defined_geometric_parameters(self):
         # geometric
         # characteristics lengths
@@ -264,7 +271,8 @@ class StraightBeam(object):
             x, 'c_ly') for x in self.parameters['x']]
         self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
             x, 'c_lz') for x in self.parameters['x']]
-    
+        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz']))/2
+
         # area
         self.parameters['a'] = [self.evaluate_characteristic_on_interval(
             x, 'c_a') for x in self.parameters['x']]
@@ -338,7 +346,8 @@ class StraightBeam(object):
 
         return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
-    def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
+    def decompose_and_quantify_eigenmodes(self, considered_modes=10):
+        # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
         else:
@@ -347,10 +356,11 @@ class StraightBeam(object):
         
         self.eigenvalue_solve()
         
-        self.mode_identification_results = {}
+        self.decomposed_eigenmodes = {'values': [], 'rel_contribution' : []}
 
         for i in range(considered_modes):
             decomposed_eigenmode = {}
+            rel_contrib = {}
             selected_mode = self.eig_freqs_sorted_indices[i]
 
             for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.domain_size])),
@@ -360,12 +370,40 @@ class StraightBeam(object):
                 stop = self.eigen_modes_raw.shape[0] + idx - step
                 decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
                                                                             1:step][:, selected_mode]
+                if label in ['a', 'b', 'g']:
+                    # for rotation dofs multiply with a characteristic length
+                    # to make comparable to translation dofs
+                    rel_contrib[label] = self.charact_length * linalg.norm(decomposed_eigenmode[label])
+                else:
+                    # for translatio dofs
+                    rel_contrib[label] = linalg.norm(decomposed_eigenmode[label])
+
+            self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
+            self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
+
+
+    def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
+        # TODO remove code duplication: considered_modes
+        if considered_modes == 'all':
+            considered_modes = len(self.dofs_to_keep)
+        else:
+            if considered_modes > len(self.dofs_to_keep):
+                considered_modes = len(self.dofs_to_keep)
+        
+
+        self.decompose_and_quantify_eigenmodes()
+
+        self.mode_identification_results = {}
+
+        for i in range(considered_modes):
+
+            selected_mode = self.eig_freqs_sorted_indices[i]
 
             for case_id in StraightBeam.MODE_CATEGORIZATION[self.domain_size]:
                 match_for_case_id = False
 
                 for dof_contribution_id in StraightBeam.MODE_CATEGORIZATION[self.domain_size][case_id]:
-                    if linalg.norm(decomposed_eigenmode[dof_contribution_id]) > StraightBeam.THRESHOLD:
+                    if self.decomposed_eigenmodes['rel_contribution'][i][dof_contribution_id] > StraightBeam.THRESHOLD:
                         match_for_case_id = True
                 
                 # TODO: check if robust enough for modes where 2 DoFs are involved
@@ -386,7 +424,6 @@ class StraightBeam(object):
                 for mode_id in mode_ids:
                     print('    Eigenform ' + str(mode_id) + ' with eigenfrequency ' + '{:.2f}'.format(
                         self.eig_freqs[self.eig_freqs_sorted_indices[mode_id-1]]) + ' Hz')
-            print()
             
     def eigenvalue_solve(self):
         # raw results
