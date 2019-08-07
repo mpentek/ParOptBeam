@@ -24,6 +24,8 @@ class EigenvalueAnalysis(AnalysisType):
         "output": {}}
 
     def __init__(self, structure_model, parameters, name="EigenvalueAnalysis"):
+        # TODO: add number of considered modes for output parameters upper level
+        # also check redundancy with structure model
 
         # validating and assign model parameters
         validate_and_assign_defaults(
@@ -93,6 +95,116 @@ class EigenvalueAnalysis(AnalysisType):
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
 
+    def write_eigenmode_summary(self, considered_modes=10):
+        # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
+        # TODO remove code duplication: considered_modes
+        if considered_modes == 'all':
+            considered_modes = len(self.structure_model.dofs_to_keep)
+        else:
+            if considered_modes > len(self.structure_model.dofs_to_keep):
+                considered_modes = len(self.structure_model.dofs_to_keep)
+
+        file_header = '# Result of eigenvalue analysis\n'
+        file_header += '# Mode Eigenfrequency [Hz] Period [s]\n'
+        file_name = 'eigenvalue_analysis_eigenmode_analysis.dat'
+
+        lines = []
+        for idx in range(considered_modes):
+            lines.append(
+                [str(idx+1), '{:.5f}'.format(self.frequency[idx]), '{:.5f}'.format(self.period[idx])])
+
+        absolute_folder_path = join(
+            "output", self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
+
+        writer_utilities.write_table(join(absolute_folder_path, file_name),
+                                     file_header,
+                                     lines)
+
+    def plot_eigenmode_summary(self, pdf_report, display_plot, considered_modes=10):
+        # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
+        # TODO remove code duplication: considered_modes
+        if considered_modes == 'all':
+            considered_modes = len(self.structure_model.dofs_to_keep)
+        else:
+            if considered_modes > len(self.structure_model.dofs_to_keep):
+                considered_modes = len(self.structure_model.dofs_to_keep)
+
+        table_data = []
+        for idx in range(considered_modes):
+            table_data.append(
+                [str(idx+1), '{:.5f}'.format(self.frequency[idx]), '{:.5f}'.format(self.period[idx])])
+
+        plot_title = 'Result of eigenvalue analysis\n'
+        plot_title += 'Mode Eigenfrequency [Hz] Period [s]'
+
+        row_labels = None
+        column_labels = ['Mode', 'Eigenfrequency [Hz]', 'Period [s]']
+
+        plotter_utilities.plot_table(pdf_report,
+                                     display_plot,
+                                     plot_title,
+                                     table_data,
+                                     row_labels,
+                                     column_labels)
+
+    def write_eigenmode_identification(self):
+        # TODO check to avoid redundancy in EigenvaluAnalysis and StructureModel
+
+        lines = []
+        counter = 0
+        for mode, mode_ids in self.structure_model.mode_identification_results.items():
+            type_counter = 0
+            for mode_id in mode_ids:
+                type_counter += 1
+                counter += 1
+                lines.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
+                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[mode_id-1]]), mode])
+
+        file_header = '# Result of decoupled eigenmode identification for the first ' + \
+            str(counter) + ' mode(s)\n'
+        file_header += '# ConsideredModesCounter Mode TypeCounter Eigenfrequency [Hz] Type\n'
+
+        file_name = 'eigenvalue_analysis_eigenmode_identification.dat'
+        absolute_folder_path = join(
+            "output", self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
+
+        writer_utilities.write_table(join(absolute_folder_path, file_name),
+                                     file_header,
+                                     lines)
+
+    def plot_eigenmode_identification(self, pdf_report, display_plot):
+        # TODO check to avoid redundancy in EigenvaluAnalysis and StructureModel
+        table_data = []
+        counter = 0
+        for mode, mode_ids in self.structure_model.mode_identification_results.items():
+            type_counter = 0
+            for mode_id in mode_ids:
+                type_counter += 1
+                counter += 1
+                table_data.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
+                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[mode_id-1]]), mode])
+
+        plot_title = 'Result of decoupled eigenmode identification for the first ' + \
+            str(counter) + ' mode(s)\n'
+
+        row_labels = None
+        column_labels = ['ConsideredModesCounter', 'Mode',
+                         'TypeCounter', 'Eigenfrequency [Hz]', 'Type']
+
+        plotter_utilities.plot_table(pdf_report,
+                                     display_plot,
+                                     plot_title,
+                                     table_data,
+                                     row_labels,
+                                     column_labels)
+
+    # TODO: to remove once visualizer is refactored and tested
     def write_output_file(self):
         """"
         This function writes out the nodal dofs of the deformed state
@@ -333,18 +445,30 @@ class EigenvalueAnalysis(AnalysisType):
         """
         Postprocess something
         """
-        print("Postprocessing in DynamicAnalysis derived class \n")
+        print("Postprocessing in EigenvalueAnalysis derived class \n")
+
+        if self.parameters['output']['eigenmode_summary']['write']:
+            self.write_eigenmode_summary()
+
+        if self.parameters['output']['eigenmode_summary']['plot']:
+            self.plot_eigenmode_summary(pdf_report, display_plot)
+
+        if self.parameters['output']['eigenmode_identification']['write']:
+            self.write_eigenmode_identification()
+
+        if self.parameters['output']['eigenmode_identification']['plot']:
+            self.plot_eigenmode_identification(pdf_report, display_plot)
 
         for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
             self.plot_selected_eigenmode(pdf_report, display_plot, mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
-            # TODO: implement
             self.write_selected_eigenmode(mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
             self.animate_selected_eigenmode(mode)
 
+        # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
 
         pass

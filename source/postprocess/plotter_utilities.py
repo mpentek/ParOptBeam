@@ -397,3 +397,29 @@ def plot_dynamic_result(pdf_report, display_plot, plot_title, result_data, array
 
     if display_plot:
         plt.show()
+
+
+def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, column_labels):
+
+    fig, ax = plt.subplots()
+
+    # hide axes
+    fig.patch.set_visible(False)
+    ax.axis('off')
+    ax.axis('tight')
+    plt.title(plot_title)
+
+    # Add a table at the bottom of the axes
+    the_table = ax.table(cellText=table_data,
+                         rowLabels=row_labels,
+                         colLabels=column_labels,
+                         loc='center')
+    
+    fig.tight_layout()
+
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
+
+    if display_plot:
+        plt.show()

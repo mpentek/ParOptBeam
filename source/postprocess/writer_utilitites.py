@@ -65,3 +65,13 @@ def write_result_at_dof(file_name, file_header, result, time):
             output_file.write(' '.join(line) + '\n')
 
         output_file.close()
+
+
+def write_table(file_name, file_header, lines):
+
+    with open(file_name, "w") as output_file:
+        output_file.write(file_header)
+        for line in lines:
+            output_file.write(' '.join(line) + '\n')
+
+        output_file.close()

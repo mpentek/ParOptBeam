@@ -110,6 +110,8 @@ class StraightBeam(object):
         "elastic_fixity_dofs": {}}
 
     def __init__(self, parameters):
+        # TODO: add number of considered modes for output parameters upper level
+        # also check redundancy with eigenvalue analysis
 
         # validating and assign model parameters
         validate_and_assign_defaults(StraightBeam.DEFAULT_SETTINGS, parameters)
@@ -197,6 +199,7 @@ class StraightBeam(object):
 
         # after initial setup
         self.calculate_global_matrices()
+        self.identify_decoupled_eigenmodes()
 
     def apply_elastic_bcs(self):
         # handle potential elastic BCs

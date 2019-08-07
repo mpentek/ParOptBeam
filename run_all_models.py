@@ -50,7 +50,6 @@ available_models = [
     'ProjectParameters3DCaarcBeamPrototype.json',
     'ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
-
 for available_model in available_models:
 
     # ==============================================

@@ -161,30 +161,6 @@ class DynamicAnalysis(AnalysisType):
             # overwrite the existing value with one solely from spring stiffness and damping
             self.dynamic_reaction[dof_id] = f1 + f2 + f3
 
-    def write_result_at_dof(self, dof, selected_result):
-        """"
-        This function writes out the time history of response at the selected dof
-
-        """
-        print('Writing out result for selected dof in dynamic analysis \n')
-        if selected_result == 'displacement':
-            result_data = self.displacement[dof, :]
-        elif selected_result == 'velocity':
-            result_data = self.velocity[dof, :]
-        elif selected_result == 'acceleration':
-            result_data = self.acceleration[dof, :]
-        else:
-            err_msg = "The selected result \"" + selected_result
-            err_msg += "\" is not avaialbe \n"
-            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
-            raise Exception(err_msg)
-
-        file = open(selected_result + "at_dof_" + str(dof) + ".txt", "w")
-        file.write("time \t" + selected_result + "\n")
-        for i in np.arange(len(self.array_time)):
-            file.write(str(self.array_time[i])+"\t"+str(result_data[i])+"\n")
-        file.close()
-
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
         Pass to plot function:
@@ -505,15 +481,12 @@ class DynamicAnalysis(AnalysisType):
 
         for time in self.parameters['output']['selected_instance']['write_time']:
             self.write_selected_time(time)
-            pass
 
         for step in self.parameters['output']['selected_instance']['plot_step']:
             self.plot_selected_step(pdf_report, display_plots, step)
-            pass
 
         for step in self.parameters['output']['selected_instance']['write_step']:
             self.write_selected_step(step)
-            pass
 
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
