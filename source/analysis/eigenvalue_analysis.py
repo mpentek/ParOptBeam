@@ -105,7 +105,6 @@ class EigenvalueAnalysis(AnalysisType):
                 considered_modes = len(self.structure_model.dofs_to_keep)
 
         file_header = '# Result of eigenvalue analysis\n'
-        file_header += '# Mode Eigenfrequency [Hz] Period [s]\n'
         file_name = 'eigenvalue_analysis_eigenmode_analysis.dat'
 
         lines = []
