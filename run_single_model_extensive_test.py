@@ -29,7 +29,7 @@ import os
 import json
 
 from source.model.structure_model import StraightBeam
-from source.analysis.analysis_wrapper import AnalysisWrapper
+from source.analysis.analysis_controller import AnalysisController
 
 
 # ==============================================
@@ -48,9 +48,6 @@ for available_model in available_models:
     # create initial model
     beam_model = StraightBeam(parameters['model_parameters'])
 
-    # plot initial model properties
-    # beam_model.plot_model_properties()
-
     # additional changes due to optimization
     if 'optimization_parameters' in parameters:
         # return the model of the optimizable instance to preserve what is required by analyzis
@@ -60,13 +57,10 @@ for available_model in available_models:
     else:
         print('No need found for adapting structure for target values')
 
-    # plot optimized model properties
-    # beam_model.plot_model_properties()
-
     # ==============================================
     # Analysis wrapper
 
-    analyses_controller = AnalysisWrapper(
+    analyses_controller = AnalysisController(
         beam_model, parameters['analyses_parameters'])
     analyses_controller.solve()
     analyses_controller.postprocess()

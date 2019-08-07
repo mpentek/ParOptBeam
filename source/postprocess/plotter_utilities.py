@@ -87,7 +87,7 @@ plot_limits = {"x":[... , ...]
 '''
 
 
-def plot_result(plot_title, geometry, force, scaling, n_data):
+def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, n_data):
 
     # default parameter
     # if reaction_force is None:
@@ -218,7 +218,15 @@ def plot_result(plot_title, geometry, force, scaling, n_data):
     # we do not have legend -> uncomnneted line ax.legend() to avoid waring: No labelleb objects found
     ax.legend()
     geometry = {"deformed": None}
-    plt.show()
+
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
+
+    if display_plot:
+        plt.show()
+
+    plt.close()
 
 
 def animate_result(title, array_time, geometry, force, scaling):

@@ -440,7 +440,7 @@ class StraightBeam(object):
                 if val['bounds'][0] <= running_coord and running_coord <= self.parameters['lx']:
                     return evaluate_polynomial(running_coord-val['bounds'][0], val[characteristic_identifier])
 
-    def plot_model_properties(self, print_to_console=False):
+    def plot_model_properties(self, pdf_report, display_plot, print_to_console=False):
 
         if print_to_console:
             print('x: ', ['{:.2f}'.format(x)
@@ -476,6 +476,10 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
+
         fig = plt.figure(2)
         plt.plot(self.parameters['x'], self.parameters['it'],
                  'k-', marker='o', label='it')
@@ -488,6 +492,10 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
+
         fig = plt.figure(3)
         plt.plot(self.parameters['x'], self.parameters['ly'],
                  'r-', marker='*', label='ly')
@@ -495,6 +503,10 @@ class StraightBeam(object):
                  'g-', marker='^', label='lz')
         plt.legend()
         plt.grid()
+
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
 
         fig = plt.figure(4)
         plt.plot(self.parameters['x'], self.parameters['py'],
@@ -504,7 +516,12 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
-        plt.show()
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
+
+        if display_plot:
+            plt.show()
 
     def apply_bc_by_reduction(self, matrix, axis='both'):
         '''

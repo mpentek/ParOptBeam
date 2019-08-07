@@ -110,7 +110,7 @@ class EigenvalueAnalysis(AnalysisType):
         file.write(json_string)
         file.close()
 
-    def plot_selected_eigenmode(self, selected_mode):
+    def plot_selected_eigenmode(self, pdf_report, display_plot, selected_mode):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -155,11 +155,13 @@ class EigenvalueAnalysis(AnalysisType):
         plot_title += "  Period: " + \
             '{0:.2f}'.format(self.period[selected_mode])
 
-        plotter_utilities.plot_result(plot_title,
-                                    geometry,
-                                    force,
-                                    scaling,
-                                    1)
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plot,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      1)
 
     def write_selected_eigenmode(self, selected_mode):
         """
@@ -206,16 +208,18 @@ class EigenvalueAnalysis(AnalysisType):
         file_header += "# Period: " + \
             '{0:.2f}'.format(self.period[selected_mode]) + "\n"
 
-        file_name = 'eigenvalue_analysis_selected_eigenmode_' + str(selected_mode) + '.dat'
-        absolute_folder_path = os.path.join("output",self.structure_model.name)
+        file_name = 'eigenvalue_analysis_selected_eigenmode_' + \
+            str(selected_mode) + '.dat'
+        absolute_folder_path = os.path.join(
+            "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
         if not os.path.isdir(absolute_folder_path):
             os.makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path,file_name), file_header,
-                                    geometry, scaling)
+        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+                                      geometry, scaling)
 
-    def plot_selected_first_n_eigenmodes(self, number_of_modes):
+    def plot_selected_first_n_eigenmodes(self, pdf_report, display_plot, number_of_modes):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -255,11 +259,13 @@ class EigenvalueAnalysis(AnalysisType):
         for selected_mode in range(number_of_modes):
             plot_title += "Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
                 self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n"
-        plotter_utilities.plot_result(plot_title,
-                                    geometry,
-                                    force,
-                                    scaling,
-                                    number_of_modes)
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plot,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      number_of_modes)
 
     def animate_selected_eigenmode(self, selected_mode):
         """
@@ -317,19 +323,19 @@ class EigenvalueAnalysis(AnalysisType):
             '{0:.2f}'.format(self.period[selected_mode])
 
         plotter_utilities.animate_result(plot_title,
-                                        array_time,
-                                        geometry,
-                                        force,
-                                        scaling)
+                                         array_time,
+                                         geometry,
+                                         force,
+                                         scaling)
 
-    def postprocess(self):
+    def postprocess(self, pdf_report, display_plot):
         """
         Postprocess something
         """
         print("Postprocessing in DynamicAnalysis derived class \n")
 
         for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
-            self.plot_selected_eigenmode(mode)
+            self.plot_selected_eigenmode(pdf_report, display_plot, mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
             # TODO: implement

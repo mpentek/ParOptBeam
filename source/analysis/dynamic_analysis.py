@@ -223,7 +223,7 @@ class DynamicAnalysis(AnalysisType):
                 ", ".join([str(val) for val in self.structure_model.bc_dofs])
             raise Exception(err_msg)
 
-    def plot_selected_time(self, selected_time):
+    def plot_selected_time(self, pdf_report, display_plots, selected_time):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -261,11 +261,13 @@ class DynamicAnalysis(AnalysisType):
         plot_title = "Dyanimc Analyis: Deformation at t = " + \
             str(selected_time) + " [s]"
 
-        plotter_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               1)
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plots,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      1)
 
     def write_selected_time(self, selected_time):
         """
@@ -302,28 +304,21 @@ class DynamicAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = "Dyanimc Analyis: Deformation at t = " + \
-            str(selected_time) + " [s]"
-
-        plotter_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               1)
-
         file_header = "# Dyanimc Analyis: Deformation at t = " + \
             str(selected_time) + " [s]" + "\n"
 
-        file_name = 'dynamic_analysis_selected_time_' + str(selected_time) + 's.dat'
-        absolute_folder_path = os.path.join("output",self.structure_model.name)
+        file_name = 'dynamic_analysis_selected_time_' + \
+            str(selected_time) + 's.dat'
+        absolute_folder_path = os.path.join(
+            "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
         if not os.path.isdir(absolute_folder_path):
             os.makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path,file_name), file_header,
-                                    geometry, scaling)
+        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+                                      geometry, scaling)
 
-    def plot_selected_step(self, selected_step):
+    def plot_selected_step(self, pdf_report, display_plots, selected_step):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -332,7 +327,6 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Plotting result for a selected step in DynamicAnalysis \n")
-
 
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
@@ -359,14 +353,16 @@ class DynamicAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = "Dyanimc Analyis: Deformation for step = " + str(idx_time)+ " at t = " + \
+        plot_title = "Dyanimc Analyis: Deformation for step = " + str(idx_time) + " at t = " + \
             str(self.array_time[idx_time]) + " [s]"
 
-        plotter_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               1)
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plots,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      1)
 
     def write_selected_step(self, selected_step):
         """
@@ -378,7 +374,6 @@ class DynamicAnalysis(AnalysisType):
 
         print("Plotting result for a selected step in DynamicAnalysis \n")
 
-
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
@@ -404,17 +399,18 @@ class DynamicAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        file_header = "# Dyanimc Analyis: Deformation for step = " + str(idx_time)+ " at t = " + \
+        file_header = "# Dyanimc Analyis: Deformation for step = " + str(idx_time) + " at t = " + \
             str(self.array_time[idx_time]) + " [s]"
 
         file_name = 'dynamic_analysis_selected_step_' + str(idx_time) + '.dat'
-        absolute_folder_path = os.path.join("output",self.structure_model.name)
+        absolute_folder_path = os.path.join(
+            "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
         if not os.path.isdir(absolute_folder_path):
             os.makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path,file_name), file_header,
-                                    geometry, scaling)
+        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+                                      geometry, scaling)
 
     def animate_time_history(self):
         """
@@ -450,26 +446,26 @@ class DynamicAnalysis(AnalysisType):
         plot_title = "Dyanimc Analyis: Deformation over time"
 
         plotter_utilities.animate_result(plot_title,
-                                                  self.array_time,
-                                                  geometry,
-                                                  force,
-                                                  scaling)
+                                         self.array_time,
+                                         geometry,
+                                         force,
+                                         scaling)
 
-    def postprocess(self):
+    def postprocess(self, pdf_report, display_plots):
         """
         Postprocess something
         """
         print("Postprocessing in DynamicAnalysis derived class \n")
 
         for time in self.parameters['output']['selected_instance']['plot_time']:
-            self.plot_selected_time(time)
+            self.plot_selected_time(pdf_report, display_plots, time)
 
         for time in self.parameters['output']['selected_instance']['write_time']:
             self.write_selected_time(time)
             pass
 
         for step in self.parameters['output']['selected_instance']['plot_step']:
-            self.plot_selected_step(step)
+            self.plot_selected_step(pdf_report, display_plots, step)
             pass
 
         for step in self.parameters['output']['selected_instance']['write_step']:

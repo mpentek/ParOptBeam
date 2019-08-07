@@ -84,7 +84,7 @@ class StaticAnalysis(AnalysisType):
                          "b": np.zeros(0),
                          "g": np.zeros(0)}
 
-    def plot_solve_result(self):
+    def plot_solve_result(self, pdf_report, display_plot):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -125,11 +125,13 @@ class StaticAnalysis(AnalysisType):
 
         plot_title = "Static Analysis : "
 
-        plotter_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               1)
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plot,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      1)
 
     def write_solve_result(self):
         """
@@ -170,17 +172,17 @@ class StaticAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-
         file_header = "# Static Analysis"
 
         file_name = 'static_analysis' + '.dat'
-        absolute_folder_path = os.path.join("output",self.structure_model.name)
+        absolute_folder_path = os.path.join(
+            "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
         if not os.path.isdir(absolute_folder_path):
             os.makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path,file_name), file_header,
-                                    geometry, scaling)
+        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+                                      geometry, scaling)
 
     def write_output_file(self):
         """"
@@ -200,7 +202,7 @@ class StaticAnalysis(AnalysisType):
         file.write(json_string)
         file.close()
 
-    def postprocess(self):
+    def postprocess(self, pdf_report, display_plot):
         """
         Postprocess something
         """
@@ -208,7 +210,7 @@ class StaticAnalysis(AnalysisType):
 
         for plot_result in self.parameters['output']['plot']:
             if plot_result == 'deformation':
-                self.plot_solve_result()
+                self.plot_solve_result(pdf_report, display_plot)
             if plot_result == 'forces':
                 pass
 
