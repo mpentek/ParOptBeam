@@ -52,7 +52,7 @@ class StaticAnalysis(AnalysisType):
             err_msg += ', '.join([str(x) for x in possible_n_el_cases])
             raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        self.force = np.load(os.path.join(*['input', 'force', 'force_dynamic' + '_turb' + str(
+        self.force = np.load(join(*['input', 'force', 'force_dynamic' + '_turb' + str(
             structure_model.parameters['n_el']+1) + '.npy']))[:, selected_time_step]
 
     def solve(self):

@@ -136,6 +136,8 @@ class DynamicAnalysis(AnalysisType):
             self.velocity)
         self.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.acceleration)
+        
+        self.compute_reactions()
 
     def compute_reactions(self):
         # forward multiplying to compute the forces and reactions
@@ -183,7 +185,7 @@ class DynamicAnalysis(AnalysisType):
             file.write(str(self.array_time[i])+"\t"+str(result_data[i])+"\n")
         file.close()
 
-    def plot_result_at_dof(self, dof, selected_result):
+    def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
         Pass to plot function:
             Plots the time series of required quantitiy 
@@ -196,33 +198,73 @@ class DynamicAnalysis(AnalysisType):
             result_data = self.velocity[dof, :]
         elif selected_result == 'acceleration':
             result_data = self.acceleration[dof, :]
+        elif selected_result == 'reaction':
+            if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
+                result_data = self.dynamic_reaction[dof, :]
+            else:
+                err_msg = "The selected DoF \"" + str(dof)
+                err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
+                err_msg += "Choose one of: " + \
+                    ", ".join([str(val)
+                               for val in self.structure_model.bc_dofs])
+                raise Exception(err_msg)
         else:
             err_msg = "The selected result \"" + selected_result
             err_msg += "\" is not avaialbe \n"
-            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
+            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
             raise Exception(err_msg)
 
-        plotter_utilities.plot_dynamic_result(
-            plot_title, result_data, self.array_time)
+        plotter_utilities.plot_dynamic_result(pdf_report,
+                                              display_plots,
+                                              plot_title,
+                                              result_data,
+                                              self.array_time)
 
-    def plot_reaction(self, dof):
-        self.compute_reactions()
+    def write_result_at_dof(self, dof, selected_result):
         """
         Pass to plot function:
             Plots the time series of required quantitiy 
         """
-        print('Plotting reactions for in dynamic analysis \n')
-        # TODO: check if the treatment of elastic bc dofs is correct
-        if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
-            plot_title = 'REACTION at DoF ' + str(dof)
-            plotter_utilities.plot_dynamic_result(
-                plot_title, self.dynamic_reaction[dof, :], self.array_time)
+        print('Plotting result for selected dof in dynamic analysis \n')
+        plot_title = selected_result.capitalize() + ' at DoF ' + str(dof)
+        if selected_result == 'displacement':
+            result_data = self.displacement[dof, :]
+        elif selected_result == 'velocity':
+            result_data = self.velocity[dof, :]
+        elif selected_result == 'acceleration':
+            result_data = self.acceleration[dof, :]
+        elif selected_result == 'reaction':
+            if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
+                result_data = self.dynamic_reaction[dof, :]
+            else:
+                err_msg = "The selected DoF \"" + str(dof)
+                err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
+                err_msg += "Choose one of: " + \
+                    ", ".join([str(val)
+                               for val in self.structure_model.bc_dofs])
+                raise Exception(err_msg)
         else:
-            err_msg = "The selected DoF \"" + str(dof)
-            err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
-            err_msg += "Choose one of: " + \
-                ", ".join([str(val) for val in self.structure_model.bc_dofs])
+            err_msg = "The selected result \"" + selected_result
+            err_msg += "\" is not avaialbe \n"
+            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
             raise Exception(err_msg)
+
+        file_header = "# Dyanimc Analyis: result " + selected_result
+        file_header = " for DoF " + str(dof) + "over time \n"
+        # TODO add DoF height coordinate into header
+
+        file_name = 'dynamic_analysis_result_' + \
+            selected_result + '_for_dof_' + str(dof) + '.dat'
+        absolute_folder_path = join(
+            "output", self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
+
+        writer_utilities.write_result_at_dof(join(absolute_folder_path, file_name),
+                                             file_header,
+                                             result_data,
+                                             self.array_time)
 
     def plot_selected_time(self, pdf_report, display_plots, selected_time):
         """
@@ -477,22 +519,15 @@ class DynamicAnalysis(AnalysisType):
             self.animate_time_history()
 
         for idx_dof, dof_id in enumerate(self.parameters['output']['selected_dof']['dof_list']):
-
-            # TODO unify for reaction and kinematics results
-
             for idx_res, res in enumerate(self.parameters['output']['selected_dof']['result_type'][idx_dof]):
-                if res == 'reaction':
+                if res in ['displacement', 'velocity', 'acceleration', 'reaction']:
                     if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
-                        self.plot_reaction(dof_id)
+                        self.plot_result_at_dof(
+                            pdf_report, display_plots, dof_id, res)
                     if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
-                        # self.write_reaction(dof_id)
-                        pass
-                elif res in ['displacement', 'velocity', 'acceleration']:
-                    if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
-                        self.plot_result_at_dof(dof_id, res)
-                    if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
-                        # self.write_result_at_dof(dof_id, res)
-                        pass
+                        self.write_result_at_dof(dof_id, res)
                 else:
-                    pass
-        pass
+                    err_msg = "The selected result \"" + res
+                    err_msg += "\" is not avaialbe \n"
+                    err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
+                    raise Exception(err_msg)

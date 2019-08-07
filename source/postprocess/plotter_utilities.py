@@ -228,8 +228,6 @@ def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, 
     if display_plot:
         plt.show()
 
-    plt.close()
-
 
 def animate_result(title, array_time, geometry, force, scaling):
 
@@ -374,7 +372,7 @@ def get_plot_limits(deformed_geometry, offset_factor=10.):
     return plot_limits
 
 
-def plot_dynamic_result(plot_title, result_data, array_time):
+def plot_dynamic_result(pdf_report, display_plot, plot_title, result_data, array_time):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -392,4 +390,10 @@ def plot_dynamic_result(plot_title, result_data, array_time):
              markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
              markersize=LINE_TYPE_SETUP["markersize"][1])
     ax.legend()
-    plt.show()
+
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
+
+    if display_plot:
+        plt.show()
