@@ -24,13 +24,15 @@ Last update: 07.09.2019
 
 
 import numpy as np
-import math
+from math import ceil
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from matplotlib import animation
 
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
+
+
 '''
 Everything should boil down to 2 main visualizaiton types:
 (1) "Static" (so not animated) image
@@ -247,8 +249,8 @@ def animate_result(title, array_time, geometry, force, scaling):
     # set min and max values
     #xmin = displacement_time_history.min()
     #xmax = displacement_time_history.max()
-    #xmin = xmin - math.ceil((xmax-xmin)/10)
-    #xmax = xmax + math.ceil((xmax-xmin)/10)
+    #xmin = xmin - ceil((xmax-xmin)/10)
+    #xmax = xmax + ceil((xmax-xmin)/10)
 
     # TODO extend and use plot limits
 
@@ -259,18 +261,18 @@ def animate_result(title, array_time, geometry, force, scaling):
 
     xmin = np.min(geometry["deformed"][0])
     xmax = np.max(geometry["deformed"][0])
-    # xmin = xmin - math.ceil((xmax-xmin)/30)
-    # xmax = xmax + math.ceil((xmax-xmin)/30)
+    # xmin = xmin - ceil((xmax-xmin)/30)
+    # xmax = xmax + ceil((xmax-xmin)/30)
 
     ymin = np.min(geometry["deformed"][1])
     ymax = np.max(geometry["deformed"][1])
-    # ymin = ymin - math.ceil((ymax-ymin)/30)
-    # ymax = ymax + math.ceil((ymax-ymin)/30)
+    # ymin = ymin - ceil((ymax-ymin)/30)
+    # ymax = ymax + ceil((ymax-ymin)/30)
 
     zmin = np.min(geometry["deformed"][2])
     zmax = np.max(geometry["deformed"][2])
-    # zmin = zmin - math.ceil((zmax-zmin)/30)
-    # zmax = zmax + math.ceil((zmax-zmin)/30)
+    # zmin = zmin - ceil((zmax-zmin)/30)
+    # zmax = zmax + ceil((zmax-zmin)/30)
 
     ax.set_xlim3d(xmin, xmax)
     ax.set_ylim3d(ymin, ymax)

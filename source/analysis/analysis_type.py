@@ -22,14 +22,6 @@ Last update: 09.07.2019
 '''
 # ===============================================================================
 
-import numpy as np
-import sys
-import json
-
-
-# import visualize_results_utilities to use it as a python object
-from source.postprocess import plotter_utilities
-
 
 class AnalysisType(object):
     """

@@ -1,4 +1,5 @@
-import os
+from os.path import join, isdir
+from os import makedirs
 from matplotlib.backends.backend_pdf import PdfPages
 
 from source.model.structure_model import StraightBeam
@@ -37,13 +38,13 @@ class AnalysisController(object):
         # TODO: some more robust checks and assigns
         if self.parameters['report_options']['combine_plots_into_pdf']:
             file_name = 'analyses_results_report.pdf'
-            absolute_folder_path = os.path.join("output", self.model.name)
+            absolute_folder_path = join("output", self.model.name)
             # make sure that the absolute path to the desired output folder exists
-            if not os.path.isdir(absolute_folder_path):
-                os.makedirs(absolute_folder_path)
+            if not isdir(absolute_folder_path):
+                makedirs(absolute_folder_path)
 
             self.report_pdf = PdfPages(
-                os.path.join(absolute_folder_path, file_name))
+                join(absolute_folder_path, file_name))
         else:
             self.report_pdf = None
 

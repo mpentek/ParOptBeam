@@ -1,6 +1,7 @@
 import numpy as np
 import json
-import os
+from os.path import join, isdir
+from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -175,13 +176,13 @@ class StaticAnalysis(AnalysisType):
         file_header = "# Static Analysis"
 
         file_name = 'static_analysis' + '.dat'
-        absolute_folder_path = os.path.join(
+        absolute_folder_path = join(
             "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
-        if not os.path.isdir(absolute_folder_path):
-            os.makedirs(absolute_folder_path)
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def write_output_file(self):

@@ -1,7 +1,8 @@
 import numpy as np
 from scipy import linalg
 import json
-import os
+from os.path import join, isdir
+from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -210,13 +211,13 @@ class EigenvalueAnalysis(AnalysisType):
 
         file_name = 'eigenvalue_analysis_selected_eigenmode_' + \
             str(selected_mode) + '.dat'
-        absolute_folder_path = os.path.join(
+        absolute_folder_path = join(
             "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
-        if not os.path.isdir(absolute_folder_path):
-            os.makedirs(absolute_folder_path)
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def plot_selected_first_n_eigenmodes(self, pdf_report, display_plot, number_of_modes):

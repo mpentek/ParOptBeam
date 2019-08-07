@@ -23,9 +23,6 @@ Last update: 09.07.2018
 
 import numpy as np
 from scipy import linalg
-from scipy.optimize import minimize, minimize_scalar
-from functools import partial
-import math
 import matplotlib.pyplot as plt
 
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults

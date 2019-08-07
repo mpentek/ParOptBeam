@@ -1,7 +1,9 @@
-from source.postprocess.skin_model.NodeModel import Node
-from source.postprocess.skin_model.LineStructureModel import LineStructure
 from scipy.interpolate import CubicSpline
 import numpy as np
+
+from source.postprocess.skin_model.NodeModel import Node
+from source.postprocess.skin_model.LineStructureModel import LineStructure
+
 
 # curvature - 2nd order deriv
 DERIV_ORDER = 2

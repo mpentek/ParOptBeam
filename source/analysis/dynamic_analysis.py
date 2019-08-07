@@ -1,6 +1,7 @@
 import numpy as np
 import json
-import os
+from os.path import join, isdir
+from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -58,8 +59,8 @@ class DynamicAnalysis(AnalysisType):
             err_msg += ', '.join([str(x) for x in possible_n_el_cases])
             raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        force = np.load(os.path.join(*['input', 'force', 'force_dynamic' +
-                                       '_turb' + str(structure_model.parameters['n_el']+1) + '.npy']))
+        force = np.load(join(*['input', 'force', 'force_dynamic' +
+                               '_turb' + str(structure_model.parameters['n_el']+1) + '.npy']))
 
         super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))
@@ -309,13 +310,13 @@ class DynamicAnalysis(AnalysisType):
 
         file_name = 'dynamic_analysis_selected_time_' + \
             str(selected_time) + 's.dat'
-        absolute_folder_path = os.path.join(
+        absolute_folder_path = join(
             "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
-        if not os.path.isdir(absolute_folder_path):
-            os.makedirs(absolute_folder_path)
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def plot_selected_step(self, pdf_report, display_plots, selected_step):
@@ -403,13 +404,13 @@ class DynamicAnalysis(AnalysisType):
             str(self.array_time[idx_time]) + " [s]"
 
         file_name = 'dynamic_analysis_selected_step_' + str(idx_time) + '.dat'
-        absolute_folder_path = os.path.join(
+        absolute_folder_path = join(
             "output", self.structure_model.name)
         # make sure that the absolute path to the desired output folder exists
-        if not os.path.isdir(absolute_folder_path):
-            os.makedirs(absolute_folder_path)
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(os.path.join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def animate_time_history(self):

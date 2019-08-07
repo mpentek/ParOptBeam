@@ -23,10 +23,11 @@ Last update: 09.07.2018
 
 import numpy as np
 from scipy import linalg
+# TODO only use minimize, make dependency on minimize_scalar work with that instead
 from scipy.optimize import minimize, minimize_scalar
 from functools import partial
-import math
 import matplotlib.pyplot as plt
+
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
