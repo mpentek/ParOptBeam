@@ -106,6 +106,7 @@ class StraightBeam(object):
 
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
+        "name": "this_model_name",
         "domain_size": "3D",
         "system_parameters": {},
         "boundary_conditions": "fixed-free",
@@ -118,6 +119,9 @@ class StraightBeam(object):
 
         # TODO: add domain size check
         self.domain_size = parameters["domain_size"]
+
+        # needed to identify output results
+        self.name = parameters["name"]
 
         # TODO: validate and assign parameters
         # NOTE: for now using the assumption of the prismatic homogenous isotropic beam

@@ -1,10 +1,12 @@
 import numpy as np
 from scipy import linalg
 import json
+import os
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-import source.postprocess.visualize_result_utilities as visualize_result_utilities
+import source.postprocess.plotter_utilities as plotter_utilities
+import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
@@ -153,11 +155,65 @@ class EigenvalueAnalysis(AnalysisType):
         plot_title += "  Period: " + \
             '{0:.2f}'.format(self.period[selected_mode])
 
-        visualize_result_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               1)
+        plotter_utilities.plot_result(plot_title,
+                                    geometry,
+                                    force,
+                                    scaling,
+                                    1)
+
+    def write_selected_eigenmode(self, selected_mode):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.eigenform -> as displacement  
+            self.frequency -> in legend
+            self.period -> in legend
+
+        """
+        selected_mode = selected_mode - 1
+
+        print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
+
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
+                                                                           1:step][:, selected_mode]
+
+        # NOTE: this should be the correct way
+        # TODO: add some generic way to be able to subtract some non-zero origin point
+        # TODO: check if an origin point shift or extension still needed
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
+
+        force = {"external": None,
+                 "base_reaction": None}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        file_header = "# Eigenmode: " + str(selected_mode+1) + "\n"
+        file_header += "# Frequency: " + \
+            '{0:.2f}'.format(self.frequency[selected_mode]) + "\n"
+        file_header += "# Period: " + \
+            '{0:.2f}'.format(self.period[selected_mode]) + "\n"
+
+        file_name = 'eigenvalue_analyses_selected_eigenmode_' + str(selected_mode)
+        absolute_folder_path = os.path.join("output",self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not os.path.isdir(absolute_folder_path):
+            os.makedirs(absolute_folder_path)
+
+        writer_utilities.write_result(os.path.join(absolute_folder_path,file_name), file_header,
+                                    geometry, scaling)
 
     def plot_selected_first_n_eigenmodes(self, number_of_modes):
         """
@@ -199,11 +255,11 @@ class EigenvalueAnalysis(AnalysisType):
         for selected_mode in range(number_of_modes):
             plot_title += "Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
                 self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n"
-        visualize_result_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               number_of_modes)
+        plotter_utilities.plot_result(plot_title,
+                                    geometry,
+                                    force,
+                                    scaling,
+                                    number_of_modes)
 
     def animate_selected_eigenmode(self, selected_mode):
         """
@@ -260,11 +316,11 @@ class EigenvalueAnalysis(AnalysisType):
         plot_title += "  Period: " + \
             '{0:.2f}'.format(self.period[selected_mode])
 
-        visualize_result_utilities.animate_result(plot_title,
-                                                  array_time,
-                                                  geometry,
-                                                  force,
-                                                  scaling)
+        plotter_utilities.animate_result(plot_title,
+                                        array_time,
+                                        geometry,
+                                        force,
+                                        scaling)
 
     def postprocess(self):
         """
@@ -277,8 +333,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
             # TODO: implement
-            # self.write_selected_eigenmode(mode)
-            pass
+            self.write_selected_eigenmode(mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
             self.animate_selected_eigenmode(mode)

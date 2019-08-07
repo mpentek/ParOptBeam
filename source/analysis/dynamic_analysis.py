@@ -4,7 +4,7 @@ import os
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-import source.postprocess.visualize_result_utilities as visualize_result_utilities
+import source.postprocess.plotter_utilities as plotter_utilities
 from source.scheme.time_integration_scheme import *
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
@@ -261,7 +261,7 @@ class DynamicAnalysis(AnalysisType):
         plot_title = "Dyanimc Analyis: Deformation at t = " + \
             str(selected_time) + " [s]"
 
-        visualize_result_utilities.plot_result(plot_title,
+        plotter_utilities.plot_result(plot_title,
                                                geometry,
                                                force,
                                                scaling,
