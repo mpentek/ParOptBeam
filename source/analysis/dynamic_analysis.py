@@ -1,11 +1,12 @@
 import numpy as np
 import json
-import os
+from os.path import join, isdir
+from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-import source.postprocess.visualize_result_utilities as visualize_result_utilities
-from source.scheme.time_integration_scheme import *
+import source.postprocess.plotter_utilities as plotter_utilities
+import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
@@ -58,8 +59,8 @@ class DynamicAnalysis(AnalysisType):
             err_msg += ', '.join([str(x) for x in possible_n_el_cases])
             raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        force = np.load(os.path.join(*['input', 'force', 'force_dynamic' +
-                                       '_turb' + str(structure_model.parameters['n_el']+1) + '.npy']))
+        force = np.load(join(*['input', 'force', 'force_dynamic' +
+                               '_turb' + str(structure_model.parameters['n_el']+1) + '.npy']))
 
         super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))
@@ -95,14 +96,14 @@ class DynamicAnalysis(AnalysisType):
             self.solver = GeneralizedAlphaScheme(
                 self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "Euler12":
-            from source.scheme.euler12 import Euler12
+            from source.scheme.euler12_scheme import Euler12
             self.solver = Euler12(self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "ForwardEuler1":
-            from source.scheme.forward_euler1 import ForwardEuler1
+            from source.scheme.forward_euler1_scheme import ForwardEuler1
             self.solver = ForwardEuler1(
                 self.dt, structure_model, initial_conditions)
         elif time_integration_scheme == "BackwardEuler1":
-            from source.scheme.backward_euler1 import BackwardEuler1
+            from source.scheme.backward_euler1_scheme import BackwardEuler1
             self.solver = BackwardEuler1(
                 self.dt, structure_model, initial_conditions)
 
@@ -135,6 +136,8 @@ class DynamicAnalysis(AnalysisType):
             self.velocity)
         self.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.acceleration)
+        
+        self.compute_reactions()
 
     def compute_reactions(self):
         # forward multiplying to compute the forces and reactions
@@ -158,31 +161,7 @@ class DynamicAnalysis(AnalysisType):
             # overwrite the existing value with one solely from spring stiffness and damping
             self.dynamic_reaction[dof_id] = f1 + f2 + f3
 
-    def write_result_at_dof(self, dof, selected_result):
-        """"
-        This function writes out the time history of response at the selected dof
-
-        """
-        print('Writing out result for selected dof in dynamic analysis \n')
-        if selected_result == 'displacement':
-            result_data = self.displacement[dof, :]
-        elif selected_result == 'velocity':
-            result_data = self.velocity[dof, :]
-        elif selected_result == 'acceleration':
-            result_data = self.acceleration[dof, :]
-        else:
-            err_msg = "The selected result \"" + selected_result
-            err_msg += "\" is not avaialbe \n"
-            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
-            raise Exception(err_msg)
-
-        file = open(selected_result + "at_dof_" + str(dof) + ".txt", "w")
-        file.write("time \t" + selected_result + "\n")
-        for i in np.arange(len(self.array_time)):
-            file.write(str(self.array_time[i])+"\t"+str(result_data[i])+"\n")
-        file.close()
-
-    def plot_result_at_dof(self, dof, selected_result):
+    def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
         Pass to plot function:
             Plots the time series of required quantitiy 
@@ -195,35 +174,75 @@ class DynamicAnalysis(AnalysisType):
             result_data = self.velocity[dof, :]
         elif selected_result == 'acceleration':
             result_data = self.acceleration[dof, :]
+        elif selected_result == 'reaction':
+            if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
+                result_data = self.dynamic_reaction[dof, :]
+            else:
+                err_msg = "The selected DoF \"" + str(dof)
+                err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
+                err_msg += "Choose one of: " + \
+                    ", ".join([str(val)
+                               for val in self.structure_model.bc_dofs])
+                raise Exception(err_msg)
         else:
             err_msg = "The selected result \"" + selected_result
             err_msg += "\" is not avaialbe \n"
-            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\""
+            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
             raise Exception(err_msg)
 
-        visualize_result_utilities.plot_dynamic_result(
-            plot_title, result_data, self.array_time)
+        plotter_utilities.plot_dynamic_result(pdf_report,
+                                              display_plots,
+                                              plot_title,
+                                              result_data,
+                                              self.array_time)
 
-    def plot_reaction(self, dof):
-        self.compute_reactions()
+    def write_result_at_dof(self, dof, selected_result):
         """
         Pass to plot function:
             Plots the time series of required quantitiy 
         """
-        print('Plotting reactions for in dynamic analysis \n')
-        # TODO: check if the treatment of elastic bc dofs is correct
-        if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
-            plot_title = 'REACTION at DoF ' + str(dof)
-            visualize_result_utilities.plot_dynamic_result(
-                plot_title, self.dynamic_reaction[dof, :], self.array_time)
+        print('Plotting result for selected dof in dynamic analysis \n')
+        plot_title = selected_result.capitalize() + ' at DoF ' + str(dof)
+        if selected_result == 'displacement':
+            result_data = self.displacement[dof, :]
+        elif selected_result == 'velocity':
+            result_data = self.velocity[dof, :]
+        elif selected_result == 'acceleration':
+            result_data = self.acceleration[dof, :]
+        elif selected_result == 'reaction':
+            if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
+                result_data = self.dynamic_reaction[dof, :]
+            else:
+                err_msg = "The selected DoF \"" + str(dof)
+                err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
+                err_msg += "Choose one of: " + \
+                    ", ".join([str(val)
+                               for val in self.structure_model.bc_dofs])
+                raise Exception(err_msg)
         else:
-            err_msg = "The selected DoF \"" + str(dof)
-            err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
-            err_msg += "Choose one of: " + \
-                ", ".join([str(val) for val in self.structure_model.bc_dofs])
+            err_msg = "The selected result \"" + selected_result
+            err_msg += "\" is not avaialbe \n"
+            err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
             raise Exception(err_msg)
 
-    def plot_selected_time(self, selected_time):
+        file_header = "# Dyanimc Analyis result " + selected_result +  "\n"
+        file_header += "# for DoF " + str(dof) + " over time \n"
+        # TODO add DoF height coordinate into header
+
+        file_name = 'dynamic_analysis_result_' + \
+            selected_result + '_for_dof_' + str(dof) + '.dat'
+        absolute_folder_path = join(
+            "output", self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
+
+        writer_utilities.write_result_at_dof(join(absolute_folder_path, file_name),
+                                             file_header,
+                                             result_data,
+                                             self.array_time)
+
+    def plot_selected_time(self, pdf_report, display_plots, selected_time):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -261,11 +280,156 @@ class DynamicAnalysis(AnalysisType):
         plot_title = "Dyanimc Analyis: Deformation at t = " + \
             str(selected_time) + " [s]"
 
-        visualize_result_utilities.plot_result(plot_title,
-                                               geometry,
-                                               force,
-                                               scaling,
-                                               1)
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plots,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      1)
+
+    def write_selected_time(self, selected_time):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.displacement -> here as time series -> select closes results to a requested time_step [s]  
+
+        """
+
+        print("Plotting result for a selected time step in DynamicAnalysis \n")
+
+        # find closesed time step
+        idx_time = np.where(self.array_time >= selected_time)[0][0]
+
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.displacement.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                              1:step][:, idx_time]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
+
+        force = {"external": None,  # [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
+                 "base_reaction": None}  # [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        file_header = "# Dyanimc Analyis: Deformation at t = " + \
+            str(selected_time) + " [s]" + "\n"
+
+        file_name = 'dynamic_analysis_selected_time_' + \
+            str(selected_time) + 's.dat'
+        absolute_folder_path = join(
+            "output", self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
+
+        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
+                                      geometry, scaling)
+
+    def plot_selected_step(self, pdf_report, display_plots, selected_step):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.displacement -> here as time series -> select closes results to a requested time_step [s]  
+
+        """
+
+        print("Plotting result for a selected step in DynamicAnalysis \n")
+
+        # TODO refactor so that plot_selected_time calls plot_selected_step
+        idx_time = selected_step
+
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.displacement.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                              1:step][:, idx_time]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
+
+        force = {"external": None,  # [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
+                 "base_reaction": None}  # [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        plot_title = "Dyanimc Analyis: Deformation for step = " + str(idx_time) + " at t = " + \
+            str(self.array_time[idx_time]) + " [s]"
+
+        plotter_utilities.plot_result(pdf_report,
+                                      display_plots,
+                                      plot_title,
+                                      geometry,
+                                      force,
+                                      scaling,
+                                      1)
+
+    def write_selected_step(self, selected_step):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.displacement -> here as time series -> select closes results to a requested time_step [s]  
+
+        """
+
+        print("Plotting result for a selected step in DynamicAnalysis \n")
+
+        # TODO refactor so that plot_selected_time calls plot_selected_step
+        idx_time = selected_step
+
+        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.displacement.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                              1:step][:, idx_time]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"]],
+                    "deformed": None}
+
+        force = {"external": None,  # [np.append(origin_point, self.force), np.zeros(len(self.force) + 1)],
+                 "base_reaction": None}  # [np.append(self.reaction, origin_point), np.zeros(len(self.force) + 1)]}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        file_header = "# Dyanimc Analyis: Deformation for step = " + str(idx_time) + " at t = " + \
+            str(self.array_time[idx_time]) + " [s]"
+
+        file_name = 'dynamic_analysis_selected_step_' + str(idx_time) + '.dat'
+        absolute_folder_path = join(
+            "output", self.structure_model.name)
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(absolute_folder_path):
+            makedirs(absolute_folder_path)
+
+        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
+                                      geometry, scaling)
 
     def animate_time_history(self):
         """
@@ -300,53 +464,43 @@ class DynamicAnalysis(AnalysisType):
 
         plot_title = "Dyanimc Analyis: Deformation over time"
 
-        visualize_result_utilities.animate_result(plot_title,
-                                                  self.array_time,
-                                                  geometry,
-                                                  force,
-                                                  scaling)
+        plotter_utilities.animate_result(plot_title,
+                                         self.array_time,
+                                         geometry,
+                                         force,
+                                         scaling)
 
-    def postprocess(self):
+    def postprocess(self, pdf_report, display_plots):
         """
         Postprocess something
         """
         print("Postprocessing in DynamicAnalysis derived class \n")
 
         for time in self.parameters['output']['selected_instance']['plot_time']:
-            self.plot_selected_time(time)
+            self.plot_selected_time(pdf_report, display_plots, time)
 
         for time in self.parameters['output']['selected_instance']['write_time']:
-            # self.write_selected_time(time)
-            pass
+            self.write_selected_time(time)
 
         for step in self.parameters['output']['selected_instance']['plot_step']:
-            # self.plot_selected_step(time)
-            pass
+            self.plot_selected_step(pdf_report, display_plots, step)
 
         for step in self.parameters['output']['selected_instance']['write_step']:
-            # self.write_selected_step(time)
-            pass
+            self.write_selected_step(step)
 
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
 
         for idx_dof, dof_id in enumerate(self.parameters['output']['selected_dof']['dof_list']):
-
-            # TODO unify for reaction and kinematics results
-
             for idx_res, res in enumerate(self.parameters['output']['selected_dof']['result_type'][idx_dof]):
-                if res == 'reaction':
+                if res in ['displacement', 'velocity', 'acceleration', 'reaction']:
                     if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
-                        self.plot_reaction(dof_id)
+                        self.plot_result_at_dof(
+                            pdf_report, display_plots, dof_id, res)
                     if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
-                        # self.write_reaction(dof_id)
-                        pass
-                elif res in ['displacement', 'velocity', 'acceleration']:
-                    if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
-                        self.plot_result_at_dof(dof_id, res)
-                    if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
-                        # self.write_result_at_dof(dof_id, res)
-                        pass
+                        self.write_result_at_dof(dof_id, res)
                 else:
-                    pass
-        pass
+                    err_msg = "The selected result \"" + res
+                    err_msg += "\" is not avaialbe \n"
+                    err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
+                    raise Exception(err_msg)

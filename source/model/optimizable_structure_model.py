@@ -23,10 +23,11 @@ Last update: 09.07.2018
 
 import numpy as np
 from scipy import linalg
+# TODO only use minimize, make dependency on minimize_scalar work with that instead
 from scipy.optimize import minimize, minimize_scalar
 from functools import partial
-import math
 import matplotlib.pyplot as plt
+
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
@@ -197,6 +198,23 @@ class OptimizableStraightBeam(object):
         print('AFTER OPTIMIZATION')
         self.model.identify_decoupled_eigenmodes(print_to_console=True)
         print()
+
+    def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
+
+        self.model.parameters['e'] = multiplier_fctr * initial_e
+
+        # NOTE: do not forget to update G and further dependencies
+        self.model.parameters['g'] = self.model.parameters['e'] / \
+            2 / (1+self.model.parameters['nu'])
+        self.model.evaluate_relative_importance_of_shear()
+
+
+        # re-evaluate
+        self.model.calculate_global_matrices()
+
+        self.model.eigenvalue_solve()
+
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
     def adjust_density_for_target_total_mass(self, target_total_mass):
 

@@ -2,6 +2,7 @@ import numpy as np
 
 from source.scheme.time_integration_scheme import TimeIntegrationScheme
 
+
 class ForwardEuler1(TimeIntegrationScheme):
     """
     (Explicit) Forward Euler 1st order approximation 

@@ -23,9 +23,6 @@ Last update: 09.07.2018
 
 import numpy as np
 from scipy import linalg
-from scipy.optimize import minimize, minimize_scalar
-from functools import partial
-import math
 import matplotlib.pyplot as plt
 
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
@@ -106,18 +103,24 @@ class StraightBeam(object):
 
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
+        "name": "this_model_name",
         "domain_size": "3D",
         "system_parameters": {},
         "boundary_conditions": "fixed-free",
         "elastic_fixity_dofs": {}}
 
     def __init__(self, parameters):
+        # TODO: add number of considered modes for output parameters upper level
+        # also check redundancy with eigenvalue analysis
 
         # validating and assign model parameters
         validate_and_assign_defaults(StraightBeam.DEFAULT_SETTINGS, parameters)
 
         # TODO: add domain size check
         self.domain_size = parameters["domain_size"]
+
+        # needed to identify output results
+        self.name = parameters["name"]
 
         # TODO: validate and assign parameters
         # NOTE: for now using the assumption of the prismatic homogenous isotropic beam
@@ -198,6 +201,7 @@ class StraightBeam(object):
 
         # after initial setup
         self.calculate_global_matrices()
+        self.identify_decoupled_eigenmodes()
 
     def apply_elastic_bcs(self):
         # handle potential elastic BCs
@@ -354,23 +358,6 @@ class StraightBeam(object):
         self.b = self._get_damping()
 
 
-    def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
-
-        self.parameters['e'] = multiplier_fctr * initial_e
-
-        # NOTE: do not forget to update G and further dependencies
-        self.parameters['g'] = self.parameters['e'] / \
-            2 / (1+self.parameters['nu'])
-        self.evaluate_relative_importance_of_shear()
-
-
-        # re-evaluate
-        self.calculate_global_matrices()
-
-        self.eigenvalue_solve()
-
-        return (self.eig_freqs[self.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
-
     def decompose_and_quantify_eigenmodes(self, considered_modes=10):
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
@@ -478,7 +465,7 @@ class StraightBeam(object):
                 if val['bounds'][0] <= running_coord and running_coord <= self.parameters['lx']:
                     return evaluate_polynomial(running_coord-val['bounds'][0], val[characteristic_identifier])
 
-    def plot_model_properties(self, print_to_console=False):
+    def plot_model_properties(self, pdf_report, display_plot, print_to_console=False):
 
         if print_to_console:
             print('x: ', ['{:.2f}'.format(x)
@@ -514,6 +501,10 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
+
         fig = plt.figure(2)
         plt.plot(self.parameters['x'], self.parameters['it'],
                  'k-', marker='o', label='it')
@@ -526,6 +517,10 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
+
         fig = plt.figure(3)
         plt.plot(self.parameters['x'], self.parameters['ly'],
                  'r-', marker='*', label='ly')
@@ -533,6 +528,10 @@ class StraightBeam(object):
                  'g-', marker='^', label='lz')
         plt.legend()
         plt.grid()
+
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
 
         fig = plt.figure(4)
         plt.plot(self.parameters['x'], self.parameters['py'],
@@ -542,7 +541,12 @@ class StraightBeam(object):
         plt.legend()
         plt.grid()
 
-        plt.show()
+        if pdf_report is not None:
+            pdf_report.savefig()
+            plt.close(fig)
+
+        if display_plot:
+            plt.show()
 
     def apply_bc_by_reduction(self, matrix, axis='both'):
         '''

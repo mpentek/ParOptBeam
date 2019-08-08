@@ -1,9 +1,12 @@
 import json
 import numpy as np
+from os.path import join
+
 from source.postprocess.skin_model.NodeModel import Node
 from source.postprocess.skin_model.Mapper import interpolate_points
 
-direction_vector = ["x", "y", "z", "x", "y", "z"]
+
+DIRECTION_VECTOR = ["x", "y", "z", "x", "y", "z"]
 beam_direction_index = 0
 
 
@@ -58,6 +61,7 @@ class Element:
             node.print_info()
 
     def print_element_normal(self):
+        # TODO
         print(self.plane.normal_vector)
 
 
@@ -99,11 +103,11 @@ class Structure:
         with open(structure_file) as json_file:
             data = json.load(json_file)
             self.element_geometry = data["geometry"]
-            
+
             # NOTE for now a workaround for importing
-            import os
-            self.dof_file = os.path.join(*["input","deformation",data["dofs_file_name"]])
-            
+             self.dof_file = join(
+                *["input", "deformation", data["dofs_file_name"]])
+
             self.beam_length = json.load(open(self.dof_file))["length"]
             self.scaling_vector = data["scaling_vector"]
             self.num_of_elements = len(self.scaling_vector)
@@ -133,11 +137,13 @@ class Structure:
         while current_length <= self.beam_length:
             current_scale = interpolate_points(current_length, np.linspace(0, self.beam_length, self.num_of_elements),
                                                self.scaling_vector)
-            element = Element(self.element_geometry, current_length, current_scale, self.beam_direction)
+            element = Element(self.element_geometry, current_length,
+                              current_scale, self.beam_direction)
             self.elements.append(element)
             current_length += self.element_length
         if current_length <= self.beam_length:
-            element = Element(self.element_geometry, self.beam_length, current_scale, self.beam_direction)
+            element = Element(self.element_geometry, self.beam_length,
+                              current_scale, self.beam_direction)
             self.elements.append(element)
 
     def create_frames(self):
@@ -152,20 +158,20 @@ class Structure:
                 new_floor_geometry.append(self.element_geometry[i])
 
                 new_floor_geometry += self._get_equidistant_points(
-                    [self.element_geometry[i % len(self.element_geometry)][direction_vector[beam_direction_index + 1]],
-                     self.element_geometry[i % len(self.element_geometry)][direction_vector[beam_direction_index + 2]]],
+                    [self.element_geometry[i % len(self.element_geometry)][DIRECTION_VECTOR[beam_direction_index + 1]],
+                     self.element_geometry[i % len(self.element_geometry)][DIRECTION_VECTOR[beam_direction_index + 2]]],
                     [self.element_geometry[(i + 1) % len(self.element_geometry)][
-                         direction_vector[beam_direction_index + 1]],
+                        DIRECTION_VECTOR[beam_direction_index + 1]],
                      self.element_geometry[(i + 1) % len(self.element_geometry)][
-                         direction_vector[beam_direction_index + 2]]],
+                         DIRECTION_VECTOR[beam_direction_index + 2]]],
                     parts)
-            print(direction_vector[beam_direction_index])
+            print(DIRECTION_VECTOR[beam_direction_index])
             self.element_geometry = new_floor_geometry
 
     @staticmethod
     def _get_equidistant_points(p1, p2, parts):
-        return [{direction_vector[beam_direction_index]: 0.0, direction_vector[beam_direction_index + 1]: val1,
-                 direction_vector[beam_direction_index + 2]: val2} for val1, val2 in
+        return [{DIRECTION_VECTOR[beam_direction_index]: 0.0, DIRECTION_VECTOR[beam_direction_index + 1]: val1,
+                 DIRECTION_VECTOR[beam_direction_index + 2]: val2} for val1, val2 in
                 zip(np.linspace(p1[0], p2[0], parts + 1),
                     np.linspace(p1[1], p2[1], parts + 1))]
 
