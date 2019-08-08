@@ -144,7 +144,9 @@ class StraightBeam(object):
                 'c_a_sz': val["shear_area_z"],
                 'c_iy': val["moment_of_inertia_y"],
                 'c_iz': val["moment_of_inertia_z"],
-                'c_it': val["torsional_moment_of_inertia"]
+                'c_it': val["torsional_moment_of_inertia"],
+                'c_m': val["outrigger_mass"], 
+                'c_k': val["outrigger_stiffness"]
             })
 
         # TODO: later probably move to an initalize function
@@ -234,6 +236,8 @@ class StraightBeam(object):
                 self.point_stiffness['idxs'].append([val,val])
                 # with this additional value
                 self.point_stiffness['vals'].append(elastic_bc_dofs_tmp[key])
+        # apply the point masses and point stiffness from outtriggers         
+        self.apply_point_values()
 
     def apply_bcs(self):
         # TODO: make BC handling cleaner and compact
@@ -263,6 +267,25 @@ class StraightBeam(object):
 
         # only take bc's of interest
         self.dofs_to_keep = list(set(self.all_dofs_global)-set(bc_dofs_global)) 
+    
+    def apply_point_values(self): 
+        # point stiffness and point masses at respective dof for the outtrigger 
+        for values in self.parameters['intervals']:
+            if values['bounds'][1] == "End": 
+                outtriger_id = int(self.parameters['lx'] / self.parameters['lx_i'])
+            else: 
+                outtriger_id = int(values['bounds'][1] / self.parameters['lx_i'])
+            id_val = outtriger_id * self.DOFS_PER_NODE[self.domain_size]
+            # affects only diagonal entries and for transilation al DOF and not rotational DOF
+            for i in range(int(np.ceil(self.DOFS_PER_NODE[self.domain_size]/2))): 
+                self.point_stiffness['idxs'].append([id_val+i,id_val+i])
+                self.point_stiffness['vals'].append(values['c_k'])
+                self.point_mass['idxs'].append([id_val+i,id_val+i])
+                self.point_mass['vals'].append(values['c_m'])
+            # out tigger stiffnss in x, Y, and Z the same ?? AK: need to check 
+
+
+
 
     def initialize_user_defined_geometric_parameters(self):
         # geometric
@@ -323,8 +346,10 @@ class StraightBeam(object):
     def calculate_global_matrices(self):
         # mass matrix
         self.m = self._get_mass()
+        print(self.m)
         # stiffness matrix
         self.k = self._get_stiffness()
+        print(self.k)
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
 

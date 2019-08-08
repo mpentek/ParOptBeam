@@ -36,7 +36,7 @@ from source.analysis.analysis_wrapper import AnalysisWrapper
 # Model choice
 
 # NOTE: using this single (yet extensive) file for testing
-available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
+available_models = ['ProjectParameters3DCaarcBeamPrototypeWithOuttriger.json']
 
 for available_model in available_models:
 
