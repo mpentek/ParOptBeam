@@ -51,77 +51,84 @@
         },
         "boundary_conditions": "fixed-free"
     },
-    "optimization_parameters": {
-        "adapt_for_target_values": {
-            "density_for_total_mass": 38880000.0}
-    },
-    "analyses_parameters": [{
-        "type": "eigenvalue_analysis",
-        "settings": {
-            "normalization": "mass_normalized"},
-        "input":{},
-        "output":{
-            "write_text_summary": true,
-            "selected_eigenmode": {
-                "plot_mode": [1,2,3], 
-                "write_mode": [5,6,7],
-                "animate_mode": [1]},
-            "selected_eigenmode_range": {
-                "help": "maximum 4 modes per range at a time",
-                "considered_ranges": [[1,4], [5,7]], 
-                "plot_range": [true, true], 
-                "write_range": [true, false]}
-        }
-    },{
-        "type" : "dynamic_analysis",
-        "settings": {
-            "time":{
-                "integration_scheme": "GenAlpha",
-                "start": 0.0,
-                "end": 600.0,
-                "step" : 0.01},
-            "intial_conditions": {
-                "displacement": "None",
-                "velocity": "None",
-                "acceleration" : "None"
-            }},
-        "input": {
-            "help":"provide load file in the required format",
-            "file_path": "some/path"
+     "analyses_parameters":{
+        "report_options": {
+            "combine_plots_into_pdf" : true,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : false
         },
-        "output":{
-            "selected_instance": {
-                "plot_step": [1500, 2361], 
-                "write_step": [3276],
-                "plot_time": [30.5, 315.25], 
-                "write_time": [450.15]
-            },
-            "animate_time_history" : true,
-            "selected_dof": {
-                "dof_list": [1, 2, 0, 4, 5, 3,
-                            -5, 
-                            -4],
-                "help": "result type can be a list containing: reaction, ext_force, displacement, velocity, acceleration",
-                "result_type": [["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"],
-                                ["displacement", "velocity", "acceleration"], 
-                                ["displacement", "velocity", "acceleration"]],
-                "plot_result": [[true], [true], [true], [true], [true], [true],
-                                [true, true, true], 
-                                [true, true, true]],
-                "write_result": [[false],[false],[false],[false],[false],[false],
-                                    [true, false, false], 
-                                    [true, false, false]]
-            }
-        }
-    },{
-        "type" : "static_analysis",
-        "settings": {}, 
-        "input":{
-            "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
-            "file_path": "some/path"
-        }, 
-        "output":{
-            "plot": ["deformation", "forces"],
-            "write": ["deformation"]
-        }}]
+        "runs": [{
+                "type": "eigenvalue_analysis",
+                "settings": {
+                    "normalization": "mass_normalized"},
+                "input":{},
+                "output":{
+                    "eigenmode_summary": {
+                        "write" : true, 
+                        "plot" : true},
+                    "eigenmode_identification": {
+                        "write" : true, 
+                        "plot" : true},
+                    "selected_eigenmode": {
+                        "plot_mode": [1,2,3], 
+                        "write_mode": [5,6,7],
+                        "animate_mode": [1]},
+                    "selected_eigenmode_range": {
+                        "help": "maximum 4 modes per range at a time",
+                        "considered_ranges": [[1,4], [5,7]], 
+                        "plot_range": [true, true], 
+                        "write_range": [true, false]}
+                    }
+            },{
+                "type" : "dynamic_analysis",
+                "settings": {
+                    "time":{
+                        "integration_scheme": "GenAlpha",
+                        "start": 0.0,
+                        "end": 600.0,
+                        "step" : 0.01},
+                    "intial_conditions": {
+                        "displacement": "None",
+                        "velocity": "None",
+                        "acceleration" : "None"
+                    }},
+                "input": {
+                    "help":"provide load file in the required format",
+                    "file_path": "some/path"
+                },
+                "output":{
+                    "selected_instance": {
+                        "plot_step": [1500, 2361], 
+                        "write_step": [3276],
+                        "plot_time": [30.5, 315.25], 
+                        "write_time": [450.15]
+                    },
+                    "animate_time_history" : true,
+                    "selected_dof": {
+                        "dof_list": [1, 2, 0, 4, 5, 3,
+                                    -5, 
+                                    -4],
+                        "help": "result type can be a list containing: reaction, ext_force, displacement, velocity, acceleration",
+                        "result_type": [["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"],
+                                        ["displacement", "velocity", "acceleration"], 
+                                        ["displacement", "velocity", "acceleration"]],
+                        "plot_result": [[true], [true], [true], [true], [true], [true],
+                                        [true, true, true], 
+                                        [true, true, true]],
+                        "write_result": [[false],[false],[false],[false],[false],[false],
+                                            [true, false, false], 
+                                            [true, false, false]]
+                    }
+                }
+            },{
+                "type" : "static_analysis",
+                "settings": {}, 
+                "input":{
+                    "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
+                    "file_path": "some/path"
+                }, 
+                "output":{
+                    "plot": ["deformation", "forces"],
+                    "write": ["deformation"]
+                }}]}
 }
