@@ -1,4 +1,4 @@
-import math
+from math import ceil, log10
 
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
 
@@ -7,7 +7,7 @@ CUST_MAGNITUDE = 4
 
 def magnitude(x):
     # NOTE: ceil is supposed to be correct for positive values
-    return int(math.ceil(math.log10(x)))
+    return int(ceil(log10(x)))
 
 
 def map_lin_to_log(val, base=10**3):

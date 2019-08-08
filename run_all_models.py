@@ -23,13 +23,11 @@ Last update: 09.07.2019
 
 
 # ===============================================================================
-import numpy as np
-import matplotlib.pyplot as plt
-import os
+from os.path import join
 import json
 
 from source.model.structure_model import StraightBeam
-from source.analysis.analysis_wrapper import AnalysisWrapper
+from source.analysis.analysis_controller import AnalysisController
 
 
 # ==============================================
@@ -38,7 +36,7 @@ from source.analysis.analysis_wrapper import AnalysisWrapper
 # NOTE: all currently available files
 available_models = [
     # TODO: check model parameters for correctness
-   'ProjectParameters3DPylonCadBeam.json',
+    'ProjectParameters3DPylonCadBeam.json',
     # with various elastic modulus
     'ProjectParameters3DPylonSofiBeam.json',
     'ProjectParameters3DPylonSofiBeamReducedE.json',
@@ -52,19 +50,15 @@ available_models = [
     'ProjectParameters3DCaarcBeamPrototype.json',
     'ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
-
 for available_model in available_models:
 
     # ==============================================
     # Parameter read
-    with open(os.path.join(*['input','parameters', available_model]), 'r') as parameter_file:
+    with open(join(*['input', 'parameters', available_model]), 'r') as parameter_file:
         parameters = json.loads(parameter_file.read())
 
     # create initial model
     beam_model = StraightBeam(parameters['model_parameters'])
-
-    # plot initial model properties
-    # beam_model.plot_model_properties()
 
     # additional changes due to optimization
     if 'optimization_parameters' in parameters:
@@ -75,13 +69,10 @@ for available_model in available_models:
     else:
         print('No need found for adapting structure for target values')
 
-    # plot optimized model properties
-    # beam_model.plot_model_properties()
-
     # ==============================================
     # Analysis wrapper
 
-    analyses_controller = AnalysisWrapper(
+    analyses_controller = AnalysisController(
         beam_model, parameters['analyses_parameters'])
     analyses_controller.solve()
     analyses_controller.postprocess()

@@ -1,5 +1,7 @@
 import json
+from os.path import join
 import numpy as np
+
 from source.postprocess.skin_model.NodeModel import Node
 
 
@@ -24,11 +26,12 @@ class LineStructure:
             with open(structure_file) as json_file:
                 data = json.load(json_file)
                 self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
-                
+
                 # NOTE for now a workaround for importing
                 import os
-                self.dof_file = os.path.join(*["input","deformation",data["dofs_file_name"]])
-                
+                self.dof_file = join(
+                    *["input", "deformation", data["dofs_file_name"]])
+
                 self.beam_direction = data["beam_direction"]
 
             self.init_nodes()
@@ -88,7 +91,8 @@ class LineStructure:
                 theta_x = self.dofs["theta_x"][i]
                 theta_y = self.dofs["theta_y"][i]
                 theta_z = self.dofs["theta_z"][i]
-                self.nodes[i].assign_dofs(dx, dy, dz, theta_x, theta_y, theta_z)
+                self.nodes[i].assign_dofs(
+                    dx, dy, dz, theta_x, theta_y, theta_z)
                 self.dx_vec.append(self.nodes[i].dx)
                 self.dy_vec.append(self.nodes[i].dy)
                 self.dz_vec.append(self.nodes[i].dz)
@@ -97,7 +101,7 @@ class LineStructure:
                 self.theta_z_vec.append(self.nodes[i].theta_z)
                 # self.nodes[i].print_info()
 
-    def print_line_structure_info(self):    
+    def print_line_structure_info(self):
         msg = "=============================================\n"
         msg += "LINE STRUCTURE MODEL INFO \n"
         msg += "NUMBER OF NODES:\t" + str(self.num_of_nodes) + "\n"

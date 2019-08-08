@@ -2,9 +2,11 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
-import numpy as np
-from source.postprocess.skin_model.Mapper import Mapper
 from matplotlib import animation
+import numpy as np
+
+from source.postprocess.skin_model.Mapper import Mapper
+
 
 plt.rcParams['legend.fontsize'] = 16
 
@@ -34,7 +36,8 @@ class Visualiser:
 
         self.fig = plt.figure(figsize=(10, 10))
         # self.ax = Axes3D(self.fig)
-        self.ax = self.fig.add_subplot(111, projection='3d', aspect='equal', azim=-60, elev=10)
+        self.ax = self.fig.add_subplot(
+            111, projection='3d', aspect='equal', azim=-60, elev=10)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
@@ -49,7 +52,8 @@ class Visualiser:
         self.animate()
 
     def visualize_coordinate(self):
-        arrow_prop_dict = dict(mutation_scale=20, arrowstyle='->', shrinkA=0, shrinkB=0)
+        arrow_prop_dict = dict(
+            mutation_scale=20, arrowstyle='->', shrinkA=0, shrinkB=0)
         a = Arrow3D([0, 10], [0, 0], [0, 0], **arrow_prop_dict, color='r')
         self.ax.add_artist(a)
         a = Arrow3D([0, 0], [0, 10], [0, 0], **arrow_prop_dict, color='b')
@@ -72,16 +76,23 @@ class Visualiser:
         mid_x = (max(X) + min(X)) * 0.5
         mid_y = (max(Y) + min(Y)) * 0.5
         mid_z = (max(Z) + min(Z)) * 0.5
-        max_range = np.array([max(X) - min(X), max(Y) - min(Y), max(Z) - min(Z)]).max() / 2.0
+        max_range = np.array(
+            [max(X) - min(X), max(Y) - min(Y), max(Z) - min(Z)]).max() / 2.0
         self.ax.set_xlim(mid_x - max_range, mid_x + max_range)
         self.ax.set_ylim(mid_y - max_range, mid_y + max_range)
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
         self.visualize_coordinate()
 
     def visualise_line_structure(self):
-        x_vec = self.line_structure.x0_vec + np.subtract(self.line_structure.x_vec, self.line_structure.x0_vec) * self.scale
-        y_vec = self.line_structure.y0_vec + np.subtract(self.line_structure.y_vec, self.line_structure.y0_vec) * self.scale
-        z_vec = self.line_structure.z0_vec + np.subtract(self.line_structure.z_vec, self.line_structure.z0_vec) * self.scale
+        x_vec = self.line_structure.x0_vec + \
+            np.subtract(self.line_structure.x_vec,
+                        self.line_structure.x0_vec) * self.scale
+        y_vec = self.line_structure.y0_vec + \
+            np.subtract(self.line_structure.y_vec,
+                        self.line_structure.y0_vec) * self.scale
+        z_vec = self.line_structure.z0_vec + \
+            np.subtract(self.line_structure.z_vec,
+                        self.line_structure.z0_vec) * self.scale
 
         z = np.array([z_vec, z_vec])
         self.ax.plot_wireframe(x_vec, y_vec, z, color='b', linewidth=3)
@@ -92,9 +103,15 @@ class Visualiser:
             self.ax.scatter(x, y, z, marker='o', c='r', s=50)
 
     def visualise_interpolated_line_structure(self):
-        x_vec = self.interpolated_line_structure.x0_vec + np.subtract(self.interpolated_line_structure.x_vec, self.interpolated_line_structure.x0_vec) * self.scale
-        y_vec = self.interpolated_line_structure.y0_vec + np.subtract(self.interpolated_line_structure.y_vec, self.interpolated_line_structure.y0_vec) * self.scale
-        z_vec = self.interpolated_line_structure.z0_vec + np.subtract(self.interpolated_line_structure.z_vec, self.interpolated_line_structure.z0_vec) * self.scale
+        x_vec = self.interpolated_line_structure.x0_vec + \
+            np.subtract(self.interpolated_line_structure.x_vec,
+                        self.interpolated_line_structure.x0_vec) * self.scale
+        y_vec = self.interpolated_line_structure.y0_vec + \
+            np.subtract(self.interpolated_line_structure.y_vec,
+                        self.interpolated_line_structure.y0_vec) * self.scale
+        z_vec = self.interpolated_line_structure.z0_vec + \
+            np.subtract(self.interpolated_line_structure.z_vec,
+                        self.interpolated_line_structure.z0_vec) * self.scale
 
         z = np.array([z_vec, z_vec])
         self.ax.plot_wireframe(x_vec, y_vec, z,
@@ -108,9 +125,12 @@ class Visualiser:
 
     def visualise_element(self):
         for element in self.structure.elements:
-            x_vec = element.x0_vec + np.subtract(element.x_vec, element.x0_vec) * self.scale
-            y_vec = element.y0_vec + np.subtract(element.y_vec, element.y0_vec) * self.scale
-            z_vec = element.z0_vec + np.subtract(element.z_vec, element.z0_vec) * self.scale
+            x_vec = element.x0_vec + \
+                np.subtract(element.x_vec, element.x0_vec) * self.scale
+            y_vec = element.y0_vec + \
+                np.subtract(element.y_vec, element.y0_vec) * self.scale
+            z_vec = element.z0_vec + \
+                np.subtract(element.z_vec, element.z0_vec) * self.scale
 
             x_vec = np.append(x_vec, x_vec[0])
             y_vec = np.append(y_vec, y_vec[0])
@@ -122,14 +142,18 @@ class Visualiser:
 
     def visualize_frame(self):
         for frame in self.structure.frames:
-            x_vec = frame.x0_vec + np.subtract(frame.x_vec, frame.x0_vec) * self.scale
-            y_vec = frame.y0_vec + np.subtract(frame.y_vec, frame.y0_vec) * self.scale
-            z_vec = frame.z0_vec + np.subtract(frame.z_vec, frame.z0_vec) * self.scale
+            x_vec = frame.x0_vec + \
+                np.subtract(frame.x_vec, frame.x0_vec) * self.scale
+            y_vec = frame.y0_vec + \
+                np.subtract(frame.y_vec, frame.y0_vec) * self.scale
+            z_vec = frame.z0_vec + \
+                np.subtract(frame.z_vec, frame.z0_vec) * self.scale
 
             z = np.array([z_vec, z_vec])
             self.ax.plot_wireframe(x_vec, y_vec, z, color='black')
 
     def animate(self):
+        # TODO add dependency on ffmpeg somewhere - need to install ffmpeg for users
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
@@ -152,5 +176,3 @@ class Visualiser:
             self.visualise_line_structure()
         # self.visualise_interpolated_line_structure()
         self.set_coordinate_in_real_size()
-
-
