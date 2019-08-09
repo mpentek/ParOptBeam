@@ -2,7 +2,7 @@
 
 *.pyc
 *.idea
-*.vscode
+.vscode
 *.avi
 
 input/force/25_turb/
