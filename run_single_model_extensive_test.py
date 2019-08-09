@@ -34,7 +34,7 @@ from source.analysis.analysis_controller import AnalysisController
 # Model choice
 
 # NOTE: using this single (yet extensive) file for testing
-available_models = ['ProjectParameters3DCaarcBeamPrototypeWithOuttriger.json']
+available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
 for available_model in available_models:
 

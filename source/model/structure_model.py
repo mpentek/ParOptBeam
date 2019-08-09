@@ -340,7 +340,7 @@ class StraightBeam(object):
         for i in range(len(self.parameters['x'])):
             self.parameters['m_tot'] += self.parameters['a'][i] * \
                 self.parameters['rho'] * self.parameters['lx_i']
-
+        #TODO: Add outtrigger masses to this entry 
         if print_to_console:
             print('CURRENT:')
             print('total mass ', self.parameters['m_tot'])
@@ -350,10 +350,10 @@ class StraightBeam(object):
     def calculate_global_matrices(self):
         # mass matrix
         self.m = self._get_mass()
-        print(self.m)
+        #print(self.m)
         # stiffness matrix
         self.k = self._get_stiffness()
-        print(self.k)
+        #print(self.k)
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
 

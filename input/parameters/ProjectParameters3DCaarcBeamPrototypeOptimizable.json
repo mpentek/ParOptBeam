@@ -21,7 +21,9 @@
                     "shear_area_z" : [1460.0],
                     "moment_of_inertia_y" : [178646.0],
                     "moment_of_inertia_z" : [364583.0],
-                    "torsional_moment_of_inertia" : [420175.0]},
+                    "torsional_moment_of_inertia" : [420175.0],
+                    "outrigger_mass": [0.0], 
+                    "outrigger_stiffness": [0.0]},
                     {
                     "interval_bounds" : [60.0, 120.0],
                     "length_y": [45.0],
@@ -31,7 +33,9 @@
                     "shear_area_z" : [1125.0],
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227812.5],
-                    "torsional_moment_of_inertia" : [238140.0]},
+                    "torsional_moment_of_inertia" : [238140.0],
+                    "outrigger_mass": [0.0], 
+                    "outrigger_stiffness": [0.0]},
                     {
                     "interval_bounds" : [120.0, "End"],
                     "length_y": [40.0],
@@ -41,7 +45,9 @@
                     "shear_area_z" : [833.0],
                     "moment_of_inertia_y" : [52083.0],
                     "moment_of_inertia_z" : [133333.0],
-                    "torsional_moment_of_inertia" : [122500.0]}]
+                    "torsional_moment_of_inertia" : [122500.0],
+                    "outrigger_mass": [0.0], 
+                    "outrigger_stiffness": [0.0]}]
             }
         },
         "boundary_conditions": "fixed-free"
@@ -50,9 +56,11 @@
         "adapt_for_target_values": {
             "density_for_total_mass": 38880000.0,
             "geometric_properties_for": {
-                "consider_decomposed_modes": ["sway_y", "sway_z", "torsional"],
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "partition_shear_bending": [-1, 1],
+                "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
                 "corresponding_mode_ids" : [1, 1, 1],
-                "corresponding_eigenfrequencies": [0.20,0.23,0.40]}
+                "corresponding_eigenfrequencies": [0.5550,0.10,0.40]}
         }},
     "analyses_parameters":{
         "report_options": {
@@ -80,10 +88,10 @@
                         "help": "maximum 4 modes per range at a time",
                         "considered_ranges": [[1,4], [5,7]], 
                         "plot_range": [true, true], 
-                        "write_range": [true, false]}
+                        "write_range": [true, true]}
                     }
             },{
-                "type" : "dynamic_analysis",
+                "type" : "_dynamic_analysis",
                 "settings": {
                     "time":{
                         "integration_scheme": "GenAlpha",

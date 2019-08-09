@@ -46,7 +46,7 @@ class TimeIntegrationScheme(object):
         self.f0 = None
         self.f1 = None
 
-        self._print_structural_setup()
+        #self._print_structural_setup()
         self._print_time_integration_setup()
 
     def _print_structural_setup(self):
