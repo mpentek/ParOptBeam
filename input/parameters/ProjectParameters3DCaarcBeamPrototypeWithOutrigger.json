@@ -1,5 +1,6 @@
 {
     "model_parameters": {
+        "name": "CaarcBeamPrototypeWithOutrigger",
         "domain_size": "3D",
         "system_parameters": {
             "material": {

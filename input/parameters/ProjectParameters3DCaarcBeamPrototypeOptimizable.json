@@ -91,7 +91,7 @@
                         "write_range": [true, true]}
                     }
             },{
-                "type" : "_dynamic_analysis",
+                "type" : "dynamic_analysis",
                 "settings": {
                     "run_in_modal_coordinates": true,
                     "time":{
