@@ -288,9 +288,6 @@ class StraightBeam(object):
                 self.point_mass['vals'].append(values['c_m'])
             # out tigger stiffnss in x, Y, and Z the same ?? AK: need to check 
 
-
-
-
     def initialize_user_defined_geometric_parameters(self):
         # geometric
         # characteristics lengths
@@ -348,14 +345,17 @@ class StraightBeam(object):
             print()
 
     def calculate_global_matrices(self):
+        # using computational values for m,b,k as this reduction is done otherwise many times
+
         # mass matrix
         self.m = self._get_mass()
-        print(self.m)
+        self.comp_m = self.apply_bc_by_reduction(self.m)
         # stiffness matrix
         self.k = self._get_stiffness()
-        print(self.k)
+        self.comp_k = self.apply_bc_by_reduction(self.k)
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
+        self.comp_b = self.apply_bc_by_reduction(self.b)
 
 
     def decompose_and_quantify_eigenmodes(self, considered_modes=10):
@@ -392,7 +392,6 @@ class StraightBeam(object):
 
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
-
 
     def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
         # TODO remove code duplication: considered_modes
@@ -440,12 +439,16 @@ class StraightBeam(object):
     def eigenvalue_solve(self):
         # raw results
         # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
-        eig_values_raw, self.eigen_modes_raw = linalg.eigh(
-            self.apply_bc_by_reduction(self.k), self.apply_bc_by_reduction(self.m))
+        self.eig_values_raw, self.eigen_modes_raw = linalg.eigh(
+            self.comp_k, self.comp_m)
         # rad/s
-        self.eig_values = np.sqrt(np.real(eig_values_raw))
+        self.eig_values = np.sqrt(np.real(self.eig_values_raw))
         self.eig_freqs = self.eig_values / 2. / np.pi
+        self.eig_pers = 1/self.eig_freqs
         # sort eigenfrequencies
+
+        # NOTE: it seems that it is anyway sorted
+        # TODO: check if it can at all happen that it is not sorted, otherwise operation superflous
         self.eig_freqs_sorted_indices = np.argsort(self.eig_freqs)
 
     def evaluate_characteristic_on_interval(self, running_coord, characteristic_identifier):

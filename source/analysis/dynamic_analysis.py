@@ -87,6 +87,26 @@ class DynamicAnalysis(AnalysisType):
         self.velocity = np.zeros((rows, cols))
         self.acceleration = np.zeros((rows, cols))
 
+        if 'run_in_modal_coordinates' in self.parameters['settings']:
+            if self.parameters['settings']['run_in_modal_coordinates']:
+                self.transform_into_modal = True
+            else:
+                self.transform_into_modal = False
+                pass
+        else:
+            self.transform_into_modal = False
+            pass
+
+        # TODO check if concept of comp - computational model is robust and generic enough
+        self.comp_m = np.copy(self.structure_model.comp_m)
+        self.comp_k = np.copy(self.structure_model.comp_k) 
+        self.comp_b = np.copy(self.structure_model.comp_b)
+        
+        if self.transform_into_modal:
+            self.comp_m = self.transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_m) 
+            self.comp_b = self.transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_b)
+            self.comp_k = self.transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_k)    
+        
         if force.shape[1] != len(self.array_time):
             err_msg = "The time step for forces does not match the time step defined"
             raise Exception(err_msg)
@@ -94,28 +114,35 @@ class DynamicAnalysis(AnalysisType):
         if time_integration_scheme == "GenAlpha":
             from source.scheme.generalized_alpha_scheme import GeneralizedAlphaScheme
             self.solver = GeneralizedAlphaScheme(
-                self.dt, structure_model, initial_conditions)
+                self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
         elif time_integration_scheme == "Euler12":
             from source.scheme.euler12_scheme import Euler12
-            self.solver = Euler12(self.dt, structure_model, initial_conditions)
+            self.solver = Euler12(self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
         elif time_integration_scheme == "ForwardEuler1":
             from source.scheme.forward_euler1_scheme import ForwardEuler1
             self.solver = ForwardEuler1(
-                self.dt, structure_model, initial_conditions)
+                self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
         elif time_integration_scheme == "BackwardEuler1":
             from source.scheme.backward_euler1_scheme import BackwardEuler1
             self.solver = BackwardEuler1(
-                self.dt, structure_model, initial_conditions)
-
+                self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
         else:
             err_msg = "The requested time integration scheme \"" + time_integration_scheme
             err_msg += "\" is not available \n"
             err_msg += "Choose one of: \"GenAlpha\", \"Euler12\", \"ForwardEuler1\", \"BackwardEuler1\""
             raise Exception(err_msg)
 
+    def transform_into_modal_coordinates(self, modal_transform_matrix, matrix):
+        return np.matmul(np.matmul(np.transpose(modal_transform_matrix), matrix), modal_transform_matrix)
+
     def solve(self):
+
         print("Solving the structure for dynamic loads \n")
         force = self.structure_model.apply_bc_by_reduction(self.force, 'row')
+        
+        if self.transform_into_modal:
+            force = np.dot(np.transpose(self.structure_model.eigen_modes_raw), force)
+        
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
@@ -144,12 +171,19 @@ class DynamicAnalysis(AnalysisType):
         # NOTE: check if this is needed, seems to be unused
         # ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
 
-        f1 = np.matmul(self.structure_model.m, self.acceleration)
-        f2 = np.matmul(self.structure_model.b, self.velocity)
-        f3 = np.matmul(self.structure_model.k, self.displacement)
+        # TODO: check if this still correct in modal coordinates
+        if self.transform_into_modal:
+            f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'), self.acceleration)
+            f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'), self.velocity)
+            f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'), self.displacement)
+        else: 
+            f1 = np.matmul(self.structure_model.m, self.acceleration)
+            f2 = np.matmul(self.structure_model.b, self.velocity)
+            f3 = np.matmul(self.structure_model.k, self.displacement)
         self.dynamic_reaction = self.force - f1 - f2 - f3
 
         # TODO: check if the treatment of elastic bc dofs is correct
+        # TODO: check if this still applies in modal coordinates
         for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
             # assuming a Rayleigh-model
             damping_val = stiffness_val * self.structure_model.a[1]

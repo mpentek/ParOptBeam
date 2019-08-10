@@ -28,14 +28,14 @@ import numpy as np
 
 
 class TimeIntegrationScheme(object):
-    def __init__(self, dt, structure, initial_conditions):
+    def __init__(self, dt, comp_model, initial_conditions):
         # time step
         self.dt = dt
 
         # mass, damping and spring stiffness
-        self.M = structure.apply_bc_by_reduction(structure.m)
-        self.B = structure.apply_bc_by_reduction(structure.b)
-        self.K = structure.apply_bc_by_reduction(structure.k)
+        self.M = comp_model[0]
+        self.B = comp_model[1]
+        self.K = comp_model[2]
 
         # initial displacement, velocity and acceleration
         self.u1 = self.u0

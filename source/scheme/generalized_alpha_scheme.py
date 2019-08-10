@@ -5,7 +5,7 @@ from source.scheme.time_integration_scheme import TimeIntegrationScheme
 
 class GeneralizedAlphaScheme(TimeIntegrationScheme):
 
-    def __init__(self, dt, structure, initial_conditions,  p_inf=0.16):
+    def __init__(self, dt, comp_model, initial_conditions,  p_inf=0.16):
         # introducing and initializing properties and coefficients
         # construct an object self with the input arguments dt, M, B, K,
         # pInf, u0, v0, a0
@@ -14,9 +14,9 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.dt = dt
 
         # mass, damping and spring stiffness
-        self.M = structure.apply_bc_by_reduction(structure.m)
-        self.B = structure.apply_bc_by_reduction(structure.b)
-        self.K = structure.apply_bc_by_reduction(structure.k)
+        self.M = comp_model[0]
+        self.B = comp_model[1]
+        self.K = comp_model[2]
 
         # generalized alpha parameters (to ensure unconditional stability, 2nd order accuracy)
         self.alphaM = (2.0 * p_inf - 1.0) / (p_inf + 1.0)

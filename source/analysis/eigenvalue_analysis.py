@@ -39,27 +39,16 @@ class EigenvalueAnalysis(AnalysisType):
         self.frequency = None
         self.period = None
 
-    def solve(self):
+        self.comp_m = np.copy(self.structure_model.comp_m)
 
-        k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        m = self.structure_model.apply_bc_by_reduction(self.structure_model.m)
+    def solve(self, check_matrix=False):
 
-        eig_values_raw, eig_modes_raw = linalg.eigh(k, m)
-        # rad/s
-        eig_values = np.sqrt(np.real(eig_values_raw))
-        # 1/s = Hz
-        eig_freqs = eig_values / 2. / np.pi
-        # s
-        eig_pers = 1. / eig_freqs
-        # sort eigenfrequencies
-        eig_freqs_sorted_indices = np.argsort(eig_freqs)
-        ##
-
+        self.structure_model.eigenvalue_solve()
         # normalize results
         # http://www.colorado.edu/engineering/CAS/courses.d/Structures.d/IAST.Lect19.d/IAST.Lect19.Slides.pdf
         # normalize - unit generalized mass - slide 23
 
-        [rows, columns] = eig_modes_raw.shape
+        [rows, columns] = self.structure_model.eigen_modes_raw.shape
 
         eig_modes_norm = np.zeros((rows, columns))
 
@@ -67,30 +56,35 @@ class EigenvalueAnalysis(AnalysisType):
         gen_mass_norm = np.zeros(columns)
 
         print("Generalized mass should be identity")
-        for i in range(len(eig_values_raw)):
-            gen_mass_raw[i] = (np.transpose(eig_modes_raw[:, i])).dot(
-                m).dot(eig_modes_raw[:, i])
+        for i in range(len(self.structure_model.eig_values_raw)):
+            gen_mass_raw[i] = np.matmul(np.matmul(np.transpose(self.structure_model.eigen_modes_raw[:, i]),
+                                                  self.comp_m), self.structure_model.eigen_modes_raw[:, i])
 
             unit_gen_mass_norm_fact = np.sqrt(gen_mass_raw[i])
 
-            eig_modes_norm[:, i] = eig_modes_raw[:, i]/unit_gen_mass_norm_fact
+            eig_modes_norm[:, i] = self.structure_model.eigen_modes_raw[:,
+                                                                        i]/unit_gen_mass_norm_fact
 
-            gen_mass_norm[i] = (np.transpose(eig_modes_norm[:, i])).dot(
-                m).dot(eig_modes_norm[:, i])
+            gen_mass_norm[i] = np.matmul(np.matmul(np.transpose(eig_modes_norm[:, i]),
+                                                   self.comp_m), eig_modes_norm[:, i])
             # print("norm ", i, ": ",gen_mass_norm[i])
 
-        # print("Multiplication check: thethaT dot M dot theta: ",(np.transpose(eig_modes_norm)).dot(self.structure_model.m).dot(eig_modes_norm)," numerically 0 for off-diagonal terms")
-        # print()
+        if check_matrix:
+            gen_mass_norm = np.matmul(np.matmul(np.transpose(
+                eig_modes_norm), self.comp_m), eig_modes_norm)
+            print("Multiplication check: thethaT dot M dot theta: ",
+                  gen_mass_norm, " numerically 0 for off-diagonal terms")
+            print()
 
         self.eigenform = np.zeros(eig_modes_norm.shape)
-        self.frequency = np.zeros(eig_freqs.shape)
-        self.period = np.zeros(eig_pers.shape)
+        self.frequency = np.zeros(self.structure_model.eig_freqs.shape)
+        self.period = np.zeros(self.structure_model.eig_pers.shape)
 
-        for index in range(len(eig_freqs)):
+        for index in range(len(self.structure_model.eig_freqs)):
             self.eigenform[:, index] = eig_modes_norm[:,
-                                                      eig_freqs_sorted_indices[index]]
-            self.frequency[index] = eig_freqs[eig_freqs_sorted_indices[index]]
-            self.period[index] = eig_pers[eig_freqs_sorted_indices[index]]
+                                                      self.structure_model.eig_freqs_sorted_indices[index]]
+            self.frequency[index] = self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[index]]
+            self.period[index] = self.structure_model.eig_pers[self.structure_model.eig_freqs_sorted_indices[index]]
 
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
