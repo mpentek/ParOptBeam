@@ -82,7 +82,7 @@
             },{
                 "type" : "dynamic_analysis",
                 "settings": {
-                    "run_in_modal_coordinates": true,
+                    "run_in_modal_coordinates": false,
                     "time":{
                         "integration_scheme": "GenAlpha",
                         "start": 0.0,
