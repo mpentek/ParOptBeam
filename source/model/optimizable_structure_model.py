@@ -31,6 +31,7 @@ import matplotlib.pyplot as plt
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
+CUST_MAGNITUDE = 2
 
 class OptimizableStraightBeam(object):
     """
@@ -72,7 +73,7 @@ class OptimizableStraightBeam(object):
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
         # TODO: will assign this mass if no value provided, figure out bettwe way
-        "density_for_total_mass": 1500.0,
+        "density_for_total_mass": 0.0,
         "youngs_modulus_for": {},
         "geometric_properties_for": {}
                 }
@@ -163,6 +164,10 @@ class OptimizableStraightBeam(object):
                     identifier)
                 target_mode = self.parameters["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
                 target_freq = self.parameters["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
+                try:
+                    bending_shear_identifier = self.parameters["geometric_properties_for"]["partition_shear_bending"][0]
+                except:
+                    bending_shear_identifier = 0
 
                 self.adjust_sway_y_stiffness_for_target_eigenfreq(
                     target_freq, target_mode, True)
@@ -310,33 +315,46 @@ class OptimizableStraightBeam(object):
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iy = self.model.parameters['iy']
+        initial_a_sz = self.model.parameters['a_sz']
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_y_geometric_stiffness_objective_function,
                                        target_freq,
                                        target_mode,
-                                       initial_iy)
+                                       initial_iy, 
+                                       initial_a_sz)
+        initi_guess = (1.0, 1.0)
 
-        minimization_result = minimize_scalar(optimizable_function,
-                                              method='Bounded',
-                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+        bnds_iy = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/8,8)
+        bnds_a_sz = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
+
+        minimization_result = minimize(optimizable_function,
+                                              initi_guess,
+                                              method='L-BFGS-B',#'SLSQP',#
+                                              bounds=(bnds_iy,bnds_a_sz))
 
         # returning only one value!
-        opt_iy_fctr = minimization_result.x
+        opt_fctr = minimization_result.x
 
         if print_to_console:
             print('INITIAL iy:', ', '.join([str(val) for val in initial_iy]))
             print()
             print('OPTIMIZED iy: ', ', '.join(
-                [str(opt_iy_fctr * val) for val in initial_iy]))
+                [str(opt_fctr[0] * val) for val in initial_iy]))
+            print('INITIAL a_sz:', ', '.join([str(val) for val in initial_a_sz]))
             print()
-            print('FACTOR: ', opt_iy_fctr)
+            print('OPTIMIZED a_sz: ', ', '.join(
+                [str(opt_fctr[1] * val) for val in initial_a_sz]))
+            print()
+            print('FACTORS: ', ', '.join([str(val) for val in opt_fctr]))
             print()
 
-    def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, multiplier_fctr):
+    def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, initial_a_sz, multiplier_fctr):
 
         self.model.parameters['iy'] = [
-            multiplier_fctr * val for val in initial_iy]
+            multiplier_fctr[0] * val for val in initial_iy]
+        self.model.parameters['a_sz'] = [
+            multiplier_fctr[1] * val for val in initial_a_sz]
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
         self.model.evaluate_torsional_inertia()
@@ -355,16 +373,25 @@ class OptimizableStraightBeam(object):
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iz = self.model.parameters['iz']
+        initial_a_sy = self.model.parameters['a_sy']
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_z_geometric_stiffness_objective_function,
                                        target_freq,
                                        target_mode,
-                                       initial_iz)
+                                       initial_iz, 
+                                       initial_a_sy)
+        initi_guess = (1.0, 1.0)
 
-        minimization_result = minimize_scalar(optimizable_function,
-                                              method='Bounded',
-                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+        bnds_iz = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/8,8)
+        bnds_a_sy = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
+
+
+
+        minimization_result = minimize(optimizable_function,
+                                              initi_guess,
+                                              method='L-BFGS-B',
+                                              bounds=(bnds_iz,bnds_a_sy))
 
         # returning only one value!
         opt_iz_fctr = minimization_result.x
@@ -373,15 +400,21 @@ class OptimizableStraightBeam(object):
             print('INITIAL iz:', ', '.join([str(val) for val in initial_iz]))
             print()
             print('OPTIMIZED iz: ', ', '.join(
-                [str(opt_iz_fctr * val) for val in initial_iz]))
+                [str(opt_iz_fctr[0] * val) for val in initial_iz]))
             print()
+            print('INITIAL a_sy:', ', '.join([str(val) for val in initial_a_sy]))
+            print()
+            print('OPTIMIZED a_sy: ', ', '.join(
+                [str(opt_iz_fctr[1] * val) for val in initial_a_sy]))
             print('FACTOR: ', opt_iz_fctr)
             print()
 
-    def bending_z_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iz, multiplier_fctr):
+    def bending_z_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iz, initial_a_sy, multiplier_fctr):
 
         self.model.parameters['iz'] = [
-            multiplier_fctr * val for val in initial_iz]
+            multiplier_fctr[0] * val for val in initial_iz]
+        self.model.parameters['a_sy'] = [
+            multiplier_fctr[1] * val for val in initial_a_sy]
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
         self.model.evaluate_torsional_inertia()

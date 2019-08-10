@@ -69,7 +69,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
                                                    self.v1) + np.dot(self.K, self.u1)
 
-        self._print_structural_setup()
+        #self._print_structural_setup()
         self._print_time_integration_setup()
 
     def _print_time_integration_setup(self):

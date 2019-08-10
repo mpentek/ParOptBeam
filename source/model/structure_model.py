@@ -337,7 +337,7 @@ class StraightBeam(object):
         for i in range(len(self.parameters['x'])):
             self.parameters['m_tot'] += self.parameters['a'][i] * \
                 self.parameters['rho'] * self.parameters['lx_i']
-
+        #TODO: Add outtrigger masses to this entry 
         if print_to_console:
             print('CURRENT:')
             print('total mass ', self.parameters['m_tot'])
