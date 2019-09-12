@@ -156,6 +156,12 @@ class DynamicAnalysis(AnalysisType):
 
             # update results
             self.solver.update_structure_time_step()
+        
+        # transforming back to normal coordinates : 
+        if self.transform_into_modal:
+            self.displacement = np.matmul(self.structure_model.eigen_modes_raw, self.displacement)
+            self.velocity = np.matmul(self.structure_model.eigen_modes_raw, self.velocity)
+            self.acceleration = np.matmul(self.structure_model.eigen_modes_raw, self.acceleration)
 
         self.displacement = self.structure_model.recuperate_bc_by_extension(
             self.displacement)
@@ -172,14 +178,14 @@ class DynamicAnalysis(AnalysisType):
         # ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
 
         # TODO: check if this still correct in modal coordinates
-        if self.transform_into_modal:
-            f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'), self.acceleration)
-            f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'), self.velocity)
-            f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'), self.displacement)
-        else: 
-            f1 = np.matmul(self.structure_model.m, self.acceleration)
-            f2 = np.matmul(self.structure_model.b, self.velocity)
-            f3 = np.matmul(self.structure_model.k, self.displacement)
+        # if self.transform_into_modal:
+        #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'), self.acceleration)
+        #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'), self.velocity)
+        #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'), self.displacement)
+        # else: 
+        f1 = np.matmul(self.structure_model.m, self.acceleration)
+        f2 = np.matmul(self.structure_model.b, self.velocity)
+        f3 = np.matmul(self.structure_model.k, self.displacement)
         self.dynamic_reaction = self.force - f1 - f2 - f3
 
         # TODO: check if the treatment of elastic bc dofs is correct

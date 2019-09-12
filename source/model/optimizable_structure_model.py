@@ -66,7 +66,7 @@ class OptimizableStraightBeam(object):
         6. test unti how many elements it works, also specific cases with analystical solutions
     """
 
-    OPT_FCTR = 10
+    OPT_FCTR = 100
 
     THRESHOLD = 1e-8
 
@@ -164,10 +164,11 @@ class OptimizableStraightBeam(object):
                     identifier)
                 target_mode = self.parameters["geometric_properties_for"]["corresponding_mode_ids"][id_idx]
                 target_freq = self.parameters["geometric_properties_for"]["corresponding_eigenfrequencies"][id_idx]
-                try:
-                    bending_shear_identifier = self.parameters["geometric_properties_for"]["partition_shear_bending"][0]
-                except:
-                    bending_shear_identifier = 0
+                # try:
+                #     bending_shear_identifier = self.parameters["geometric_properties_for"]["partition_shear_bending"][0]
+                # except:
+                #     bending_shear_identifier = 0
+                # This is not being used currently. 
 
                 self.adjust_sway_y_stiffness_for_target_eigenfreq(
                     target_freq, target_mode, True)
@@ -326,7 +327,7 @@ class OptimizableStraightBeam(object):
         initi_guess = (1.0, 1.0)
 
         bnds_iy = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/8,8)
-        bnds_a_sz = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
+        bnds_a_sz = (0.4,1.0)#(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
 
         minimization_result = minimize(optimizable_function,
                                               initi_guess,
@@ -348,6 +349,7 @@ class OptimizableStraightBeam(object):
             print()
             print('FACTORS: ', ', '.join([str(val) for val in opt_fctr]))
             print()
+            
 
     def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, initial_a_sz, multiplier_fctr):
 
