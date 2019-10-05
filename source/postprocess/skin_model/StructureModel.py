@@ -4,7 +4,7 @@ from os.path import join
 
 from source.postprocess.skin_model.NodeModel import Node
 from source.postprocess.skin_model.Mapper import interpolate_points
-
+from source.model.structure_model import StraightBeam
 
 DIRECTION_VECTOR = ["x", "y", "z", "x", "y", "z"]
 beam_direction_index = 0
@@ -23,9 +23,9 @@ class Element:
 
         for point in geometry:
             # the beam direction takes a dummy value 0 at the beginning and will be overwritten
-            x = point["x"] * scale
-            y = point["y"] * scale
-            z = point["z"] * scale
+            x = point[0] * scale
+            y = point[1] * scale
+            z = point[2] * scale
 
             if beam_direction == "x":
                 x = s
@@ -93,37 +93,31 @@ class Frame:
 
 
 class Structure:
-    def __init__(self, structure_file):
+    def __init__(self, params):
         """
         initializing structure with geometry
         """
         self.elements = []
         self.frames = []
         self.contour_density = 1
-        with open(structure_file) as json_file:
-            data = json.load(json_file)
-            self.element_geometry = data["geometry"]
-
-            # NOTE for now a workaround for importing
-             self.dof_file = join(
-                *["input", "deformation", data["dofs_file_name"]])
-
-            self.beam_length = json.load(open(self.dof_file))["length"]
-            self.scaling_vector = data["scaling_vector"]
-            self.num_of_elements = len(self.scaling_vector)
-            self.beam_direction = data["beam_direction"]
-            self.element_length = self.beam_length / self.num_of_elements
-            self.is_record_animation = data["record_animation"]
-            self.is_visualize_line_structure = data["visualize_line_structure"]
-            self.contour_density = data["contour_density"]
-
-        self.densify_contour(self.contour_density)
+        self.element_geometry = params["geometry"]
+        self.beam_length = params["beam_length"]
+        self.scaling_vector = params["scaling_vector"]
+        self.num_of_elements = len(self.scaling_vector)
+        self.beam_direction = params["beam_direction"]
+        self.element_length = self.beam_length / self.num_of_elements
+        self.is_record_animation = params["record_animation"]
+        self.is_visualize_line_structure = params["visualize_line_structure"]
         self.print_structure_info()
+
+        self.contour_density = params["contour_density"]
+        self.densify_contour(self.contour_density)
         self.create_elements()
         self.create_frames()
 
     def print_structure_info(self):
         msg = "=============================================\n"
+        msg += "VISUALISING SKIN MODEL"
         msg += "BEAM MODEL INFO \n"
         msg += "LENGTH:\t" + str(self.beam_length) + "\n"
         msg += "#ELEMENTS:\t" + str(self.num_of_elements) + "\n"

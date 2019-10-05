@@ -9,6 +9,8 @@ from source.model.structure_model import StraightBeam
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.postprocess.skin_model.StructureModel import Structure
+from source.postprocess.skin_model.LineStructureModel import LineStructure
 
 
 class EigenvalueAnalysis(AnalysisType):
@@ -434,7 +436,12 @@ class EigenvalueAnalysis(AnalysisType):
                                          force,
                                          scaling)
 
-    def postprocess(self, pdf_report, display_plot):
+    def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
+        s = Structure(skin_model_params)
+        # ls = LineStructure(json_file_name)
+        # plotter = Visualiser(ls, s)
+
+    def postprocess(self, pdf_report, display_plot, skin_model_params):
         """
         Postprocess something
         """
@@ -460,6 +467,9 @@ class EigenvalueAnalysis(AnalysisType):
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
             self.animate_selected_eigenmode(mode)
+
+        for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
+            self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
 
         # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)
