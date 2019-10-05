@@ -19,13 +19,14 @@ class AnalysisController(object):
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
         "report_options": {},
-        "runs": []}
+        "runs": [],
+        "skin_model_parameters": {}}
 
     def __init__(self, model, parameters):
 
-        if not(isinstance(model, StraightBeam)):
+        if not (isinstance(model, StraightBeam)):
             err_msg = "The proivded model is of type \"" + \
-                str(type(model)) + "\"\n"
+                      str(type(model)) + "\"\n"
             err_msg += "Has to be of type \"<class \'StraigthBeam\'>\""
             raise Exception(err_msg)
         self.model = model
@@ -50,8 +51,18 @@ class AnalysisController(object):
 
         self.display_plots = self.parameters['report_options']['display_plots_on_screen']
 
+        # TODO: passing skin model visualisation params
+        self.skin_model_params = None
         if self.parameters['report_options']['use_skin_model']:
-            pass
+            self.skin_model_params = {"geometry": self.parameters["skin_model_parameters"]["geometry"],
+                                      "beam_length": self.model.parameters["lx"],
+                                      "contour_density": self.parameters["skin_model_parameters"]["contour_density"],
+                                      "record_animation": self.parameters["skin_model_parameters"]["record_animation"],
+                                      "visualize_line_structure": self.parameters["skin_model_parameters"][
+                                          "visualize_line_structure"],
+                                      "beam_direction": self.parameters["skin_model_parameters"]["beam_direction"],
+                                      "scaling_vector": self.parameters["skin_model_parameters"]["scaling_vector"],
+                                      "num_of_dofs_per_node": self.model.DOFS_PER_NODE[self.model.domain_size]}
 
         self.analyses = []
 
@@ -74,7 +85,7 @@ class AnalysisController(object):
 
             else:
                 err_msg = "The analysis type \"" + \
-                    analysis_param['type']
+                          analysis_param['type']
                 err_msg += "\" is not available \n"
                 err_msg += "Choose one of: \""
                 err_msg += '\", \"'.join(
@@ -86,10 +97,10 @@ class AnalysisController(object):
             analysis.solve()
 
     def postprocess(self):
-        self.model.plot_model_properties(self.report_pdf, self.display_plots)
+        self.model.plot_model_properties(self.report_pdf, self.display_plots, self.skin_model_params)
 
         for analysis in self.analyses:
-            analysis.postprocess(self.report_pdf, self.display_plots)
+            analysis.postprocess(self.report_pdf, self.display_plots, self.skin_model_params)
 
         try:
             self.report_pdf.close()
