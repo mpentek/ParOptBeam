@@ -24,13 +24,13 @@ class Arrow3D(FancyArrowPatch):
 
 
 class Visualiser:
-    def __init__(self, line_structure, structure=None):
+    def __init__(self, line_structure, structure):
         self.line_structure = line_structure
-        if structure is not None:
-            self.structure = structure
+        self.structure = structure
         self.mapper = Mapper(structure, line_structure)
         self.interpolated_line_structure = self.mapper.interpolated_line_structure
-        self.factor = 150.
+        self.scale = 10000.
+        self.steps = self.structure
         self.is_record_animation = self.structure.is_record_animation
         self.is_visualize_line_structure = self.structure.is_visualize_line_structure
 
@@ -44,7 +44,6 @@ class Visualiser:
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
 
-        self.mapper.map_interpolated_line_structure_to_structure_floor()
         self.line_structure.apply_transformation_for_line_structure()
         self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
@@ -157,9 +156,9 @@ class Visualiser:
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(self.fig, self.update, 40, repeat=False)
+        a = animation.FuncAnimation(self.fig, self.update, 20, repeat=True)
         if self.is_record_animation:
-            a.save("results/structure_displacement.mp4")
+            a.save("results/skin_model_displacement.mp4")
         plt.tight_layout()
         plt.show()
 
@@ -170,7 +169,15 @@ class Visualiser:
         wframe = self.fig.gca()
         if wframe is not None:
             self.ax.cla()
-        self.scale = self.factor * np.sin(t)
+        print("time: " + str(t))
+        self.line_structure.update_dofs(t)
+        self.mapper.map_line_structure_to_interpolated_line_structure()
+        # self.mapper.map_interpolated_line_structure_to_structure_floor()
+
+        self.line_structure.apply_transformation_for_line_structure()
+        self.interpolated_line_structure.apply_transformation_for_line_structure()
+        # self.structure.apply_transformation_for_structure()
+
         self.visualise_structure()
         if self.is_visualize_line_structure:
             self.visualise_line_structure()

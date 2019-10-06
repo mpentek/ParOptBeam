@@ -19,6 +19,7 @@ class LineStructure:
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
         self.node_positions = {}
         self.dofs = {}
+        self.steps = 1
 
         # initializing beam info with beam structure
         if structure is not None:
@@ -27,15 +28,15 @@ class LineStructure:
             self.num_of_nodes = structure.num_of_elements
             self.dofs_input = structure.dofs
 
-            self.init_nodes()
-            self.init_dofs()
+            self.init()
             self.print_line_structure_info()
 
-    def init_nodes(self):
+    def init(self):
         self.node_positions["x0"] = self.dofs_input["x0"]
         self.node_positions["y0"] = self.dofs_input["y0"]
         self.node_positions["z0"] = self.dofs_input["z0"]
         self.num_of_nodes = len(self.dofs_input["x0"])
+        self.steps = len(self.dofs_input["x"])
 
         for i in range(self.num_of_nodes):
             x = self.node_positions["x0"][i]
@@ -57,15 +58,16 @@ class LineStructure:
             self.s_vec = self.y_vec
         elif self.beam_direction == "z":
             self.s_vec == self.z_vec
+        self.update_dofs(0)
         print("Undeformed Nodes added successfully!")
 
-    def init_dofs(self):
-        self.dofs["dx"] = np.zeros(self.num_of_nodes)
-        self.dofs["dy"] = self.dofs_input["y"][0]
-        self.dofs["dz"] = self.dofs_input["z"][0]
-        self.dofs["theta_x"] = self.dofs_input["a"][0]
-        self.dofs["theta_y"] = self.dofs_input["b"][0]
-        self.dofs["theta_z"] = self.dofs_input["g"][0]  # torsion
+    def update_dofs(self, step):
+        self.dofs["dx"] = self.dofs_input["x"][step]
+        self.dofs["dy"] = self.dofs_input["y"][step]
+        self.dofs["dz"] = self.dofs_input["z"][step]
+        self.dofs["theta_x"] = self.dofs_input["a"][step]
+        self.dofs["theta_y"] = self.dofs_input["b"][step]
+        self.dofs["theta_z"] = self.dofs_input["g"][step]  # torsion
         for i in range(self.num_of_nodes):
             dx = self.dofs["dx"][i]
             dy = self.dofs["dy"][i]
