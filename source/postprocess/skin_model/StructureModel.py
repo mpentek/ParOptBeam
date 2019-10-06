@@ -3,7 +3,7 @@ import numpy as np
 from os.path import join
 
 from source.postprocess.skin_model.NodeModel import Node
-from source.postprocess.skin_model.Mapper import _interpolate_points
+from source.postprocess.skin_model.Mapper import interpolate_points
 from source.model.structure_model import StraightBeam
 
 DIRECTION_VECTOR = ["x", "y", "z", "x", "y", "z"]
@@ -130,8 +130,8 @@ class Structure:
         current_length = 0.0
         current_scale = 1.
         while current_length <= self.beam_length:
-            current_scale = _interpolate_points(current_length, np.linspace(0, self.beam_length, self.num_of_elements),
-                                                self.scaling_vector)
+            current_scale = interpolate_points(current_length, np.linspace(0, self.beam_length, self.num_of_elements),
+                                               self.scaling_vector)
             element = Element(self.element_geometry, current_length,
                               current_scale, self.beam_direction)
             self.elements.append(element)
@@ -156,7 +156,7 @@ class Structure:
                     [self.element_geometry[i % len(self.element_geometry)][DIRECTION_VECTOR[beam_direction_index + 1]],
                      self.element_geometry[i % len(self.element_geometry)][DIRECTION_VECTOR[beam_direction_index + 2]]],
                     [self.element_geometry[(i + 1) % len(self.element_geometry)][
-                        DIRECTION_VECTOR[beam_direction_index + 1]],
+                         DIRECTION_VECTOR[beam_direction_index + 1]],
                      self.element_geometry[(i + 1) % len(self.element_geometry)][
                          DIRECTION_VECTOR[beam_direction_index + 2]]],
                     parts)

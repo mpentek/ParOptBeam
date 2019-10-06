@@ -171,11 +171,11 @@ class Visualiser:
             self.ax.cla()
         print("time: " + str(t))
         self.line_structure.update_dofs(t)
-        self.mapper.map_line_structure_to_interpolated_line_structure()
+        # self.mapper.map_line_structure_to_interpolated_line_structure()
         # self.mapper.map_interpolated_line_structure_to_structure_floor()
 
         self.line_structure.apply_transformation_for_line_structure()
-        self.interpolated_line_structure.apply_transformation_for_line_structure()
+        # self.interpolated_line_structure.apply_transformation_for_line_structure()
         # self.structure.apply_transformation_for_structure()
 
         self.visualise_structure()
