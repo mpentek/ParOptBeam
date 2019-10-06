@@ -156,7 +156,7 @@ class Visualiser:
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(self.fig, self.update, 20, repeat=True)
+        a = animation.FuncAnimation(self.fig, self.update, 25, repeat=True)
         if self.is_record_animation:
             a.save("results/skin_model_displacement.mp4")
         plt.tight_layout()
@@ -171,12 +171,12 @@ class Visualiser:
             self.ax.cla()
         print("time: " + str(t))
         self.line_structure.update_dofs(t)
-        # self.mapper.map_line_structure_to_interpolated_line_structure()
-        # self.mapper.map_interpolated_line_structure_to_structure_floor()
+        self.mapper.map_line_structure_to_interpolated_line_structure()
+        self.mapper.map_interpolated_line_structure_to_structure_element()
 
         self.line_structure.apply_transformation_for_line_structure()
-        # self.interpolated_line_structure.apply_transformation_for_line_structure()
-        # self.structure.apply_transformation_for_structure()
+        self.interpolated_line_structure.apply_transformation_for_line_structure()
+        self.structure.apply_transformation_for_structure()
 
         self.visualise_structure()
         if self.is_visualize_line_structure:

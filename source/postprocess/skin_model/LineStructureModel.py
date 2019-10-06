@@ -62,6 +62,7 @@ class LineStructure:
         print("Undeformed Nodes added successfully!")
 
     def update_dofs(self, step):
+        dx_vec, dy_vec, dz_vec, theta_x_vec, theta_y_vec, theta_z_vec = [], [], [], [], [], []
         self.dofs["dx"] = self.dofs_input["x"][step]
         self.dofs["dy"] = self.dofs_input["y"][step]
         self.dofs["dz"] = self.dofs_input["z"][step]
@@ -77,12 +78,18 @@ class LineStructure:
             theta_z = self.dofs["theta_z"][i]
             self.nodes[i].assign_dofs(
                 dx, dy, dz, theta_x, theta_y, theta_z)
-            self.dx_vec.append(self.nodes[i].dx)
-            self.dy_vec.append(self.nodes[i].dy)
-            self.dz_vec.append(self.nodes[i].dz)
-            self.theta_x_vec.append(self.nodes[i].theta_x)
-            self.theta_y_vec.append(self.nodes[i].theta_y)
-            self.theta_z_vec.append(self.nodes[i].theta_z)
+            dx_vec.append(self.nodes[i].dx)
+            dy_vec.append(self.nodes[i].dy)
+            dz_vec.append(self.nodes[i].dz)
+            theta_x_vec.append(self.nodes[i].theta_x)
+            theta_y_vec.append(self.nodes[i].theta_y)
+            theta_z_vec.append(self.nodes[i].theta_z)
+            self.dx_vec = dx_vec
+            self.dy_vec = dy_vec
+            self.dz_vec = dz_vec
+            self.theta_x_vec = theta_x_vec
+            self.theta_y_vec = theta_y_vec
+            self.theta_z_vec = theta_z_vec
             # self.nodes[i].print_info()
 
     def print_line_structure_info(self):
