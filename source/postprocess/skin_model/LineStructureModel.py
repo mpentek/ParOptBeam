@@ -6,50 +6,36 @@ from source.postprocess.skin_model.NodeModel import Node
 
 
 class LineStructure:
-    def __init__(self, structure_file=None):
+    def __init__(self, structure=None):
         """
         initializing line structure with eigenform
         """
+        # initializing variables needed by LineStructure
         self.nodes = []
         self.x_vec, self.y_vec, self.z_vec = [], [], []
         self.x0_vec, self.y0_vec, self.z0_vec = [], [], []
         self.s_vec = []  # beam-wise vector
         self.dx_vec, self.dy_vec, self.dz_vec, self.ds_vec = [], [], [], []
         self.theta_x_vec, self.theta_y_vec, self.theta_z_vec = [], [], []
-        self.beam_length = 0
-        self.num_of_nodes = 0
         self.node_positions = {}
         self.dofs = {}
-        self.beam_direction = None
 
-        if structure_file is not None:
-            with open(structure_file) as json_file:
-                data = json.load(json_file)
-                self.num_of_dofs_per_node = data["num_of_dofs_per_node"]
-
-                # NOTE for now a workaround for importing
-                import os
-                self.dof_file = join(
-                    *["input", "deformation", data["dofs_file_name"]])
-
-                self.beam_direction = data["beam_direction"]
+        # initializing beam info with beam structure
+        if structure is not None:
+            self.beam_direction = structure.beam_direction
+            self.beam_length = structure.beam_length
+            self.num_of_nodes = structure.num_of_elements
+            self.dofs_input = structure.dofs
 
             self.init_nodes()
             self.init_dofs()
             self.print_line_structure_info()
 
     def init_nodes(self):
-
-        with open(self.dof_file) as f:
-            f = json.load(f)
-            # wrapping beam direction from x to z (mdof_solver)
-            self.beam_length = f["length"]
-            self.num_of_nodes = f["num_of_elements"]
-            self.node_positions["x0"] = f["x0"]
-            self.node_positions["y0"] = f["y0"]
-            self.node_positions["z0"] = f["z0"]
-
-            self.num_of_nodes = len(f["x0"])
+        self.node_positions["x0"] = self.dofs_input["x0"]
+        self.node_positions["y0"] = self.dofs_input["y0"]
+        self.node_positions["z0"] = self.dofs_input["z0"]
+        self.num_of_nodes = len(self.dofs_input["x0"])
 
         for i in range(self.num_of_nodes):
             x = self.node_positions["x0"][i]
@@ -74,32 +60,28 @@ class LineStructure:
         print("Undeformed Nodes added successfully!")
 
     def init_dofs(self):
-        with open(self.dof_file) as f:
-            f = json.load(f)
-            # TODO check the dof in beam direction
-            self.dofs["dx"] = np.zeros(self.num_of_nodes)
-            self.dofs["dy"] = f["y"]
-            self.dofs["dz"] = f["z"]
-            self.dofs["theta_x"] = f["a"]
-            self.dofs["theta_y"] = f["b"]
-            self.dofs["theta_z"] = f["g"]  # torsion
-
-            for i in range(self.num_of_nodes):
-                dx = self.dofs["dx"][i]
-                dy = self.dofs["dy"][i]
-                dz = self.dofs["dz"][i]
-                theta_x = self.dofs["theta_x"][i]
-                theta_y = self.dofs["theta_y"][i]
-                theta_z = self.dofs["theta_z"][i]
-                self.nodes[i].assign_dofs(
-                    dx, dy, dz, theta_x, theta_y, theta_z)
-                self.dx_vec.append(self.nodes[i].dx)
-                self.dy_vec.append(self.nodes[i].dy)
-                self.dz_vec.append(self.nodes[i].dz)
-                self.theta_x_vec.append(self.nodes[i].theta_x)
-                self.theta_y_vec.append(self.nodes[i].theta_y)
-                self.theta_z_vec.append(self.nodes[i].theta_z)
-                # self.nodes[i].print_info()
+        self.dofs["dx"] = np.zeros(self.num_of_nodes)
+        self.dofs["dy"] = self.dofs_input["y"][0]
+        self.dofs["dz"] = self.dofs_input["z"][0]
+        self.dofs["theta_x"] = self.dofs_input["a"][0]
+        self.dofs["theta_y"] = self.dofs_input["b"][0]
+        self.dofs["theta_z"] = self.dofs_input["g"][0]  # torsion
+        for i in range(self.num_of_nodes):
+            dx = self.dofs["dx"][i]
+            dy = self.dofs["dy"][i]
+            dz = self.dofs["dz"][i]
+            theta_x = self.dofs["theta_x"][i]
+            theta_y = self.dofs["theta_y"][i]
+            theta_z = self.dofs["theta_z"][i]
+            self.nodes[i].assign_dofs(
+                dx, dy, dz, theta_x, theta_y, theta_z)
+            self.dx_vec.append(self.nodes[i].dx)
+            self.dy_vec.append(self.nodes[i].dy)
+            self.dz_vec.append(self.nodes[i].dz)
+            self.theta_x_vec.append(self.nodes[i].theta_x)
+            self.theta_y_vec.append(self.nodes[i].theta_y)
+            self.theta_z_vec.append(self.nodes[i].theta_z)
+            # self.nodes[i].print_info()
 
     def print_line_structure_info(self):
         msg = "=============================================\n"

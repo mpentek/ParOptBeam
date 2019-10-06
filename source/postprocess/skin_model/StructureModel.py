@@ -100,6 +100,7 @@ class Structure:
         self.elements = []
         self.frames = []
         self.contour_density = 1
+        self.dofs = params["dofs_input"]
         self.element_geometry = params["geometry"]
         self.beam_length = params["beam_length"]
         self.scaling_vector = params["scaling_vector"]
@@ -190,7 +191,3 @@ class Structure:
 
     def print_one_structure_normal(self, floor_id):
         self.elements[floor_id].print_element_normal()
-
-
-if __name__ == "__main__":
-    s = Structure("trapezoid.json")
