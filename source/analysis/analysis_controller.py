@@ -62,7 +62,8 @@ class AnalysisController(object):
                                           "visualize_line_structure"],
                                       "beam_direction": self.parameters["skin_model_parameters"]["beam_direction"],
                                       "scaling_vector": self.parameters["skin_model_parameters"]["scaling_vector"],
-                                      "num_of_dofs_per_node": self.model.DOFS_PER_NODE[self.model.domain_size]}
+                                      "num_of_dofs_per_node": self.model.DOFS_PER_NODE[self.model.domain_size],
+                                      "dofs_input": {}}
 
         self.analyses = []
 
