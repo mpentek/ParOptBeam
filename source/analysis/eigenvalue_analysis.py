@@ -11,6 +11,7 @@ import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.postprocess.skin_model.StructureModel import Structure
 from source.postprocess.skin_model.LineStructureModel import LineStructure
+from source.postprocess.skin_model.Visualiser import Visualiser
 
 
 class EigenvalueAnalysis(AnalysisType):
@@ -199,24 +200,17 @@ class EigenvalueAnalysis(AnalysisType):
                                      row_labels,
                                      column_labels)
 
-    # TODO: to remove once visualizer is refactored and tested
-    def write_output_file(self):
+    def get_output_for_visualiser(self):
         """"
-        This function writes out the nodal dofs of the deformed state
-
+        This function writes out the nodal dofs of the deformed state for visualiser
         """
-        file = open("beam.txt", "w")
-        dict = {}
-        dict["length"] = max(self.structure_model.nodal_coordinates["x0"])
-        dict["num_of_elements"] = len(
-            self.structure_model.nodal_coordinates["x0"])
+        output = {"length": max(self.structure_model.nodal_coordinates["x0"]),
+                  "num_of_elements": len(self.structure_model.nodal_coordinates["x0"])}
         for key, val in self.structure_model.nodal_coordinates.items():
-            dict[key] = val.tolist()
+            output[key] = val.tolist()
+        print(output)
 
-        json_string = json.dumps(dict)
-
-        file.write(json_string)
-        file.close()
+        return output
 
     def plot_selected_eigenmode(self, pdf_report, display_plot, selected_mode):
         """
@@ -438,8 +432,8 @@ class EigenvalueAnalysis(AnalysisType):
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
         s = Structure(skin_model_params)
-        # ls = LineStructure(json_file_name)
-        # plotter = Visualiser(ls, s)
+        ls = LineStructure(s)
+        plotter = Visualiser(ls, s)
 
     def postprocess(self, pdf_report, display_plot, skin_model_params):
         """
@@ -469,6 +463,7 @@ class EigenvalueAnalysis(AnalysisType):
             self.animate_selected_eigenmode(mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
+            skin_model_params["dofs_input"] = self.get_output_for_visualiser()
             self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
 
         # TODO to adapt and refactor
