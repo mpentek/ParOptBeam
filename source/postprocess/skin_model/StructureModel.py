@@ -47,7 +47,7 @@ class Element:
 
 
 class Frame:
-    def __init__(self, elements):
+    def __init__(self, elements, index):
         """
         connecting all points from the same geometry point for each element
         """
@@ -58,12 +58,16 @@ class Frame:
         self.deformed = np.ndarray((3, self.num_of_nodes), dtype=float)
 
         for i in range(len(elements)):
-            self.nodes[i] = elements[i].nodes[i]
+            self.nodes[i] = elements[i].nodes[index]
             self.undeformed[0][i] = self.nodes[i].undeformed[0]
             self.undeformed[1][i] = self.nodes[i].undeformed[1]
             self.undeformed[2][i] = self.nodes[i].undeformed[2]
 
         self.deformed = self.undeformed
+
+    def print_frame(self):
+        for node in self.nodes:
+            node.print_info()
 
 
 class Structure:
@@ -76,7 +80,7 @@ class Structure:
         self.element_geometry = params["geometry"]
         self.beam_length = params["length"]
         self.scaling_vector = params["scaling_vector"]
-        self.num_of_geo_nodes = len(self.element_geometry)
+        self.num_of_frames = len(self.element_geometry)
         self.num_of_elements = len(self.scaling_vector) + 1
         self.beam_direction = BeamDirection[params["beam_direction"]]
         self.element_length = self.beam_length / (self.num_of_elements - 1)
@@ -88,14 +92,14 @@ class Structure:
         self.densify_contour(self.contour_density)
         self.elements = np.empty(self.num_of_elements, dtype=Element)
         self.create_elements()
-        self.frames = np.empty(self.num_of_geo_nodes, dtype=Frame)
+        self.frames = np.empty(self.num_of_frames, dtype=Frame)
         self.create_frames()
 
     def print_structure_info(self):
         msg = "=============================================\n"
         msg += "VISUALISING SKIN MODEL"
         msg += "BEAM MODEL INFO \n"
-        msg += "BEAM DIRECTION" + str(self.beam_direction) + "\n"
+        msg += str(self.beam_direction) + "\n"
         msg += "LENGTH:\t" + str(self.beam_length) + "\n"
         msg += "#ELEMENTS:\t" + str(self.num_of_elements) + "\n"
         msg += "ELEMENT LENGTH:\t" + str(self.element_length) + "\n"
@@ -112,8 +116,8 @@ class Structure:
             self.elements[i] = element
 
     def create_frames(self):
-        for i in range(self.num_of_geo_nodes):
-            frame = Frame(self.elements)
+        for i in range(self.num_of_frames):
+            frame = Frame(self.elements, i)
             self.frames[i] = frame
 
     def densify_contour(self, parts=5):
@@ -159,8 +163,9 @@ class Structure:
         print("Printing element: " + str(element_id))
         self.elements[element_id].print_element()
 
-    def print_one_structure_normal(self, element_id):
-        self.elements[element_id].print_element_normal()
+    def print_structure_frame(self, frame_id):
+        print("Printing frame: " + str(frame_id))
+        self.frames[frame_id].print_frame()
 
 
 def test():
@@ -172,7 +177,7 @@ def test():
              "record_animation": False,
              "visualize_line_structure": True,
              "beam_direction": "x",
-             "scaling_vector": [1.5, 1.0, 2.0],
+             "scaling_vector": [1.01, 1.0, 1.02],
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -184,10 +189,12 @@ def test():
                  "z": [[0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 2.0, 3.0, 4.0]],
                  "a": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]],
                  "b": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]],
-                 "g": [[0.0, 0.0, 0.0, 0.0, np.pi], [0.0, 0.0, 0.0, 0.0, 3.14]],
+                 "g": [[0.0, 0.0, 0.0, 0.0, np.pi], [0.0, 0.0, 0.0, 0.0, np.pi]],
                  "x": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]]}}
     s = Structure(param)
     s.apply_transformation_for_structure()
+    s.print_structure_element(0)
+    s.print_structure_frame(0)
 
 
 if __name__ == "__main__":
