@@ -55,7 +55,7 @@ class AnalysisController(object):
         self.skin_model_params = None
         if self.parameters['report_options']['use_skin_model']:
             self.skin_model_params = {"geometry": self.parameters["skin_model_parameters"]["geometry"],
-                                      "beam_length": self.model.parameters["lx"],
+                                      "length": self.model.parameters["lx"],
                                       "contour_density": self.parameters["skin_model_parameters"]["contour_density"],
                                       "record_animation": self.parameters["skin_model_parameters"]["record_animation"],
                                       "visualize_line_structure": self.parameters["skin_model_parameters"][
