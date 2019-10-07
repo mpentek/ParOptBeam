@@ -8,11 +8,8 @@ class LineStructure:
         """
         initializing line structure with dofs
         """
-        # Setting default values
-        self.beam_length = 1
-        self.num_of_nodes = 1
-
         # initializing beam info with param
+        self.params = params
         self.beam_length = params["length"]
         self.num_of_nodes = params["num_of_elements"]
         self.dofs_input = params["dofs_input"]
@@ -47,15 +44,15 @@ class LineStructure:
         print("Undeformed Nodes added successfully!")
 
     def update_dofs(self, step):
-        displacement = np.array([self.dofs_input["x"][step],
-                                 self.dofs_input["y"][step],
-                                 self.dofs_input["z"][step]])
-        angular_displacement = np.array([self.dofs_input["a"][step],
-                                         self.dofs_input["b"][step],
-                                         self.dofs_input["g"][step]])
+        self.displacement = np.array([self.dofs_input["x"][step],
+                                      self.dofs_input["y"][step],
+                                      self.dofs_input["z"][step]])
+        self.angular_displacement = np.array([self.dofs_input["a"][step],
+                                              self.dofs_input["b"][step],
+                                              self.dofs_input["g"][step]])
 
-        displacement = displacement.transpose().reshape(self.num_of_nodes, 3)
-        angular_displacement = angular_displacement.transpose().reshape(self.num_of_nodes, 3)
+        displacement = self.displacement.transpose().reshape(self.num_of_nodes, 3)
+        angular_displacement = self.angular_displacement.transpose().reshape(self.num_of_nodes, 3)
         for i in range(self.num_of_nodes):
             self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
 

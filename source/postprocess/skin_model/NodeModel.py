@@ -62,10 +62,9 @@ class Node:
         new_coordinate = M.dot(previous_coordinate)
         new_coordinate = new_coordinate.reshape(1, 4)
         self.deformed = new_coordinate[0][0:3]
-        print(self.deformed)
 
 
-def test_transformation():
+def test():
     p = np.array([1.0, 1.0, 0.0])
     displacement = np.array([0.0, 0.0, 3.0])
     angular_displacement = np.array([0.0, 0.0, np.pi])
@@ -79,4 +78,4 @@ def test_transformation():
 
 
 if __name__ == "__main__":
-    test_transformation()
+    test()
