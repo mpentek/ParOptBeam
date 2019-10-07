@@ -28,7 +28,7 @@ class Visualiser:
         self.line_structure = line_structure
         self.structure = structure
         self.mapper = Mapper(line_structure, structure)
-        self.scale = 2
+        self.scale = 2e5
         self.steps = self.structure
         self.is_record_animation = self.structure.is_record_animation
         self.is_visualize_line_structure = self.structure.is_visualize_line_structure
@@ -45,9 +45,7 @@ class Visualiser:
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
 
-        # self.animate()
-        self.update(0)
-        plt.show()
+        self.animate()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(
@@ -129,8 +127,8 @@ class Visualiser:
         # TODO add dependency on ffmpeg somewhere - need to install ffmpeg for users
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(self.fig, self.update, self.line_structure.steps, repeat=True)
+        writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+        a = animation.FuncAnimation(self.fig, self.update, self.line_structure.steps, repeat=False)
         if self.is_record_animation:
             a.save("results/skin_model_displacement.mp4")
         plt.tight_layout()
@@ -146,7 +144,6 @@ class Visualiser:
         print("time: " + str(t))
         self.line_structure.update_dofs(t)
         self.mapper.map_line_structure_to_structure()
-        print(self.line_structure.undeformed)
 
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
@@ -163,7 +160,7 @@ def test():
                           [0, -15.0, 3.0], [0, -6.0, -9.0], [0, 6.0, -9.0]
                           ],
              "contour_density": 1,
-             "record_animation": False,
+             "record_animation": True,
              "visualize_line_structure": True,
              "beam_direction": "x",
              "scaling_vector": [1.0, 1.0, 1.0],
