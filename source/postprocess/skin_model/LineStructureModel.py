@@ -92,7 +92,6 @@ def test():
                  "x": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]]}}
     ls = LineStructure(param)
     ls.apply_transformation_for_line_structure()
-    ls.print_nodal_info()
     solution = np.array([-100, 0.4, 4.0])
 
     try:

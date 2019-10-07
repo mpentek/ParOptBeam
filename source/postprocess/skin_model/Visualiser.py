@@ -45,9 +45,7 @@ class Visualiser:
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
 
-        # self.animate()
-        self.update(0)
-        plt.show()
+        self.animate()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(
@@ -132,7 +130,7 @@ class Visualiser:
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
         writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(self.fig, self.update, 25, repeat=True)
+        a = animation.FuncAnimation(self.fig, self.update, self.line_structure.steps, repeat=True)
         if self.is_record_animation:
             a.save("results/skin_model_displacement.mp4")
         plt.tight_layout()
