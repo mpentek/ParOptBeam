@@ -11,7 +11,7 @@ class LineStructure:
         # initializing beam info with param
         self.params = params
         self.beam_length = params["length"]
-        self.num_of_nodes = params["num_of_elements"]
+        self.num_of_nodes = len(params["dofs_input"]["x0"])
         self.dofs_input = params["dofs_input"]
 
         # initializing variables needed by LineStructure
@@ -27,14 +27,13 @@ class LineStructure:
         self.print_line_structure_info()
 
     def init(self):
-        self.steps = len(self.dofs_input["x"])
+        self.steps = len(self.dofs_input["x"][0])
 
         for i in range(self.num_of_nodes):
             position = [self.dofs_input["x0"][i],
                         self.dofs_input["y0"][i],
                         self.dofs_input["z0"][i]]
             self.nodes[i] = Node(position)
-            self.nodes[i].print_info()
             self.undeformed[0][i] = self.nodes[i].undeformed[0]
             self.undeformed[1][i] = self.nodes[i].undeformed[1]
             self.undeformed[2][i] = self.nodes[i].undeformed[2]
@@ -44,12 +43,17 @@ class LineStructure:
         print("Undeformed Nodes added successfully!")
 
     def update_dofs(self, step):
-        self.displacement = np.array([self.dofs_input["x"][step],
-                                      self.dofs_input["y"][step],
-                                      self.dofs_input["z"][step]])
-        self.angular_displacement = np.array([self.dofs_input["a"][step],
-                                              self.dofs_input["b"][step],
-                                              self.dofs_input["g"][step]])
+
+        x = np.asarray(self.dofs_input["x"]).reshape(self.steps * self.num_of_nodes)[step::self.steps]
+        y = np.asarray(self.dofs_input["y"]).reshape(self.steps * self.num_of_nodes)[step::self.steps]
+        z = np.asarray(self.dofs_input["z"]).reshape(self.steps * self.num_of_nodes)[step::self.steps]
+
+        a = np.asarray(self.dofs_input["a"]).reshape(self.steps * self.num_of_nodes)[step::self.steps]
+        b = np.asarray(self.dofs_input["b"]).reshape(self.steps * self.num_of_nodes)[step::self.steps]
+        g = np.asarray(self.dofs_input["g"]).reshape(self.steps * self.num_of_nodes)[step::self.steps]
+
+        self.displacement = np.array([x, y, z])
+        self.angular_displacement = np.array([a, b, g])
 
         displacement = self.displacement.transpose().reshape(self.num_of_nodes, 3)
         angular_displacement = self.angular_displacement.transpose().reshape(self.num_of_nodes, 3)
@@ -76,7 +80,7 @@ class LineStructure:
 
 
 def test():
-    param = {"length": 100.0, "num_of_elements": 5,
+    param = {"length": 100.0,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -84,12 +88,12 @@ def test():
                  "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "y": [[0.0, 0.1, 0.2, 0.3, 0.4], [0.0, 1.1, 2.2, 3.3, 4.4]],
-                 "z": [[0.0, 1.0, 2.0, 3.0, 4.0], [0.0, 1.0, 2.0, 3.0, 4.0]],
-                 "a": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]],
-                 "b": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]],
-                 "g": [[0.0, 0.0, 0.0, 0.0, np.pi], [0.0, 0.0, 0.0, 0.0, 3.14]],
-                 "x": [[0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0]]}}
+                 "y": [[0.0, 1.0], [0.0, 2.0], [0.0, 3.0], [0.0, 4.0], [0.4, 5.0]],
+                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
+                 "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi, np.pi/2]],
+                 "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
     ls = LineStructure(param)
     ls.apply_transformation_for_line_structure()
     solution = np.array([-100, 0.4, 4.0])
