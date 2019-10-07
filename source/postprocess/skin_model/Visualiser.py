@@ -27,15 +27,13 @@ class Visualiser:
     def __init__(self, line_structure, structure):
         self.line_structure = line_structure
         self.structure = structure
-        self.mapper = Mapper(structure, line_structure)
-        self.interpolated_line_structure = self.mapper.interpolated_line_structure
-        self.scale = 10000.
+        self.mapper = Mapper(line_structure, structure)
+        self.scale = 2e5
         self.steps = self.structure
         self.is_record_animation = self.structure.is_record_animation
         self.is_visualize_line_structure = self.structure.is_visualize_line_structure
 
         self.fig = plt.figure(figsize=(10, 10))
-        # self.ax = Axes3D(self.fig)
         self.ax = self.fig.add_subplot(
             111, projection='3d', aspect='equal', azim=-60, elev=10)
         self.ax.set_xlabel('x')
@@ -45,7 +43,6 @@ class Visualiser:
         self.visualize_coordinate()
 
         self.line_structure.apply_transformation_for_line_structure()
-        self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
 
         self.animate()
@@ -67,10 +64,11 @@ class Visualiser:
 
     def set_coordinate_in_real_size(self):
         X, Y, Z = [], [], []
+
         for frame in self.structure.frames:
-            X += frame.x_vec
-            Y += frame.y_vec
-            Z += frame.z_vec
+            X += frame.deformed[0].tolist()
+            Y += frame.deformed[1].tolist()
+            Z += frame.deformed[2].tolist()
 
         mid_x = (max(X) + min(X)) * 0.5
         mid_y = (max(Y) + min(Y)) * 0.5
@@ -82,41 +80,25 @@ class Visualiser:
         self.ax.set_zlim(mid_z - max_range, mid_z + max_range)
         self.visualize_coordinate()
 
+    def scale_deformation(self, obj):
+        x_vec = obj.undeformed[0] + \
+                np.subtract(obj.deformed[0], obj.undeformed[0]) * self.scale
+        y_vec = obj.undeformed[1] + \
+                np.subtract(obj.deformed[1], obj.undeformed[1]) * self.scale
+        z_vec = obj.undeformed[2] + \
+                np.subtract(obj.deformed[2], obj.undeformed[2]) * self.scale
+        return x_vec, y_vec, z_vec
+
     def visualise_line_structure(self):
-        x_vec = self.line_structure.x0_vec + \
-            np.subtract(self.line_structure.x_vec,
-                        self.line_structure.x0_vec) * self.scale
-        y_vec = self.line_structure.y0_vec + \
-            np.subtract(self.line_structure.y_vec,
-                        self.line_structure.y0_vec) * self.scale
-        z_vec = self.line_structure.z0_vec + \
-            np.subtract(self.line_structure.z_vec,
-                        self.line_structure.z0_vec) * self.scale
+        x_vec, y_vec, z_vec = self.scale_deformation(self.line_structure)
 
         z = np.array([z_vec, z_vec])
         self.ax.plot_wireframe(x_vec, y_vec, z, color='b', linewidth=3)
         for node in self.line_structure.nodes:
-            x = node.x0 + (node.x - node.x0) * self.scale
-            y = node.y0 + (node.y - node.y0) * self.scale
-            z = node.z0 + (node.z - node.z0) * self.scale
+            x = node.undeformed[0] + (node.deformed[0] - node.undeformed[0]) * self.scale
+            y = node.undeformed[1] + (node.deformed[1] - node.undeformed[1]) * self.scale
+            z = node.undeformed[2] + (node.deformed[2] - node.undeformed[2]) * self.scale
             self.ax.scatter(x, y, z, marker='o', c='r', s=50)
-
-    def visualise_interpolated_line_structure(self):
-        x_vec = self.interpolated_line_structure.x0_vec + \
-            np.subtract(self.interpolated_line_structure.x_vec,
-                        self.interpolated_line_structure.x0_vec) * self.scale
-        y_vec = self.interpolated_line_structure.y0_vec + \
-            np.subtract(self.interpolated_line_structure.y_vec,
-                        self.interpolated_line_structure.y0_vec) * self.scale
-        z_vec = self.interpolated_line_structure.z0_vec + \
-            np.subtract(self.interpolated_line_structure.z_vec,
-                        self.interpolated_line_structure.z0_vec) * self.scale
-
-        z = np.array([z_vec, z_vec])
-        self.ax.plot_wireframe(x_vec, y_vec, z,
-                               color='g', linewidth=3, linestyle='--')
-        # for node in self.interpolated_line_structure.nodes:
-        # self.ax.scatter(node.x, node.y, node.z, marker='o', c='g', s = 50)
 
     def visualise_structure(self):
         self.visualise_element()
@@ -124,12 +106,7 @@ class Visualiser:
 
     def visualise_element(self):
         for element in self.structure.elements:
-            x_vec = element.x0_vec + \
-                np.subtract(element.x_vec, element.x0_vec) * self.scale
-            y_vec = element.y0_vec + \
-                np.subtract(element.y_vec, element.y0_vec) * self.scale
-            z_vec = element.z0_vec + \
-                np.subtract(element.z_vec, element.z0_vec) * self.scale
+            x_vec, y_vec, z_vec = self.scale_deformation(element)
 
             x_vec = np.append(x_vec, x_vec[0])
             y_vec = np.append(y_vec, y_vec[0])
@@ -141,12 +118,7 @@ class Visualiser:
 
     def visualize_frame(self):
         for frame in self.structure.frames:
-            x_vec = frame.x0_vec + \
-                np.subtract(frame.x_vec, frame.x0_vec) * self.scale
-            y_vec = frame.y0_vec + \
-                np.subtract(frame.y_vec, frame.y0_vec) * self.scale
-            z_vec = frame.z0_vec + \
-                np.subtract(frame.z_vec, frame.z0_vec) * self.scale
+            x_vec, y_vec, z_vec = self.scale_deformation(frame)
 
             z = np.array([z_vec, z_vec])
             self.ax.plot_wireframe(x_vec, y_vec, z, color='black')
@@ -155,8 +127,8 @@ class Visualiser:
         # TODO add dependency on ffmpeg somewhere - need to install ffmpeg for users
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=15, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(self.fig, self.update, 25, repeat=True)
+        writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
+        a = animation.FuncAnimation(self.fig, self.update, self.line_structure.steps, repeat=False)
         if self.is_record_animation:
             a.save("results/skin_model_displacement.mp4")
         plt.tight_layout()
@@ -171,15 +143,47 @@ class Visualiser:
             self.ax.cla()
         print("time: " + str(t))
         self.line_structure.update_dofs(t)
-        self.mapper.map_line_structure_to_interpolated_line_structure()
-        self.mapper.map_interpolated_line_structure_to_structure_element()
+        self.mapper.map_line_structure_to_structure()
 
         self.line_structure.apply_transformation_for_line_structure()
-        self.interpolated_line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
 
         self.visualise_structure()
         if self.is_visualize_line_structure:
             self.visualise_line_structure()
-        # self.visualise_interpolated_line_structure()
         self.set_coordinate_in_real_size()
+
+
+def test():
+    param = {"length": 100.0,
+             "geometry": [[0, 15.0, 3.0], [0, 6.0, 9.0], [0, -6.0, 9.0],
+                          [0, -15.0, 3.0], [0, -6.0, -9.0], [0, 6.0, -9.0]
+                          ],
+             "contour_density": 1,
+             "record_animation": True,
+             "visualize_line_structure": True,
+             "beam_direction": "x",
+             "scaling_vector": [1.0, 1.0, 1.0],
+             "dofs_input": {
+                 "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
+                 "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "z0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "y": [[0.2, 0.1], [0.3, 0.2], [0.4, 0.3], [0.5, 0.4], [0.4, 0.5]],
+                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
+                 "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi/12, np.pi/15]],
+                 "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
+    from source.postprocess.skin_model.StructureModel import Structure
+    from source.postprocess.skin_model.LineStructureModel import LineStructure
+
+    s = Structure(param)
+    ls = LineStructure(param)
+    v = Visualiser(ls, s)
+
+
+if __name__ == "__main__":
+    test()

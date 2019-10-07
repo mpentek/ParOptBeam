@@ -204,11 +204,9 @@ class EigenvalueAnalysis(AnalysisType):
         """"
         This function writes out the nodal dofs of the deformed state for visualiser
         """
-        output = {"length": max(self.structure_model.nodal_coordinates["x0"]),
-                  "num_of_elements": len(self.structure_model.nodal_coordinates["x0"])}
+        output = {}
         for key, val in self.structure_model.nodal_coordinates.items():
             output[key] = val.tolist()
-        print(output)
 
         return output
 
@@ -432,7 +430,7 @@ class EigenvalueAnalysis(AnalysisType):
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
         s = Structure(skin_model_params)
-        ls = LineStructure(s)
+        ls = LineStructure(skin_model_params)
         plotter = Visualiser(ls, s)
 
     def postprocess(self, pdf_report, display_plot, skin_model_params):
@@ -464,6 +462,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
             skin_model_params["dofs_input"] = self.get_output_for_visualiser()
+            print(skin_model_params)
             self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
 
         # TODO to adapt and refactor

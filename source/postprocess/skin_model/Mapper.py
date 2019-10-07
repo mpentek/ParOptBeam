@@ -4,7 +4,6 @@ import numpy as np
 from source.postprocess.skin_model.NodeModel import Node
 from source.postprocess.skin_model.LineStructureModel import LineStructure
 
-
 # curvature - 2nd order deriv
 DERIV_ORDER = 2
 PRESCRIBED_2ND_ORDER_DERIV = [0, 0]
@@ -20,84 +19,80 @@ def interpolate_points(v, x, y):
 
 
 class Mapper:
-    def __init__(self, structure, line_structure):
+    def __init__(self, line_structure, structure):
         self.structure = structure
         self.line_structure = line_structure
-        self.beam_direction = self.line_structure.beam_direction
-        self.interpolated_line_structure = LineStructure()
-        self.interpolated_line_structure.beam_direction = self.line_structure.beam_direction
-        self.map_line_structure_to_interpolated_line_structure()
-        self.map_interpolated_line_structure_to_structure_element()
+        self.map_line_structure_to_structure()
 
-    def map_interpolated_line_structure_to_structure_element(self):
-        for element in self.structure.elements:
-            mid_s = sum(element.s_vec) / len(element.s_vec)
-            self._interpolate_dofs(mid_s, element.nodes, self.interpolated_line_structure)
-        print("Interpolated 3D structure")
+    def map_line_structure_to_structure(self):
+        s_vec = self.line_structure.undeformed[int(self.structure.beam_direction)]
+        disp_vec = self.line_structure.displacement
+        ang_disp_vec = self.line_structure.angular_displacement
 
-    def map_line_structure_to_interpolated_line_structure(self):
-        interpolated_line_structure_tmp = LineStructure()
-        interpolated_line_structure_tmp.beam_direction = self.interpolated_line_structure.beam_direction
+        for i in range(self.structure.num_of_elements):
+            mid_p = self._get_element_mid_points(self.structure.elements[i])
+            s = mid_p[int(self.structure.beam_direction)]
+            inter_disp, inter_ang_disp = self._interpolate_dofs(s, s_vec, disp_vec, ang_disp_vec)
 
-        mid_s_prev = sum(self.structure.elements[0].s_vec) / len(self.structure.elements[0].s_vec)
-        for element in self.structure.elements[1:]:
-            mid_x, mid_y, mid_z, mid_s = self._get_element_mid_points(element)
+            for node in self.structure.elements[i].nodes:
+                node.assign_dofs(inter_disp, inter_ang_disp)
 
-            if element != self.structure.elements[-1]:
-                s_vec = np.linspace(mid_s_prev, mid_s, INTERPOLATION_DENSITY, endpoint=False)
-            else:
-                s_vec = np.linspace(mid_s_prev, mid_s, INTERPOLATION_DENSITY)
-            for s in s_vec:
-                node = Node(mid_x, mid_y, mid_z)
-                interpolated_line_structure_tmp.s_vec.append(s)
-                interpolated_line_structure_tmp.nodes.append(node)
-
-            mid_s_prev = mid_s
-
-        for i, node in zip(range(len(interpolated_line_structure_tmp.nodes)), interpolated_line_structure_tmp.nodes):
-            s = interpolated_line_structure_tmp.s_vec[i]
-            # interpolate a node on the interpolated LS to LS
-            self._interpolate_dofs(s, node, self.line_structure)
-            self._update_dofs(node, interpolated_line_structure_tmp)
-
-        self.interpolated_line_structure = interpolated_line_structure_tmp
-        print("Interpolated 1D structure")
-
-    @staticmethod
-    def _update_dofs(node, interpolated_line_structure_tmp):
-        interpolated_line_structure_tmp.x0_vec.append(node.x0)
-        interpolated_line_structure_tmp.y0_vec.append(node.y0)
-        interpolated_line_structure_tmp.z0_vec.append(node.z0)
-        interpolated_line_structure_tmp.x_vec.append(node.x0)
-        interpolated_line_structure_tmp.y_vec.append(node.y0)
-        interpolated_line_structure_tmp.z_vec.append(node.z0)
-        interpolated_line_structure_tmp.dx_vec.append(node.dx)
-        interpolated_line_structure_tmp.dy_vec.append(node.dy)
-        interpolated_line_structure_tmp.dz_vec.append(node.dz)
-        interpolated_line_structure_tmp.theta_x_vec.append(node.theta_x)
-        interpolated_line_structure_tmp.theta_y_vec.append(node.theta_y)
-        interpolated_line_structure_tmp.theta_z_vec.append(node.theta_z)
+            for frame in self.structure.frames:
+                frame.nodes[i].assign_dofs(inter_disp, inter_ang_disp)
 
     @staticmethod
     def _get_element_mid_points(element):
-        mid_x = sum(element.x_vec) / len(element.x_vec)
-        mid_y = sum(element.y_vec) / len(element.y_vec)
-        mid_z = sum(element.z_vec) / len(element.z_vec)
-        mid_s = sum(element.s_vec) / len(element.s_vec)
-        return mid_x, mid_y, mid_z, mid_s
+        mid_x = sum(element.undeformed[0]) / element.num_of_nodes
+        mid_y = sum(element.undeformed[1]) / element.num_of_nodes
+        mid_z = sum(element.undeformed[2]) / element.num_of_nodes
+        return [mid_x, mid_y, mid_z]
 
     @staticmethod
-    def _interpolate_dofs(s, nodes, line_structure):
-        dx = interpolate_points(s, line_structure.s_vec, line_structure.dx_vec)
-        dy = interpolate_points(s, line_structure.s_vec, line_structure.dy_vec)
-        dz = interpolate_points(s, line_structure.s_vec, line_structure.dz_vec)
+    def _interpolate_dofs(s, s_vec, displacement, angular_displacement):
+        dx = interpolate_points(s, s_vec, displacement[0])
+        dy = interpolate_points(s, s_vec, displacement[1])
+        dz = interpolate_points(s, s_vec, displacement[2])
+        inter_disp = [dx, dy, dz]
 
-        theta_x = interpolate_points(s, line_structure.s_vec, line_structure.theta_x_vec)
-        theta_y = interpolate_points(s, line_structure.s_vec, line_structure.theta_y_vec)
-        theta_z = interpolate_points(s, line_structure.s_vec, line_structure.theta_z_vec)
+        theta_x = interpolate_points(s, s_vec, angular_displacement[0])
+        theta_y = interpolate_points(s, s_vec, angular_displacement[1])
+        theta_z = interpolate_points(s, s_vec, angular_displacement[2])
+        inter_ang_disp = [theta_x, theta_y, theta_z]
 
-        if isinstance(nodes, (list,)):
-            for node in nodes:
-                node.assign_dofs(dx, dy, dz, theta_x, theta_y, theta_z)
-        else:
-            nodes.assign_dofs(dx, dy, dz, theta_x, theta_y, theta_z)
+        return inter_disp, inter_ang_disp
+
+
+def test():
+    param = {"length": 100.0, "num_of_elements": 5,
+             "geometry": [[0, 15.0, 3.0], [0, 6.0, 9.0], [0, -6.0, 9.0],
+                          [0, -15.0, 3.0], [0, -6.0, -9.0], [0, 6.0, -9.0]
+                          ],
+             "contour_density": 1,
+             "record_animation": False,
+             "visualize_line_structure": True,
+             "beam_direction": "x",
+             "scaling_vector": [1.5, 1.0, 2.0],
+             "dofs_input": {
+                 "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
+                 "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "z0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "y": [[0.0, 1.0], [0.0, 2.0], [0.0, 3.0], [0.0, 4.0], [0.4, 5.0]],
+                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
+                 "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi, np.pi/2]],
+                 "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
+
+    from source.postprocess.skin_model.StructureModel import Structure
+    from source.postprocess.skin_model.LineStructureModel import LineStructure
+
+    s = Structure(param)
+    ls = LineStructure(param)
+    m = Mapper(ls, s)
+
+
+if __name__ == "__main__":
+    test()

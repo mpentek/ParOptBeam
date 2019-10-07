@@ -3,71 +3,79 @@ import numpy as np
 
 
 class Node:
-    def __init__(self, x, y, z):
-        self.x0 = x
-        self.y0 = y
-        self.z0 = z
-        self.x = self.x0
-        self.y = self.y0
-        self.z = self.z0
-        self.dx = 0.0
-        self.dy = 0.0
-        self.dz = 0.0
-        self.theta_x = 0.0
-        self.theta_y = 0.0
-        self.theta_z = 0.0
+    def __init__(self, undeformed):
+        self.undeformed = undeformed
+        self.deformed = undeformed
+        self.displacement = np.empty(3, dtype=float)
+        self.angular_displacement = np.empty(3, dtype=float)
 
-    def assign_dofs(self, dx, dy, dz, theta_x, theta_y, theta_z):
-        self.dx = dx
-        self.dy = dy
-        self.dz = dz
-        self.theta_x = theta_x
-        self.theta_y = theta_y
-        self.theta_z = theta_z
+    def assign_dofs(self, displacement, angular_displacement):
+        self.displacement = displacement
+        self.angular_displacement = angular_displacement
 
     def print_info(self):
-        msg = "###################################################\n"
-        msg += "Node at Position [" + str(self.x0) + " " + \
-            str(self.y0) + " " + str(self.z0) + "]: \n"
+        msg = "########################################################\n"
+        msg += "Node Fix Position [" + str(self.undeformed[0]) + " " + \
+               str(self.undeformed[1]) + " " + str(self.undeformed[2]) + "]: \n"
         try:
-            msg += "dx = " + str(self.dx) + "\t"
-            msg += "dy = " + str(self.dy) + "\t"
-            msg += "dz = " + str(self.dz) + "\n"
-            msg += "theta_x = " + str(self.theta_x) + "\t"
-            msg += "theta_y = " + str(self.theta_y) + "\t"
-            msg += "theta_z = " + str(self.theta_z)
+            msg += "dx = " + str(self.displacement[0]) + "\t"
+            msg += "dy = " + str(self.displacement[1]) + "\t"
+            msg += "dz = " + str(self.displacement[2]) + "\n"
+            msg += "theta_x = " + str(self.angular_displacement[0]) + "\t"
+            msg += "theta_y = " + str(self.angular_displacement[1]) + "\t"
+            msg += "theta_z = " + str(self.angular_displacement[2]) + "\n"
+            msg += "Transformed Position: [" + str(self.deformed[0]) + " " + \
+               str(self.deformed[1]) + " " + str(self.deformed[2]) + "]:\n"
+            msg += "########################################################\n"
+
         except AttributeError:
             pass
         print(msg)
 
     def apply_transformation(self):
         # translation matrix
-        T = np.matrix([ [1,                  0,                    0,                   self.dx],
-                        [0,                  1,                    0,                   self.dy],
-                        [0,                  0,                    1,                   self.dz],
-                        [0,                  0,                    0,                   1      ]])
+        T = np.array(([1.0, 0.0, 0.0, self.displacement[0]],
+                      [0.0, 1.0, 0.0, self.displacement[1]],
+                      [0.0, 0.0, 1.0, self.displacement[2]],
+                      [0.0, 0.0, 0.0, 1.0]))
 
         # rotation matrix around axis x
-        Rx = np.matrix([[1,                  0,                    0,                   0],
-                        [0,                  cos(self.theta_x),   -sin(self.theta_x),   0],
-                        [0,                  sin(self.theta_x),    cos(self.theta_x),   0],
-                        [0,                  0,                    0,                   1]])
+        Rx = np.array([[1.0, 0.0, 0.0, 1.0],
+                       [0.0, cos(self.angular_displacement[0]), -sin(self.angular_displacement[0]), 1.0],
+                       [0.0, sin(self.angular_displacement[0]), cos(self.angular_displacement[0]), 1.0],
+                       [1.0, 1.0, 1.0, 1.0]])
 
         # rotation matrix around axis y
-        Ry = np.matrix([[ cos(self.theta_y), 0,                    sin(self.theta_y),   0],
-                        [0,                  1,                    0,                   0],
-                        [-sin(self.theta_y), 0,                    cos(self.theta_y),   0],
-                        [0,                  0,                    0,                   1]])
+        Ry = np.array([[cos(self.angular_displacement[1]), 0, sin(self.angular_displacement[1]), 1.0],
+                       [0.0, 1.0, 0.0, 1.0],
+                       [-sin(self.angular_displacement[1]), 0.0, cos(self.angular_displacement[1]), 1.0],
+                       [1.0, 1.0, 1.0, 1.0]])
 
         # rotation matrix around axis z
-        Rz = np.matrix([[cos(self.theta_z), -sin(self.theta_z),     0,                  0],
-                        [sin(self.theta_z),  cos(self.theta_z),     0,                  0],
-                        [0,                  0,                     1,                  0],
-                        [0,                  0,                     0,                  1]])
+        Rz = np.array([[cos(self.angular_displacement[2]), -sin(self.angular_displacement[2]), 0.0, 1.0],
+                       [sin(self.angular_displacement[2]), cos(self.angular_displacement[2]), 0.0, 1.0],
+                       [0.0, 0.0, 1, 1.0],
+                       [1.0, 1.0, 1.0, 1.0]])
 
-        previous_coordinate = np.matrix([[self.x0], [self.y0], [self.z0], [1]])
-        new_coordinate = (T*Rz*Ry*Rx)*previous_coordinate
-        
-        self.x = float(new_coordinate[0][0])
-        self.y = float(new_coordinate[1][0])
-        self.z = float(new_coordinate[2][0])
+        M = T * Rz * Ry * Rx
+        previous_coordinate = np.append(self.undeformed, np.array(1.0)).reshape(4, 1)
+        new_coordinate = M.dot(previous_coordinate)
+        new_coordinate = new_coordinate.reshape(1, 4)
+        self.deformed = new_coordinate[0][0:3]
+
+
+def test():
+    p = np.array([1.0, 1.0, 0.0])
+    displacement = np.array([0.0, 0.0, 3.0])
+    angular_displacement = np.array([0.0, 0.0, np.pi])
+    node = Node(p)
+    node.assign_dofs(displacement, angular_displacement)
+    node.apply_transformation()
+    node.print_info()
+    solution = np.array([-1.0, -1.0, 0.0])
+    assert (solution == node.deformed).all, "Transformation wrong"
+    print("passed test")
+
+
+if __name__ == "__main__":
+    test()
