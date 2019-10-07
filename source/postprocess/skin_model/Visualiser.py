@@ -28,7 +28,7 @@ class Visualiser:
         self.line_structure = line_structure
         self.structure = structure
         self.mapper = Mapper(line_structure, structure)
-        self.scale = 1.
+        self.scale = 2
         self.steps = self.structure
         self.is_record_animation = self.structure.is_record_animation
         self.is_visualize_line_structure = self.structure.is_visualize_line_structure
@@ -45,7 +45,9 @@ class Visualiser:
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
 
-        self.animate()
+        # self.animate()
+        self.update(0)
+        plt.show()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(
@@ -144,6 +146,7 @@ class Visualiser:
         print("time: " + str(t))
         self.line_structure.update_dofs(t)
         self.mapper.map_line_structure_to_structure()
+        print(self.line_structure.undeformed)
 
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
@@ -163,7 +166,7 @@ def test():
              "record_animation": False,
              "visualize_line_structure": True,
              "beam_direction": "x",
-             "scaling_vector": [1.00, 1.0, 1.00],
+             "scaling_vector": [1.0, 1.0, 1.0],
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -171,7 +174,7 @@ def test():
                  "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "y": [[0.0, 1.0], [0.0, 2.0], [0.0, 3.0], [0.0, 4.0], [0.4, 5.0]],
+                 "y": [[0.2, 0.1], [0.3, 0.2], [0.4, 0.3], [0.5, 0.4], [0.4, 0.5]],
                  "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
                  "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],

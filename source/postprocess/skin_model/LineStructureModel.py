@@ -37,9 +37,12 @@ class LineStructure:
             self.undeformed[0][i] = self.nodes[i].undeformed[0]
             self.undeformed[1][i] = self.nodes[i].undeformed[1]
             self.undeformed[2][i] = self.nodes[i].undeformed[2]
+            self.deformed[0][i] = self.nodes[i].deformed[2]
+            self.deformed[1][i] = self.nodes[i].deformed[2]
+            self.deformed[2][i] = self.nodes[i].deformed[2]
 
-        self.deformed = self.undeformed
         self.update_dofs(0)
+
         print("Undeformed Nodes added successfully!")
 
     def update_dofs(self, step):

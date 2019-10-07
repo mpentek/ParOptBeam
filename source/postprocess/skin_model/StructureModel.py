@@ -38,8 +38,9 @@ class Element:
             self.undeformed[0][i] = self.nodes[i].undeformed[0]
             self.undeformed[1][i] = self.nodes[i].undeformed[1]
             self.undeformed[2][i] = self.nodes[i].undeformed[2]
-
-        self.deformed = self.undeformed
+            self.deformed[0][i] = self.nodes[i].deformed[0]
+            self.deformed[1][i] = self.nodes[i].deformed[1]
+            self.deformed[2][i] = self.nodes[i].deformed[2]
 
     def print_element(self):
         for node in self.nodes:
@@ -62,8 +63,9 @@ class Frame:
             self.undeformed[0][i] = self.nodes[i].undeformed[0]
             self.undeformed[1][i] = self.nodes[i].undeformed[1]
             self.undeformed[2][i] = self.nodes[i].undeformed[2]
-
-        self.deformed = self.undeformed
+            self.deformed[0][i] = self.nodes[i].deformed[0]
+            self.deformed[1][i] = self.nodes[i].deformed[1]
+            self.deformed[2][i] = self.nodes[i].deformed[2]
 
     def print_frame(self):
         for node in self.nodes:
@@ -185,7 +187,7 @@ def test():
                  "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "y": [[0.0, 1.0], [0.0, 2.0], [0.0, 3.0], [0.0, 4.0], [0.4, 5.0]],
+                 "y": [[0.1, 1.0], [0.2, 2.0], [0.3, 3.0], [0.4, 4.0], [0.4, 5.0]],
                  "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
                  "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
@@ -193,8 +195,8 @@ def test():
                  "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
     s = Structure(param)
     s.apply_transformation_for_structure()
-    s.print_structure_element(0)
-    s.print_structure_frame(0)
+    # s.print_structure_element(1)
+    # s.print_structure_frame(0)
 
 
 if __name__ == "__main__":
