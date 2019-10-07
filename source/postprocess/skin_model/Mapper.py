@@ -22,6 +22,7 @@ class Mapper:
     def __init__(self, line_structure, structure):
         self.structure = structure
         self.line_structure = line_structure
+        self.map_line_structure_to_structure()
 
     def map_line_structure_to_structure(self):
         s_vec = self.line_structure.undeformed[int(self.structure.beam_direction)]
@@ -31,7 +32,13 @@ class Mapper:
         for i in range(self.structure.num_of_elements):
             mid_p = self._get_element_mid_points(self.structure.elements[i])
             s = mid_p[int(self.structure.beam_direction)]
-            self._interpolate_dofs(s, self.structure.elements[i].nodes, s_vec, disp_vec, ang_disp_vec)
+            inter_disp, inter_ang_disp = self._interpolate_dofs(s, s_vec, disp_vec, ang_disp_vec)
+
+            for node in self.structure.elements[i].nodes:
+                node.assign_dofs(inter_disp, inter_ang_disp)
+
+            for frame in self.structure.frames:
+                frame.nodes[i].assign_dofs(inter_disp, inter_ang_disp)
 
     @staticmethod
     def _get_element_mid_points(element):
@@ -41,7 +48,7 @@ class Mapper:
         return [mid_x, mid_y, mid_z]
 
     @staticmethod
-    def _interpolate_dofs(s, nodes, s_vec, displacement, angular_displacement):
+    def _interpolate_dofs(s, s_vec, displacement, angular_displacement):
         dx = interpolate_points(s, s_vec, displacement[0])
         dy = interpolate_points(s, s_vec, displacement[1])
         dz = interpolate_points(s, s_vec, displacement[2])
@@ -52,9 +59,7 @@ class Mapper:
         theta_z = interpolate_points(s, s_vec, angular_displacement[2])
         inter_ang_disp = [theta_x, theta_y, theta_z]
 
-        for node in nodes:
-            node.assign_dofs(inter_disp, inter_ang_disp)
-
+        return inter_disp, inter_ang_disp
 
 def test():
     param = {"length": 100.0, "num_of_elements": 5,
@@ -87,6 +92,7 @@ def test():
     ls = LineStructure(param)
     m = Mapper(ls, s)
     m.map_line_structure_to_structure()
+    s.print_structure_frame(1)
 
 
 if __name__ == "__main__":
