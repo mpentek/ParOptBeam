@@ -86,6 +86,7 @@ class Structure:
         self.num_of_elements = len(self.scaling_vector) + 1
         self.beam_direction = BeamDirection[params["beam_direction"]]
         self.element_length = self.beam_length / (self.num_of_elements - 1)
+        self.deformation_scaling_factor = params["deformation_scaling_factor"]
         self.is_record_animation = params["record_animation"]
         self.mode = params["mode"]
         self.frequency = params["frequency"]
@@ -191,6 +192,7 @@ def test():
              'mode': '1',
              'frequency': 0.4,
              'period': 2.5,
+             "deformation_scaling_factor": 2.0,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],

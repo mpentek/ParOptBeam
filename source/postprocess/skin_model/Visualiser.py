@@ -28,8 +28,7 @@ class Visualiser:
         self.line_structure = line_structure
         self.structure = structure
         self.mapper = Mapper(line_structure, structure)
-        self.scale = 2e5
-        self.steps = self.structure
+        self.scale = self.structure.deformation_scaling_factor
         self.is_record_animation = self.structure.is_record_animation
         self.is_visualize_line_structure = self.structure.is_visualize_line_structure
         self.mode = self.structure.mode
@@ -187,6 +186,7 @@ def test():
              'mode': '1',
              'frequency': 0.1,
              'period': 4.0,
+             "deformation_scaling_factor": 2.0,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
