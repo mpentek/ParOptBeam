@@ -33,31 +33,26 @@ class Node:
         print(msg)
 
     def apply_transformation(self):
-        # translation matrix
-        T = np.array(([1.0, 0.0, 0.0, self.displacement[0]],
-                      [0.0, 1.0, 0.0, self.displacement[1]],
-                      [0.0, 0.0, 1.0, self.displacement[2]],
-                      [0.0, 0.0, 0.0, 1.0]))
 
-        # rotation matrix around axis x
-        Rx = np.array([[1.0, 0.0, 0.0, 0.0],
-                       [0.0, cos(self.angular_displacement[0]), -sin(self.angular_displacement[0]), 0.0],
-                       [0.0, sin(self.angular_displacement[0]), cos(self.angular_displacement[0]), 0.0],
-                       [0.0, 0.0, 0.0, 1.0]])
+        dx = self.displacement[0]
+        dy = self.displacement[1]
+        dz = self.displacement[2]
 
-        # rotation matrix around axis y
-        Ry = np.array([[cos(self.angular_displacement[1]), 0, sin(self.angular_displacement[1]), 0.0],
-                       [0.0, 1.0, 0.0, 0.0],
-                       [-sin(self.angular_displacement[1]), 0.0, cos(self.angular_displacement[1]), 0.0],
-                       [0.0, 0.0, 0.0, 1.0]])
+        alpha = self.angular_displacement[0]
+        beta = self.angular_displacement[1]
+        gamma = self.angular_displacement[2]
 
-        # rotation matrix around axis z
-        Rz = np.array([[cos(self.angular_displacement[2]), -sin(self.angular_displacement[2]), 0.0, 0.0],
-                       [sin(self.angular_displacement[2]), cos(self.angular_displacement[2]), 0.0, 0.0],
-                       [0.0, 0.0, 1, 0.0],
-                       [0.0, 0.0, 0.0, 1.0]])
+        # transformation matrix derived from the symbolic generation
+        M = np.array([
+            [1.0 * cos(beta) * cos(gamma),
+             -1.0 * cos(alpha) * sin(gamma) + 1.0 * cos(gamma) * sin(alpha) * sin(beta),
+             1.0 * cos(alpha) * cos(gamma) * sin(beta) + 1.0 * sin(alpha) * sin(gamma), 1.0 * dx],
+            [1.0 * cos(beta) * sin(gamma), 1.0 * cos(alpha) * cos(gamma) + 1.0 * sin(alpha) * sin(beta) * sin(gamma),
+             1.0 * cos(alpha) * sin(beta) * sin(gamma) - 1.0 * cos(gamma) * sin(alpha), 1.0 * dy],
+            [-1.0 * sin(beta), 1.0 * cos(beta) * sin(alpha), 1.0 * cos(alpha) * cos(beta), 1.0 * dz],
+            [0, 0, 0, 1.0]
+        ])
 
-        M = T.dot(Rz.dot(Ry.dot(Rx)))
         previous_coordinate = np.append(self.undeformed, np.array(1.0)).reshape(4, 1)
         new_coordinate = M.dot(previous_coordinate)
         new_coordinate = new_coordinate.reshape(1, 4)
@@ -65,17 +60,18 @@ class Node:
 
 
 def test():
-    p = np.array([1.0, 0.0, 0.0])
+    p = np.array([1.0, 1.0, 0.0])
     displacement = np.array([0.0, 0.0, 3.0])
     angular_displacement = np.array([0.0, 0.0, np.pi/2])
     node = Node(p)
     node.assign_dofs(displacement, angular_displacement)
     node.apply_transformation()
     node.print_info()
-    solution = np.array([0.0, 1.0, 3.0])
+    solution = np.array([-1.0, 1.0, 3.0])
+    err = solution - node.deformed
 
     try:
-        assert all(solution == node.deformed), "Transformation wrong"
+        assert all(err < 1e-12), "Transformation wrong"
         print("passed test")
     except AssertionError:
         print("failed test")
