@@ -4,7 +4,5 @@ from source.postprocess.skin_model.StructureModel import Structure
 
 
 def visualize_skin_model(skin_model_params):
-    s = Structure(skin_model_params)
-    ls = LineStructure(skin_model_params)
-    plotter = Visualiser(ls, s)
+    plotter = Visualiser(skin_model_params)
 
