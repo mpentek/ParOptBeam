@@ -40,24 +40,26 @@ class Node:
                       [0.0, 0.0, 0.0, 1.0]))
 
         # rotation matrix around axis x
-        Rx = np.array([[1.0, 0.0, 0.0, 1.0],
-                       [0.0, cos(self.angular_displacement[0]), -sin(self.angular_displacement[0]), 1.0],
-                       [0.0, sin(self.angular_displacement[0]), cos(self.angular_displacement[0]), 1.0],
-                       [1.0, 1.0, 1.0, 1.0]])
+        Rx = np.array([[1.0, 0.0, 0.0, 0.0],
+                       [0.0, cos(self.angular_displacement[0]), -sin(self.angular_displacement[0]), 0.0],
+                       [0.0, sin(self.angular_displacement[0]), cos(self.angular_displacement[0]), 0.0],
+                       [0.0, 0.0, 0.0, 1.0]])
 
         # rotation matrix around axis y
-        Ry = np.array([[cos(self.angular_displacement[1]), 0, sin(self.angular_displacement[1]), 1.0],
-                       [0.0, 1.0, 0.0, 1.0],
-                       [-sin(self.angular_displacement[1]), 0.0, cos(self.angular_displacement[1]), 1.0],
-                       [1.0, 1.0, 1.0, 1.0]])
+        Ry = np.array([[cos(self.angular_displacement[1]), 0, sin(self.angular_displacement[1]), 0.0],
+                       [0.0, 1.0, 0.0, 0.0],
+                       [-sin(self.angular_displacement[1]), 0.0, cos(self.angular_displacement[1]), 0.0],
+                       [0.0, 0.0, 0.0, 1.0]])
 
         # rotation matrix around axis z
-        Rz = np.array([[cos(self.angular_displacement[2]), -sin(self.angular_displacement[2]), 0.0, 1.0],
-                       [sin(self.angular_displacement[2]), cos(self.angular_displacement[2]), 0.0, 1.0],
-                       [0.0, 0.0, 1, 1.0],
-                       [1.0, 1.0, 1.0, 1.0]])
+        Rz = np.array([[cos(self.angular_displacement[2]), -sin(self.angular_displacement[2]), 0.0, 0.0],
+                       [sin(self.angular_displacement[2]), cos(self.angular_displacement[2]), 0.0, 0.0],
+                       [0.0, 0.0, 1, 0.0],
+                       [0.0, 0.0, 0.0, 1.0]])
 
-        M = T * Rz * Ry * Rx
+        M = T.dot(Rz.dot(Ry.dot(Rx)))
+        print(Rz)
+        print(M)
         previous_coordinate = np.append(self.undeformed, np.array(1.0)).reshape(4, 1)
         new_coordinate = M.dot(previous_coordinate)
         new_coordinate = new_coordinate.reshape(1, 4)
@@ -65,16 +67,20 @@ class Node:
 
 
 def test():
-    p = np.array([1.0, 1.0, 0.0])
+    p = np.array([1.0, 0.0, 0.0])
     displacement = np.array([0.0, 0.0, 3.0])
-    angular_displacement = np.array([0.0, 0.0, np.pi])
+    angular_displacement = np.array([0.0, 0.0, np.pi/2])
     node = Node(p)
     node.assign_dofs(displacement, angular_displacement)
     node.apply_transformation()
     node.print_info()
-    solution = np.array([-1.0, -1.0, 0.0])
-    assert (solution == node.deformed).all, "Transformation wrong"
-    print("passed test")
+    solution = np.array([0.0, 1.0, 3.0])
+
+    try:
+        assert all(solution == node.deformed), "Transformation wrong"
+        print("passed test")
+    except AssertionError:
+        print("failed test")
 
 
 if __name__ == "__main__":
