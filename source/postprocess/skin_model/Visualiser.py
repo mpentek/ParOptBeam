@@ -46,7 +46,9 @@ class Visualiser:
         self.ax = self.fig.add_subplot(
             111, projection='3d', aspect='equal', azim=-60, elev=10)
 
-        self.animate()
+        self.update(0)
+        plt.show()
+        # self.animate()
 
     def init(self):
         self.fig.suptitle(self.plot_title)
@@ -174,9 +176,9 @@ class Visualiser:
 
 def test():
     param = {"length": 100.0,
-             "geometry": [[0, 15.0, 3.0], [0, 6.0, 9.0], [0, -6.0, 9.0],
-                          [0, -15.0, 3.0], [0, -6.0, -9.0], [0, 6.0, -9.0]
-                          ],
+             "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
+                          [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
+                          [0, 6.0, -9.0], [0, -6.0, -9.0]],
              "contour_density": 1,
              "record_animation": True,
              "visualize_line_structure": True,
@@ -194,11 +196,11 @@ def test():
                  "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
                  "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "y": [[0.2, 0.1], [0.3, 0.2], [0.4, 0.3], [0.5, 0.4], [0.4, 0.5]],
-                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
+                 "y": [[0.0, 0.1], [0.0, 0.2], [0.0, 0.3], [0.0, 0.4], [0.0, 0.5]],
+                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi/12, np.pi/15]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
                  "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
     from source.postprocess.skin_model.StructureModel import Structure
     from source.postprocess.skin_model.LineStructureModel import LineStructure
