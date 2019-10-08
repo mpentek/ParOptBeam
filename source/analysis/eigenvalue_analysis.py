@@ -8,10 +8,8 @@ from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
+import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.postprocess.skin_model.StructureModel import Structure
-from source.postprocess.skin_model.LineStructureModel import LineStructure
-from source.postprocess.skin_model.Visualiser import Visualiser
 
 
 class EigenvalueAnalysis(AnalysisType):
@@ -435,9 +433,7 @@ class EigenvalueAnalysis(AnalysisType):
         skin_model_params["period"] = self.period[mode]
         skin_model_params["dofs_input"] = self.get_output_for_visualiser()
 
-        s = Structure(skin_model_params)
-        ls = LineStructure(skin_model_params)
-        plotter = Visualiser(ls, s)
+        visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
 
     def postprocess(self, pdf_report, display_plot, skin_model_params):
         """
