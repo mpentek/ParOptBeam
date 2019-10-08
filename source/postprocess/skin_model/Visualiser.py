@@ -1,14 +1,14 @@
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 from matplotlib import animation
+from os.path import join
 import numpy as np
 
 from source.postprocess.skin_model.Mapper import Mapper
 
-
-plt.rcParams['legend.fontsize'] = 16
+# plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg: /usr/bin/ffmpeg'
+plt.style.use('classic')
 
 
 class Arrow3D(FancyArrowPatch):
@@ -32,20 +32,30 @@ class Visualiser:
         self.steps = self.structure
         self.is_record_animation = self.structure.is_record_animation
         self.is_visualize_line_structure = self.structure.is_visualize_line_structure
+        self.mode = self.structure.mode
+        self.frequency = self.structure.frequency
+        self.period = self.structure.period
+        self.steps = self.line_structure.steps
+        self.frame_time = np.linspace(0, self.period, self.steps)
+        self.result_path = self.structure.result_path
+        self.plot_title = self.structure.plot_title
+
+        self.line_structure.apply_transformation_for_line_structure()
+        self.structure.apply_transformation_for_structure()
 
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(
             111, projection='3d', aspect='equal', azim=-60, elev=10)
+
+        self.animate()
+
+    def init(self):
+        self.fig.suptitle(self.plot_title)
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
         self.set_coordinate_in_real_size()
         self.visualize_coordinate()
-
-        self.line_structure.apply_transformation_for_line_structure()
-        self.structure.apply_transformation_for_structure()
-
-        self.animate()
 
     def visualize_coordinate(self):
         arrow_prop_dict = dict(
@@ -127,22 +137,30 @@ class Visualiser:
         # TODO add dependency on ffmpeg somewhere - need to install ffmpeg for users
         # Set up formatting for the movie files
         Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=30, metadata=dict(artist='Me'), bitrate=1800)
-        a = animation.FuncAnimation(self.fig, self.update, self.line_structure.steps, repeat=False)
+        writer = Writer(fps=self.steps/self.period, metadata=dict(artist='Me'), bitrate=1800)
+        a = animation.FuncAnimation(self.fig,
+                                    self.update,
+                                    frames=self.steps,
+                                    init_func=self.init(),
+                                    repeat=True)
         if self.is_record_animation:
-            a.save("results/skin_model_displacement.mp4")
+            file = join(self.result_path,  'mode_' + self.mode + '_skin_model.mp4')
+            a.save(file, writer)
+            print("Successfully written animation video!")
+
+        plt.grid()
         plt.tight_layout()
         plt.show()
 
-    def update(self, t):
+    def update(self, step):
         """
         plotting the deformed structure with respect to the displacement
         """
         wframe = self.fig.gca()
         if wframe is not None:
             self.ax.cla()
-        print("time: " + str(t))
-        self.line_structure.update_dofs(t)
+        print("time: " + str(step))
+        self.line_structure.update_dofs(step)
         self.mapper.map_line_structure_to_structure()
 
         self.line_structure.apply_transformation_for_line_structure()
@@ -152,6 +170,7 @@ class Visualiser:
         if self.is_visualize_line_structure:
             self.visualise_line_structure()
         self.set_coordinate_in_real_size()
+        self.ax.text(0, 5, 15, '{0:.2f}'.format(self.frame_time[step]) + "[s]", fontsize=20, color='red')
 
 
 def test():
@@ -164,6 +183,10 @@ def test():
              "visualize_line_structure": True,
              "beam_direction": "x",
              "scaling_vector": [1.0, 1.0, 1.0],
+             'result_path': '.',
+             'mode': '1',
+             'frequency': 0.1,
+             'period': 4.0,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
