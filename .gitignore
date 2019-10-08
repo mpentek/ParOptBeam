@@ -4,6 +4,7 @@
 *.idea
 .vscode
 *.avi
+*.mp4
 
 input/force/25_turb/
 input/force/25_no_turb/
