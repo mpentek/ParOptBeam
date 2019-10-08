@@ -85,18 +85,8 @@ class Structure:
         self.num_of_frames = len(self.element_geometry)
         self.num_of_elements = len(self.scaling_vector) + 1
         self.beam_direction = BeamDirection[params["beam_direction"]]
-        self.element_length = self.beam_length / (self.num_of_elements - 1)
-        self.deformation_scaling_factor = params["deformation_scaling_factor"]
-        self.is_record_animation = params["record_animation"]
-        self.mode = params["mode"]
-        self.frequency = params["frequency"]
-        self.period = params["period"]
-        self.plot_title = "Eigenmode: " + str(self.mode) \
-                          + " Frequency: " + '{0:.2f}'.format(self.frequency) \
-                          + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
-        self.is_visualize_line_structure = params["visualize_line_structure"]
-        self.result_path = params["result_path"]
         self.contour_density = params["contour_density"]
+        self.element_length = self.beam_length / (self.num_of_elements - 1)
         self.print_structure_info()
 
         self.densify_contour(self.contour_density)

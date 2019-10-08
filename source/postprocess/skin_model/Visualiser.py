@@ -5,9 +5,10 @@ from matplotlib import animation
 from os.path import join
 import numpy as np
 
+from source.postprocess.skin_model.StructureModel import Structure
+from source.postprocess.skin_model.LineStructureModel import LineStructure
 from source.postprocess.skin_model.Mapper import Mapper
 
-# plt.rcParams['animation.ffmpeg_path'] = 'ffmpeg: /usr/bin/ffmpeg'
 plt.style.use('classic')
 
 
@@ -24,20 +25,23 @@ class Arrow3D(FancyArrowPatch):
 
 
 class Visualiser:
-    def __init__(self, line_structure, structure):
-        self.line_structure = line_structure
-        self.structure = structure
-        self.mapper = Mapper(line_structure, structure)
-        self.scale = self.structure.deformation_scaling_factor
-        self.is_record_animation = self.structure.is_record_animation
-        self.is_visualize_line_structure = self.structure.is_visualize_line_structure
-        self.mode = self.structure.mode
-        self.frequency = self.structure.frequency
-        self.period = self.structure.period
+    def __init__(self, params):
+        self.line_structure = LineStructure(params)
+        self.structure = Structure(params)
+        self.mapper = Mapper(self.line_structure, self.structure)
+
+        self.scale = params["deformation_scaling_factor"]
+        self.is_record_animation = params["record_animation"]
+        self.mode = params["mode"]
+        self.frequency = params["frequency"]
+        self.period = params["period"]
         self.steps = self.line_structure.steps
         self.frame_time = np.linspace(0, self.period, self.steps)
-        self.result_path = self.structure.result_path
-        self.plot_title = self.structure.plot_title
+        self.plot_title = "Eigenmode: " + str(self.mode) \
+                          + " Frequency: " + '{0:.2f}'.format(self.frequency) \
+                          + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
+        self.is_visualize_line_structure = params["visualize_line_structure"]
+        self.result_path = params["result_path"]
 
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
@@ -200,12 +204,8 @@ def test():
                  "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
                  "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
-    from source.postprocess.skin_model.StructureModel import Structure
-    from source.postprocess.skin_model.LineStructureModel import LineStructure
 
-    s = Structure(param)
-    ls = LineStructure(param)
-    v = Visualiser(ls, s)
+    v = Visualiser(param)
 
 
 if __name__ == "__main__":
