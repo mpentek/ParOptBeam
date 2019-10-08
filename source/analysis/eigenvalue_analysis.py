@@ -381,7 +381,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         time_steps = 100
         array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
-            0, self.period[selected_mode], time_steps))  # AK: can this be called an array tiem ?
+            0, self.period[selected_mode], time_steps))  # AK: can this be called an array time ?
 
         for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
                               StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
@@ -429,6 +429,12 @@ class EigenvalueAnalysis(AnalysisType):
                                          scaling)
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
+        skin_model_params["result_path"] = join("output", self.structure_model.name)
+        skin_model_params["mode"] = str(mode)
+        skin_model_params["frequency"] = self.frequency[mode]
+        skin_model_params["period"] = self.period[mode]
+        skin_model_params["dofs_input"] = self.get_output_for_visualiser()
+
         s = Structure(skin_model_params)
         ls = LineStructure(skin_model_params)
         plotter = Visualiser(ls, s)
@@ -461,8 +467,6 @@ class EigenvalueAnalysis(AnalysisType):
             self.animate_selected_eigenmode(mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
-            skin_model_params["dofs_input"] = self.get_output_for_visualiser()
-            print(skin_model_params)
             self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
 
         # TODO to adapt and refactor
