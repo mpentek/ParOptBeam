@@ -1,4 +1,3 @@
-from os.path import join
 import numpy as np
 from source.postprocess.skin_model.NodeModel import Node
 

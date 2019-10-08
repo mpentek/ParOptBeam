@@ -58,8 +58,6 @@ class Node:
                        [0.0, 0.0, 0.0, 1.0]])
 
         M = T.dot(Rz.dot(Ry.dot(Rx)))
-        print(Rz)
-        print(M)
         previous_coordinate = np.append(self.undeformed, np.array(1.0)).reshape(4, 1)
         new_coordinate = M.dot(previous_coordinate)
         new_coordinate = new_coordinate.reshape(1, 4)
