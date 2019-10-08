@@ -87,7 +87,14 @@ class Structure:
         self.beam_direction = BeamDirection[params["beam_direction"]]
         self.element_length = self.beam_length / (self.num_of_elements - 1)
         self.is_record_animation = params["record_animation"]
+        self.mode = params["mode"]
+        self.frequency = params["frequency"]
+        self.period = params["period"]
+        self.plot_title = "Eigenmode: " + str(self.mode) \
+                          + " Frequency: " + '{0:.2f}'.format(self.frequency) \
+                          + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
         self.is_visualize_line_structure = params["visualize_line_structure"]
+        self.result_path = params["result_path"]
         self.contour_density = params["contour_density"]
         self.print_structure_info()
 
@@ -180,6 +187,10 @@ def test():
              "visualize_line_structure": True,
              "beam_direction": "x",
              "scaling_vector": [1.01, 1.0, 1.02],
+             'result_path': '.',
+             'mode': '1',
+             'frequency': 0.4,
+             'period': 2.5,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
