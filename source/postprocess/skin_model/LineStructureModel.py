@@ -1,5 +1,9 @@
 import numpy as np
 from source.postprocess.skin_model.NodeModel import Node
+from joblib import Parallel, delayed
+import multiprocessing
+
+NUM_OF_CORES = multiprocessing.cpu_count()
 
 
 class LineStructure:
@@ -59,8 +63,12 @@ class LineStructure:
 
         displacement = self.displacement.transpose().reshape(self.num_of_nodes, 3)
         angular_displacement = self.angular_displacement.transpose().reshape(self.num_of_nodes, 3)
-        for i in range(self.num_of_nodes):
+
+        def assign_nodal_dof(i):
             self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
+            return self.nodes[i]
+
+        self.nodes = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_dof)(i) for i in range(self.num_of_nodes))
 
     def print_line_structure_info(self):
         msg = "=============================================\n"
@@ -74,11 +82,34 @@ class LineStructure:
             node.print_info()
 
     def apply_transformation_for_line_structure(self):
-        for i in range(self.num_of_nodes):
+
+        def apply_nodal_transformation(i):
             self.nodes[i].apply_transformation()
+            return self.nodes[i]
+
+        def assign_nodal_deformation_x(i):
             self.deformed[0][i] = self.nodes[i].deformed[0]
-            self.deformed[1][i] = self.nodes[i].deformed[1]
-            self.deformed[2][i] = self.nodes[i].deformed[2]
+            return self.deformed[0][i]
+
+        def assign_nodal_deformation_y(i):
+            self.deformed[0][i] = self.nodes[i].deformed[0]
+            return self.deformed[1][i]
+
+        def assign_nodal_deformation_z(i):
+            self.deformed[0][i] = self.nodes[i].deformed[0]
+            return self.deformed[2][i]
+
+        self.nodes = Parallel(n_jobs=NUM_OF_CORES)(delayed(apply_nodal_transformation)(i)
+                                                   for i in range(self.num_of_nodes))
+
+        self.deformed[0] = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_deformation_x)(i)
+                                                         for i in range(self.num_of_nodes))
+
+        self.deformed[1] = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_deformation_y)(i)
+                                                         for i in range(self.num_of_nodes))
+
+        self.deformed[2] = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_deformation_z)(i)
+                                                         for i in range(self.num_of_nodes))
 
 
 def test():
@@ -94,14 +125,15 @@ def test():
                  "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
                  "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi, np.pi/2]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi, np.pi / 2]],
                  "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
     ls = LineStructure(param)
     ls.apply_transformation_for_line_structure()
     solution = np.array([-100, 0.4, 4.0])
-
+    err = solution - ls.nodes[4].deformed
+    print(ls.nodes[4].deformed)
     try:
-        assert all(ls.nodes[4].deformed == solution), "Transformation wrong"
+        assert all(err < 1e-12), "Transformation wrong"
         print("passed test")
     except AssertionError:
         print("failed test")
