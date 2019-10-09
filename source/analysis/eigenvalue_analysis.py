@@ -428,9 +428,10 @@ class EigenvalueAnalysis(AnalysisType):
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
         skin_model_params["result_path"] = join("output", self.structure_model.name)
-        skin_model_params["mode"] = str(mode)
-        skin_model_params["frequency"] = self.frequency[mode]
-        skin_model_params["period"] = self.period[mode]
+        skin_model_params["eigenvalue_analysis"] = {}
+        skin_model_params["eigenvalue_analysis"]["mode"] = str(mode)
+        skin_model_params["eigenvalue_analysis"]["frequency"] = self.frequency[mode]
+        skin_model_params["eigenvalue_analysis"]["period"] = self.period[mode]
         skin_model_params["dofs_input"] = self.get_output_for_visualiser()
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)

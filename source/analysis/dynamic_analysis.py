@@ -7,6 +7,7 @@ from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
+import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
@@ -479,14 +480,14 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
-            start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
-            stop = self.displacement.shape[0] + idx - step
-            self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
-                                                                              1:step]
+        if not self.parameters['output']['animate_skin_model_time_history']:
+            for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                                  StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+                start = idx
+                step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+                stop = self.displacement.shape[0] + idx - step
+                self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                                  1:step]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -510,7 +511,37 @@ class DynamicAnalysis(AnalysisType):
                                          force,
                                          scaling)
 
-    def postprocess(self, pdf_report, display_plots):
+    def get_output_for_visualiser(self):
+        """"
+        This function writes out the nodal dofs of the deformed state for visualiser
+        """
+
+        output = {}
+        for key, val in self.structure_model.nodal_coordinates.items():
+            output[key] = val.tolist()
+
+        return output
+
+    def animate_skin_model_time_history(self, skin_model_params):
+        print("Animating skin model time history")
+        if not self.parameters['output']['animate_time_history']:
+            for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
+                                  StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+                start = idx
+                step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+                stop = self.displacement.shape[0] + idx - step
+                self.structure_model.nodal_coordinates[label] = self.displacement[start:stop +
+                                                                                        1:step]
+        skin_model_params["result_path"] = join("output", self.structure_model.name)
+        skin_model_params["dynamic_analysis"] = {}
+        skin_model_params["dynamic_analysis"]["start"] = self.parameters['settings']['time']['start']
+        skin_model_params["dynamic_analysis"]["end"] = self.parameters['settings']['time']['end']
+        skin_model_params["dynamic_analysis"]["time_step"] = self.parameters['settings']['time']['step']
+        skin_model_params["dofs_input"] = self.get_output_for_visualiser()
+
+        visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
+
+    def postprocess(self, pdf_report, display_plots, skin_model_params):
         """
         Postprocess something
         """
@@ -530,6 +561,10 @@ class DynamicAnalysis(AnalysisType):
 
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
+
+        if self.parameters['output']['animate_skin_model_time_history']:
+            self.animate_skin_model_time_history(skin_model_params)
+
 
         for idx_dof, dof_id in enumerate(self.parameters['output']['selected_dof']['dof_list']):
             for idx_res, res in enumerate(self.parameters['output']['selected_dof']['result_type'][idx_dof]):

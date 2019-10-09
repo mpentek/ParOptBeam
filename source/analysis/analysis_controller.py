@@ -51,7 +51,6 @@ class AnalysisController(object):
 
         self.display_plots = self.parameters['report_options']['display_plots_on_screen']
 
-        # TODO: passing skin model visualisation params
         self.skin_model_params = None
         if self.parameters['report_options']['use_skin_model']:
             self.skin_model_params = {"geometry": self.parameters["skin_model_parameters"]["geometry"],

@@ -32,16 +32,32 @@ class Visualiser:
 
         self.scale = params["deformation_scaling_factor"]
         self.is_record_animation = params["record_animation"]
-        self.mode = params["mode"]
-        self.frequency = params["frequency"]
-        self.period = params["period"]
         self.steps = self.line_structure.steps
-        self.frame_time = np.linspace(0, self.period, self.steps)
-        self.plot_title = "Eigenmode: " + str(self.mode) \
-                          + " Frequency: " + '{0:.2f}'.format(self.frequency) \
-                          + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
         self.is_visualize_line_structure = params["visualize_line_structure"]
         self.result_path = params["result_path"]
+        self.plot_title = "Skin Model Visualization\n"
+
+        Writer = animation.writers['ffmpeg']
+
+        if "eigenvalue_analysis" in params:
+            self.mode = params["eigenvalue_analysis"]["mode"]
+            self.frequency = params["eigenvalue_analysis"]["frequency"]
+            self.period = params["eigenvalue_analysis"]["period"]
+            self.frame_time = np.linspace(0, self.period, self.steps)
+            self.plot_title += "Eigenmode: " + str(self.mode) \
+                              + " Frequency: " + '{0:.2f}'.format(self.frequency) \
+                              + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
+            self.writer = Writer(fps=self.steps / self.period, metadata=dict(artist='Me'), bitrate=1800)
+            self.file = join(self.result_path, 'mode_' + self.mode + '_skin_model.mp4')
+
+        if "dynamic_analysis" in params:
+            self.start = params["dynamic_analysis"]["start"]
+            self.end = params["dynamic_analysis"]["end"]
+            self.dt = params["dynamic_analysis"]["time_step"]
+            self.frame_time = np.linspace(self.start, self.end, self.steps)
+            self.plot_title += "Dyanimc Analyis: Deformation over time"
+            self.writer = Writer(fps=1/self.dt, metadata=dict(artist='Me'), bitrate=1800)
+            self.file = join(self.result_path,  'dynamic' + '_skin_model.mp4')
 
         self.line_structure.apply_transformation_for_line_structure()
         self.structure.apply_transformation_for_structure()
@@ -139,16 +155,13 @@ class Visualiser:
     def animate(self):
         # TODO add dependency on ffmpeg somewhere - need to install ffmpeg for users
         # Set up formatting for the movie files
-        Writer = animation.writers['ffmpeg']
-        writer = Writer(fps=self.steps/self.period, metadata=dict(artist='Me'), bitrate=1800)
         a = animation.FuncAnimation(self.fig,
                                     self.update,
                                     frames=self.steps,
                                     init_func=self.init(),
                                     repeat=True)
         if self.is_record_animation:
-            file = join(self.result_path,  'mode_' + self.mode + '_skin_model.mp4')
-            a.save(file, writer)
+            a.save(self.file, self.writer)
             print("Successfully written animation video!")
 
         plt.grid()
@@ -177,7 +190,8 @@ class Visualiser:
 
 
 def test():
-    param = {"length": 100.0,
+    param_eigvalue = {
+             "length": 100.0,
              "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
                           [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
                           [0, 6.0, -9.0], [0, -6.0, -9.0]],
@@ -186,10 +200,12 @@ def test():
              "visualize_line_structure": True,
              "beam_direction": "x",
              "scaling_vector": [1.0, 1.0, 1.0],
-             'result_path': '.',
-             'mode': '1',
-             'frequency': 0.1,
-             'period': 4.0,
+             "result_path": '.',
+             "eigenvalue_analysis": {
+                 'mode': '1',
+                 'frequency': 0.1,
+                 'period': 4.0
+             },
              "deformation_scaling_factor": 2.0,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
@@ -205,7 +221,38 @@ def test():
                  "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
                  "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
 
-    v = Visualiser(param)
+    param_dynamic = {
+             "length": 100.0,
+             "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
+                          [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
+                          [0, 6.0, -9.0], [0, -6.0, -9.0]],
+             "contour_density": 1,
+             "record_animation": True,
+             "visualize_line_structure": True,
+             "beam_direction": "x",
+             "scaling_vector": [1.0, 1.0, 1.0],
+             "result_path": '.',
+             "dynamic_analysis":{
+                  'start': 0,
+                  'end': 10.0,
+                  'time_step': 1.0
+             },
+             "deformation_scaling_factor": 2.0,
+             "dofs_input": {
+                 "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
+                 "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "z0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
+                 "y": [[0.0, 0.1], [0.0, 0.2], [0.0, 0.3], [0.0, 0.4], [0.0, 0.5]],
+                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 5.0], [0.0, 0.0]],
+                 "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi/12, 0.0]],
+                 "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
+                 "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
+
+    v = Visualiser(param_dynamic)
 
 
 if __name__ == "__main__":

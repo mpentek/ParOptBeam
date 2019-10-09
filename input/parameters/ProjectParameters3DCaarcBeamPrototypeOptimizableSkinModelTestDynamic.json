@@ -71,14 +71,14 @@
         "skin_model_parameters":{
             "geometry": [ [0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
                           [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
-                          [0, 6.0, -9.0], [0, -6.0, -9.0],
+                          [0, 6.0, -9.0], [0, -6.0, -9.0]
             ],
             "contour_density": 1,
             "record_animation": true,
             "visualize_line_structure": true,
             "beam_direction": "x",
             "scaling_vector": [1.5, 1.4, 1.3, 1.2, 1.0, 1.0, 1.2, 1.3, 1.4, 1.5],
-            "deformation_scaling_factor" : 2e5
+            "deformation_scaling_factor" : 1e5
         },
         "runs": [{
                 "type" : "dynamic_analysis",
@@ -100,12 +100,12 @@
                 },
                 "output":{
                     "selected_instance": {
-                        "plot_step": [1500, 2361], 
-                        "write_step": [3276],
-                        "plot_time": [30.5, 315.25], 
-                        "write_time": [450.15]
+                        "plot_step": [], 
+                        "write_step": [],
+                        "plot_time": [], 
+                        "write_time": []
                     },
-                    "animate_time_history" : true,
+                    "animate_time_history" : false,
                     "animate_skin_model_time_history": true,
                     "selected_dof": {
                         "dof_list": [1, 2, 0, 4, 5, 3,
