@@ -176,7 +176,7 @@ class Visualiser:
         wframe = self.fig.gca()
         if wframe is not None:
             self.ax.cla()
-        real_step = step * self.record_step
+        real_step = step * self.record_step + self.start_step
         print("time: " + str(real_step * self.dt))
         self.line_structure.update_dofs(real_step)
         self.mapper.map_line_structure_to_structure()
@@ -239,7 +239,7 @@ def test():
              "result_path": '.',
              "dynamic_analysis": {
                   'time_step': 0.5,
-                  'start_record': 0.0,
+                  'start_record': 0.5,
                   'end_record': 1.5,
                   'record_step': 1
              },
