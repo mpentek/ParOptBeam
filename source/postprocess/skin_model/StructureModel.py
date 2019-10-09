@@ -2,10 +2,14 @@ from typing import List
 
 import numpy as np
 from enum import IntEnum
+from joblib import Parallel, delayed
+import multiprocessing
 
 from source.postprocess.skin_model.NodeModel import Node
 from source.postprocess.skin_model.Mapper import interpolate_points
 
+RUN_PARALLEL = False
+NUM_OF_CORES = multiprocessing.cpu_count()
 DIRECTION_VECTOR = ["x", "y", "z", "x", "y", "z"]
 
 
@@ -107,18 +111,38 @@ class Structure:
         print(msg)
 
     def create_elements(self):
-        element_vec = np.linspace(self.element_length / 2, self.beam_length - self.element_length / 2, self.num_of_elements - 1)
+        element_vec = np.linspace(self.element_length / 2, self.beam_length - self.element_length / 2,
+                                  self.num_of_elements - 1)
 
-        for i in range(self.num_of_elements):
+        def create_single_element(i):
             current_length = i * self.element_length
             current_scale = interpolate_points(current_length, element_vec, self.scaling_vector)
             element = Element(self.element_geometry, current_length, self.beam_direction, current_scale)
-            self.elements[i] = element
+            return element
+
+        if RUN_PARALLEL:
+            self.elements = Parallel(n_jobs=NUM_OF_CORES)(delayed(create_single_element)(i)
+                                                          for i in range(self.num_of_elements))
+        else:
+            for i in range(self.num_of_elements):
+                current_length = i * self.element_length
+                current_scale = interpolate_points(current_length, element_vec, self.scaling_vector)
+                element = Element(self.element_geometry, current_length, self.beam_direction, current_scale)
+                self.elements[i] = element
 
     def create_frames(self):
-        for i in range(self.num_of_frames):
+
+        def create_single_frame(i):
             frame = Frame(self.elements, i)
-            self.frames[i] = frame
+            return frame
+
+        if RUN_PARALLEL:
+            self.frames = Parallel(n_jobs=NUM_OF_CORES)(delayed(create_single_frame)(i)
+                                                        for i in range(self.num_of_frames))
+        else:
+            for i in range(self.num_of_frames):
+                frame = Frame(self.elements, i)
+                self.frames[i] = frame
 
     def densify_contour(self, parts=5):
         if parts > 1:
@@ -194,7 +218,7 @@ def test():
                  "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [4.0, 0.0]],
                  "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
                  "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi, np.pi/2]],
+                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi, np.pi / 2]],
                  "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
     s = Structure(param)
     s.apply_transformation_for_structure()
