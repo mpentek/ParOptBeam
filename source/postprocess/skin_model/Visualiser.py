@@ -55,6 +55,7 @@ class Visualiser:
             self.start_record = params["dynamic_analysis"]["start_record"]
             self.end_record = params["dynamic_analysis"]["end_record"]
             self.record_step = params["dynamic_analysis"]["record_step"]
+            self.start_step = int(self.start_record / self.dt)
             self.frame_time = np.arange(self.start_record, self.end_record + self.dt, self.dt * self.record_step)
             self.plot_title += "Dyanimc Analyis: Deformation over time"
             self.writer = Writer(fps=1/(self.record_step * self.dt), bitrate=1800)
@@ -175,7 +176,7 @@ class Visualiser:
         wframe = self.fig.gca()
         if wframe is not None:
             self.ax.cla()
-        real_step = step * self.record_step + self.start_record / self.dt
+        real_step = step * self.record_step
         print("time: " + str(real_step * self.dt))
         self.line_structure.update_dofs(real_step)
         self.mapper.map_line_structure_to_structure()
