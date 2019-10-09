@@ -55,7 +55,7 @@ class Visualiser:
             self.start_record = params["dynamic_analysis"]["start_record"]
             self.end_record = params["dynamic_analysis"]["end_record"]
             self.record_step = params["dynamic_analysis"]["record_step"]
-            self.frame_time = np.arange(self.start_record, self.end_record + self.record_step, self.record_step)
+            self.frame_time = np.arange(self.start_record, self.end_record + self.dt, self.dt * self.record_step)
             self.plot_title += "Dyanimc Analyis: Deformation over time"
             self.writer = Writer(fps=self.record_step/self.dt, bitrate=1800)
             self.file = join(self.result_path,  'dynamic' + '_skin_model.mp4')
@@ -189,6 +189,9 @@ class Visualiser:
         self.set_coordinate_in_real_size()
         self.ax.text(0, 5, 15, '{0:.2f}'.format(self.frame_time[step]) + "[s]", fontsize=20, color='red')
 
+    def parallel_update(self, step):
+        pass
+
 
 def test():
     param_eigvalue = {
@@ -234,9 +237,9 @@ def test():
              "scaling_vector": [1.0, 1.0, 1.0],
              "result_path": '.',
              "dynamic_analysis": {
-                  'time_step': 1.0,
+                  'time_step': 0.5,
                   'start_record': 0.0,
-                  'end_record': 3.0,
+                  'end_record': 1.5,
                   'record_step': 1
              },
              "deformation_scaling_factor": 2.0,
