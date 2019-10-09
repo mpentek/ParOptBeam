@@ -47,20 +47,20 @@ class Visualiser:
             self.plot_title += "Eigenmode: " + str(self.mode) \
                               + " Frequency: " + '{0:.2f}'.format(self.frequency) \
                               + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
-            self.writer = Writer(fps=self.steps / self.period, metadata=dict(artist='Me'), bitrate=1800)
+            self.writer = Writer(fps=self.steps / self.period, bitrate=1800)
             self.file = join(self.result_path, 'mode_' + self.mode + '_skin_model.mp4')
 
         if "dynamic_analysis" in params:
-            self.start = params["dynamic_analysis"]["start"]
-            self.end = params["dynamic_analysis"]["end"]
             self.dt = params["dynamic_analysis"]["time_step"]
-            self.frame_time = np.linspace(self.start, self.end, self.steps)
+            self.start_record = params["dynamic_analysis"]["start_record"]
+            self.end_record = params["dynamic_analysis"]["end_record"]
+            self.record_step = params["dynamic_analysis"]["record_step"]
+            self.frame_time = np.arange(self.start_record, self.end_record + self.record_step, self.record_step)
             self.plot_title += "Dyanimc Analyis: Deformation over time"
-            self.writer = Writer(fps=1/self.dt, metadata=dict(artist='Me'), bitrate=1800)
+            self.writer = Writer(fps=self.record_step/self.dt, bitrate=1800)
             self.file = join(self.result_path,  'dynamic' + '_skin_model.mp4')
 
-        self.line_structure.apply_transformation_for_line_structure()
-        self.structure.apply_transformation_for_structure()
+        self.animate_steps = len(self.frame_time)
 
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(
@@ -157,9 +157,9 @@ class Visualiser:
         # Set up formatting for the movie files
         a = animation.FuncAnimation(self.fig,
                                     self.update,
-                                    frames=self.steps,
+                                    frames=self.animate_steps,
                                     init_func=self.init(),
-                                    repeat=True)
+                                    repeat=False)
         if self.is_record_animation:
             a.save(self.file, self.writer)
             print("Successfully written animation video!")
@@ -175,8 +175,9 @@ class Visualiser:
         wframe = self.fig.gca()
         if wframe is not None:
             self.ax.cla()
-        print("time: " + str(step))
-        self.line_structure.update_dofs(step)
+        real_step = step * self.record_step
+        print("time: " + str(real_step))
+        self.line_structure.update_dofs(real_step)
         self.mapper.map_line_structure_to_structure()
 
         self.line_structure.apply_transformation_for_line_structure()
@@ -232,25 +233,26 @@ def test():
              "beam_direction": "x",
              "scaling_vector": [1.0, 1.0, 1.0],
              "result_path": '.',
-             "dynamic_analysis":{
-                  'start': 0,
-                  'end': 10.0,
-                  'time_step': 1.0
+             "dynamic_analysis": {
+                  'time_step': 1.0,
+                  'start_record': 0.0,
+                  'end_record': 3.0,
+                  'record_step': 1
              },
              "deformation_scaling_factor": 2.0,
              "dofs_input": {
-                 "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
-                 "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "z0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "y": [[0.0, 0.1], [0.0, 0.2], [0.0, 0.3], [0.0, 0.4], [0.0, 0.5]],
-                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 5.0], [0.0, 0.0]],
-                 "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi/12, 0.0]],
-                 "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
-                 "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
+                 "x0": [0.0, 50.0, 100.0],
+                 "y0": [0.0, 0.0, 0.0],
+                 "z0": [0.0, 0.0, 0.0],
+                 "a0": [0.0, 0.0, 0.0],
+                 "b0": [0.0, 0.0, 0.0],
+                 "g0": [0.0, 0.0, 0.0],
+                 "y": [[0.0, 0.1, 0.2, 0.3], [0.0, 0.3, 0.4, 0.5], [0.0, 0.5, 0.6, 0.9]],
+                 "z": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+                 "a": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/12, np.pi/10, np.pi/8, np.pi/6]],
+                 "b": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+                 "g": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/10, np.pi/15, np.pi/30, 0.0]],
+                 "x": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]}}
 
     v = Visualiser(param_dynamic)
 

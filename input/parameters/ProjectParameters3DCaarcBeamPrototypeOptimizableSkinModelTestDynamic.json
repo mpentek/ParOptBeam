@@ -107,6 +107,11 @@
                     },
                     "animate_time_history" : false,
                     "animate_skin_model_time_history": true,
+                    "skin_model_animation_parameters":{
+                        "start_record": 100,
+                        "end_record": 200,
+                        "record_step": 10
+                    },
                     "selected_dof": {
                         "dof_list": [1, 2, 0, 4, 5, 3,
                                     -5, 

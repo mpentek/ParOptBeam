@@ -534,9 +534,14 @@ class DynamicAnalysis(AnalysisType):
                                                                                         1:step]
         skin_model_params["result_path"] = join("output", self.structure_model.name)
         skin_model_params["dynamic_analysis"] = {}
-        skin_model_params["dynamic_analysis"]["start"] = self.parameters['settings']['time']['start']
-        skin_model_params["dynamic_analysis"]["end"] = self.parameters['settings']['time']['end']
         skin_model_params["dynamic_analysis"]["time_step"] = self.parameters['settings']['time']['step']
+        skin_model_params["dynamic_analysis"]["start_record"] = \
+            self.parameters['output']['skin_model_animation_parameters']['start_record']
+        skin_model_params["dynamic_analysis"]["end_record"] = \
+            self.parameters['output']['skin_model_animation_parameters']['end_record']
+        skin_model_params["dynamic_analysis"]["record_step"] = \
+            self.parameters['output']['skin_model_animation_parameters']['record_step']
+
         skin_model_params["dofs_input"] = self.get_output_for_visualiser()
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
