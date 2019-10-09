@@ -85,31 +85,20 @@ class LineStructure:
 
         def apply_nodal_transformation(i):
             self.nodes[i].apply_transformation()
-            return self.nodes[i]
-
-        def assign_nodal_deformation_x(i):
             self.deformed[0][i] = self.nodes[i].deformed[0]
-            return self.deformed[0][i]
+            self.deformed[1][i] = self.nodes[i].deformed[1]
+            self.deformed[2][i] = self.nodes[i].deformed[2]
+            merged = [self.nodes[i], self.deformed[0][i], self.deformed[1][i], self.deformed[2][i]]
+            return merged
 
-        def assign_nodal_deformation_y(i):
-            self.deformed[0][i] = self.nodes[i].deformed[0]
-            return self.deformed[1][i]
+        merged_solution = Parallel(n_jobs=NUM_OF_CORES)(delayed(apply_nodal_transformation)(i)
+                                                        for i in range(self.num_of_nodes))
 
-        def assign_nodal_deformation_z(i):
-            self.deformed[0][i] = self.nodes[i].deformed[0]
-            return self.deformed[2][i]
-
-        self.nodes = Parallel(n_jobs=NUM_OF_CORES)(delayed(apply_nodal_transformation)(i)
-                                                   for i in range(self.num_of_nodes))
-
-        self.deformed[0] = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_deformation_x)(i)
-                                                         for i in range(self.num_of_nodes))
-
-        self.deformed[1] = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_deformation_y)(i)
-                                                         for i in range(self.num_of_nodes))
-
-        self.deformed[2] = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_deformation_z)(i)
-                                                         for i in range(self.num_of_nodes))
+        merged_solution = np.asarray(merged_solution).transpose()
+        self.nodes = merged_solution[0]
+        self.deformed[0] = merged_solution[1]
+        self.deformed[1] = merged_solution[2]
+        self.deformed[2] = merged_solution[3]
 
 
 def test():
