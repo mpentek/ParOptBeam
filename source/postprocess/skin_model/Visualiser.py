@@ -43,6 +43,9 @@ class Visualiser:
             self.mode = params["eigenvalue_analysis"]["mode"]
             self.frequency = params["eigenvalue_analysis"]["frequency"]
             self.period = params["eigenvalue_analysis"]["period"]
+            self.record_step = 1
+            self.start_step = 0
+            self.dt = self.period / self.steps
             self.frame_time = np.linspace(0, self.period, self.steps)
             self.plot_title += "Eigenmode: " + str(self.mode) \
                               + " Frequency: " + '{0:.2f}'.format(self.frequency) \
@@ -212,7 +215,8 @@ def test():
                  'frequency': 0.1,
                  'period': 4.0
              },
-             "deformation_scaling_factor": 2.0,
+             "eigenmode_scaling_factor": 1.5,
+             "dynamic_scaling_factor": 2.0,
              "dofs_input": {
                  "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
                  "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -260,7 +264,7 @@ def test():
                  "g": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/10, np.pi/15, np.pi/30, 0.0]],
                  "x": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]}}
 
-    v = Visualiser(param_dynamic)
+    v = Visualiser(param_eigvalue)
 
 
 if __name__ == "__main__":
