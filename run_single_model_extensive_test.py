@@ -37,7 +37,7 @@ from source.analysis.analysis_controller import AnalysisController
 
 # available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
-available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizableSkinModelTestDynamic.json']
+available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
 for available_model in available_models:
 

@@ -30,7 +30,6 @@ class Visualiser:
         self.structure = Structure(params)
         self.mapper = Mapper(self.line_structure, self.structure)
 
-        self.scale = params["deformation_scaling_factor"]
         self.is_record_animation = params["record_animation"]
         self.steps = self.line_structure.steps
         self.is_visualize_line_structure = params["visualize_line_structure"]
@@ -40,6 +39,7 @@ class Visualiser:
         Writer = animation.writers['ffmpeg']
 
         if "eigenvalue_analysis" in params:
+            self.scale = params["eigenmode_scaling_factor"]
             self.mode = params["eigenvalue_analysis"]["mode"]
             self.frequency = params["eigenvalue_analysis"]["frequency"]
             self.period = params["eigenvalue_analysis"]["period"]
@@ -51,6 +51,7 @@ class Visualiser:
             self.file = join(self.result_path, 'mode_' + self.mode + '_skin_model.mp4')
 
         if "dynamic_analysis" in params:
+            self.scale = params["dynamic_scaling_factor"]
             self.dt = params["dynamic_analysis"]["time_step"]
             self.start_record = params["dynamic_analysis"]["start_record"]
             self.end_record = params["dynamic_analysis"]["end_record"]
@@ -243,7 +244,8 @@ def test():
                   'end_record': 1.5,
                   'record_step': 1
              },
-             "deformation_scaling_factor": 2.0,
+             "eigenmode_scaling_factor": 1.5,
+             "dynamic_scaling_factor": 2.0,
              "dofs_input": {
                  "x0": [0.0, 50.0, 100.0],
                  "y0": [0.0, 0.0, 0.0],

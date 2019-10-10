@@ -62,8 +62,10 @@ class AnalysisController(object):
                                       "beam_direction": self.parameters["skin_model_parameters"]["beam_direction"],
                                       "scaling_vector": self.parameters["skin_model_parameters"]["scaling_vector"],
                                       "num_of_dofs_per_node": self.model.DOFS_PER_NODE[self.model.domain_size],
-                                      "deformation_scaling_factor": self.parameters["skin_model_parameters"][
-                                          "deformation_scaling_factor"],
+                                      "eigenmode_scaling_factor": self.parameters["skin_model_parameters"][
+                                          "eigenmode_scaling_factor"],
+                                      "dynamic_scaling_factor": self.parameters["skin_model_parameters"][
+                                          "dynamic_scaling_factor"],
                                       "dofs_input": {}}
 
         self.analyses = []
