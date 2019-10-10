@@ -78,7 +78,8 @@
             "visualize_line_structure": true,
             "beam_direction": "x",
             "scaling_vector": [1.5, 1.4, 1.3, 1.2, 1.0, 1.0, 1.2, 1.3, 1.4, 1.5],
-            "deformation_scaling_factor" : 1e3
+            "eigenmode_scaling_factor" : 1e5,
+            "dynamic_scaling_factor" : 1e3
         },
         "runs": [{
                 "type" : "dynamic_analysis",
