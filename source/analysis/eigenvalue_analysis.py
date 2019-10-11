@@ -463,8 +463,9 @@ class EigenvalueAnalysis(AnalysisType):
         for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
             self.animate_selected_eigenmode(mode)
 
-        for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
-            self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
+        if skin_model_params is not None:
+            for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
+                self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
 
         # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)

@@ -35,9 +35,9 @@ from source.analysis.analysis_controller import AnalysisController
 
 # NOTE: using this single (yet extensive) file for testing
 
-# available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
-
 available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
+
+# available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizableSkinModelTestEigenvalue.json']
 
 for available_model in available_models:
 

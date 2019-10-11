@@ -567,8 +567,9 @@ class DynamicAnalysis(AnalysisType):
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
 
-        if self.parameters['output']['animate_skin_model_time_history']:
-            self.animate_skin_model_time_history(skin_model_params)
+        if skin_model_params is not None:
+            if self.parameters['output']['animate_skin_model_time_history']:
+                self.animate_skin_model_time_history(skin_model_params)
 
 
         for idx_dof, dof_id in enumerate(self.parameters['output']['selected_dof']['dof_list']):

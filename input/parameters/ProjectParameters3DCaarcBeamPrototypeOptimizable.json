@@ -66,7 +66,7 @@
         "report_options": {
             "combine_plots_into_pdf" : true,
             "display_plots_on_screen" : false,
-            "use_skin_model" : false
+            "use_skin_model" : true
         },
         "skin_model_parameters":{
             "geometry": [ [0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
@@ -97,7 +97,7 @@
                         "plot_mode": [1,2,3], 
                         "write_mode": [5,6,7],
                         "animate_mode": [1],
-                        "animate_skin_model": [1]},
+                        "animate_skin_model": [2]},
                     "selected_eigenmode_range": {
                         "help": "maximum 4 modes per range at a time",
                         "considered_ranges": [[1,4], [5,7]], 
@@ -129,7 +129,7 @@
                         "plot_time": [30.5, 315.25], 
                         "write_time": [450.15]
                     },
-                    "animate_time_history" : true,
+                    "animate_time_history" : false,
                     "animate_skin_model_time_history": true,
                     "skin_model_animation_parameters":{
                         "start_record": 100,
