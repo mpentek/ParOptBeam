@@ -61,7 +61,7 @@ class Visualiser:
             self.record_step = params["dynamic_analysis"]["record_step"]
             self.start_step = int(self.start_record / self.dt)
             self.frame_time = np.arange(self.start_record, self.end_record + self.dt, self.dt * self.record_step)
-            self.plot_title += "Dyanimc Analyis: Deformation over time"
+            self.plot_title = "Dyanimc Analyis: Deformation over time"
             self.writer = Writer(fps=1/(self.record_step * self.dt), bitrate=1800)
             self.file = join(self.result_path,  'dynamic' + '_skin_model.mp4')
 
