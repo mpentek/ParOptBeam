@@ -61,14 +61,14 @@ def bdf2_disp_based():
     # un+1 = 4/3 un - 1/3 un-1 + 2/3 dt f(tn+1, un+1)
     # vn+1 = 0.5/dt * (3 un+1 - 4 un + unm1)
     global an1, an, un1, un, unm1, unm2, vn1, vn, vnm1, vnm2, t, dt, f, K, C, M
-
-    bdf0 =  3 * 0.5/dt
-    bdf1 =  -4 * 0.5/dt
-    bdf2 =  1 * 0.5/dt
+    bdf0, bdf1, bdf2 = symbols('bdf0, bdf1, bdf2')
+    # bdf0 =  3 * 0.5/dt
+    # bdf1 =  -4 * 0.5/dt
+    # bdf2 =  1 * 0.5/dt
 
     vn1 = bdf0 * un1 + bdf1 * un + bdf2 * unm1
     vn = bdf0 * un + bdf1 * unm1 + bdf2 * unm2
-    vnm1 =  bdf0 * unm1 + bdf1 * unm2 + bdf2 * unm3
+    vnm1 = bdf0 * unm1 + bdf1 * unm2 + bdf2 * unm3
 
     an1 = bdf0 * vn1 + bdf1 * vn + bdf2 * vnm1
 
@@ -167,11 +167,11 @@ def print_scheme(time_scheme):
 
 
 # Check number of command line arguments
-if len(sys.argv) != 2:
-    print ("Usage: python derive_scheme.py <scheme>")
-    sys.exit(1)
+# if len(sys.argv) != 2:
+#     print ("Usage: python derive_scheme.py <scheme>")
+#     sys.exit(1)
 
 if __name__ == "__main__":
     # Get command line arguments
-    time_scheme = sys.argv[1]
-    print_scheme(time_scheme)
+    # time_scheme = sys.argv[1]
+    print_scheme('bdf2')
