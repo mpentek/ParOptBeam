@@ -127,6 +127,14 @@ class DynamicAnalysis(AnalysisType):
             from source.scheme.backward_euler1_scheme import BackwardEuler1
             self.solver = BackwardEuler1(
                 self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
+        elif time_integration_scheme == "RungeKutta4":
+            from source.scheme.runge_kutta4_scheme import RungeKutta4
+            self.solver = RungeKutta4(
+                self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
+        elif time_integration_scheme == "BDF2":
+            from source.scheme.bdf2_scheme import BDF2
+            self.solver = BDF2(
+                self.dt, [self.comp_m, self.comp_b, self.comp_k], initial_conditions)
         else:
             err_msg = "The requested time integration scheme \"" + time_integration_scheme
             err_msg += "\" is not available \n"

@@ -174,4 +174,4 @@ def print_scheme(time_scheme):
 if __name__ == "__main__":
     # Get command line arguments
     # time_scheme = sys.argv[1]
-    print_scheme('bdf2')
+    print_scheme('rk4')

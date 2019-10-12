@@ -35,9 +35,9 @@ from source.analysis.analysis_controller import AnalysisController
 
 # NOTE: using this single (yet extensive) file for testing
 
-available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
+# available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
 
-# available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizableSkinModelTestEigenvalue.json']
+available_models = ['ProjectParameters3DCaarcBeamPrototypeOptimizableSkinModelTestDynamic.json']
 
 for available_model in available_models:
 
@@ -85,6 +85,6 @@ for available_model in available_models:
     # NOTE: works on with 1, 2, 3, 6, 12, 24 elements
     # valid only for the pylon model
     # can be used for testing the caarc model as well
-
+h
     # # ============================================
     # # Static analysis

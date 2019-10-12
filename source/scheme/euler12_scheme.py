@@ -62,3 +62,28 @@ class Euler12(TimeIntegrationScheme):
         # update self.un2 un1
         self.un2 = self.un1
         self.un1 = self.un0
+
+
+def test():
+    M = np.array([[1.0, 0.0], [0.0, 1.0]])
+    B = np.array([[0.0, 0.0], [0.0, 0.0]])
+    K = np.array([[1.0, 0.0], [0.0, 1.0]])
+    u0 = np.array([0.0, 1.0])
+    v0 = np.array([0.0, 0.0])
+    a0 = np.array([0.0, 0.0])
+    dt = 0.1
+    f1 = np.array([0.0, 0.0])
+    displacement = np.empty([2, 100])
+    solver = Euler12(dt, [M, B, K], [u0, v0, a0])
+
+    for i in range(1, 100):
+
+        solver.solve_structure(f1)
+
+        # appending results to the list
+        displacement[:, i] = solver.get_displacement()
+
+        # update results
+        solver.update_structure_time_step()
+
+    print(displacement[:, -1])
