@@ -27,6 +27,9 @@ class BDF2(TimeIntegrationScheme):
         self.B = comp_model[1]
         self.K = comp_model[2]
 
+        self.LHS = np.dot(self.B, self.bdf0) + self.K + np.dot(self.M, self.bdf0 * self.bdf0)
+
+
         # structure
         # initial displacement, velocity and acceleration
         self.u0 = initial_conditions[0]
@@ -34,9 +37,13 @@ class BDF2(TimeIntegrationScheme):
         self.a0 = initial_conditions[2]
 
         # initial values for time integration
-        self.an3 = self.a0
-        self.vn3 = self.v0
-        self.un3 = self.u0
+
+        self.an4 = self.a0
+        self.vn4 = self.v0
+        self.un4 = self.u0
+        self.an3 = - np.dot(self.B, self.vn4) - np.dot(self.K, self.un4) + self.an4
+        self.vn3 = self.vn4 + self.an3 * self.dt
+        self.un3 = self.un4 + self.vn3 * self.dt
         self.an2 = - np.dot(self.B, self.vn3) - np.dot(self.K, self.un3) + self.an3
         self.vn2 = self.vn3 + self.an2 * self.dt
         self.un2 = self.un3 + self.vn2 * self.dt
@@ -54,16 +61,24 @@ class BDF2(TimeIntegrationScheme):
 
     def solve_structure(self, f1):
 
-        LHS = np.dot(self.B, self.bdf0) + self.K + np.dot(self.M, self.bdf0 * self.bdf0)
+        # print(self.un3)
+        # print(self.un2)
+        # print(self.un1)
+
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - np.dot(self.B, np.dot(self.bdf2, self.un2))
         RHS += - 2 * np.dot(self.M, np.dot(self.bdf0 * self.bdf1, self.un1))
         RHS += - 2 * np.dot(self.M, np.dot(self.bdf0 * self.bdf2, self.un2))
         RHS += - np.dot(self.M, self.bdf1 * self.bdf1 * self.un2)
-        RHS += - 2 * np.dot(self.M, self.bdf1 * self.bdf2 * self.un2)
-        RHS += - np.dot(self.M, np.dot(self.bdf2 * self.bdf2, self.un3)) + f1
+        RHS += - 2 * np.dot(self.M, self.bdf1 * self.bdf2 * self.un3)
+        RHS += - np.dot(self.M, np.dot(self.bdf2 * self.bdf2, self.un4)) + f1
+
+        LHS1 = self.M + np.dot(self.B, self.dt / 2)
+        RHS1 = np.dot(f1, self.dt ** 2) + \
+            np.dot(self.un1, (2 * self.M - self.K * self.dt ** 2))
+        RHS1 += np.dot(self.un2, (-self.M + self.B * self.dt/2))
 
         # calculates self.un0,vn0,an0
-        self.un0 = np.linalg.solve(LHS, RHS)
+        self.un0 = np.linalg.solve(self.LHS, RHS)
         self.vn0 = self.bdf0 * self.un0 + self.bdf1 * self.un1 + self.bdf2 * self.un2
         self.an0 = self.bdf0 * self.vn0 + self.bdf1 * self.vn1 + self.bdf2 * self.vn2
 
@@ -75,6 +90,7 @@ class BDF2(TimeIntegrationScheme):
 
     def update_structure_time_step(self):
         # update self.un3 un2 un1 vn2 vn1
+        self.un4 = self.un3
         self.un3 = self.un2
         self.un2 = self.un1
         self.un1 = self.un0
@@ -83,16 +99,29 @@ class BDF2(TimeIntegrationScheme):
 
 
 def test():
-    M = [[1, 0], [0, 1]]
-    B = [[1, 0], [0, 1]]
-    K = [[1, 0], [0, 1]]
-    u0 = [0.0, 1.0]
-    v0 = [0.0, 0.0]
-    a0 = [0.0, 0.0]
+    M = np.array([[1.0, 0.0], [0.0, 1.0]])
+    B = np.array([[0.0, 0.0], [0.0, 0.0]])
+    K = np.array([[1.0, 0.0], [0.0, 1.0]])
+    u0 = np.array([0.0, 1.0])
+    v0 = np.array([0.0, 0.0])
+    a0 = np.array([0.0, 0.0])
     dt = 0.1
-    f1 = [0.0, 1.0]
+    f1 = [0.0, 0.0]
+    displacement = np.empty([2, 100])
     solver = BDF2(dt, [M, B, K], [u0, v0, a0])
-    solver.solve_structure(f1)
+
+    for i in range(1, 100):
+        current_time = i * dt
+
+        solver.solve_structure(f1)
+
+        # appending results to the list
+        displacement[:, i] = solver.get_displacement()
+
+        # update results
+        solver.update_structure_time_step()
+
+    print(displacement[:, -1])
 
 
 if __name__ == "__main__":
