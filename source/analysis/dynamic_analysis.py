@@ -155,6 +155,7 @@ class DynamicAnalysis(AnalysisType):
         # time loop
         for i in range(1, len(self.array_time)):
             current_time = self.array_time[i]
+            print("time: ", str(current_time))
 
             self.solver.solve_structure(force[:, i])
 
@@ -191,7 +192,7 @@ class DynamicAnalysis(AnalysisType):
         #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'), self.acceleration)
         #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'), self.velocity)
         #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'), self.displacement)
-        # else: 
+        # else:
         f1 = np.matmul(self.structure_model.m, self.acceleration)
         f2 = np.matmul(self.structure_model.b, self.velocity)
         f3 = np.matmul(self.structure_model.k, self.displacement)
