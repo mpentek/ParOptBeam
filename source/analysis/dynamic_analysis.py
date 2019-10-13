@@ -138,7 +138,8 @@ class DynamicAnalysis(AnalysisType):
         else:
             err_msg = "The requested time integration scheme \"" + time_integration_scheme
             err_msg += "\" is not available \n"
-            err_msg += "Choose one of: \"GenAlpha\", \"Euler12\", \"ForwardEuler1\", \"BackwardEuler1\""
+            err_msg += "Choose one of: \"GenAlpha\", \"Euler12\", \"ForwardEuler1\", \"BackwardEuler1\", " \
+                       "\"RungeKutta4\", \"BDF2\""
             raise Exception(err_msg)
 
     def transform_into_modal_coordinates(self, modal_transform_matrix, matrix):
