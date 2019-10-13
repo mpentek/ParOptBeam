@@ -61,10 +61,6 @@ class BDF2(TimeIntegrationScheme):
 
     def solve_structure(self, f1):
 
-        # print(self.un3)
-        # print(self.un2)
-        # print(self.un1)
-
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - np.dot(self.B, np.dot(self.bdf2, self.un2))
         RHS += - 2 * np.dot(self.M, np.dot(self.bdf0 * self.bdf1, self.un1))
         RHS += - 2 * np.dot(self.M, np.dot(self.bdf0 * self.bdf2, self.un2))
@@ -105,23 +101,30 @@ def test():
     u0 = np.array([0.0, 1.0])
     v0 = np.array([0.0, 0.0])
     a0 = np.array([0.0, 0.0])
-    dt = 0.1
+    dt = 0.05
     f1 = [0.0, 0.0]
-    displacement = np.empty([2, 100])
+    displacement = np.empty([2, 200])
+    velocity = np.empty([2, 200])
+    acceleration = np.empty([2, 200])
     solver = BDF2(dt, [M, B, K], [u0, v0, a0])
 
-    for i in range(1, 100):
-        current_time = i * dt
+    for i in range(0, 200):
 
         solver.solve_structure(f1)
 
         # appending results to the list
         displacement[:, i] = solver.get_displacement()
+        velocity[:, i] = solver.get_velocity()
+        acceleration[:, i] = solver.get_acceleration()
 
         # update results
         solver.update_structure_time_step()
 
-    print(displacement[:, -1])
+    import matplotlib.pyplot as plt
+    # plt.plot(displacement[1, :])
+    # plt.plot(velocity[1, :])
+    plt.plot(acceleration[1, :])
+    # plt.show()
 
 
 if __name__ == "__main__":
