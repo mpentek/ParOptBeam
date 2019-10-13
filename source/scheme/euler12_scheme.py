@@ -22,6 +22,8 @@ class Euler12(TimeIntegrationScheme):
         self.B = comp_model[1]
         self.K = comp_model[2]
 
+        self.LHS = self.M + np.dot(self.B, self.dt / 2)
+
         # structure
         # initial displacement, velocity and acceleration
         self.u0 = initial_conditions[0]
@@ -43,13 +45,12 @@ class Euler12(TimeIntegrationScheme):
         print(" ")
 
     def solve_structure(self, f1):
-        LHS = self.M + np.dot(self.B, self.dt / 2)
         RHS = f1 * self.dt ** 2 + \
             np.dot(self.un1, (2 * self.M - self.K * self.dt ** 2))
         RHS += np.dot(self.un2, (-self.M + self.B * self.dt/2))
 
         # calculates self.un0,vn0,an0
-        self.un0 = np.linalg.solve(LHS, RHS)
+        self.un0 = np.linalg.solve(self.LHS, RHS)
         self.vn0 = (self.un0 - self. un2) / 2 / self.dt
         self.an0 = (self.un0 - 2 * self.un1 + self.un2) / self.dt ** 2
 
@@ -62,28 +63,3 @@ class Euler12(TimeIntegrationScheme):
         # update self.un2 un1
         self.un2 = self.un1
         self.un1 = self.un0
-
-
-def test():
-    M = np.array([[1.0, 0.0], [0.0, 1.0]])
-    B = np.array([[0.0, 0.0], [0.0, 0.0]])
-    K = np.array([[1.0, 0.0], [0.0, 1.0]])
-    u0 = np.array([0.0, 1.0])
-    v0 = np.array([0.0, 0.0])
-    a0 = np.array([0.0, 0.0])
-    dt = 0.1
-    f1 = np.array([0.0, 0.0])
-    displacement = np.empty([2, 100])
-    solver = Euler12(dt, [M, B, K], [u0, v0, a0])
-
-    for i in range(1, 100):
-
-        solver.solve_structure(f1)
-
-        # appending results to the list
-        displacement[:, i] = solver.get_displacement()
-
-        # update results
-        solver.update_structure_time_step()
-
-    print(displacement[:, -1])
