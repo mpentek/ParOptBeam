@@ -35,19 +35,19 @@ class BDF2(TimeIntegrationScheme):
         self.v0 = initial_conditions[1]
         self.a0 = initial_conditions[2]
 
-        # initial values for time integration
         self.an4 = self.a0
         self.vn4 = self.v0
         self.un4 = self.u0
-        self.an3 = - np.dot(self.B, self.vn4) - np.dot(self.K, self.un4) + self.an4
-        self.vn3 = self.vn4 + self.an3 * self.dt
-        self.un3 = self.un4 + self.vn3 * self.dt
-        self.an2 = - np.dot(self.B, self.vn3) - np.dot(self.K, self.un3) + self.an3
-        self.vn2 = self.vn3 + self.an2 * self.dt
-        self.un2 = self.un3 + self.vn2 * self.dt
-        self.an1 = - np.dot(self.B, self.vn2) - np.dot(self.K, self.un2) + self.an2
-        self.vn1 = self.vn2 + self.an1 * self.dt
-        self.un1 = self.un2 + self.vn1 * self.dt
+        self.an3 = self.a0
+        self.vn3 = self.v0
+        self.un3 = self.u0
+        self.un3 = self.u0
+        self.an2 = self.a0
+        self.vn2 = self.v0
+        self.un2 = self.u0
+        self.an1 = self.a0
+        self.vn1 = self.v0
+        self.un1 = self.u0
 
         self._print_structural_setup()
         self._print_time_integration_setup()

@@ -85,6 +85,6 @@ for available_model in available_models:
     # NOTE: works on with 1, 2, 3, 6, 12, 24 elements
     # valid only for the pylon model
     # can be used for testing the caarc model as well
-h
+
     # # ============================================
     # # Static analysis
