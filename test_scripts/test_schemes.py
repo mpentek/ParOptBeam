@@ -12,54 +12,47 @@ def test():
     u0 = np.array([0.0, 1.0])
     v0 = np.array([0.0, 0.0])
     a0 = np.array([0.0, 0.0])
-    dt = 0.01
-    tend = 10.
+    dt = 0.05
+    tend = 20.
     steps = int(tend / dt)
-    f = np.array([0.0, 0.1])
+    f = np.array([0.0, 0.6])
+
+    euler12_displacement = np.empty([2, steps])
+    euler12_solver = Euler12(dt, [M, B, K], [u0, v0, a0])
 
     genalpha_displacement = np.empty([2, steps])
-    genalpha_velocity = np.empty([2, steps])
-    genalpha_acceleration = np.empty([2, steps])
     genalpha_solver = GeneralizedAlphaScheme(dt, [M, B, K], [u0, v0, a0])
 
     bdf2_displacement = np.empty([2, steps])
-    bdf2_velocity = np.empty([2, steps])
-    bdf2_acceleration = np.empty([2, steps])
     bdf2_solver = BDF2(dt, [M, B, K], [u0, v0, a0])
 
     rk4_displacement = np.empty([2, steps])
-    rk4_velocity = np.empty([2, steps])
-    rk4_acceleration = np.empty([2, steps])
     rk4_solver = RungeKutta4(dt, [M, B, K], [u0, v0, a0])
 
     for i in range(0, steps):
         t = i*dt
         f1 = np.sin(t) * f
+        euler12_solver.solve_structure(f1)
         genalpha_solver.solve_structure(f1)
         bdf2_solver.solve_structure(f1)
         rk4_solver.solve_structure(f1)
 
         # appending results to the list
+        euler12_displacement[:, i] = euler12_solver.get_displacement()
         genalpha_displacement[:, i] = genalpha_solver.get_displacement()
-        genalpha_velocity[:, i] = genalpha_solver.get_velocity()
-        genalpha_acceleration[:, i] = genalpha_solver.get_acceleration()
-
         bdf2_displacement[:, i] = bdf2_solver.get_displacement()
-        bdf2_velocity[:, i] = bdf2_solver.get_velocity()
-        bdf2_acceleration[:, i] = bdf2_solver.get_acceleration()
-
         rk4_displacement[:, i] = rk4_solver.get_displacement()
-        rk4_velocity[:, i] = rk4_solver.get_velocity()
-        rk4_acceleration[:, i] = rk4_solver.get_acceleration()
 
         # update results
+        euler12_solver.update_structure_time_step()
         genalpha_solver.update_structure_time_step()
         bdf2_solver.update_structure_time_step()
         rk4_solver.update_structure_time_step()
 
     t = np.asarray(range(0, steps)) * dt
     import matplotlib.pyplot as plt
-    plt.plot(t, genalpha_displacement[1, :], label='genalpha', color='b')
+    plt.plot(t, euler12_displacement[1, :], label='Euler12', color='k')
+    plt.plot(t, genalpha_displacement[1, :], label='GenAlpha', color='b')
     plt.plot(t, bdf2_displacement[1, :], label='bdf2', color='r')
     plt.plot(t, rk4_displacement[1, :], label='rk4', color='g')
     plt.legend()
