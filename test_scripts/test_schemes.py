@@ -8,13 +8,14 @@ from source.scheme.generalized_alpha_scheme import GeneralizedAlphaScheme
 def test():
     M = np.array([[0.5, 0.0], [0.0, 1.0]])
     B = np.array([[0.1, 0.0], [0.0, 0.1]])
-    K = np.array([[1.0, 0.0], [0.0, 1.0]])
+    K = np.array([[1.0, 0.0], [0.0, 2.0]])
     u0 = np.array([0.0, 1.0])
     v0 = np.array([0.0, 0.0])
     a0 = np.array([0.0, 0.0])
-    dt = 0.1
-    steps = 1000
-    f1 = np.array([0.0, 0.9])
+    dt = 0.01
+    tend = 10.
+    steps = int(tend / dt)
+    f = np.array([0.0, 0.1])
 
     genalpha_displacement = np.empty([2, steps])
     genalpha_velocity = np.empty([2, steps])
@@ -32,6 +33,8 @@ def test():
     rk4_solver = RungeKutta4(dt, [M, B, K], [u0, v0, a0])
 
     for i in range(0, steps):
+        t = i*dt
+        f1 = np.sin(t) * f
         genalpha_solver.solve_structure(f1)
         bdf2_solver.solve_structure(f1)
         rk4_solver.solve_structure(f1)
@@ -54,10 +57,11 @@ def test():
         bdf2_solver.update_structure_time_step()
         rk4_solver.update_structure_time_step()
 
+    t = np.asarray(range(0, steps)) * dt
     import matplotlib.pyplot as plt
-    plt.plot(genalpha_displacement[1, :], label='genalpha', color='b')
-    # plt.plot(bdf2_displacement[1, :], label='bdf2', color='r')
-    plt.plot(rk4_displacement[1, :], label='rk4', color='g')
+    plt.plot(t, genalpha_displacement[1, :], label='genalpha', color='b')
+    plt.plot(t, bdf2_displacement[1, :], label='bdf2', color='r')
+    plt.plot(t, rk4_displacement[1, :], label='rk4', color='g')
     plt.legend()
     plt.show()
 
