@@ -31,10 +31,14 @@ class RungeKutta4(TimeIntegrationScheme):
         self.v0 = initial_conditions[1]
         self.a0 = initial_conditions[2]
 
-        # initial values for time integration
+        # initial displacement, velocity and acceleration
         self.un1 = self.u0
         self.vn1 = self.v0
         self.an1 = self.a0
+
+        # force from a previous time step (initial force)
+        self.f0 = np.dot(self.M, self.a0) + np.dot(self.B, self.v0) + np.dot(self.K, self.u0)
+        self.f1 = np.dot(self.M, self.an1) + np.dot(self.B, self.vn1) + np.dot(self.K, self.un1)
 
         self._print_structural_setup()
         self._print_time_integration_setup()
@@ -47,53 +51,48 @@ class RungeKutta4(TimeIntegrationScheme):
     def solve_structure(self, f1):
 
         # calculates self.un0,vn0,an0
+        f_mid = (f1 + self.f1) / 2.0
 
         k0 = self.dt * self.vn1
-        l0 = self.dt * np.dot(self.InvM, (-np.dot(self.B, self.vn1) - np.dot(self.K, self.un1) + f1))
+        l0 = self.dt * np.dot(self.InvM, (-np.dot(self.B, self.vn1) - np.dot(self.K, self.un1) + self.f1))
+
         k1 = self.dt * (0.5*l0 + self.vn1)
-        l1 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*l0 + self.vn1)) - np.dot(self.K, (0.5*k0 + self.un1)) + f1))
+        l1 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*l0 + self.vn1)) - np.dot(self.K, (0.5*k0 + self.un1)) + f_mid))
         k2 = self.dt * (0.5*l1 + self.vn1)
-        l2 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*l1 + self.vn1)) - np.dot(self.K, (0.5*k1 + self.un1)) + f1))
+        l2 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*l1 + self.vn1)) - np.dot(self.K, (0.5*k1 + self.un1)) + f_mid))
         k3 = self.dt * (l2 + self.vn1)
         l3 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (l2 + self.vn1)) - np.dot(self.K, (k2 + self.un1)) + f1))
 
-        self.un0 = self.un1 + (k0 + 2*(k1 + k2) + k3)/6.0
-        self.vn0 = self.vn1 + (l0 + 2*(l1 + l2) + l3)/6.0
-        self.an0 = (l0 + 2*(l1 + l2) + l3)/6.0/self.dt
-
         # update self.u1,v1,a1
-        self.u1 = self.un0
-        self.v1 = self.vn0
-        self.a1 = self.an0
+        self.u1 = self.un1 + (k0 + 2*(k1 + k2) + k3)/6.0
+        self.v1 = self.vn1 + (l0 + 2*(l1 + l2) + l3)/6.0
+        self.a1 = (self.v1 - self.vn1)/self.dt
+
+        # update self.f1
+        self.f1 = f1
+
+        if np.isnan(np.min(k0)):
+            print("NaN found in k0!")
+        if np.isnan(np.min(k1)):
+            print("NaN found in k1!")
+        if np.isnan(np.min(k2)):
+            print("NaN found in k2!")
+        if np.isnan(np.min(k3)):
+            print("NaN found in k3!")
+
+        if np.isnan(np.min(l0)):
+            print("NaN found in l0!")
+        if np.isnan(np.min(l1)):
+            print("NaN found in l1!")
+        if np.isnan(np.min(l2)):
+            print("NaN found in l2!")
+        if np.isnan(np.min(l3)):
+            print("NaN found in l3!")
 
     def update_structure_time_step(self):
         # update self.un2 un1
-        self.un1 = self.un0
-        self.vn1 = self.vn0
-        self.an1 = self.an0
+        self.un1 = self.u1
+        self.vn1 = self.v1
+        self.an1 = self.a1
 
 
-def test():
-    M = np.array([[1.0, 0.0], [0.0, 1.0]])
-    B = np.array([[0.0, 0.0], [0.0, 0.0]])
-    K = np.array([[1.0, 0.0], [0.0, 1.0]])
-    u0 = np.array([0.0, 1.0])
-    v0 = np.array([0.0, 0.0])
-    a0 = np.array([0.0, 0.0])
-    dt = 0.1
-    f1 = np.array([0.0, 0.0])
-
-    displacement = np.empty([2, 100])
-    solver = RungeKutta4(dt, [M, B, K], [u0, v0, a0])
-
-    for i in range(1, 100):
-
-        solver.solve_structure(f1)
-
-        # appending results to the list
-        displacement[:, i] = solver.get_displacement()
-
-        # update results
-        solver.update_structure_time_step()
-
-    print(displacement[:, -1])
