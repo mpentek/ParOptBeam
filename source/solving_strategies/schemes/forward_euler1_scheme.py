@@ -1,6 +1,6 @@
 import numpy as np
 
-from source.scheme.time_integration_scheme import TimeIntegrationScheme
+from source.solving_strategies.schemes.time_integration_scheme import TimeIntegrationScheme
 
 
 class ForwardEuler1(TimeIntegrationScheme):
@@ -14,19 +14,7 @@ class ForwardEuler1(TimeIntegrationScheme):
         # construct an object self with the input arguments dt, M, B, K,
         # pInf, u0, v0, a0
 
-        # time step
-        self.dt = dt
-
-        # mass, damping and spring stiffness
-        self.M = comp_model[0]
-        self.B = comp_model[1]
-        self.K = comp_model[2]
-
-        # structure
-        # initial displacement, velocity and acceleration
-        self.u0 = initial_conditions[0]
-        self.v0 = initial_conditions[1]
-        self.a0 = initial_conditions[2]
+        super().__init__(dt, comp_model, initial_conditions)
 
         # initial values for time integration
         self.un1 = self.u0
@@ -41,23 +29,18 @@ class ForwardEuler1(TimeIntegrationScheme):
         print("dt: ", self.dt)
         print(" ")
 
-    def solve_structure(self, f1):
+    def solve_single_step(self, f1):
 
         # calculates self.un0,vn0,an0
-        self.un0 = self.un1 + self.dt * self.vn1
-        self.vn0 = self.vn1 + self.dt * self.an1
+        self.u1 = self.un1 + self.dt * self.vn1
+        self.v1 = self.vn1 + self.dt * self.an1
 
         LHS = self.M
-        RHS = f1 - np.dot(self.B, self.vn0) - np.dot(self.K, self.un0)
-        self.an0 = np.linalg.solve(LHS, RHS)
-
-        # update self.u1,v1,a1
-        self.u1 = self.un0
-        self.v1 = self.vn0
-        self.a1 = self.an0
+        RHS = f1 - np.dot(self.B, self.v1) - np.dot(self.K, self.u1)
+        self.a1 = np.linalg.solve(LHS, RHS)
 
     def update_structure_time_step(self):
         # update self.un2 un1
-        self.un1 = self.un0
-        self.vn1 = self.vn0
-        self.an1 = self.an0
+        self.un1 = self.u1
+        self.vn1 = self.v1
+        self.an1 = self.a1
