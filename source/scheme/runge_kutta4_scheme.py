@@ -71,23 +71,8 @@ class RungeKutta4(TimeIntegrationScheme):
         # update self.f1
         self.f1 = f1
 
-        if np.isnan(np.min(k0)):
-            print("NaN found in k0!")
-        if np.isnan(np.min(k1)):
-            print("NaN found in k1!")
-        if np.isnan(np.min(k2)):
-            print("NaN found in k2!")
-        if np.isnan(np.min(k3)):
-            print("NaN found in k3!")
-
-        if np.isnan(np.min(l0)):
-            print("NaN found in l0!")
-        if np.isnan(np.min(l1)):
-            print("NaN found in l1!")
-        if np.isnan(np.min(l2)):
-            print("NaN found in l2!")
-        if np.isnan(np.min(l3)):
-            print("NaN found in l3!")
+        if np.isnan(np.min(self.u1)):
+            print("NaN found in displacement!")
 
     def update_structure_time_step(self):
         # update self.un2 un1
