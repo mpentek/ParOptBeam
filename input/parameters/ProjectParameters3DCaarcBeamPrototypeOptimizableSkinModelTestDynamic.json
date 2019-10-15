@@ -11,7 +11,7 @@
             },
             "geometry": {
                 "length_x": 180.0,
-                "number_of_elements": 24,
+                "number_of_elements": 3,
                 "defined_on_intervals": [{
                     "interval_bounds" : [0.0, 60.0],
                     "length_y": [50.0],
