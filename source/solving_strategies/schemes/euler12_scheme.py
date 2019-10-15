@@ -1,6 +1,6 @@
 import numpy as np
 
-from source.scheme.time_integration_scheme import TimeIntegrationScheme
+from source.solving_strategies.schemes.time_integration_scheme import TimeIntegrationScheme
 
 
 class Euler12(TimeIntegrationScheme):
@@ -14,21 +14,9 @@ class Euler12(TimeIntegrationScheme):
         # construct an object self with the input arguments dt, M, B, K,
         # pInf, u0, v0, a0
 
-        # time step
-        self.dt = dt
-
-        # mass, damping and spring stiffness
-        self.M = comp_model[0]
-        self.B = comp_model[1]
-        self.K = comp_model[2]
+        super().__init__(dt, comp_model, initial_conditions)
 
         self.LHS = self.M + np.dot(self.B, self.dt / 2)
-
-        # structure
-        # initial displacement, velocity and acceleration
-        self.u0 = initial_conditions[0]
-        self.v0 = initial_conditions[1]
-        self.a0 = initial_conditions[2]
 
         # initial values for time integration
         self.un2 = self.u0
@@ -44,22 +32,17 @@ class Euler12(TimeIntegrationScheme):
         print("dt: ", self.dt)
         print(" ")
 
-    def solve_structure(self, f1):
+    def solve_single_step(self, f1):
         RHS = f1 * self.dt ** 2 + \
             np.dot(self.un1, (2 * self.M - self.K * self.dt ** 2))
         RHS += np.dot(self.un2, (-self.M + self.B * self.dt/2))
 
         # calculates self.un0,vn0,an0
-        self.un0 = np.linalg.solve(self.LHS, RHS)
-        self.vn0 = (self.un0 - self. un2) / 2 / self.dt
-        self.an0 = (self.un0 - 2 * self.un1 + self.un2) / self.dt ** 2
-
-        # update self.u1,v1,a1
-        self.u1 = self.un0
-        self.v1 = self.vn0
-        self.a1 = self.an0
+        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.v1 = (self.u1 - self. un2) / 2 / self.dt
+        self.a1 = (self.u1 - 2 * self.un1 + self.un2) / self.dt ** 2
 
     def update_structure_time_step(self):
         # update self.un2 un1
         self.un2 = self.un1
-        self.un1 = self.un0
+        self.un1 = self.u1

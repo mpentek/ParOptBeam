@@ -1,6 +1,6 @@
 import numpy as np
 
-from source.scheme.time_integration_scheme import TimeIntegrationScheme
+from source.solving_strategies.schemes.time_integration_scheme import TimeIntegrationScheme
 
 
 class BDF2(TimeIntegrationScheme):
@@ -14,27 +14,17 @@ class BDF2(TimeIntegrationScheme):
         # construct an object self with the input arguments dt, M, B, K,
         # pInf, u0, v0, a0
 
-        # time step
-        self.dt = dt
+        super().__init__(dt, comp_model, initial_conditions)
 
         # bdf2 scheme coefficients
         self.bdf0 = 1.5 / self.dt
         self.bdf1 = -2. / self.dt
         self.bdf2 = 0.5 / self.dt
 
-        # mass, damping and spring stiffness
-        self.M = comp_model[0]
-        self.B = comp_model[1]
-        self.K = comp_model[2]
-
         self.LHS = self.bdf0 * self.B + self.K + self.bdf0 * self.bdf0 * self.M
 
         # structure
         # initial displacement, velocity and acceleration
-        self.u0 = initial_conditions[0]
-        self.v0 = initial_conditions[1]
-        self.a0 = initial_conditions[2]
-
         self.an4 = self.a0
         self.vn4 = self.v0
         self.un4 = self.u0
@@ -57,7 +47,7 @@ class BDF2(TimeIntegrationScheme):
         print("dt: ", self.dt)
         print(" ")
 
-    def solve_structure(self, f1):
+    def solve_single_step(self, f1):
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - np.dot(self.B, self.bdf2 * self.un2)
         RHS += - 2 * self.bdf0 * self.bdf1 * np.dot(self.M, self.un1)
         RHS += - 2 * self.bdf0 * self.bdf2 * np.dot(self.M, self.un2)
