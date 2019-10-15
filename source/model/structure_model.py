@@ -636,13 +636,13 @@ class StraightBeam(object):
 
         return extended_matrix
 
-    # NOTE: not used forn now
+    # NOTE: not used for now
     def _assemble_el_into_glob(self, el_matrix):
         # global stiffness matrix initialization with zeros
         glob_matrix = np.zeros((self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size],
                                 self.n_nodes * StraightBeam.DOFS_PER_NODE[self.domain_size]))
 
-        # fill global stiffness matix entries
+        # fill global stiffness matrix entries
         for i in range(self.parameters['n_el']):
             glob_matrix[StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL,
                         StraightBeam.DOFS_PER_NODE[self.domain_size] * i: StraightBeam.DOFS_PER_NODE[self.domain_size] * i + StraightBeam.DOFS_PER_NODE[self.domain_size] * StraightBeam.NODES_PER_LEVEL] += el_matrix
