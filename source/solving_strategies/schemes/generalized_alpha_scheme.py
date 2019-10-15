@@ -1,25 +1,21 @@
 import numpy as np
 
-from source.scheme.time_integration_scheme import TimeIntegrationScheme
+from source.solving_strategies.schemes.time_integration_scheme import TimeIntegrationScheme
 
 
 class GeneralizedAlphaScheme(TimeIntegrationScheme):
 
-    def __init__(self, dt, comp_model, initial_conditions,  p_inf=0.16):
+    def __init__(self, dt, comp_model, initial_conditions, p_inf=0.16):
         # introducing and initializing properties and coefficients
         # construct an object self with the input arguments dt, M, B, K,
         # pInf, u0, v0, a0
 
-        # time step
-        self.dt = dt
-
-        # mass, damping and spring stiffness
-        self.M = comp_model[0]
-        self.B = comp_model[1]
-        self.K = comp_model[2]
+        super().__init__(dt, comp_model, initial_conditions)
 
         # generalized alpha parameters (to ensure unconditional stability, 2nd order accuracy)
         self.alphaM = (2.0 * p_inf - 1.0) / (p_inf + 1.0)
+        print("alphaM: ", self.alphaM)
+
         self.alphaF = p_inf / (p_inf + 1.0)
         self.beta = 0.25 * (1 - self.alphaM + self.alphaF)**2
         self.gamma = 0.5 - self.alphaM + self.alphaF
@@ -63,50 +59,50 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.v1 = self.v0
         self.a1 = self.a0
 
+        self.LHS = self.a1h * self.M + self.a2h * self.B + self.a3h * self.K
+
         # force from a previous time step (initial force)
         self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
                                                    self.v0) + np.dot(self.K, self.u0)
         self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
                                                    self.v1) + np.dot(self.K, self.u1)
 
-        #self._print_structural_setup()
         self._print_time_integration_setup()
 
     def _print_time_integration_setup(self):
         print("Printing Generalized Alpha Method integration scheme setup:")
         print("dt: ", self.dt)
-        print("alphaM: ", self.alphaF)
-        print("alphaF: ", self.alphaM)
+        print("alphaM: ", self.alphaM)
+        print("alphaF: ", self.alphaF)
         print("gamma: ", self.gamma)
         print("beta: ", self.beta)
         print(" ")
 
-    def solve_structure(self, f1):
+    def solve_single_step(self, f1):
 
         F = (1.0 - self.alphaF) * f1 + self.alphaF * self.f0
 
-        LHS = self.a1h * self.M + self.a2h * self.B + self.a3h * self.K
-        RHS = np.dot(self.M, (self.a1m * self.u0 +
-                              self.a2m * self.v0 + self.a3m * self.a0))
-        RHS += np.dot(self.B, (self.a1b * self.u0 +
-                               self.a2b * self.v0 + self.a3b * self.a0))
-        RHS += np.dot(self.a1k * self.K, self.u0) + F
+        RHS = np.dot(self.M, (self.a1m * self.un1 +
+                              self.a2m * self.vn1 + self.a3m * self.an1))
+        RHS += np.dot(self.B, (self.a1b * self.un1 +
+                               self.a2b * self.v0 + self.a3b * self.an1))
+        RHS += np.dot(self.a1k * self.K, self.un1) + F
 
         # update self.f1
         self.f1 = f1
 
         # updates self.u1,v1,a1
-        self.u1 = np.linalg.solve(LHS, RHS)
-        self.v1 = self.a1v * (self.u1 - self.u0) + \
-            self.a2v * self.v0 + self.a3v * self.a0
-        self.a1 = self.a1a * (self.u1 - self.u0) + \
-            self.a2a * self.v0 + self.a3a * self.a0
+        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.v1 = self.a1v * (self.u1 - self.un1) + \
+            self.a2v * self.vn1 + self.a3v * self.an1
+        self.a1 = self.a1a * (self.u1 - self.un1) + \
+            self.a2a * self.vn1 + self.a3a * self.an1
 
     def update_structure_time_step(self):
         # update displacement, velocity and acceleration
-        self.u0 = self.u1
-        self.v0 = self.v1
-        self.a0 = self.a1
+        self.un1 = self.u1
+        self.vn1 = self.v1
+        self.an1 = self.a1
 
         # update the force
         self.f0 = self.f1
