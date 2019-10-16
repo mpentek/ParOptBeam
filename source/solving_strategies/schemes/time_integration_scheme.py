@@ -56,13 +56,6 @@ class TimeIntegrationScheme(object):
         self.f0 = None
         self.f1 = None
 
-    def _print_structural_setup(self):
-        print("Printing structural setup in time integration scheme base class:")
-        print("mass: ", self.M)
-        print("damping: ", self.B)
-        print("stiffness: ", self.K)
-        print(" ")
-
     def _print_time_integration_setup(self):
         pass
 

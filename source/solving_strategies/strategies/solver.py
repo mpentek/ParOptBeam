@@ -60,6 +60,7 @@ class Solver(object):
         self._init_scheme(time_integration_scheme, comp_model, initial_conditions)
 
         self._print_structural_setup()
+        self._print_solver_info()
 
     def _init_scheme(self, time_integration_scheme, comp_model, initial_conditions):
         if time_integration_scheme == "GenAlpha":
@@ -80,6 +81,9 @@ class Solver(object):
             err_msg += "Choose one of: \"GenAlpha\", \"Euler12\", \"ForwardEuler1\", \"BackwardEuler1\", " \
                        "\"RungeKutta4\", \"BDF2\""
             raise Exception(err_msg)
+
+    def _print_solver_info(self):
+        pass
 
     def _print_structural_setup(self):
         print("Printing structural setup in the solver base class:")

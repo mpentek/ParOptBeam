@@ -15,6 +15,9 @@ class LinearSolver(Solver):
 
         super().__init__(array_time, time_integration_scheme, dt, comp_model, initial_conditions, force)
 
+    def _print_solver_info(self):
+        print("Linear Solver")
+
     def solve(self):
         # time loop
         for i in range(0, len(self.array_time)):
