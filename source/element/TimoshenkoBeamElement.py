@@ -1,11 +1,14 @@
 import numpy as np
 
-from source.element import Element
+from source.element.Element import Element
 
 
 class TimoshenkoBeamElement(Element):
-    def __init__(self, parameters):
-        pass
+    def __init__(self, parameters, domain_size):
+        super().__init__(parameters, domain_size)
+
+    def _print_element_information(self):
+        print(str(self.domain_size), "D Timoshenko Beam Element")
 
     def get_el_stiffness(self, i):
         """
