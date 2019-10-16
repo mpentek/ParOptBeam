@@ -18,8 +18,11 @@ class ForwardEuler1(TimeIntegrationScheme):
 
         # initial values for time integration
         self.un1 = self.u0
+        self.un2 = self.u0
         self.vn1 = self.v0
         self.an1 = self.a0
+
+        self.LHS = self.M
 
         self._print_structural_setup()
         self._print_time_integration_setup()
@@ -32,15 +35,16 @@ class ForwardEuler1(TimeIntegrationScheme):
     def solve_single_step(self, f1):
 
         # calculates self.un0,vn0,an0
-        self.u1 = self.un1 + self.dt * self.vn1
-        self.v1 = self.vn1 + self.dt * self.an1
-
-        LHS = self.M
-        RHS = f1 - np.dot(self.B, self.v1) - np.dot(self.K, self.u1)
-        self.a1 = np.linalg.solve(LHS, RHS)
+        RHS  = -self.dt * np.dot(self.B, self.un1) + self.dt * np.dot(self.B,self.un2)
+        RHS += -self.dt ** 2 * np.dot (self.K, self.un2) + np.dot(self.M, (2 * self.un1 - self.un2))
+        RHS += self.dt ** 2 * f1
+        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.v1 = (self.u1 - self.un1) / self.dt
+        self.a1 = (self.v1 - self.vn1) / self.dt
 
     def update_structure_time_step(self):
         # update self.un2 un1
+        self.un2 = self.un1
         self.un1 = self.u1
         self.vn1 = self.v1
         self.an1 = self.a1

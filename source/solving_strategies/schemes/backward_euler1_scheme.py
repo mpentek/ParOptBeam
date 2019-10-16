@@ -16,10 +16,11 @@ class BackwardEuler1(TimeIntegrationScheme):
 
         super().__init__(dt, comp_model, initial_conditions)
 
-        self.LHS = self.M + np.dot(self.B, self.dt) + np.dot(self.K, self.dt ** 2)
+        self.LHS = self.M + self.B * self.dt + self.K * self.dt ** 2
 
         # initial values for time integration
         self.un1 = self.u0
+        self.un2 = self.u0
         self.vn1 = self.v0
         self.an1 = self.a0
 
@@ -32,15 +33,15 @@ class BackwardEuler1(TimeIntegrationScheme):
 
     def solve_single_step(self, f1):
         # calculates self.un0,vn0,an0
-        # TODO this method is not solving based on the displacement!
-        RHS = f1 - np.dot(self.B, self.vn1) - np.dot(self.K,
-                                                     self.un1) - np.dot(self.K, self.vn1 * self.dt)
-        self.a1 = np.linalg.solve(self.LHS, RHS)
-        self.v1 = self.vn1 + self.dt * self.a1
-        self.u1 = self.un1 + self.dt * self.v1
+        RHS = self.dt * np.dot(self.B, self.un1) + 2 * np.dot(self.M, self.un1)
+        RHS += - np.dot(self.M, self.un2) + self.dt ** 2 * f1
+        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.v1 = (self.u1 - self.un1) / self.dt
+        self.a1 = (self.v1 - self.vn1) / self.dt
 
     def update_structure_time_step(self):
         # update self.un2 un1
+        self.un2 = self.un1
         self.un1 = self.u1
         self.vn1 = self.v1
         self.an1 = self.a1
