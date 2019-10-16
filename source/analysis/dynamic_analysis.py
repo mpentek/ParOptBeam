@@ -118,7 +118,6 @@ class DynamicAnalysis(AnalysisType):
         if self.transform_into_modal:
             force = np.dot(np.transpose(self.structure_model.eigen_modes_raw), force)
 
-        # TODO test solver
         self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
                                    [self.comp_m, self.comp_b, self.comp_k], initial_conditions, force)
 
