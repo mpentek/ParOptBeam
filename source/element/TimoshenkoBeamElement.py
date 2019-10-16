@@ -7,6 +7,8 @@ class TimoshenkoBeamElement(Element):
     def __init__(self, parameters, domain_size):
         super().__init__(parameters, domain_size)
 
+        self._print_element_information()
+
     def _print_element_information(self):
         print(str(self.domain_size), "D Timoshenko Beam Element")
 
