@@ -10,6 +10,173 @@ class TimoshenkoBeamElement(Element):
     def _print_element_information(self):
         print(str(self.domain_size), "D Timoshenko Beam Element")
 
+    def get_el_mass(self, i):
+        """
+        Getting the consistant mass matrix based on analytical integration
+
+        USING the consistent mass formulation
+
+        mass values for one level
+        VERSION 3: from Appendix A - Straight Beam Element Matrices - page 228
+        https://link.springer.com/content/pdf/bbm%3A978-3-319-56493-7%2F1.pdf
+        """
+
+        m_const = self.parameters['rho'] * \
+                  self.parameters['a'][i] * self.parameters['lx_i']
+
+        #
+        # mass values for one level
+        # define component-wise to have enable better control for various optimization parameters
+
+        # axial inertia - along axis x - here marked as x
+        m_x = m_const / 6.0
+        m_x_11 = 2.
+        m_x_12 = 1.
+        m_el_x = m_x * np.array([[m_x_11, m_x_12],
+                                 [m_x_12, m_x_11]])
+
+        if self.domain_size == '3D':
+            # torsion inertia - around axis x - here marked as alpha - a
+            m_a = m_const * self.parameters['ip'][i] / self.parameters['a'][i] / 6.0
+            m_a_11 = 2
+            m_a_12 = 1
+            m_el_a = m_a * np.array([[m_a_11, m_a_12],
+                                     [m_a_12, m_a_11]])
+
+        # bending - inertia along axis y, rotations around axis z - here marked as gamma - g
+        # translation
+        Py = self.parameters['py'][i]
+        m_yg = m_const / 210 / (1 + Py) ** 2
+        #
+        m_yg_11 = 70 * Py ** 2 + 147 * Py + 78
+        m_yg_12 = (35 * Py ** 2 + 77 * Py + 44) * self.parameters['lx_i'] / 4
+        m_yg_13 = 35 * Py ** 2 + 63 * Py + 27
+        m_yg_14 = -(35 * Py ** 2 + 63 * Py + 26) * self.parameters['lx_i'] / 4
+        #
+        m_yg_22 = (7 * Py ** 2 + 14 * Py + 8) * self.parameters['lx_i'] ** 2 / 4
+        m_yg_23 = - m_yg_14
+        m_yg_24 = -(7 * Py ** 2 + 14 * Py + 6) * self.parameters['lx_i'] ** 2 / 4
+        #
+        m_yg_33 = m_yg_11
+        m_yg_34 = -m_yg_12
+        #
+        m_yg_44 = m_yg_22
+        #
+        m_el_yg_trans = m_yg * np.array([[m_yg_11, m_yg_12, m_yg_13, m_yg_14],
+                                         [m_yg_12, m_yg_22, m_yg_23, m_yg_24],
+                                         [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
+                                         [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
+        # rotation
+        m_yg = self.parameters['rho'] * self.parameters['iz'][i] / \
+               30 / (1 + Py) ** 2 / self.parameters['lx_i']
+        #
+        m_yg_11 = 36
+        m_yg_12 = -(15 * Py - 3) * self.parameters['lx_i']
+        m_yg_13 = -m_yg_11
+        m_yg_14 = m_yg_12
+        #
+        m_yg_22 = (10 * Py ** 2 + 5 * Py + 4) * self.parameters['lx_i'] ** 2
+        m_yg_23 = - m_yg_12
+        m_yg_24 = (5 * Py ** 2 - 5 * Py - 1) * self.parameters['lx_i'] ** 2
+        #
+        m_yg_33 = m_yg_11
+        m_yg_34 = - m_yg_12
+        #
+        m_yg_44 = m_yg_22
+        #
+        m_el_yg_rot = m_yg * np.array([[m_yg_11, m_yg_12, m_yg_13, m_yg_14],
+                                       [m_yg_12, m_yg_22, m_yg_23, m_yg_24],
+                                       [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
+                                       [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
+
+        # sum up translation and rotation
+        m_el_yg = m_el_yg_trans + m_el_yg_rot
+
+        if self.domain_size == '3D':
+            # bending - inertia along axis z, rotations around axis y - here marked as beta - b
+            # translation
+            Pz = self.parameters['pz'][i]
+            m_zb = m_const / 210 / (1 + Pz) ** 2
+            #
+            m_zb_11 = 70 * Pz ** 2 + 147 * Pz + 78
+            m_zb_12 = -(35 * Pz ** 2 + 77 * Pz + 44) * self.parameters['lx_i'] / 4
+            m_zb_13 = 35 * Pz ** 2 + 63 * Pz + 27
+            m_zb_14 = (35 * Pz ** 2 + 63 * Pz + 26) * self.parameters['lx_i'] / 4
+            #
+            m_zb_22 = (7 * Pz ** 2 + 14 * Pz + 8) * self.parameters['lx_i'] ** 2 / 4
+            m_zb_23 = -m_zb_14
+            m_zb_24 = -(7 * Pz ** 2 + 14 * Pz + 6) * self.parameters['lx_i'] ** 2 / 4
+            #
+            m_zb_33 = m_zb_11
+            m_zb_34 = - m_zb_12
+            #
+            m_zb_44 = m_zb_22
+            #
+            m_el_zb_trans = m_zb * np.array([[m_zb_11, m_zb_12, m_zb_13, m_zb_14],
+                                             [m_zb_12, m_zb_22, m_zb_23, m_zb_24],
+                                             [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
+                                             [m_zb_14, m_zb_24, m_zb_34, m_zb_44]])
+            # rotation
+            m_zb = self.parameters['rho'] * self.parameters['iy'][i] / \
+                   30 / (1 + Pz) ** 2 / self.parameters['lx_i']
+            #
+            m_zb_11 = 36
+            m_zb_12 = (15 * Pz - 3) * self.parameters['lx_i']
+            m_zb_13 = -m_zb_11
+            m_zb_14 = m_zb_12
+            #
+            m_zb_22 = (10 * Pz ** 2 + 5 * Pz + 4) * self.parameters['lx_i'] ** 2
+            m_zb_23 = -m_zb_12
+            m_zb_24 = (5 * Pz ** 2 - 5 * Pz - 1) * self.parameters['lx_i'] ** 2
+            #
+            m_zb_33 = m_zb_11
+            m_zb_34 = -m_zb_12
+            #
+            m_zb_44 = m_zb_22
+            #
+            m_el_zb_rot = m_zb * np.array([[m_zb_11, m_zb_12, m_zb_13, m_zb_14],
+                                           [m_zb_12, m_zb_22, m_zb_23, m_zb_24],
+                                           [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
+                                           [m_zb_14, m_zb_24, m_zb_34, m_zb_44]])
+
+            # sum up translation and rotation
+            m_el_zb = m_el_zb_trans + m_el_zb_rot
+
+        # assemble all components
+        if self.domain_size == '3D':
+            m_el = np.array([[m_el_x[0][0], 0., 0., 0., 0., 0., m_el_x[0][1], 0., 0., 0., 0., 0.],
+                             [0., m_el_yg[0][0], 0., 0., 0., m_el_yg[0][1], 0., m_el_yg[0][2], 0., 0., 0.,
+                              m_el_yg[0][3]],
+                             [0., 0., m_el_zb[0][0], 0., m_el_zb[0][1], 0., 0., 0., m_el_zb[0][2], 0., m_el_zb[0][3],
+                              0.],
+                             [0., 0., 0., m_el_a[0][0], 0., 0., 0., 0., 0., m_el_a[0][1], 0., 0.],
+                             [0., 0., m_el_zb[0][1], 0., m_el_zb[1][1], 0., 0., 0., m_el_zb[1][2], 0., m_el_zb[1][3],
+                              0.],
+                             [0., m_el_yg[0][1], 0., 0., 0., m_el_yg[1][1], 0., m_el_yg[1][2], 0., 0., 0.,
+                              m_el_yg[1][3]],
+
+                             [m_el_x[1][0], 0., 0., 0., 0., 0., m_el_x[1][1], 0., 0., 0., 0., 0.],
+                             [0., m_el_yg[0][2], 0., 0., 0., m_el_yg[1][2], 0., m_el_yg[2][2], 0., 0., 0.,
+                              m_el_yg[2][3]],
+                             [0., 0., m_el_zb[0][2], 0., m_el_zb[1][2], 0., 0., 0., m_el_zb[2][2], 0., m_el_zb[2][3],
+                              0.],
+                             [0., 0., 0., m_el_a[1][0], 0., 0., 0., 0., 0., m_el_a[1][1], 0., 0.],
+                             [0., 0., m_el_zb[0][3], 0., m_el_zb[1][3], 0., 0., 0., m_el_zb[2][3], 0., m_el_zb[3][3],
+                              0.],
+                             [0., m_el_yg[0][3], 0., 0., 0., m_el_yg[1][3], 0., m_el_yg[2][3], 0., 0., 0.,
+                              m_el_yg[3][3]]])
+
+        elif self.domain_size == '2D':
+            m_el = np.array([[m_el_x[0][0], 0., 0., m_el_x[0][1], 0., 0.],
+                             [0., m_el_yg[0][0], m_el_yg[0][1], 0., m_el_yg[0][2], m_el_yg[0][3]],
+                             [0., m_el_yg[0][1], m_el_yg[1][1], 0., m_el_yg[1][2], m_el_yg[1][3]],
+
+                             [m_el_x[1][0], 0., 0., m_el_x[1][1], 0., 0.],
+                             [0., m_el_yg[0][2], m_el_yg[1][2], 0., m_el_yg[2][2], m_el_yg[2][3]],
+                             [0., m_el_yg[0][3], m_el_yg[1][3], 0., m_el_yg[2][3], m_el_yg[3][3]]])
+
+        return m_el
+
     def get_el_stiffness(self, i):
         """
         stiffness values for one level
