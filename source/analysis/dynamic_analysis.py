@@ -125,6 +125,7 @@ class DynamicAnalysis(AnalysisType):
     def solve(self):
 
         print("Solving the structure for dynamic loads \n")
+        self.solver.solve()
 
         # transforming back to normal coordinates : 
         if self.transform_into_modal:
