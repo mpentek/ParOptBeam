@@ -15,7 +15,7 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         super().__init__(array_time, time_integration_scheme, dt, comp_model, initial_conditions, force)
 
     def calculate_residual(self):
-        passs
+        pass
 
     def calculate_increment(self):
         pass
