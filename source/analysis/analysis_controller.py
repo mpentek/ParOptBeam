@@ -4,6 +4,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.global_definetions import *
 
 
 class AnalysisController(object):
@@ -61,7 +62,7 @@ class AnalysisController(object):
                                           "visualize_line_structure"],
                                       "beam_direction": self.parameters["skin_model_parameters"]["beam_direction"],
                                       "scaling_vector": self.parameters["skin_model_parameters"]["scaling_vector"],
-                                      "num_of_dofs_per_node": self.model.DOFS_PER_NODE[self.model.domain_size],
+                                      "num_of_dofs_per_node": DOFS_PER_NODE[self.model.domain_size],
                                       "eigenmode_scaling_factor": self.parameters["skin_model_parameters"][
                                           "eigenmode_scaling_factor"],
                                       "dynamic_scaling_factor": self.parameters["skin_model_parameters"][
