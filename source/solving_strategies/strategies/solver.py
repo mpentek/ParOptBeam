@@ -23,6 +23,12 @@ Last update: 15.10.2019
 '''
 # ===============================================================================
 import numpy as np
+from source.solving_strategies.schemes.generalized_alpha_scheme import GeneralizedAlphaScheme
+from source.solving_strategies.schemes.euler12_scheme import Euler12
+from source.solving_strategies.schemes.forward_euler1_scheme import ForwardEuler1
+from source.solving_strategies.schemes.backward_euler1_scheme import BackwardEuler1
+from source.solving_strategies.schemes.runge_kutta4_scheme import RungeKutta4
+from source.solving_strategies.schemes.bdf2_scheme import BDF2
 
 
 class Solver(object):
@@ -32,9 +38,6 @@ class Solver(object):
 
         # time step
         self.dt = dt
-
-        # scheme
-        self.scheme = None
 
         # mass, damping and spring stiffness
         self.M = comp_model[0]
@@ -53,7 +56,30 @@ class Solver(object):
         self.velocity = np.zeros((rows, cols))
         self.acceleration = np.zeros((rows, cols))
 
+        # initializing scheme
+        self._init_scheme(time_integration_scheme, comp_model, initial_conditions)
+
         self._print_structural_setup()
+
+    def _init_scheme(self, time_integration_scheme, comp_model, initial_conditions):
+        if time_integration_scheme == "GenAlpha":
+            self.scheme = GeneralizedAlphaScheme(self.dt, comp_model, initial_conditions)
+        elif time_integration_scheme == "Euler12":
+            self.scheme = Euler12(self.dt, comp_model, initial_conditions)
+        elif time_integration_scheme == "ForwardEuler1":
+            self.scheme = ForwardEuler1(self.dt, comp_model, initial_conditions)
+        elif time_integration_scheme == "BackwardEuler1":
+            self.scheme = BackwardEuler1(self.dt, comp_model, initial_conditions)
+        elif time_integration_scheme == "RungeKutta4":
+            self.scheme = RungeKutta4(self.dt, comp_model, initial_conditions)
+        elif time_integration_scheme == "BDF2":
+            self.scheme = BDF2(self.dt, comp_model, initial_conditions)
+        else:
+            err_msg = "The requested time integration scheme \"" + time_integration_scheme
+            err_msg += "\" is not available \n"
+            err_msg += "Choose one of: \"GenAlpha\", \"Euler12\", \"ForwardEuler1\", \"BackwardEuler1\", " \
+                       "\"RungeKutta4\", \"BDF2\""
+            raise Exception(err_msg)
 
     def _print_structural_setup(self):
         print("Printing structural setup in the solver base class:")
