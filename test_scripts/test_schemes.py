@@ -1,7 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from cycler import cycler
 
 from source.solving_strategies.strategies.linear_solver import LinearSolver
+
+default_cycler = (cycler(color=['b', 'b', 'b', 'g', 'r', 'k']) +
+                  cycler(linestyle=['-', '--', ':', '-', '-', '-']))
+
+plt.rc('lines', linewidth=1)
+plt.rc('axes', prop_cycle=default_cycler)
+
 
 def test():
     M = np.array([[0.5, 0.0], [0.0, 1.0]])
@@ -15,13 +23,12 @@ def test():
     steps = int(tend / dt)
     array_time = np.linspace(0.0, tend, steps)
     f = np.array([0.0*array_time, 0.6*np.sin(array_time)])
-    schemes = ["GenAlpha", "ForwardEuler1", "BackwardEuler1", "Euler12", "BDF2", "RungeKutta4"]
+    schemes = ["ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4"]
 
     for scheme in schemes:
 
         solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f)
         solver.solve()
-
         plt.plot(array_time, solver.displacement[1, :], label=scheme)
         plt.legend()
     plt.show()
