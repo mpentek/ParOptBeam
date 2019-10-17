@@ -181,7 +181,7 @@ class Visualiser:
         if wframe is not None:
             self.ax.cla()
         real_step = step * self.record_step + self.start_step
-        print("time: " + str(real_step * self.dt))
+        print("time: " + "{0:.2f}".format(real_step * self.dt))
         self.line_structure.update_dofs(real_step)
         self.mapper.map_line_structure_to_structure()
 

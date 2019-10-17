@@ -30,8 +30,11 @@ import matplotlib.pyplot as plt
 
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.global_definetions import *
+
 
 CUST_MAGNITUDE = 2
+
 
 class OptimizableStraightBeam(object):
     """
@@ -121,7 +124,7 @@ class OptimizableStraightBeam(object):
 
             modes_to_consider = self.parameters["geometric_properties_for"]["consider_decomposed_modes"]
             modes_possible_to_consider = [
-                *StraightBeam.MODE_CATEGORIZATION[self.model.domain_size].keys()]
+                *MODE_CATEGORIZATION[self.model.domain_size].keys()]
             diff_list = np.setdiff1d(
                 modes_to_consider, modes_possible_to_consider)
             if len(diff_list) != 0:
