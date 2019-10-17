@@ -318,7 +318,7 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_iy = self.model.parameters['iy']
+        initial_iy = self.model.element.Iy
         initial_a_sz = self.model.parameters['a_sz']
 
         # using partial to fix some parameters for the
@@ -377,7 +377,7 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_iz = self.model.parameters['iz']
+        initial_iz = self.model.element.Iz
         initial_a_sy = self.model.parameters['a_sy']
 
         # using partial to fix some parameters for the
@@ -437,8 +437,8 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_it = self.model.parameters['it']
-        initial_ip = self.model.parameters['ip']
+        initial_it = self.model.element.It
+        initial_ip = self.model.element.Ip
 
         # NOTE: single parameter optimization seems not to be enough
 

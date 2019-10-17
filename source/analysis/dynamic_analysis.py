@@ -4,7 +4,6 @@ from os.path import join, isdir
 from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
-from source.model.structure_model import StraightBeam
 from source.solving_strategies.strategies.linear_solver import LinearSolver
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities

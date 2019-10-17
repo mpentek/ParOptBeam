@@ -7,6 +7,27 @@ class TimoshenkoBeamElement(Element):
     def __init__(self, parameters, domain_size):
         super().__init__(parameters, domain_size)
 
+        # element properties
+        self.E = self.parameters['e']
+        self.rho = self.parameters['rho']
+        self.nu = self.parameters['nu']
+        self.G = self.parameters['g'] = self.E / 2 / (1 + self.nu)
+        self.A = None
+
+        # length of one element - assuming an equidistant grid
+        self.Li = self.parameters['lx_i']
+
+        # second moment of inertia
+        self.Iy = None
+        self.Iz = None
+        # torsion constant
+        self.It = None
+        # evaluating torsional inertia
+        self.Ip = None
+
+        self.Py = None
+        self.Pz = None
+
         self._print_element_information()
 
     def _print_element_information(self):
@@ -23,8 +44,7 @@ class TimoshenkoBeamElement(Element):
         https://link.springer.com/content/pdf/bbm%3A978-3-319-56493-7%2F1.pdf
         """
 
-        m_const = self.parameters['rho'] * \
-                  self.parameters['a'][i] * self.parameters['lx_i']
+        m_const = self.rho * self.A[i] * self.Li
 
         #
         # mass values for one level
@@ -39,7 +59,7 @@ class TimoshenkoBeamElement(Element):
 
         if self.domain_size == '3D':
             # torsion inertia - around axis x - here marked as alpha - a
-            m_a = m_const * self.parameters['ip'][i] / self.parameters['a'][i] / 6.0
+            m_a = m_const * self.Ip[i] / self.A[i] / 6.0
             m_a_11 = 2
             m_a_12 = 1
             m_el_a = m_a * np.array([[m_a_11, m_a_12],
@@ -47,17 +67,17 @@ class TimoshenkoBeamElement(Element):
 
         # bending - inertia along axis y, rotations around axis z - here marked as gamma - g
         # translation
-        Py = self.parameters['py'][i]
+        Py = self.Py[i]
         m_yg = m_const / 210 / (1 + Py) ** 2
         #
         m_yg_11 = 70 * Py ** 2 + 147 * Py + 78
-        m_yg_12 = (35 * Py ** 2 + 77 * Py + 44) * self.parameters['lx_i'] / 4
+        m_yg_12 = (35 * Py ** 2 + 77 * Py + 44) * self.Li / 4
         m_yg_13 = 35 * Py ** 2 + 63 * Py + 27
-        m_yg_14 = -(35 * Py ** 2 + 63 * Py + 26) * self.parameters['lx_i'] / 4
+        m_yg_14 = -(35 * Py ** 2 + 63 * Py + 26) * self.Li / 4
         #
-        m_yg_22 = (7 * Py ** 2 + 14 * Py + 8) * self.parameters['lx_i'] ** 2 / 4
+        m_yg_22 = (7 * Py ** 2 + 14 * Py + 8) * self.Li ** 2 / 4
         m_yg_23 = - m_yg_14
-        m_yg_24 = -(7 * Py ** 2 + 14 * Py + 6) * self.parameters['lx_i'] ** 2 / 4
+        m_yg_24 = -(7 * Py ** 2 + 14 * Py + 6) * self.Li ** 2 / 4
         #
         m_yg_33 = m_yg_11
         m_yg_34 = -m_yg_12
@@ -69,17 +89,16 @@ class TimoshenkoBeamElement(Element):
                                          [m_yg_13, m_yg_23, m_yg_33, m_yg_34],
                                          [m_yg_14, m_yg_24, m_yg_34, m_yg_44]])
         # rotation
-        m_yg = self.parameters['rho'] * self.parameters['iz'][i] / \
-               30 / (1 + Py) ** 2 / self.parameters['lx_i']
+        m_yg = self.rho * self.Iz[i] / 30 / (1 + Py) ** 2 / self.Li
         #
         m_yg_11 = 36
-        m_yg_12 = -(15 * Py - 3) * self.parameters['lx_i']
+        m_yg_12 = -(15 * Py - 3) * self.Li
         m_yg_13 = -m_yg_11
         m_yg_14 = m_yg_12
         #
-        m_yg_22 = (10 * Py ** 2 + 5 * Py + 4) * self.parameters['lx_i'] ** 2
+        m_yg_22 = (10 * Py ** 2 + 5 * Py + 4) * self.Li ** 2
         m_yg_23 = - m_yg_12
-        m_yg_24 = (5 * Py ** 2 - 5 * Py - 1) * self.parameters['lx_i'] ** 2
+        m_yg_24 = (5 * Py ** 2 - 5 * Py - 1) * self.Li ** 2
         #
         m_yg_33 = m_yg_11
         m_yg_34 = - m_yg_12
@@ -97,17 +116,17 @@ class TimoshenkoBeamElement(Element):
         if self.domain_size == '3D':
             # bending - inertia along axis z, rotations around axis y - here marked as beta - b
             # translation
-            Pz = self.parameters['pz'][i]
+            Pz = self.Pz[i]
             m_zb = m_const / 210 / (1 + Pz) ** 2
             #
             m_zb_11 = 70 * Pz ** 2 + 147 * Pz + 78
-            m_zb_12 = -(35 * Pz ** 2 + 77 * Pz + 44) * self.parameters['lx_i'] / 4
+            m_zb_12 = -(35 * Pz ** 2 + 77 * Pz + 44) * self.Li / 4
             m_zb_13 = 35 * Pz ** 2 + 63 * Pz + 27
-            m_zb_14 = (35 * Pz ** 2 + 63 * Pz + 26) * self.parameters['lx_i'] / 4
+            m_zb_14 = (35 * Pz ** 2 + 63 * Pz + 26) * self.Li / 4
             #
-            m_zb_22 = (7 * Pz ** 2 + 14 * Pz + 8) * self.parameters['lx_i'] ** 2 / 4
+            m_zb_22 = (7 * Pz ** 2 + 14 * Pz + 8) * self.Li ** 2 / 4
             m_zb_23 = -m_zb_14
-            m_zb_24 = -(7 * Pz ** 2 + 14 * Pz + 6) * self.parameters['lx_i'] ** 2 / 4
+            m_zb_24 = -(7 * Pz ** 2 + 14 * Pz + 6) * self.Li ** 2 / 4
             #
             m_zb_33 = m_zb_11
             m_zb_34 = - m_zb_12
@@ -119,17 +138,17 @@ class TimoshenkoBeamElement(Element):
                                              [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
                                              [m_zb_14, m_zb_24, m_zb_34, m_zb_44]])
             # rotation
-            m_zb = self.parameters['rho'] * self.parameters['iy'][i] / \
-                   30 / (1 + Pz) ** 2 / self.parameters['lx_i']
+            m_zb = self.rho * self.Iy[i] / \
+                   30 / (1 + Pz) ** 2 / self.Li
             #
             m_zb_11 = 36
-            m_zb_12 = (15 * Pz - 3) * self.parameters['lx_i']
+            m_zb_12 = (15 * Pz - 3) * self.Li
             m_zb_13 = -m_zb_11
             m_zb_14 = m_zb_12
             #
-            m_zb_22 = (10 * Pz ** 2 + 5 * Pz + 4) * self.parameters['lx_i'] ** 2
+            m_zb_22 = (10 * Pz ** 2 + 5 * Pz + 4) * self.Li ** 2
             m_zb_23 = -m_zb_12
-            m_zb_24 = (5 * Pz ** 2 - 5 * Pz - 1) * self.parameters['lx_i'] ** 2
+            m_zb_24 = (5 * Pz ** 2 - 5 * Pz - 1) * self.Li ** 2
             #
             m_zb_33 = m_zb_11
             m_zb_34 = -m_zb_12
@@ -190,8 +209,7 @@ class TimoshenkoBeamElement(Element):
         """
 
         # axial stiffness - along axis x - here marked as x
-        k_x = self.parameters['e'] * \
-              self.parameters['a'][i] / self.parameters['lx_i']
+        k_x = self.E * self.A[i] / self.Li
         k_x_11 = 1.0
         k_x_12 = -1.0
         k_el_x = k_x * np.array([[k_x_11, k_x_12],
@@ -199,26 +217,26 @@ class TimoshenkoBeamElement(Element):
 
         if self.domain_size == '3D':
             # torsion stiffness - around axis x - here marked as alpha - a
-            k_a = self.parameters['g'] * \
-                  self.parameters['it'][i] / self.parameters['lx_i']
+            k_a = self.G * \
+                  self.It[i] / self.Li
             k_a_11 = 1.0
             k_a_12 = -1.0
             k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                      [k_a_12, k_a_11]])
 
         # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
-        beta_yg = self.parameters['py'][i]
-        k_yg = self.parameters['e'] * self.parameters['iz'][i] / \
-               (1 + beta_yg) / self.parameters['lx_i'] ** 3
+        beta_yg = self.Py[i]
+        k_yg = self.E * self.Iz[i] / \
+               (1 + beta_yg) / self.Li ** 3
         #
         k_yg_11 = 12.
-        k_yg_12 = 6. * self.parameters['lx_i']
+        k_yg_12 = 6. * self.Li
         k_yg_13 = -k_yg_11
         k_yg_14 = k_yg_12
         #
-        k_yg_22 = (4. + beta_yg) * self.parameters['lx_i'] ** 2
+        k_yg_22 = (4. + beta_yg) * self.Li ** 2
         k_yg_23 = -k_yg_12
-        k_yg_24 = (2 - beta_yg) * self.parameters['lx_i'] ** 2
+        k_yg_24 = (2 - beta_yg) * self.Li ** 2
         #
         k_yg_33 = k_yg_11
         k_yg_34 = -k_yg_12
@@ -232,18 +250,18 @@ class TimoshenkoBeamElement(Element):
 
         if self.domain_size == '3D':
             # bending - displacement along axis z, rotations around axis y - here marked as beta - b
-            beta_zb = self.parameters['pz'][i]
-            k_zb = self.parameters['e'] * self.parameters['iy'][i] / \
-                   (1 + beta_zb) / self.parameters['lx_i'] ** 3
+            beta_zb = self.Pz[i]
+            k_zb = self.E * self.Iy[i] / \
+                   (1 + beta_zb) / self.Li ** 3
             #
             k_zb_11 = 12.
-            k_zb_12 = -6. * self.parameters['lx_i']
+            k_zb_12 = -6. * self.Li
             k_zb_13 = -12.
             k_zb_14 = k_zb_12
             #
-            k_zb_22 = (4. + beta_zb) * self.parameters['lx_i'] ** 2
+            k_zb_22 = (4. + beta_zb) * self.Li ** 2
             k_zb_23 = -k_zb_12
-            k_zb_24 = (2 - beta_zb) * self.parameters['lx_i'] ** 2
+            k_zb_24 = (2 - beta_zb) * self.Li ** 2
             #
             k_zb_33 = k_zb_11
             k_zb_34 = - k_zb_12

@@ -104,18 +104,17 @@ class StraightBeam(object):
             })
 
         # TODO: later probably move to an initialize function
-        # material
-        # shear modulus
-        self.parameters['g'] = self.parameters['e'] / \
-                               2 / (1 + self.parameters['nu'])
 
         # running coordinate x - in the middle of each beam element
         self.parameters['x'] = [(x + 0.5) / self.parameters['n_el'] * self.parameters['lx']
                                 for x in list(range(self.parameters['n_el']))]
 
-        # length of one element - assuming an equidistant grid
+        # # length of one element - assuming an equidistant grid
         self.parameters['lx_i'] = self.parameters['lx'] / \
                                   self.parameters['n_el']
+
+        # define element type
+        self.element = TimoshenkoBeamElement(self.parameters, self.domain_size)
 
         # geometric
         self.initialize_user_defined_geometric_parameters()
@@ -124,7 +123,7 @@ class StraightBeam(object):
         # relative importance of the shear deformation to the bending one
         self.evaluate_relative_importance_of_shear()
 
-        length_coords = self.parameters['lx_i'] * \
+        length_coords = self.element.Li * \
                         np.arange(self.parameters['n_el'] + 1)
 
         self.nodal_coordinates = {"x0": length_coords,
@@ -140,9 +139,6 @@ class StraightBeam(object):
                                   "a": np.zeros(len(length_coords)),
                                   "b": np.zeros(len(length_coords)),
                                   "g": np.zeros(len(length_coords))}
-
-        # define element type
-        self.element = TimoshenkoBeamElement(self.parameters, self.domain_size)
 
         self.n_nodes = self.parameters['n_el'] + 1
 
@@ -230,9 +226,9 @@ class StraightBeam(object):
         # point stiffness and point masses at respective dof for the outtrigger 
         for values in self.parameters['intervals']:
             if values['bounds'][1] == "End":
-                outtriger_id = int(self.parameters['lx'] / self.parameters['lx_i'])
+                outtriger_id = int(self.parameters['lx'] / self.element.Li)
             else:
-                outtriger_id = int(values['bounds'][1] / self.parameters['lx_i'])
+                outtriger_id = int(values['bounds'][1] / self.element.Li)
             id_val = outtriger_id * DOFS_PER_NODE[self.domain_size]
             # affects only diagonal entries and for transilation al DOF and not rotational DOF
             for i in range(int(np.ceil(DOFS_PER_NODE[self.domain_size] / 2))):
@@ -252,7 +248,7 @@ class StraightBeam(object):
         self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         # area
-        self.parameters['a'] = [self.evaluate_characteristic_on_interval(
+        self.element.A = [self.evaluate_characteristic_on_interval(
             x, 'c_a') for x in self.parameters['x']]
         # effective area of shear
         self.parameters['a_sy'] = [self.evaluate_characteristic_on_interval(
@@ -260,38 +256,37 @@ class StraightBeam(object):
         self.parameters['a_sz'] = [self.evaluate_characteristic_on_interval(
             x, 'c_a_sz') for x in self.parameters['x']]
         # second moment of inertia
-        self.parameters['iy'] = [self.evaluate_characteristic_on_interval(
+        self.element.Iy = [self.evaluate_characteristic_on_interval(
             x, 'c_iy') for x in self.parameters['x']]
-        self.parameters['iz'] = [self.evaluate_characteristic_on_interval(
+        self.element.Iz = [self.evaluate_characteristic_on_interval(
             x, 'c_iz') for x in self.parameters['x']]
         # torsion constant
-        self.parameters['it'] = [self.evaluate_characteristic_on_interval(
+        self.element.It = [self.evaluate_characteristic_on_interval(
             x, 'c_it') for x in self.parameters['x']]
 
     def evaluate_relative_importance_of_shear(self, is_bernoulli=False):
-        self.parameters['py'] = [12 * self.parameters['e'] * a / (
-                self.parameters['g'] * b * self.parameters['lx_i'] ** 2) for a, b in
-                                 zip(self.parameters['iz'], self.parameters['a_sy'])]
-        self.parameters['pz'] = [12 * self.parameters['e'] * a / (
-                self.parameters['g'] * b * self.parameters['lx_i'] ** 2) for a, b in
-                                 zip(self.parameters['iy'], self.parameters['a_sz'])]
+        self.element.Py = [12 * self.parameters['e'] * a / (
+                self.element.G * b * self.element.Li ** 2) for a, b in
+                                 zip(self.element.Iz, self.parameters['a_sy'])]
+        self.element.Pz = [12 * self.parameters['e'] * a / (
+                self.element.G * b * self.element.Li ** 2) for a, b in
+                                 zip(self.element.Iy, self.parameters['a_sz'])]
 
         if is_bernoulli:
             # NOTE: Bernoulli beam set to 0.0
-            self.parameters['py'] = [0.0 for a, b in zip(self.parameters['iz'], self.parameters['a_sy'])]
-            self.parameters['pz'] = [0.0 for a, b in zip(self.parameters['iy'], self.parameters['a_sz'])]
+            self.element.Py = [0.0 for a, b in zip(self.element.Iz, self.parameters['a_sy'])]
+            self.element.Pz = [0.0 for a, b in zip(self.element.Iy, self.parameters['a_sz'])]
 
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
-        # assuming equivalency with circle 
-        self.parameters['ip'] = [a + b for a,
-                                           b in zip(self.parameters['iy'], self.parameters['iz'])]
+        # assuming equivalency with circle
+        self.element.Ip = [a + b for a, b in zip(self.element.Iy, self.element.Iz)]
 
     def calculate_total_mass(self, print_to_console=False):
         self.parameters['m_tot'] = 0.0
         for i in range(len(self.parameters['x'])):
-            self.parameters['m_tot'] += self.parameters['a'][i] * \
-                                        self.parameters['rho'] * self.parameters['lx_i']
+            self.parameters['m_tot'] += self.element.A[i] * \
+                                        self.element.rho * self.element.Li
         # TODO: Add outtrigger masses to this entry
         if print_to_console:
             print('CURRENT:')
@@ -439,13 +434,13 @@ class StraightBeam(object):
                              for x in self.parameters['a_sz']], '\n')
 
             print('iy: ', ['{:.2f}'.format(x)
-                           for x in self.parameters['iy']], '\n')
+                           for x in self.element.Iy], '\n')
             print('iz: ', ['{:.2f}'.format(x)
-                           for x in self.parameters['iz']], '\n')
+                           for x in self.element.Iz], '\n')
             print('ip: ', ['{:.2f}'.format(x)
-                           for x in self.parameters['ip']], '\n')
+                           for x in self.element.Ip], '\n')
             print('it: ', ['{:.2f}'.format(x)
-                           for x in self.parameters['it']], '\n')
+                           for x in self.element.It], '\n')
 
         fig = plt.figure(1)
         plt.plot(self.parameters['x'], self.parameters['a'],
@@ -462,13 +457,13 @@ class StraightBeam(object):
             plt.close(fig)
 
         fig = plt.figure(2)
-        plt.plot(self.parameters['x'], self.parameters['it'],
+        plt.plot(self.parameters['x'], self.self.element.It,
                  'k-', marker='o', label='it')
-        plt.plot(self.parameters['x'], self.parameters['iy'],
+        plt.plot(self.parameters['x'], self.element.Iy,
                  'r-', marker='*', label='iy')
-        plt.plot(self.parameters['x'], self.parameters['iz'],
+        plt.plot(self.parameters['x'], self.element.Iz,
                  'g-', marker='^', label='iz')
-        plt.plot(self.parameters['x'], self.parameters['ip'],
+        plt.plot(self.parameters['x'], self.element.Ip,
                  'c-', marker='|', label='ip')
         plt.legend()
         plt.grid()
@@ -490,9 +485,9 @@ class StraightBeam(object):
             plt.close(fig)
 
         fig = plt.figure(4)
-        plt.plot(self.parameters['x'], self.parameters['py'],
+        plt.plot(self.parameters['x'], self.element.Py,
                  'r-', marker='*', label='py')
-        plt.plot(self.parameters['x'], self.parameters['pz'],
+        plt.plot(self.parameters['x'], self.element.Pz,
                  'g-', marker='^', label='pz')
         plt.legend()
         plt.grid()
