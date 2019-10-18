@@ -43,27 +43,30 @@ system_params = {
             "moment_of_inertia_y": [52083.0],
             "moment_of_inertia_z": [133333.0],
             "torsional_moment_of_inertia": [122500.0],
-            "outrigger_mass": [0.0],
-            "outrigger_stiffness": [0.0]
         }
     ]
 }
 
-# defined on intervals as piecewise continuous function on an interval starting from 0.0
-for val in system_params["defined_on_intervals"]:
-    parameters["intervals"].append({
-        'bounds': val['interval_bounds'],
-        # further quantities defined by polynomial coefficient as a function of running coord x
-        'c_ly': val["length_y"],
-        'c_lz': val["length_z"],
-        'c_a': val["area"],
-        'c_a_sy': val["shear_area_y"],
-        'c_a_sz': val["shear_area_z"],
-        'c_iy': val["moment_of_inertia_y"],
-        'c_iz': val["moment_of_inertia_z"],
-        'c_it': val["torsional_moment_of_inertia"],
-        'c_m': val["outrigger_mass"],
-        'c_k': val["outrigger_stiffness"]
-    })
+# # length of one element - assuming an equidistant grid
+parameters['lx_i'] = parameters['lx'] / parameters['n_el']
 
-element = CRBeamElement(parameters, '3D')
+
+def test():
+    element = CRBeamElement(parameters, '3D')
+    element.A = 1350
+    element.Asy = 1460
+    element.Asz = 1460
+    element.Iy = 101250
+    element.Iz = 1125
+    element.It = 122500
+
+    element.Py = 12 * element.E * element.Iz / (
+            element.G * element.Asy * element.Li ** 2)
+    element.Pz = 12 * element.E * element.Iy / (
+            element.G * element.Asz * element.Li ** 2)
+
+    element.get_el_stiffness(0)
+
+
+if __name__ == '__main__':
+    test()
