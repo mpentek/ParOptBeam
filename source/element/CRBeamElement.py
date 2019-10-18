@@ -7,19 +7,31 @@ class CRBeamElement(Element):
     def __init__(self, parameters, domain_size):
         super().__init__(parameters, domain_size)
 
-        # element properties
-
+        # material properties
         self.E = self.parameters['e']
-        self.L = self.parameters['lx_i']
+        self.rho = self.parameters['rho']
+        self.nu = self.parameters['nu']
+        self.G = self.parameters['g'] = self.E / 2 / (1 + self.nu)
 
         # area
-        self.A = self.parameters['a']
+        self.A = None
         # effective area of shear
-        self.Ay = self.parameters['a_sy']
-        self.Az = self.parameters['a_sz']
+        self.Asy = None
+        self.Asz = None
+
+        # length of one element - assuming an equidistant grid
+        self.Li = self.parameters['lx_i']
+
         # second moment of inertia
-        self.Iy = self.parameters['iy']
-        self.Iz = self.parameters['iz']
+        self.Iy = None
+        self.Iz = None
+        # torsion constant
+        self.It = None
+        # evaluating torsional inertia
+        self.Ip = None
+
+        self.Py = None
+        self.Pz = None
 
         self._print_element_information()
 

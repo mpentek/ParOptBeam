@@ -210,11 +210,11 @@ class OptimizableStraightBeam(object):
 
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
-        self.model.parameters['e'] = multiplier_fctr * initial_e
+        self.model.element.E = multiplier_fctr * initial_e
 
         # NOTE: do not forget to update G and further dependencies
-        self.model.parameters['g'] = self.model.parameters['e'] / \
-            2 / (1+self.model.parameters['nu'])
+        self.model.element.G = self.model.element.E / \
+            2 / (1+self.model.element.nu)
         self.model.evaluate_relative_importance_of_shear()
 
 
@@ -232,14 +232,14 @@ class OptimizableStraightBeam(object):
 
         corr_fctr = target_total_mass / self.model.parameters['m_tot']
 
-        self.model.parameters['rho'] *= corr_fctr
+        self.model.element.rho *= corr_fctr
 
         # re-calculate and print to console
         print('AFTER TUNED DENSITY')
         self.model.calculate_total_mass(True)
 
     def adjust_e_modul_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_e = self.model.parameters['e']
+        initial_e = self.model.element.E
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.generic_material_stiffness_objective_function,
@@ -260,10 +260,10 @@ class OptimizableStraightBeam(object):
             print()
 
     def adjust_longitudinal_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_a = self.model.parameters['a']
+        initial_a = self.model.element.A
         # assuming a linear dependency of shear areas
-        initial_a_sy = self.model.parameters['a_sy']
-        initial_a_sz = self.model.parameters['a_sz']
+        initial_a_sy = self.model.element.Asy
+        initial_a_sz = self.model.element.Asz
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.longitudinal_geometric_stiffness_objective_function,
@@ -291,11 +291,11 @@ class OptimizableStraightBeam(object):
 
     def longitudinal_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_a, initial_a_sy, initial_a_sz, multiplier_fctr):
 
-        self.parameters['a'] = [multiplier_fctr * val for val in initial_a]
+        self.element.A = [multiplier_fctr * val for val in initial_a]
         # assuming a linear dependency of shear areas
-        self.parameters['a_sy'] = [
+        self.element.Asy = [
             multiplier_fctr * val for val in initial_a_sy]
-        self.parameters['a_sz'] = [
+        self.element.Asz = [
             multiplier_fctr * val for val in initial_a_sz]
 
         # NOTE: do not forget to update further dependencies
@@ -319,7 +319,7 @@ class OptimizableStraightBeam(object):
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iy = self.model.element.Iy
-        initial_a_sz = self.model.parameters['a_sz']
+        initial_a_sz = self.model.element.Asz
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_y_geometric_stiffness_objective_function,
@@ -356,9 +356,9 @@ class OptimizableStraightBeam(object):
 
     def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, initial_a_sz, multiplier_fctr):
 
-        self.model.parameters['iy'] = [
+        self.model.element.Iy = [
             multiplier_fctr[0] * val for val in initial_iy]
-        self.model.parameters['a_sz'] = [
+        self.model.element.Asz = [
             multiplier_fctr[1] * val for val in initial_a_sz]
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
@@ -378,7 +378,7 @@ class OptimizableStraightBeam(object):
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iz = self.model.element.Iz
-        initial_a_sy = self.model.parameters['a_sy']
+        initial_a_sy = self.model.element.Asy
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_z_geometric_stiffness_objective_function,
@@ -416,9 +416,9 @@ class OptimizableStraightBeam(object):
 
     def bending_z_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iz, initial_a_sy, multiplier_fctr):
 
-        self.model.parameters['iz'] = [
+        self.model.element.Iz = [
             multiplier_fctr[0] * val for val in initial_iz]
-        self.model.parameters['a_sy'] = [
+        self.model.element.Asy = [
             multiplier_fctr[1] * val for val in initial_a_sy]
         # NOTE: do not forget to update further dependencies
         self.model.evaluate_relative_importance_of_shear()
@@ -484,9 +484,9 @@ class OptimizableStraightBeam(object):
 
     def torsional_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_it, initial_ip, multiplier_fctr):
 
-        self.model.parameters['it'] = [
+        self.model.element.It = [
             multiplier_fctr[0] * val for val in initial_it]
-        self.model.parameters['ip'] = [
+        self.model.element.Ip = [
             multiplier_fctr[1] * val for val in initial_ip]
 
         # re-evaluate
@@ -503,11 +503,11 @@ class OptimizableStraightBeam(object):
 
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
-        self.model.parameters['e'] = multiplier_fctr * initial_e
+        self.model.element.E = multiplier_fctr * initial_e
 
         # NOTE: do not forget to update G and further dependencies
-        self.model.parameters['g'] = self.model.parameters['e'] / \
-            2 / (1+self.model.parameters['nu'])
+        self.model.element.G = self.model.element.E / \
+            2 / (1+self.model.element.nu)
         self.model.evaluate_relative_importance_of_shear()
 
         # re-evaluate

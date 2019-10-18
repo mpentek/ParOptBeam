@@ -12,7 +12,12 @@ class TimoshenkoBeamElement(Element):
         self.rho = self.parameters['rho']
         self.nu = self.parameters['nu']
         self.G = self.parameters['g'] = self.E / 2 / (1 + self.nu)
+
+        # area
         self.A = None
+        # effective area of shear
+        self.Asy = None
+        self.Asz = None
 
         # length of one element - assuming an equidistant grid
         self.Li = self.parameters['lx_i']

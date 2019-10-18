@@ -251,9 +251,9 @@ class StraightBeam(object):
         self.element.A = [self.evaluate_characteristic_on_interval(
             x, 'c_a') for x in self.parameters['x']]
         # effective area of shear
-        self.parameters['a_sy'] = [self.evaluate_characteristic_on_interval(
+        self.element.Asy = [self.evaluate_characteristic_on_interval(
             x, 'c_a_sy') for x in self.parameters['x']]
-        self.parameters['a_sz'] = [self.evaluate_characteristic_on_interval(
+        self.element.Asz = [self.evaluate_characteristic_on_interval(
             x, 'c_a_sz') for x in self.parameters['x']]
         # second moment of inertia
         self.element.Iy = [self.evaluate_characteristic_on_interval(
@@ -267,15 +267,15 @@ class StraightBeam(object):
     def evaluate_relative_importance_of_shear(self, is_bernoulli=False):
         self.element.Py = [12 * self.parameters['e'] * a / (
                 self.element.G * b * self.element.Li ** 2) for a, b in
-                                 zip(self.element.Iz, self.parameters['a_sy'])]
+                           zip(self.element.Iz, self.element.Asy)]
         self.element.Pz = [12 * self.parameters['e'] * a / (
                 self.element.G * b * self.element.Li ** 2) for a, b in
-                                 zip(self.element.Iy, self.parameters['a_sz'])]
+                           zip(self.element.Iy, self.element.Asz)]
 
         if is_bernoulli:
             # NOTE: Bernoulli beam set to 0.0
-            self.element.Py = [0.0 for a, b in zip(self.element.Iz, self.parameters['a_sy'])]
-            self.element.Pz = [0.0 for a, b in zip(self.element.Iy, self.parameters['a_sz'])]
+            self.element.Py = [0.0 for a, b in zip(self.element.Iz, self.element.Asy)]
+            self.element.Pz = [0.0 for a, b in zip(self.element.Iy, self.element.Asz)]
 
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
@@ -427,11 +427,11 @@ class StraightBeam(object):
                            for x in self.parameters['lz']], '\n')
 
             print('a: ', ['{:.2f}'.format(x)
-                          for x in self.parameters['a']], '\n')
+                          for x in self.element.A], '\n')
             print('a_sy: ', ['{:.2f}'.format(x)
-                             for x in self.parameters['a_sy']], '\n')
+                             for x in self.element.Asy], '\n')
             print('a_sz: ', ['{:.2f}'.format(x)
-                             for x in self.parameters['a_sz']], '\n')
+                             for x in self.element.Asz], '\n')
 
             print('iy: ', ['{:.2f}'.format(x)
                            for x in self.element.Iy], '\n')
@@ -443,11 +443,11 @@ class StraightBeam(object):
                            for x in self.element.It], '\n')
 
         fig = plt.figure(1)
-        plt.plot(self.parameters['x'], self.parameters['a'],
+        plt.plot(self.parameters['x'], self.element.A,
                  'k-', marker='o', label='a')
-        plt.plot(self.parameters['x'], self.parameters['a_sy'],
+        plt.plot(self.parameters['x'], self.element.Asy,
                  'r-', marker='*', label='a_sy')
-        plt.plot(self.parameters['x'], self.parameters['a_sz'],
+        plt.plot(self.parameters['x'], self.element.Asz,
                  'g-', marker='^', label='a_sz')
         plt.legend()
         plt.grid()
@@ -457,7 +457,7 @@ class StraightBeam(object):
             plt.close(fig)
 
         fig = plt.figure(2)
-        plt.plot(self.parameters['x'], self.self.element.It,
+        plt.plot(self.parameters['x'], self.element.It,
                  'k-', marker='o', label='it')
         plt.plot(self.parameters['x'], self.element.Iy,
                  'r-', marker='*', label='iy')
