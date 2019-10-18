@@ -47,57 +47,63 @@ class CRBeamElement(Element):
         """
             element stiffness matrix derivation from Klaus Bernd Sautter's master thesis
         """
+
+        # placeholder for the stiffness matrix
+        Ke_const = np.zeros([6, 6])
+        Ke_geo = np.zeros([6, 6])
+        Ke_tot = np.zeros([6, 6])
+
+        # placeholder for partial entities
+        kc = np.zeros([4, 4, 3, 3])
+
         # shear coefficients
-        phi_a_y = 1 / (1 + 12 * self.E * self.Iy / (self.Li ** 2 * self.G * self.Asz))
-        phi_a_z = 1 / (1 + 12 * self.E * self.Iz / (self.Li ** 2 * self.G * self.Asy))
+        phi_a_y = 1 / (1 + 12 * self.E * self.Iy[i] / (self.Li ** 2 * self.G * self.Asz[i]))
+        phi_a_z = 1 / (1 + 12 * self.E * self.Iz[i] / (self.Li ** 2 * self.G * self.Asy[i]))
 
         # constant contribution to Ke
         # (eq. 4.158)
-        kc_11 = np.array([[self.E * self.A / self.Li, 0., 0.],
-                          [0., 12 * self.E * self.Iz * phi_a_z / (self.Li ** 3), 0.],
-                          [0., 12 * self.E * self.Iy * phi_a_y / (self.Li ** 3), 0.]])
+        kc[0][0] = np.array([[self.E * self.A[i] / self.Li, 0., 0.],
+                             [0., 12 * self.E * self.Iz[i] * phi_a_z / (self.Li ** 3), 0.],
+                             [0., 12 * self.E * self.Iy[i] * phi_a_y / (self.Li ** 3), 0.]])
 
-        kc_33 = kc_11
-        kc_13 = -kc_11
-        kc_31 = -kc_11
+        kc[2][2] = kc[0][0]
+        kc[0][2] = -kc[0][0]
+        kc[2][0] = -kc[0][0]
 
         # (eq. 4.159)
-        kc_22 = np.array([[self.G * self.It / self.Li, 0., 0.],
-                          [0., (3 * phi_a_y + 1) * self.E * self.Iy / self.Li, 0.],
-                          [0., 0., (3 * phi_a_z + 1) * self.E * self.Iz / self.Li]])
+        kc[1][1] = np.array([[self.G * self.It[i] / self.Li, 0., 0.],
+                             [0., (3 * phi_a_y + 1) * self.E * self.Iy[i] / self.Li, 0.],
+                             [0., 0., (3 * phi_a_z + 1) * self.E * self.Iz[i] / self.Li]])
 
-        kc_44 = kc_22
+        kc[3][3] = kc[1][1]
 
         # (eq. 4.160.)
-        kc_24 = np.array([[-self.G * self.It / self.Li, 0., 0.],
-                          [0., (3 * phi_a_y - 1) * self.E * self.Iy / self.Li, 0.],
-                          [0., 0., (3 * phi_a_z - 1) * self.E * self.Iz / self.Li]])
+        kc[1][3] = np.array([[-self.G * self.It[i] / self.Li, 0., 0.],
+                             [0., (3 * phi_a_y - 1) * self.E * self.Iy[i] / self.Li, 0.],
+                             [0., 0., (3 * phi_a_z - 1) * self.E * self.Iz[i] / self.Li]])
 
-        kc_42 = kc_24
+        kc[3][1] = kc[1][3]
 
-        kc_12 = np.array([[0., 0., 0.],
-                          [0., 0., 6 * phi_a_z * self.E * self.Iy / (self.Li ** 2)],
-                          [0., 6 * phi_a_y * self.E * self.Iz / (self.Li ** 2), 0.]])
+        kc[0][1] = np.array([[0., 0., 0.],
+                             [0., 0., 6 * phi_a_z * self.E * self.Iy[i] / (self.Li ** 2)],
+                             [0., 6 * phi_a_y * self.E * self.Iz[i] / (self.Li ** 2), 0.]])
 
-        kc_14 = kc_12
-        kc_23 = -np.transpose(kc_12)
-        kc_43 = kc_23
-        kc_21 = np.transpose(kc_12)
-        kc_41 = kc_21
-        kc_32 = -kc_12
-        kc_34 = -kc_12
+        kc[0][3] = kc[0][1]
+        kc[1][2] = -np.transpose(kc[0][1])
+        kc[3][2] = kc[1][2]
+        kc[1][0] = np.transpose(kc[0][1])
+        kc[3][0] = kc[1][0]
+        kc[2][1] = -kc[0][1]
+        kc[2][3] = -kc[0][1]
 
-        Ke_const = np.array([[kc_11, kc_12, kc_13, kc_14],
-                             [kc_21, kc_22, kc_23, kc_24],
-                             [kc_31, kc_32, kc_33, kc_34],
-                             [kc_41, kc_42, kc_43, kc_44]])
-
+        for i in range(4):
+            for j in range(4):
+                Ke_const[i:i+3, j:j+3] += kc[i][j]
         print(Ke_const)
 
         # geometric contribution to Ke
         # kg_11 = np.array([[0., -Qy / l., 0.],
         #                   [0., 0., 6 * phi_a_z * self.E * self.Iy / (self.Li ** 2)],
         #                   [0., 6 * phi_a_y * self.E * self.Iz / (self.Li ** 2), 0.]])
-
 
         return Ke_const
