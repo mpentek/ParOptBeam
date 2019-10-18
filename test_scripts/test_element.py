@@ -21,7 +21,10 @@ def test():
             element.G * b * element.Li ** 2) for a, b in
                        zip(element.Iy, element.Asz)]
 
-    element.get_el_stiffness(0)
+    Kc = element._get_local_stiffness_matrix_material(0)
+    Kg = element._get_local_stiffness_matrix_geometry(0)
+    print(Kc)
+    print(Kg)
 
 
 if __name__ == '__main__':

@@ -25,7 +25,7 @@ class CRBeamElement(Element):
         # second moment of inertia
         self.Iy = None
         self.Iz = None
-        # torsion constant
+        # torsion constant J
         self.It = None
         # evaluating torsional inertia
         self.Ip = None
@@ -33,77 +33,239 @@ class CRBeamElement(Element):
         self.Py = None
         self.Pz = None
 
+        # element properties
+        NumberOfNodes = 2
+        Dimension = 3
+        self.LocalSize = NumberOfNodes * Dimension
+        self.ElementSize = self.LocalSize * 2
+
+        # nodal forces
+        self.qe = np.zeros(self.ElementSize)
+
+        # transformation matrix
+        self.S = self._get_transformation_matrix()
+
         self._print_element_information()
 
     def _print_element_information(self):
-        print(str(self.domain_size), "D Co-Rotational Beam Element")
+        msg = str(self.domain_size) + " Co-Rotational Beam Element\n"
+        msg += "Element Size: " + str(self.ElementSize) + "\n"
+        print(msg)
 
     def get_el_mass(self, i):
         """
             element mass matrix derivation from Klaus Bernd Sautter's master thesis
         """
 
+    def _get_transformation_matrix(self):
+        L = self.Li
+        S = np.zeros([self.ElementSize, self.LocalSize])
+
+        S[0, 3] = -1.00
+        S[1, 5] = 2.00 / L
+        S[2, 4] = -2.00 / L
+        S[3, 0] = -1.00
+        S[4, 1] = -1.00
+        S[4, 4] = 1.00
+        S[5, 2] = -1.00
+        S[5, 5] = 1.00
+        S[6, 3] = 1.00
+        S[7, 5] = -2.00 / L
+        S[8, 4] = 2.00 / L
+        S[9, 0] = 1.00
+        S[10, 1] = 1.00
+        S[10, 4] = 1.00
+        S[11, 2] = 1.00
+        S[11, 5] = 1.00
+
+        return S
+
     def get_el_stiffness(self, i):
         """
             element stiffness matrix derivation from Klaus Bernd Sautter's master thesis
         """
+        pass
 
-        # placeholder for the stiffness matrix
-        Ke_const = np.zeros([6, 6])
-        Ke_geo = np.zeros([6, 6])
-        Ke_tot = np.zeros([6, 6])
-
-        # placeholder for partial entities
-        kc = np.zeros([4, 4, 3, 3])
+    def _get_local_stiffness_matrix_material(self, i):
+        """
+            elastic part of the total stiffness matrix
+        """
 
         # shear coefficients
-        phi_a_y = 1 / (1 + 12 * self.E * self.Iy[i] / (self.Li ** 2 * self.G * self.Asz[i]))
-        phi_a_z = 1 / (1 + 12 * self.E * self.Iz[i] / (self.Li ** 2 * self.G * self.Asy[i]))
+        Psi_y = 1 / (1 + 12 * self.E * self.Iy[i] / (self.Li ** 2 * self.G * self.Asz[i]))
+        Psi_z = 1 / (1 + 12 * self.E * self.Iz[i] / (self.Li ** 2 * self.G * self.Asy[i]))
 
-        # constant contribution to Ke
-        # (eq. 4.158)
-        kc[0][0] = np.array([[self.E * self.A[i] / self.Li, 0., 0.],
-                             [0., 12 * self.E * self.Iz[i] * phi_a_z / (self.Li ** 3), 0.],
-                             [0., 12 * self.E * self.Iy[i] * phi_a_y / (self.Li ** 3), 0.]])
+        ke_const = np.zeros([self.ElementSize, self.ElementSize])
 
-        kc[2][2] = kc[0][0]
-        kc[0][2] = -kc[0][0]
-        kc[2][0] = -kc[0][0]
+        self.Li3 = self.Li * self.Li * self.Li
+        self.Li2 = self.Li * self.Li
 
-        # (eq. 4.159)
-        kc[1][1] = np.array([[self.G * self.It[i] / self.Li, 0., 0.],
-                             [0., (3 * phi_a_y + 1) * self.E * self.Iy[i] / self.Li, 0.],
-                             [0., 0., (3 * phi_a_z + 1) * self.E * self.Iz[i] / self.Li]])
+        ke_const[0, 0] = self.E * self.A[i] / self.Li
+        ke_const[6, 0] = -1.0 * ke_const[0, 0]
+        ke_const[0, 6] = ke_const[6, 0]
+        ke_const[6, 6] = ke_const[0, 0]
 
-        kc[3][3] = kc[1][1]
+        ke_const[1, 1] = 12.0 * self.E * self.Iz[i] * Psi_z / self.Li3
+        ke_const[1, 7] = -1.0 * ke_const[1, 1]
+        ke_const[1, 5] = 6.0 * self.E * self.Iz[i] * Psi_z / self.Li2
+        ke_const[1, 11] = ke_const[1, 5]
 
-        # (eq. 4.160.)
-        kc[1][3] = np.array([[-self.G * self.It[i] / self.Li, 0., 0.],
-                             [0., (3 * phi_a_y - 1) * self.E * self.Iy[i] / self.Li, 0.],
-                             [0., 0., (3 * phi_a_z - 1) * self.E * self.Iz[i] / self.Li]])
+        ke_const[2, 2] = 12.0 * self.E * self.Iy[i] * Psi_y / self.Li3
+        ke_const[2, 8] = -1.0 * ke_const[2, 2]
+        ke_const[2, 4] = -6.0 * self.E * self.Iy[i] * Psi_y / self.Li2
+        ke_const[2, 10] = ke_const[2, 4]
 
-        kc[3][1] = kc[1][3]
+        ke_const[4, 2] = ke_const[2, 4]
+        ke_const[5, 1] = ke_const[1, 5]
+        ke_const[3, 3] = self.G * self.It[i] / self.Li
+        ke_const[4, 4] = self.E * self.Iy[i] * (3.0 * Psi_y + 1.0) / self.Li
+        ke_const[5, 5] = self.E * self.Iz[i] * (3.0 * Psi_z + 1.0) / self.Li
+        ke_const[4, 8] = -1.0 * ke_const[4, 2]
+        ke_const[5, 7] = -1.0 * ke_const[5, 1]
+        ke_const[3, 9] = -1.0 * ke_const[3, 3]
+        ke_const[4, 10] = self.E * self.Iy[i] * (3.0 * Psi_y - 1.0) / self.Li
+        ke_const[5, 11] = self.E * self.Iz[i] * (3.0 * Psi_z - 1.0) / self.Li
 
-        kc[0][1] = np.array([[0., 0., 0.],
-                             [0., 0., 6 * phi_a_z * self.E * self.Iy[i] / (self.Li ** 2)],
-                             [0., 6 * phi_a_y * self.E * self.Iz[i] / (self.Li ** 2), 0.]])
+        ke_const[7, 1] = ke_const[1, 7]
+        ke_const[7, 5] = ke_const[5, 7]
+        ke_const[7, 7] = ke_const[1, 1]
+        ke_const[7, 11] = ke_const[7, 5]
 
-        kc[0][3] = kc[0][1]
-        kc[1][2] = -np.transpose(kc[0][1])
-        kc[3][2] = kc[1][2]
-        kc[1][0] = np.transpose(kc[0][1])
-        kc[3][0] = kc[1][0]
-        kc[2][1] = -kc[0][1]
-        kc[2][3] = -kc[0][1]
+        ke_const[8, 2] = ke_const[2, 8]
+        ke_const[8, 4] = ke_const[4, 8]
+        ke_const[8, 8] = ke_const[2, 2]
+        ke_const[8, 10] = ke_const[8, 4]
+
+        ke_const[9, 3] = ke_const[3, 9]
+        ke_const[9, 9] = ke_const[3, 3]
+
+        ke_const[10, 2] = ke_const[2, 10]
+        ke_const[10, 4] = ke_const[4, 10]
+        ke_const[10, 8] = ke_const[8, 10]
+        ke_const[10, 10] = ke_const[4, 4]
+
+        ke_const[11, 1] = ke_const[1, 11]
+        ke_const[11, 5] = ke_const[5, 11]
+        ke_const[11, 7] = ke_const[7, 11]
+        ke_const[11, 11] = ke_const[5, 5]
+
+        return ke_const
+
+    def _get_local_stiffness_matrix_geometry(self, i):
+        """
+            geometric part of the total stiffness matrix
+        """
+
+        N = self.qe[6]
+        Mt = self.qe[9]
+        my_A = self.qe[4]
+        mz_A = self.qe[5]
+        my_B = self.qe[10]
+        mz_B = self.qe[11]
+
+        L = self.Li
+        Qy = -1.00 * (mz_A + mz_B) / L
+        Qz = (my_A + my_B) / L
+
+        kg_const = np.zeros([self.ElementSize, self.ElementSize])
+
+        kg_const[0, 1] = -Qy / L
+        kg_const[0, 2] = -Qz / L
+        kg_const[0, 7] = -1.0 * kg_const[0, 1]
+        kg_const[0, 8] = -1.0 * kg_const[0, 2]
+
+        kg_const[1, 0] = kg_const[0, 1]
+
+        kg_const[1, 1] = 1.2 * N / L
+
+        kg_const[1, 3] = my_A / L
+        kg_const[1, 4] = Mt / L
+
+        kg_const[1, 5] = N / 10.0
+
+        kg_const[1, 6] = kg_const[0, 7]
+        kg_const[1, 7] = -1.00 * kg_const[1, 1]
+        kg_const[1, 9] = my_B / L
+        kg_const[1, 10] = -1.00 * kg_const[1, 4]
+        kg_const[1, 11] = kg_const[1, 5]
+
+        kg_const[2, 0] = kg_const[0, 2]
+        kg_const[2, 2] = kg_const[1, 1]
+        kg_const[2, 3] = mz_A / L
+        kg_const[2, 4] = -1.00 * kg_const[1, 5]
+        kg_const[2, 5] = kg_const[1, 4]
+        kg_const[2, 6] = kg_const[0, 8]
+        kg_const[2, 8] = kg_const[1, 7]
+        kg_const[2, 9] = mz_B / L
+        kg_const[2, 10] = kg_const[2, 4]
+        kg_const[2, 11] = kg_const[1, 10]
+
+        for i in range(3):
+            kg_const[3, i] = kg_const[i, 3]
+
+        kg_const[3, 4] = (-mz_A / 3.00) + (mz_B / 6.00)
+        kg_const[3, 5] = (my_A / 3.00) - (my_B / 6.00)
+        kg_const[3, 7] = -my_A / L
+        kg_const[3, 8] = -mz_A / L
+        kg_const[3, 10] = L * Qy / 6.00
+        kg_const[3, 11] = L * Qz / 6.00
 
         for i in range(4):
-            for j in range(4):
-                Ke_const[i:i+3, j:j+3] += kc[i][j]
-        print(Ke_const)
+            kg_const[4, i] = kg_const[i, 4]
 
-        # geometric contribution to Ke
-        # kg_11 = np.array([[0., -Qy / l., 0.],
-        #                   [0., 0., 6 * phi_a_z * self.E * self.Iy / (self.Li ** 2)],
-        #                   [0., 6 * phi_a_y * self.E * self.Iz / (self.Li ** 2), 0.]])
+        kg_const[4, 4] = 2.00 * L * N / 15.00
+        kg_const[4, 7] = -Mt / L
+        kg_const[4, 8] = N / 10.00
+        kg_const[4, 9] = kg_const[3, 10]
+        kg_const[4, 10] = -L * N / 30.00
+        kg_const[4, 11] = Mt / 2.00
 
-        return Ke_const
+        for i in range(5):
+            kg_const[5, i] = kg_const[i, 5]
+
+        kg_const[5, 5] = kg_const[4, 4]
+        kg_const[5, 7] = -N / 10.0
+        kg_const[5, 8] = -Mt / L
+        kg_const[5, 9] = kg_const[3, 11]
+        kg_const[5, 10] = -1.00 * kg_const[4, 11]
+        kg_const[5, 11] = kg_const[4, 10]
+
+        for i in range(6):
+            kg_const[6, i] = kg_const[i, 6]
+
+        kg_const[6, 7] = kg_const[0, 1]
+        kg_const[6, 8] = kg_const[0, 2]
+
+        for i in range(7):
+            kg_const[7, i] = kg_const[i, 7]
+
+        kg_const[7, 7] = kg_const[1, 1]
+        kg_const[7, 9] = -1.00 * kg_const[1, 9]
+        kg_const[7, 10] = kg_const[4, 1]
+        kg_const[7, 11] = kg_const[2, 4]
+
+        for i in range(8):
+            kg_const[8, i] = kg_const[i, 8]
+
+        kg_const[8, 8] = kg_const[1, 1]
+        kg_const[8, 9] = -1.00 * kg_const[2, 9]
+        kg_const[8, 10] = kg_const[1, 5]
+        kg_const[8, 11] = kg_const[1, 4]
+
+        for i in range(9):
+            kg_const[9, i] = kg_const[i, 9]
+
+        kg_const[9, 10] = (mz_A / 6.00) - (mz_B / 3.00)
+        kg_const[9, 11] = (-my_A / 6.00) + (my_B / 3.00)
+
+        for i in range(10):
+            kg_const[10, i] = kg_const[i, 10]
+
+        kg_const[10, 10] = kg_const[4, 4]
+
+        for i in range(11):
+            kg_const[11, i] = kg_const[i, 11]
+
+        kg_const[11, 11] = kg_const[4, 4]
+
+        return kg_const
