@@ -1,10 +1,11 @@
 import numpy as np
+import sys.float_info.epsilon as EPSILON
 
 from source.element.Element import Element
 
 
 class CRBeamElement(Element):
-    def __init__(self, parameters, domain_size):
+    def __init__(self, parameters, nodal_coords, domain_size):
         super().__init__(parameters, domain_size)
 
         # material properties
@@ -19,8 +20,10 @@ class CRBeamElement(Element):
         self.Asy = None
         self.Asz = None
 
-        # length of one element - assuming an equidistant grid
+        # reference length of one element - assuming an equidistant grid
         self.Li = self.parameters['lx_i']
+        # reference length of one element - needs to be updated after each solve step
+        self.li = self.Li
 
         # second moment of inertia
         self.Iy = None
@@ -35,15 +38,21 @@ class CRBeamElement(Element):
 
         # element properties
         NumberOfNodes = 2
-        Dimension = 3
-        self.LocalSize = NumberOfNodes * Dimension
+        self.Dimension = 3
+        self.LocalSize = NumberOfNodes * self.Dimension
         self.ElementSize = self.LocalSize * 2
+
+        # element geometry
+        self.x0 = nodal_coords[0]
+        self.y0 = nodal_coords[0]
+        self.z0 = nodal_coords[0]
 
         # nodal forces
         self.qe = np.zeros(self.ElementSize)
 
         # transformation matrix
-        self.S = self._get_transformation_matrix()
+        self.S = np.zeros([self.ElementSize, self.LocalSize])
+        self.LocalRotationMatrix = np.zeros(self.Dimension)
 
         self._print_element_information()
 
@@ -57,28 +66,54 @@ class CRBeamElement(Element):
             element mass matrix derivation from Klaus Bernd Sautter's master thesis
         """
 
-    def _get_transformation_matrix(self):
+    def _calculate_transformation_matrix(self, bisectrix, vector_difference):
+        AuxRotationMatrix = self.update_rotation_matrix_local(bisectrix, vector_difference)
+        RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
+
+    def _assemble_small_in_big_matrix(self, small_matrix, big_matrix):
+        numerical_limit = EPSILON
+        for k in range(0, self.ElementSize, self.Dimension):
+            for i in range(self.Dimension):
+                for j in range(self.Dimension):
+                    if abs(small_matrix[i, j]) <= numerical_limit:
+                        big_matrix[i + k, j + k] = 0.0
+                    else:
+                        big_matrix[i + k, j + k] = small_matrix[i, j]
+
+    def _calculate_transformation_s(self):
+        L = self.li
+
+        self.S[0, 3] = -1.00
+        self.S[1, 5] = 2.00 / L
+        self.S[2, 4] = -2.00 / L
+        self.S[3, 0] = -1.00
+        self.S[4, 1] = -1.00
+        self.S[4, 4] = 1.00
+        self.S[5, 2] = -1.00
+        self.S[5, 5] = 1.00
+        self.S[6, 3] = 1.00
+        self.S[7, 5] = -2.00 / L
+        self.S[8, 4] = 2.00 / L
+        self.S[9, 0] = 1.00
+        self.S[10, 1] = 1.00
+        self.S[10, 4] = 1.00
+        self.S[11, 2] = 1.00
+        self.S[11, 5] = 1.00
+
+    def _get_local_nodal_forces(self):
+        # element force t
+        pass
+
+    def _get_element_forces(self):
+        # reference length
         L = self.Li
-        S = np.zeros([self.ElementSize, self.LocalSize])
-
-        S[0, 3] = -1.00
-        S[1, 5] = 2.00 / L
-        S[2, 4] = -2.00 / L
-        S[3, 0] = -1.00
-        S[4, 1] = -1.00
-        S[4, 4] = 1.00
-        S[5, 2] = -1.00
-        S[5, 5] = 1.00
-        S[6, 3] = 1.00
-        S[7, 5] = -2.00 / L
-        S[8, 4] = 2.00 / L
-        S[9, 0] = 1.00
-        S[10, 1] = 1.00
-        S[10, 4] = 1.00
-        S[11, 2] = 1.00
-        S[11, 5] = 1.00
-
-        return S
+        # current length
+        l = self.li
+        # Calculate symmetric deformation mode
+        # phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), vector_difference)
+        phi_s *= 4.00
+        # phi_a =
 
     def get_el_stiffness(self, i):
         """
