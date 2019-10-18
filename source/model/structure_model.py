@@ -265,10 +265,10 @@ class StraightBeam(object):
             x, 'c_it') for x in self.parameters['x']]
 
     def evaluate_relative_importance_of_shear(self, is_bernoulli=False):
-        self.element.Py = [12 * self.parameters['e'] * a / (
+        self.element.Py = [12 * self.element.E * a / (
                 self.element.G * b * self.element.Li ** 2) for a, b in
                            zip(self.element.Iz, self.element.Asy)]
-        self.element.Pz = [12 * self.parameters['e'] * a / (
+        self.element.Pz = [12 * self.element.E * a / (
                 self.element.G * b * self.element.Li ** 2) for a, b in
                            zip(self.element.Iy, self.element.Asz)]
 
