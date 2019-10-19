@@ -6,6 +6,22 @@ from source.element.Element import Element
 EPSILON = sys.float_info.epsilon
 
 
+def rotate_vector(quaternion, vector):
+    b0 = 2.0 * (quaternion[1] * vector[2] - quaternion[2] * vector[1])
+    b1 = 2.0 * (quaternion[2] * vector[0] - quaternion[0] * vector[2])
+    b2 = 2.0 * (quaternion[0] * vector[1] - quaternion[1] * vector[0])
+
+    c0 = quaternion[1] * b2 - quaternion[2] * b1
+    c1 = quaternion[2] * b0 - quaternion[0] * b2
+    c2 = quaternion[0] * b1 - quaternion[1] * b0
+
+    vector[0] += b0 * quaternion[3] + c0
+    vector[1] += b1 * quaternion[3] + c1
+    vector[2] += b2 * quaternion[3] + c2
+
+    return vector
+
+
 class CRBeamElement(Element):
     def __init__(self, parameters, nodal_coords, domain_size):
         super().__init__(parameters, domain_size)
@@ -53,6 +69,19 @@ class CRBeamElement(Element):
         self.By0 = nodal_coords[1]
         self.Bz0 = nodal_coords[1]
 
+        # element current nodal positions
+        self.Ax = self.Ax0
+        self.Ay = self.Ay0
+        self.Az = self.Az0
+
+        self.Bx = self.Bx0
+        self.By = self.By0
+        self.Bz = self.Bz0
+
+        # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
+        # placeholder for one time step deformation to calculate the increment
+        self.current_deformation = np.zeros(NumberOfNodes * self.Dimension * 2)
+
         # for calculating deformation
         self._QuaternionVEC_A = np.zeros(self.Dimension)
         self._QuaternionVEC_B = np.zeros(self.Dimension)
@@ -77,40 +106,6 @@ class CRBeamElement(Element):
         """
             element mass matrix derivation from Klaus Bernd Sautter's master thesis
         """
-
-    def _calculate_transformation_s(self):
-        L = self.li
-
-        self.S[0, 3] = -1.00
-        self.S[1, 5] = 2.00 / L
-        self.S[2, 4] = -2.00 / L
-        self.S[3, 0] = -1.00
-        self.S[4, 1] = -1.00
-        self.S[4, 4] = 1.00
-        self.S[5, 2] = -1.00
-        self.S[5, 5] = 1.00
-        self.S[6, 3] = 1.00
-        self.S[7, 5] = -2.00 / L
-        self.S[8, 4] = 2.00 / L
-        self.S[9, 0] = 1.00
-        self.S[10, 1] = 1.00
-        self.S[10, 4] = 1.00
-        self.S[11, 2] = 1.00
-        self.S[11, 5] = 1.00
-
-    def _get_local_nodal_forces(self):
-        # element force t
-        pass
-
-    def _get_element_forces(self):
-        # reference length
-        L = self.Li
-        # current length
-        l = self.li
-        # Calculate symmetric deformation mode
-        # phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), vector_difference)
-        phi_s *= 4.00
-        # phi_a =
 
     def get_el_stiffness(self, i):
         """
@@ -183,7 +178,7 @@ class CRBeamElement(Element):
 
         return ke_const
 
-    def _get_local_stiffness_matrix_geometry(self, i):
+    def _get_local_stiffness_matrix_geometry(self):
         """
             geometric part of the total stiffness matrix
         """
@@ -302,7 +297,42 @@ class CRBeamElement(Element):
 
         return kg_const
 
-    def _update_rotation_matrix_local(self, bisectrix, vector_difference):
+    def _calculate_transformation_s(self):
+        L = self.li
+
+        self.S[0, 3] = -1.00
+        self.S[1, 5] = 2.00 / L
+        self.S[2, 4] = -2.00 / L
+        self.S[3, 0] = -1.00
+        self.S[4, 1] = -1.00
+        self.S[4, 4] = 1.00
+        self.S[5, 2] = -1.00
+        self.S[5, 5] = 1.00
+        self.S[6, 3] = 1.00
+        self.S[7, 5] = -2.00 / L
+        self.S[8, 4] = 2.00 / L
+        self.S[9, 0] = 1.00
+        self.S[10, 1] = 1.00
+        self.S[10, 4] = 1.00
+        self.S[11, 2] = 1.00
+        self.S[11, 5] = 1.00
+
+    def _get_local_nodal_forces(self):
+        # element force t
+        pass
+
+    def _get_element_forces(self):
+        # reference length
+        L = self.Li
+        # current length
+        l = self.li
+        # Calculate symmetric deformation mode
+        # phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), vector_difference)
+        phi_s *= 4.00
+        # phi_a =
+
+
+    def _update_rotation_matrix_local(self):
         d_phi_a = np.zeros(self.Dimension)
         d_phi_b = np.zeros(self.Dimension)
         increment_deformation = self._update_increment_deformation()
@@ -374,12 +404,48 @@ class CRBeamElement(Element):
             rotated_ny0[i] = reference_transformation[i, 1]
             rotated_nz0[i] = reference_transformation[i, 2]
 
+        quaternion = [r0, r1, r2, r3]
+        rotated_nx0 = rotate_vector(quaternion, rotated_nx0)
+        rotated_ny0 = rotate_vector(quaternion, rotated_ny0)
+        rotated_nz0 = rotate_vector(quaternion, rotated_nz0)
 
+        rotated_coordinate_system = np.zeros([self.Dimension, self.Dimension])
+        for i in range(self.Dimension):
+            rotated_coordinate_system[i, 0] = rotated_nx0[i]
+            rotated_coordinate_system[i, 1] = rotated_ny0[i]
+            rotated_coordinate_system[i, 2] = rotated_nz0[i]
 
-    def _calculate_transformation_matrix(self, bisectrix, vector_difference):
-        AuxRotationMatrix = self._update_rotation_matrix_local(bisectrix, vector_difference)
+        # rotate basis to element axis + redefine R
+        delta_x = [self.Ax - self.Ax0, self.Ay - self.Ay0, self.Az - self.Az0]
+        vector_norm = np.linalg.norm(delta_x)
+
+        if vector_norm > EPSILON:
+            delta_x /= vector_norm
+
+        bisectrix = rotated_nx0 + delta_x
+        vector_norm = np.linalg.norm(bisectrix)
+
+        if vector_norm > EPSILON:
+            bisectrix /= vector_norm
+
+        n_xyz = np.zeros([self.Dimension, self.Dimension])
+
+        for i in range(0, self.Dimension):
+            n_xyz[i, 0] = -rotated_coordinate_system[i, 0]
+            n_xyz[i, 1] = rotated_coordinate_system[i, 1]
+            n_xyz[i, 2] = rotated_coordinate_system[i, 2]
+
+        Identity = np.identity(self.Dimension)
+        Identity -= 2.0 * np.outer(bisectrix, bisectrix)
+
+        n_xyz = np.prod(Identity, n_xyz)
+        return n_xyz
+
+    def _calculate_transformation_matrix(self):
+        AuxRotationMatrix = self._update_rotation_matrix_local()
         RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
-        self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
+        RotationMatrix = self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
+        return RotationMatrix
 
     def _assemble_small_in_big_matrix(self, small_matrix, big_matrix):
         numerical_limit = EPSILON
@@ -392,13 +458,16 @@ class CRBeamElement(Element):
                         big_matrix[i + k, j + k] = small_matrix[i, j]
         return big_matrix
 
-    def _update_increment_deformation(self):
-        pass
+    def _update_increment_deformation(self, new_deformation):
+        """
+         This function updates incremental deformation w.r.t. to current and previous deformations
+        """
+        increment_deformation = new_deformation - self.current_deformation
+        self.current_deformation = new_deformation
+        return increment_deformation
 
     def _calculate_initial_local_cs(self):
         direction_vector_x = np.zeros(self.Dimension)
-        direction_vector_y = np.zeros(self.Dimension)
-        direction_vector_z = np.zeros(self.Dimension)
         reference_coordinates = np.zeros(self.LocalSize)
 
         reference_coordinates[0] = self.Ax0
