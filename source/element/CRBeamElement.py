@@ -53,32 +53,21 @@ class CRBeamElement(Element):
         self.Pz = None
 
         # element properties
-        NumberOfNodes = 2
+        self.NumberOfNodes = 2
         self.Dimension = 3
-        self.LocalSize = NumberOfNodes * self.Dimension
+        self.LocalSize = self.NumberOfNodes * self.Dimension
         self.ElementSize = self.LocalSize * 2
 
         # element geometry Node A, Node B
-        self.Ax0 = nodal_coords[0]
-        self.Ay0 = nodal_coords[0]
-        self.Az0 = nodal_coords[0]
-
-        self.Bx0 = nodal_coords[1]
-        self.By0 = nodal_coords[1]
-        self.Bz0 = nodal_coords[1]
+        self.ReferenceCoords = nodal_coords
 
         # element current nodal positions
-        self.Ax = self.Ax0
-        self.Ay = self.Ay0
-        self.Az = self.Az0
-
-        self.Bx = self.Bx0
-        self.By = self.By0
-        self.Bz = self.Bz0
+        self.CurrentCoords = self.ReferenceCoords
 
         # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
         # placeholder for one time step deformation to calculate the increment
         self.current_deformation = np.zeros(self.ElementSize)
+        self.previous_deformation = np.zeros(self.ElementSize)
 
         self.Iteration = 0
 
@@ -135,8 +124,8 @@ class CRBeamElement(Element):
         L = self._calculate_current_length()
 
         # shear coefficients
-        Psi_y = self._calculate_psi(self.Iy, self.Az)
-        Psi_z = self._calculate_psi(self.Iz, self.Ay)
+        Psi_y = self._calculate_psi(self.Iy, self.Asz)
+        Psi_z = self._calculate_psi(self.Iz, self.Asy)
 
         ke_const = np.zeros([self.ElementSize, self.ElementSize])
 
@@ -315,8 +304,8 @@ class CRBeamElement(Element):
 
     def _calculate_deformation_stiffness(self):
         L = self.Li
-        Psi_y = self._calculate_psi(self.Iy, self.Az)
-        Psi_z = self._calculate_psi(self.Iz, self.Ay)
+        Psi_y = self._calculate_psi(self.Iy, self.Asz)
+        Psi_z = self._calculate_psi(self.Iz, self.Asy)
 
         self.Kd[0, 0] = self.G * self.It / L
         self.Kd[1, 1] = self.E * self.Iy / L
@@ -410,7 +399,7 @@ class CRBeamElement(Element):
         for i in range(3):
             deformation_modes_total_v[i] = phi_s[i]
         for i in range(2):
-            deformation_modes_total_v[i + 4] = phi_s[i + 1]
+            deformation_modes_total_v[i + 4] = phi_a[i + 1]
 
         self._calculate_deformation_stiffness()
         element_forces_t = np.prod(self.Kd, deformation_modes_total_v)
@@ -501,7 +490,9 @@ class CRBeamElement(Element):
             rotated_coordinate_system[i, 2] = rotated_nz0[i]
 
         # rotate basis to element axis + redefine R
-        delta_x = [self.Ax - self.Ax0, self.Ay - self.Ay0, self.Az - self.Az0]
+        delta_x = np.zeros(self.Dimension)
+        for i in range(self.Dimension):
+            delta_x[i] = self.CurrentCoords[self.Dimension + i] - self.CurrentCoords[i]
         vector_norm = np.linalg.norm(delta_x)
 
         if vector_norm > EPSILON:
@@ -543,27 +534,19 @@ class CRBeamElement(Element):
                         big_matrix[i + k, j + k] = small_matrix[i, j]
         return big_matrix
 
-    def _update_increment_deformation(self, new_deformation):
+    def _update_increment_deformation(self):
         """
          This function updates incremental deformation w.r.t. to current and previous deformations
         """
-        increment_deformation = new_deformation - self.current_deformation
-        self.current_deformation = new_deformation
+        increment_deformation = self.current_deformation - self.current_deformation
         return increment_deformation
 
     def _calculate_initial_local_cs(self):
         direction_vector_x = np.zeros(self.Dimension)
-        reference_coordinates = np.zeros(self.LocalSize)
-
-        reference_coordinates[0] = self.Ax0
-        reference_coordinates[1] = self.Ay0
-        reference_coordinates[2] = self.Az0
-        reference_coordinates[3] = self.Bx0
-        reference_coordinates[4] = self.By0
-        reference_coordinates[5] = self.Bz0
+        self.ReferenceCoords = np.zeros(self.LocalSize)
 
         for i in range(self.Dimension):
-            direction_vector_x[i] = (reference_coordinates[i + self.Dimension] - reference_coordinates[i])
+            direction_vector_x[i] = (self.ReferenceCoords[i + self.Dimension] - self.ReferenceCoords[i])
 
         temp_matrix = np.zeros([self.Dimension, self.Dimension])
         # no user defined local axis 2 input available
@@ -622,9 +605,9 @@ class CRBeamElement(Element):
         dv = self.current_deformation[2] - self.current_deformation[3]
         dw = self.current_deformation[4] - self.current_deformation[5]
 
-        dx = self.Ax0 - self.Bx0
-        dy = self.Ay0 - self.By0
-        dz = self.Az0 - self.Bz0
+        dx = self.ReferenceCoords[0, 0] - self.ReferenceCoords[1, 0]
+        dy = self.ReferenceCoords[0, 1] - self.ReferenceCoords[1, 1]
+        dz = self.ReferenceCoords[0, 2] - self.ReferenceCoords[1, 2]
 
         length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
         return length
