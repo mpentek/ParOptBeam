@@ -1,7 +1,9 @@
 import numpy as np
-import sys.float_info.epsilon as EPSILON
+import sys
 
 from source.element.Element import Element
+
+EPSILON = sys.float_info.epsilon
 
 
 class CRBeamElement(Element):
@@ -42,10 +44,20 @@ class CRBeamElement(Element):
         self.LocalSize = NumberOfNodes * self.Dimension
         self.ElementSize = self.LocalSize * 2
 
-        # element geometry
-        self.x0 = nodal_coords[0]
-        self.y0 = nodal_coords[0]
-        self.z0 = nodal_coords[0]
+        # element geometry Node A, Node B
+        self.Ax0 = nodal_coords[0]
+        self.Ay0 = nodal_coords[0]
+        self.Az0 = nodal_coords[0]
+
+        self.Bx0 = nodal_coords[1]
+        self.By0 = nodal_coords[1]
+        self.Bz0 = nodal_coords[1]
+
+        # for calculating deformation
+        self._QuaternionVEC_A = np.zeros(self.Dimension)
+        self._QuaternionVEC_B = np.zeros(self.Dimension)
+        self._QuaternionSCA_A = 1.0
+        self._QuaternionSCA_B = 1.0
 
         # nodal forces
         self.qe = np.zeros(self.ElementSize)
@@ -65,21 +77,6 @@ class CRBeamElement(Element):
         """
             element mass matrix derivation from Klaus Bernd Sautter's master thesis
         """
-
-    def _calculate_transformation_matrix(self, bisectrix, vector_difference):
-        AuxRotationMatrix = self.update_rotation_matrix_local(bisectrix, vector_difference)
-        RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
-        self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
-
-    def _assemble_small_in_big_matrix(self, small_matrix, big_matrix):
-        numerical_limit = EPSILON
-        for k in range(0, self.ElementSize, self.Dimension):
-            for i in range(self.Dimension):
-                for j in range(self.Dimension):
-                    if abs(small_matrix[i, j]) <= numerical_limit:
-                        big_matrix[i + k, j + k] = 0.0
-                    else:
-                        big_matrix[i + k, j + k] = small_matrix[i, j]
 
     def _calculate_transformation_s(self):
         L = self.li
@@ -304,3 +301,164 @@ class CRBeamElement(Element):
         kg_const[11, 11] = kg_const[4, 4]
 
         return kg_const
+
+    def _update_rotation_matrix_local(self, bisectrix, vector_difference):
+        d_phi_a = np.zeros(self.Dimension)
+        d_phi_b = np.zeros(self.Dimension)
+        increment_deformation = self._update_increment_deformation()
+        for i in range(0, self.Dimension):
+            d_phi_a[i] = increment_deformation[i + 3]
+            d_phi_b[i] = increment_deformation[i + 9]
+
+        # calculating quaternions
+        drA_vec = 0.50 * d_phi_a
+        drB_vec = 0.50 * d_phi_b
+
+        drA_sca = 0.00
+        drB_sca = 0.00
+
+        for i in range(0, self.Dimension):
+            drA_sca += drA_vec[i] * drA_vec[i]
+            drB_sca += drB_vec[i] * drB_vec[i]
+
+        drA_sca = np.sqrt(1.00 - drA_sca)
+        drB_sca = np.sqrt(1.00 - drB_sca)
+
+        # Node A
+        temp_vec = self._QuaternionVEC_A
+        temp_scalar = self._QuaternionSCA_A
+        self._QuaternionVEC_A = drA_sca * temp_scalar
+        for i in range(self.Dimension):
+            self._QuaternionSCA_A -= drA_vec[i] * temp_vec[i]
+
+        self._QuaternionVEC_A = drA_sca * temp_vec
+        self._QuaternionVEC_A += temp_scalar * drA_vec
+        self._QuaternionVEC_A += np.cross(drA_vec, temp_vec)
+
+        # Node B
+        temp_vec = self._QuaternionVEC_B
+        temp_scalar = self._QuaternionSCA_B
+        self._QuaternionVEC_B = drB_sca * temp_scalar
+        for i in range(self.Dimension):
+            self._QuaternionSCA_B -= drB_vec[i] * temp_vec[i]
+
+        self._QuaternionVEC_B = drB_sca * temp_vec + temp_scalar * drB_vec + np.cross(drB_vec, temp_vec)
+
+        # scalar part of difference quaternion
+        scalar_diff = (self._QuaternionSCA_A + self._QuaternionSCA_B) * (self._QuaternionSCA_A + self._QuaternionSCA_B)
+        temp_vec = self._QuaternionVEC_A + self._QuaternionVEC_B
+        scalar_diff += np.linalg.norm(temp_vec) * np.linalg.norm(temp_vec)
+        scalar_diff = 0.5 * np.sqrt(scalar_diff)
+
+        # mean rotation quaternion
+        mean_rotation_scalar = (self._QuaternionSCA_A + self._QuaternionSCA_B) * 0.50 / scalar_diff
+        mean_rotation_vector = (self._QuaternionVEC_A + self._QuaternionVEC_B) * 0.50 / scalar_diff
+
+        # vector part of difference quaternion
+        vector_diff = (self._QuaternionSCA_A * self._QuaternionVEC_B) - (self._QuaternionSCA_A * self._QuaternionVEC_A)
+        vector_diff += np.cross(self._QuaternionVEC_A, self._QuaternionVEC_B)
+
+        vector_diff = 0.5 * vector_diff / scalar_diff
+        # rotate initial element basis
+        r0 = mean_rotation_scalar
+        r1 = mean_rotation_vector[0]
+        r2 = mean_rotation_vector[1]
+        r3 = mean_rotation_vector[2]
+        reference_transformation = self._calculate_initial_local_cs()
+        rotated_nx0 = np.zeros(self.Dimension)
+        rotated_ny0 = np.zeros(self.Dimension)
+        rotated_nz0 = np.zeros(self.Dimension)
+
+        for i in range(self.Dimension):
+            rotated_nx0[i] = reference_transformation[i, 0]
+            rotated_ny0[i] = reference_transformation[i, 1]
+            rotated_nz0[i] = reference_transformation[i, 2]
+
+
+
+    def _calculate_transformation_matrix(self, bisectrix, vector_difference):
+        AuxRotationMatrix = self._update_rotation_matrix_local(bisectrix, vector_difference)
+        RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
+
+    def _assemble_small_in_big_matrix(self, small_matrix, big_matrix):
+        numerical_limit = EPSILON
+        for k in range(0, self.ElementSize, self.Dimension):
+            for i in range(self.Dimension):
+                for j in range(self.Dimension):
+                    if abs(small_matrix[i, j]) <= numerical_limit:
+                        big_matrix[i + k, j + k] = 0.0
+                    else:
+                        big_matrix[i + k, j + k] = small_matrix[i, j]
+        return big_matrix
+
+    def _update_increment_deformation(self):
+        pass
+
+    def _calculate_initial_local_cs(self):
+        direction_vector_x = np.zeros(self.Dimension)
+        direction_vector_y = np.zeros(self.Dimension)
+        direction_vector_z = np.zeros(self.Dimension)
+        reference_coordinates = np.zeros(self.LocalSize)
+
+        reference_coordinates[0] = self.Ax0
+        reference_coordinates[1] = self.Ay0
+        reference_coordinates[2] = self.Az0
+        reference_coordinates[3] = self.Bx0
+        reference_coordinates[4] = self.By0
+        reference_coordinates[5] = self.Bz0
+
+        for i in range(self.Dimension):
+            direction_vector_x[i] = (reference_coordinates[i + self.Dimension] - reference_coordinates[i])
+
+        temp_matrix = np.zeros([self.Dimension, self.Dimension])
+        # no user defined local axis 2 input available
+        theta_custom = 0.0
+        global_z = np.zeros(self.Dimension)
+        global_z[2] = 1.0
+
+        v2 = np.zeros(self.Dimension)
+        v3 = np.zeros(self.Dimension)
+
+        vector_norm = np.linalg.norm(direction_vector_x)
+        if vector_norm > EPSILON:
+            direction_vector_x /= vector_norm
+
+        if np.linalg.norm(direction_vector_x[2] - 1.00) < EPSILON:
+            v2[1] = 1.0
+            v3[0] = -1.0
+        elif np.linalg.norm(direction_vector_x[2] + 1.00) < EPSILON:
+            v2[1] = 1.0
+            v3[0] = 1.0
+        else:
+            v2 = np.cross(global_z, direction_vector_x)
+            v3 = np.cross(direction_vector_x, v2)
+
+        # manual rotation around the beam axis
+        if np.linalg.norm(theta_custom) > EPSILON:
+            nz_temp = v3
+            ny_temp = v2
+            cos_theta = np.cos(theta_custom)
+            sin_theta = np.sin(theta_custom)
+
+            v2 = ny_temp * cos_theta + nz_temp * sin_theta
+            vector_norm = np.linalg.norm(v2)
+
+            if vector_norm > EPSILON:
+                v2 /= vector_norm
+
+            v3 = nz_temp * cos_theta - ny_temp * sin_theta
+            vector_norm = np.linalg.norm(v3)
+
+            if vector_norm > EPSILON:
+                v3 /= vector_norm
+
+            for i in range(self.Dimension):
+                temp_matrix[i, 0] = direction_vector_x[i]
+                temp_matrix[i, 1] = v2[i]
+                temp_matrix[i, 2] = v3[i]
+
+        reference_transformation = np.zeros([self.ElementSize, self.ElementSize])
+        reference_transformation = self._assemble_small_in_big_matrix(temp_matrix, reference_transformation)
+
+        return reference_transformation

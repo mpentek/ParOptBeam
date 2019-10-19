@@ -6,7 +6,8 @@ parameters = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10.}
 
 
 def test():
-    element = CRBeamElement(parameters, '3D')
+    coords = [[1, 0, 0],[2, 0, 0]]
+    element = CRBeamElement(parameters, coords, '3D')
     element.A = [5., 5.]
     element.Asy = [2., 2.]
     element.Asz = [1., 1.]
