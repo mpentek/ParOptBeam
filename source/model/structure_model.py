@@ -103,19 +103,6 @@ class StraightBeam(object):
                 'c_k': val["outrigger_stiffness"]
             })
 
-        # TODO: later probably move to an initialize function
-
-        # running coordinate x - in the middle of each beam element
-        self.parameters['x'] = [(x + 0.5) / self.parameters['n_el'] * self.parameters['lx']
-                                for x in list(range(self.parameters['n_el']))]
-
-        # # length of one element - assuming an equidistant grid
-        self.parameters['lx_i'] = self.parameters['lx'] / \
-                                  self.parameters['n_el']
-
-        # define element type
-        self.element = TimoshenkoBeamElement(self.parameters, self.domain_size)
-
         # geometric
         self.initialize_user_defined_geometric_parameters()
         self.evaluate_torsional_inertia()
@@ -123,7 +110,31 @@ class StraightBeam(object):
         # relative importance of the shear deformation to the bending one
         self.evaluate_relative_importance_of_shear()
 
-        length_coords = self.element.Li * \
+        # define element type
+        self.element_params = {}
+        self.elements = []
+
+        # initialize empty place holders for point stiffness and mass entries
+        self.point_stiffness = {'idxs': [], 'vals': []}
+        self.point_mass = {'idxs': [], 'vals': []}
+
+        self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
+        self.apply_bcs()
+
+        # after initial setup
+        self.calculate_global_matrices()
+        self.identify_decoupled_eigenmodes()
+
+    def initialize_elements(self):
+        # running coordinate x - in the middle of each beam element
+        self.parameters['x'] = [(x + 0.5) / self.parameters['n_el'] * self.parameters['lx']
+                                for x in list(range(self.parameters['n_el']))]
+
+        # # length of one element - assuming an equidistant grid
+        self.parameters['lx_i'] = self.parameters['lx'] / self.parameters['n_el']
+
+
+        length_coords = self.element.L * \
                         np.arange(self.parameters['n_el'] + 1)
 
         self.nodal_coordinates = {"x0": length_coords,
@@ -142,16 +153,6 @@ class StraightBeam(object):
 
         self.n_nodes = self.parameters['n_el'] + 1
 
-        # initialize empty place holders for point stiffness and mass entries
-        self.point_stiffness = {'idxs': [], 'vals': []}
-        self.point_mass = {'idxs': [], 'vals': []}
-
-        self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
-        self.apply_bcs()
-
-        # after initial setup
-        self.calculate_global_matrices()
-        self.identify_decoupled_eigenmodes()
 
     def apply_elastic_bcs(self):
         # handle potential elastic BCs
@@ -226,9 +227,9 @@ class StraightBeam(object):
         # point stiffness and point masses at respective dof for the outtrigger 
         for values in self.parameters['intervals']:
             if values['bounds'][1] == "End":
-                outtriger_id = int(self.parameters['lx'] / self.element.Li)
+                outtriger_id = int(self.parameters['lx'] / self.element.L)
             else:
-                outtriger_id = int(values['bounds'][1] / self.element.Li)
+                outtriger_id = int(values['bounds'][1] / self.element.L)
             id_val = outtriger_id * DOFS_PER_NODE[self.domain_size]
             # affects only diagonal entries and for transilation al DOF and not rotational DOF
             for i in range(int(np.ceil(DOFS_PER_NODE[self.domain_size] / 2))):
@@ -241,35 +242,37 @@ class StraightBeam(object):
     def initialize_user_defined_geometric_parameters(self):
         # geometric
         # characteristics lengths
+
         self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
             x, 'c_ly') for x in self.parameters['x']]
         self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
             x, 'c_lz') for x in self.parameters['x']]
         self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
-        # area
-        self.element.A = [self.evaluate_characteristic_on_interval(
-            x, 'c_a') for x in self.parameters['x']]
-        # effective area of shear
-        self.element.Asy = [self.evaluate_characteristic_on_interval(
-            x, 'c_a_sy') for x in self.parameters['x']]
-        self.element.Asz = [self.evaluate_characteristic_on_interval(
-            x, 'c_a_sz') for x in self.parameters['x']]
-        # second moment of inertia
-        self.element.Iy = [self.evaluate_characteristic_on_interval(
-            x, 'c_iy') for x in self.parameters['x']]
-        self.element.Iz = [self.evaluate_characteristic_on_interval(
-            x, 'c_iz') for x in self.parameters['x']]
-        # torsion constant
-        self.element.It = [self.evaluate_characteristic_on_interval(
-            x, 'c_it') for x in self.parameters['x']]
+        # element properties
+        for x in self.parameters['x']:
+            # area
+            self.element_params['a'] = self.evaluate_characteristic_on_interval(x, 'c_a')
+
+            # effective area of shear
+            self.element_params['asy'] = self.evaluate_characteristic_on_interval(x, 'c_a_sy')
+            self.element_params['asz'] = self.evaluate_characteristic_on_interval(x, 'c_a_sz')
+            # second moment of inertia
+            self.element_params['iy'] = self.evaluate_characteristic_on_interval(x, 'c_iy')
+            self.element_params['iz'] = self.evaluate_characteristic_on_interval(x, 'c_iz')
+            # torsion constant
+            self.element_params['it'] = self.evaluate_characteristic_on_interval(x, 'c_it')
+            self.element_params['py'] = [12 * self.E * self.element_params['iz'] / (
+                    G * self.element_params['asy'] * self.L ** 2)
+
+
 
     def evaluate_relative_importance_of_shear(self, is_bernoulli=False):
         self.element.Py = [12 * self.element.E * a / (
-                self.element.G * b * self.element.Li ** 2) for a, b in
+                self.element.G * b * self.element.L ** 2) for a, b in
                            zip(self.element.Iz, self.element.Asy)]
         self.element.Pz = [12 * self.element.E * a / (
-                self.element.G * b * self.element.Li ** 2) for a, b in
+                self.element.G * b * self.element.L ** 2) for a, b in
                            zip(self.element.Iy, self.element.Asz)]
 
         if is_bernoulli:
@@ -286,7 +289,7 @@ class StraightBeam(object):
         self.parameters['m_tot'] = 0.0
         for i in range(len(self.parameters['x'])):
             self.parameters['m_tot'] += self.element.A[i] * \
-                                        self.element.rho * self.element.Li
+                                        self.element.rho * self.element.L
         # TODO: Add outtrigger masses to this entry
         if print_to_console:
             print('CURRENT:')
@@ -410,10 +413,10 @@ class StraightBeam(object):
         '''
         for val in self.parameters['intervals']:
             if "End" not in val['bounds']:
-                if val['bounds'][0] <= running_coord and running_coord < val['bounds'][1]:
+                if val['bounds'][0] <= running_coord < val['bounds'][1]:
                     return evaluate_polynomial(running_coord - val['bounds'][0], val[characteristic_identifier])
             elif "End" in val['bounds']:
-                if val['bounds'][0] <= running_coord and running_coord <= self.parameters['lx']:
+                if val['bounds'][0] <= running_coord <= self.parameters['lx']:
                     return evaluate_polynomial(running_coord - val['bounds'][0], val[characteristic_identifier])
 
     def plot_model_properties(self, pdf_report, display_plot, print_to_console=False):
