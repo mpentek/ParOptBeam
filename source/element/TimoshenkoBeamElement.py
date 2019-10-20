@@ -7,6 +7,7 @@ class TimoshenkoBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, domain_size):
         super().__init__(material_params, element_params, nodal_coords, domain_size)
 
+        self.Ip = element_params['ip']
         self.Py = element_params['py']
         self.Pz = element_params['pz']
         
