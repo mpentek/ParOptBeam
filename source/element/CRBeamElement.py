@@ -80,8 +80,8 @@ class CRBeamElement(Element):
         StiffnessMatrix += self._get_local_stiffness_matrix_material()
         StiffnessMatrix += self._get_local_stiffness_matrix_geometry()
         # transformation M = T * M * trans(T)
-        aux_matrix = np.dot(TransformationMatrix, StiffnessMatrix)
-        StiffnessMatrix = np.dot(aux_matrix, np.transpose(TransformationMatrix))
+        aux_matrix = np.matmul(TransformationMatrix, StiffnessMatrix)
+        StiffnessMatrix = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
 
         return StiffnessMatrix
 
@@ -487,7 +487,7 @@ class CRBeamElement(Element):
         Identity -= 2.0 * np.outer(self.Bisectrix, self.Bisectrix)
 
         self.LocalRotationMatrix = n_xyz
-        n_xyz = np.dot(Identity, n_xyz)
+        n_xyz = np.matmul(Identity, n_xyz)
         return n_xyz
 
     def _calculate_transformation_matrix(self):
