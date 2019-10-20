@@ -24,39 +24,7 @@ def rotate_vector(quaternion, vector):
 
 class CRBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, domain_size):
-        super().__init__(material_params, domain_size)
-
-        # material properties
-        self.E = self.parameters['e']
-        self.rho = self.parameters['rho']
-        self.nu = self.parameters['nu']
-        self.G = self.parameters['g'] = self.E / 2 / (1 + self.nu)
-
-        # area
-        self.A = element_params['a']
-        # effective area of shear
-        self.Asy = element_params['asy']
-        self.Asz = element_params['asz']
-
-        # second moment of inertia
-        self.Iy = element_params['iy']
-        self.Iz = element_params['iz']
-        # torsion constant J
-        self.It = element_params['it']
-
-        # element properties
-        self.NumberOfNodes = 2
-        self.Dimension = 3
-        self.LocalSize = self.NumberOfNodes * self.Dimension
-        self.ElementSize = self.LocalSize * 2
-
-        # element geometry Node A, Node B
-        self.ReferenceCoords = nodal_coords.reshape(self.LocalSize)
-
-        # element current nodal positions
-        self.CurrentCoords = self.ReferenceCoords
-        # reference length of one element
-        self.L = self._calculate_reference_length()
+        super().__init__(material_params, element_params, nodal_coords, domain_size)
 
         # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
         # placeholder for one time step deformation to calculate the increment
@@ -70,8 +38,7 @@ class CRBeamElement(Element):
 
         # transformation matrix
         self.S = np.zeros([self.ElementSize, self.LocalSize])
-        self.LocalRotationMatrix = np.zeros(self.Dimension)
-        self.TransformationMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        self.LocalRotationMatrix = np.zeros([self.Dimension, self.Dimension])
         self.Bisectrix = np.zeros(self.Dimension)
         self.VectorDifferences = np.zeros(self.Dimension)
 
@@ -88,25 +55,35 @@ class CRBeamElement(Element):
         msg += "Element Size: " + str(self.ElementSize) + "\n"
         print(msg)
 
-    def get_el_mass(self, i):
-        """
-            element mass matrix derivation from Klaus Bernd Sautter's master thesis
-        """
+    def get_element_mass_matrix(self):
+        MassMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        total_mass = self.A * self.L * self.rho
+        temp = 0.5 * total_mass
+        # translational mass
+        for i in range(self.NumberOfNodes):
+            for j in range(self.Dimension):
+                index = i * (self.Dimension * 2) + j
+                MassMatrix[index, index] = temp
+        return MassMatrix
 
-    def get_el_stiffness(self, i):
-        """
-            element stiffness matrix derivation from Klaus Bernd Sautter's master thesis
-        """
-        pass
-
-    def get_left_hand_side(self):
+    def get_element_stiffness_matrix(self):
         if self.Iteration == 0:
-            self.TransformationMatrix = self._calculate_initial_local_cs()
+            TransformationMatrix = self._calculate_initial_local_cs()
         else:
-            self.TransformationMatrix = self._calculate_transformation_matrix()
+            TransformationMatrix = self._calculate_transformation_matrix()
 
         # calculate local nodal forces
         self._calculate_local_nodal_forces()
+        # resizing the matrices + create memory for LHS
+        StiffnessMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        # creating LHS
+        StiffnessMatrix += self._get_local_stiffness_matrix_material()
+        StiffnessMatrix += self._get_local_stiffness_matrix_geometry()
+        # transformation M = T * M * trans(T)
+        aux_matrix = np.dot(TransformationMatrix, StiffnessMatrix)
+        StiffnessMatrix = np.dot(aux_matrix, np.transpose(TransformationMatrix))
+
+        return StiffnessMatrix
 
     def _get_local_stiffness_matrix_material(self):
         """
@@ -404,7 +381,6 @@ class CRBeamElement(Element):
         d_phi_a = np.zeros(self.Dimension)
         d_phi_b = np.zeros(self.Dimension)
         increment_deformation = self._update_increment_deformation()
-        print(increment_deformation)
         for i in range(0, self.Dimension):
             d_phi_a[i] = increment_deformation[i + 3]
             d_phi_b[i] = increment_deformation[i + 9]
@@ -510,6 +486,7 @@ class CRBeamElement(Element):
         Identity = np.identity(self.Dimension)
         Identity -= 2.0 * np.outer(self.Bisectrix, self.Bisectrix)
 
+        self.LocalRotationMatrix = n_xyz
         n_xyz = np.dot(Identity, n_xyz)
         return n_xyz
 
@@ -585,35 +562,24 @@ class CRBeamElement(Element):
             if vector_norm > EPSILON:
                 v3 /= vector_norm
 
-            for i in range(self.Dimension):
-                temp_matrix[i, 0] = direction_vector_x[i]
-                temp_matrix[i, 1] = v2[i]
-                temp_matrix[i, 2] = v3[i]
+        for i in range(self.Dimension):
+            temp_matrix[i, 0] = direction_vector_x[i]
+            temp_matrix[i, 1] = v2[i]
+            temp_matrix[i, 2] = v3[i]
 
         reference_transformation = np.zeros([self.ElementSize, self.ElementSize])
         reference_transformation = self._assemble_small_in_big_matrix(temp_matrix, reference_transformation)
 
         return reference_transformation
 
-    def _calculate_reference_length(self):
-        dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
-        dy = self.ReferenceCoords[2] - self.ReferenceCoords[3]
-        dz = self.ReferenceCoords[4] - self.ReferenceCoords[5]
-        length = np.sqrt(dx * dx + dy * dy + dz * dz)
-        return length
-
     def _calculate_current_length(self):
         du = self.current_deformation[0] - self.current_deformation[1]
         dv = self.current_deformation[2] - self.current_deformation[3]
         dw = self.current_deformation[4] - self.current_deformation[5]
-
-        print("====================================")
-        print(self.ReferenceCoords)
 
         dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
         dy = self.ReferenceCoords[3] - self.ReferenceCoords[3]
         dz = self.ReferenceCoords[4] - self.ReferenceCoords[5]
 
         length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
-        print(length)
         return length
