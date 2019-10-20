@@ -1,29 +1,25 @@
 from source.element.CRBeamElement import CRBeamElement
 
-parameters = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10.}
+import numpy as np
 
-# # length of one element - assuming an equidistant grid
+material_params = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10.}
+element_params = {'a': 5., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
 
 def test():
-    coords = [[1, 0, 0],[2, 0, 0]]
-    element = CRBeamElement(parameters, coords, '3D')
-    element.A = [5., 5.]
-    element.Asy = [2., 2.]
-    element.Asz = [1., 1.]
-    element.Iy = [10., 10.]
-    element.Iz = [20., 20.]
-    element.It = [20., 30.]
+    coords = np.array([[1., 0., 0.], [2., 0., 0.]])
+    element = CRBeamElement(material_params, element_params, coords, '3D')
 
-    element.Py = [12 * element.E * a / (
-            element.G * b * element.Li ** 2) for a, b in
-                       zip(element.Iz, element.Asy)]
-    element.Pz = [12 * element.E * a / (
-            element.G * b * element.Li ** 2) for a, b in
-                       zip(element.Iy, element.Asz)]
+    element._calculate_local_nodal_forces()
+    element.TransformationMatrix = element._calculate_initial_local_cs()
 
-    Kc = element._get_local_stiffness_matrix_material(0)
-    Kg = element._get_local_stiffness_matrix_geometry(0)
+    element.Iteration = 1
+    element.previous_deformation = element.current_deformation
+    element.current_deformation = np.array([0.1, 0.05, 0.04, 0.0, 0.0, 0.0, 0.2, 0.1, 0.03, 0.0, 0.0, 0.0])
+    element.TransformationMatrix = element._calculate_transformation_matrix()
+
+    Kc = element._get_local_stiffness_matrix_material()
+    Kg = element._get_local_stiffness_matrix_geometry()
     print(Kc)
     print(Kg)
 
