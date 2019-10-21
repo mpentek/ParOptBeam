@@ -316,8 +316,8 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_iy = (e.Iy for e in self.model.elements)
-        initial_a_sz = (e.Asz for e in self.model.elements)
+        initial_iy = list(e.Iy for e in self.model.elements)
+        initial_a_sz = list(e.Asz for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_y_geometric_stiffness_objective_function,
@@ -376,8 +376,8 @@ class OptimizableStraightBeam(object):
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
 
-        initial_iz = (e.Iz for e in self.model.elements)
-        initial_a_sy = (e.Asy for e in self.model.elements)
+        initial_iz = list(e.Iz for e in self.model.elements)
+        initial_a_sy = list(e.Asy for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_z_geometric_stiffness_objective_function,
@@ -437,8 +437,8 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_it = (e.It for e in self.model.elements)
-        initial_ip = (e.Ip for e in self.model.elements)
+        initial_it = list(e.It for e in self.model.elements)
+        initial_ip = list(e.Ip for e in self.model.elements)
 
         # NOTE: single parameter optimization seems not to be enough
 
