@@ -210,13 +210,12 @@ class OptimizableStraightBeam(object):
 
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
-        self.model.element.E = multiplier_fctr * initial_e
+        for e in self.model.elements:
+            e.E = multiplier_fctr * initial_e
 
-        # NOTE: do not forget to update G and further dependencies
-        self.model.element.G = self.model.element.E / \
-            2 / (1+self.model.element.nu)
-        self.model.evaluate_relative_importance_of_shear()
-
+            # NOTE: do not forget to update G and further dependencies
+            e.G = e.E / 2 / (1 + e.nu)
+            e.evaluate_relative_importance_of_shear()
 
         # re-evaluate
         self.model.calculate_global_matrices()
@@ -232,14 +231,14 @@ class OptimizableStraightBeam(object):
 
         corr_fctr = target_total_mass / self.model.parameters['m_tot']
 
-        self.model.element.rho *= corr_fctr
+        self.model.parameters['rho'] *= corr_fctr
 
         # re-calculate and print to console
         print('AFTER TUNED DENSITY')
         self.model.calculate_total_mass(True)
 
     def adjust_e_modul_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_e = self.model.element.E
+        initial_e = self.model.parameters['e']
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.generic_material_stiffness_objective_function,
@@ -260,10 +259,10 @@ class OptimizableStraightBeam(object):
             print()
 
     def adjust_longitudinal_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_a = self.model.element.A
+        initial_a = (e.A for e in self.model.elements)
         # assuming a linear dependency of shear areas
-        initial_a_sy = self.model.element.Asy
-        initial_a_sz = self.model.element.Asz
+        initial_a_sy = (e.Asy for e in self.model.elements)
+        initial_a_sz = (e.Asz for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.longitudinal_geometric_stiffness_objective_function,
@@ -291,15 +290,14 @@ class OptimizableStraightBeam(object):
 
     def longitudinal_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_a, initial_a_sy, initial_a_sz, multiplier_fctr):
 
-        self.element.A = [multiplier_fctr * val for val in initial_a]
-        # assuming a linear dependency of shear areas
-        self.element.Asy = [
-            multiplier_fctr * val for val in initial_a_sy]
-        self.element.Asz = [
-            multiplier_fctr * val for val in initial_a_sz]
+        for e in self.model.elements:
+            e.A = multiplier_fctr * initial_a[e.index]
+            # assuming a linear dependency of shear areas
+            e.Asy = multiplier_fctr * initial_a_sy[e.index]
+            e.Asz = multiplier_fctr * initial_a_sz[e.index]
 
-        # NOTE: do not forget to update further dependencies
-        self.model.evaluate_relative_importance_of_shear()
+            # NOTE: do not forget to update further dependencies
+            e.evaluate_relative_importance_of_shear()
 
         # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
         # TODO:
@@ -318,8 +316,8 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_iy = self.model.element.Iy
-        initial_a_sz = self.model.element.Asz
+        initial_iy = (e.Iy for e in self.model.elements)
+        initial_a_sz = (e.Asz for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_y_geometric_stiffness_objective_function,
@@ -327,13 +325,13 @@ class OptimizableStraightBeam(object):
                                        target_mode,
                                        initial_iy, 
                                        initial_a_sz)
-        initi_guess = (1.0, 1.0)
+        init_guess = (1.0, 1.0)
 
         bnds_iy = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/8,8)
         bnds_a_sz = (0.4,1.0)#(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
 
         minimization_result = minimize(optimizable_function,
-                                              initi_guess,
+                                              init_guess,
                                               method='L-BFGS-B',#'SLSQP',#
                                               bounds=(bnds_iy,bnds_a_sz))
 
@@ -356,13 +354,13 @@ class OptimizableStraightBeam(object):
 
     def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, initial_a_sz, multiplier_fctr):
 
-        self.model.element.Iy = [
-            multiplier_fctr[0] * val for val in initial_iy]
-        self.model.element.Asz = [
-            multiplier_fctr[1] * val for val in initial_a_sz]
-        # NOTE: do not forget to update further dependencies
-        self.model.evaluate_relative_importance_of_shear()
-        self.model.evaluate_torsional_inertia()
+        for e in self.model.elements:
+            e.Iy = multiplier_fctr * initial_iy[e.index]
+            # assuming a linear dependency of shear areas
+            e.Asz = multiplier_fctr * initial_a_sz[e.index]
+            # NOTE: do not forget to update further dependencies
+            e.evaluate_relative_importance_of_shear()
+            e.evaluate_torsional_inertia()
 
         # re-evaluate
         self.model.calculate_global_matrices()
@@ -377,8 +375,9 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_iz = self.model.element.Iz
-        initial_a_sy = self.model.element.Asy
+
+        initial_iz = (e.Iz for e in self.model.elements)
+        initial_a_sy = (e.Asy for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.bending_z_geometric_stiffness_objective_function,
@@ -416,13 +415,14 @@ class OptimizableStraightBeam(object):
 
     def bending_z_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iz, initial_a_sy, multiplier_fctr):
 
-        self.model.element.Iz = [
-            multiplier_fctr[0] * val for val in initial_iz]
-        self.model.element.Asy = [
-            multiplier_fctr[1] * val for val in initial_a_sy]
-        # NOTE: do not forget to update further dependencies
-        self.model.evaluate_relative_importance_of_shear()
-        self.model.evaluate_torsional_inertia()
+        for e in self.model.elements:
+            e.Iz = multiplier_fctr * initial_iz[e.index]
+            # assuming a linear dependency of shear areas
+            e.Asy = multiplier_fctr * initial_a_sy[e.index]
+
+            # NOTE: do not forget to update further dependencies
+            e.evaluate_relative_importance_of_shear()
+            e.evaluate_torsional_inertia()
 
         # re-evaluate
         self.model.calculate_global_matrices()
@@ -437,8 +437,8 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_it = self.model.element.It
-        initial_ip = self.model.element.Ip
+        initial_it = (e.It for e in self.model.elements)
+        initial_ip = (e.Ip for e in self.model.elements)
 
         # NOTE: single parameter optimization seems not to be enough
 
@@ -451,7 +451,7 @@ class OptimizableStraightBeam(object):
 
         # NOTE: some additional reduction factor so that ip gets changes less
 
-        initi_guess = (1.0, 1.0)
+        init_guess = (1.0, 1.0)
 
         # NOTE: this seems not to be enough
         # bnds_it = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)
@@ -463,7 +463,7 @@ class OptimizableStraightBeam(object):
 
         # NOTE: TNC, SLSQP, L-BFGS-B seems to work with bounds correctly, COBYLA not
         minimization_result = minimize(optimizable_function,
-                                       initi_guess,
+                                       init_guess,
                                        method='L-BFGS-B',
                                        bounds=(bnds_it, bnds_ip))
 
@@ -484,10 +484,9 @@ class OptimizableStraightBeam(object):
 
     def torsional_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_it, initial_ip, multiplier_fctr):
 
-        self.model.element.It = [
-            multiplier_fctr[0] * val for val in initial_it]
-        self.model.element.Ip = [
-            multiplier_fctr[1] * val for val in initial_ip]
+        for e in self.model.elements:
+            e.It = initial_it[e.index]
+            e.Ip = initial_ip[e.index]
 
         # re-evaluate
         self.model.calculate_global_matrices()
@@ -500,19 +499,3 @@ class OptimizableStraightBeam(object):
         mode_ids = self.model.mode_identification_results[identifier]
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
-
-    def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
-
-        self.model.element.E = multiplier_fctr * initial_e
-
-        # NOTE: do not forget to update G and further dependencies
-        self.model.element.G = self.model.element.E / \
-            2 / (1+self.model.element.nu)
-        self.model.evaluate_relative_importance_of_shear()
-
-        # re-evaluate
-        self.model.calculate_global_matrices()
-
-        self.model.eigenvalue_solve()
-
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
