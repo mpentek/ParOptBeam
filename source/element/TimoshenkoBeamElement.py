@@ -4,17 +4,23 @@ from source.element.Element import Element
 
 
 class TimoshenkoBeamElement(Element):
-    def __init__(self, material_params, element_params, nodal_coords, domain_size):
-        super().__init__(material_params, element_params, nodal_coords, domain_size)
+    def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
+        super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
-        self.Ip = element_params['ip']
-        self.Py = element_params['py']
-        self.Pz = element_params['pz']
-        
+        # polar moment of inertia
+        # assuming equivalency with circle
+        self.Ip = self.Iy + self.Iz
+
+        # relative importance of the shear deformation to the bending one
+        self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
+        self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
+
         self._print_element_information()
 
     def _print_element_information(self):
-        print(str(self.domain_size), "D Timoshenko Beam Element")
+        msg = str(self.domain_size) + " Timoshenko Beam Element " + str(self.index) + "\n"
+        msg += "Initial coordinates: " + str(self.ReferenceCoords) + "\n"
+        print(msg)
 
     def get_element_mass_matrix(self):
         """
@@ -181,7 +187,7 @@ class TimoshenkoBeamElement(Element):
 
         return m_el
 
-    def get_el_stiffness(self, i):
+    def get_element_stiffness_matrix(self):
         """
         stiffness values for one level
         VERSION 2
@@ -192,7 +198,7 @@ class TimoshenkoBeamElement(Element):
         """
 
         # axial stiffness - along axis x - here marked as x
-        k_x = self.E * self.A[i] / self.L
+        k_x = self.E * self.A / self.L
         k_x_11 = 1.0
         k_x_12 = -1.0
         k_el_x = k_x * np.array([[k_x_11, k_x_12],
@@ -201,15 +207,15 @@ class TimoshenkoBeamElement(Element):
         if self.domain_size == '3D':
             # torsion stiffness - around axis x - here marked as alpha - a
             k_a = self.G * \
-                  self.It[i] / self.L
+                  self.It / self.L
             k_a_11 = 1.0
             k_a_12 = -1.0
             k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                      [k_a_12, k_a_11]])
 
         # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
-        beta_yg = self.Py[i]
-        k_yg = self.E * self.Iz[i] / \
+        beta_yg = self.Py
+        k_yg = self.E * self.Iz / \
                (1 + beta_yg) / self.L ** 3
         #
         k_yg_11 = 12.
@@ -233,8 +239,8 @@ class TimoshenkoBeamElement(Element):
 
         if self.domain_size == '3D':
             # bending - displacement along axis z, rotations around axis y - here marked as beta - b
-            beta_zb = self.Pz[i]
-            k_zb = self.E * self.Iy[i] / \
+            beta_zb = self.Pz
+            k_zb = self.E * self.Iy / \
                    (1 + beta_zb) / self.L ** 3
             #
             k_zb_11 = 12.
