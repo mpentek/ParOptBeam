@@ -114,6 +114,21 @@ class StraightBeam(object):
         self.point_stiffness = {'idxs': [], 'vals': []}
         self.point_mass = {'idxs': [], 'vals': []}
 
+        # placeholder for solutions
+        self.nodal_coordinates = {"x0": np.zeros(self.n_nodes),
+                                  # all zeroes as it is being centered and undeformed - user defined center
+                                  "y0": np.zeros(self.n_nodes),
+                                  "z0": np.zeros(self.n_nodes),
+                                  "a0": np.zeros(self.n_nodes),
+                                  "b0": np.zeros(self.n_nodes),
+                                  "g0": np.zeros(self.n_nodes),
+                                  # placeholders for nodal dofs - will be overwritten during analysis
+                                  "y": np.zeros(self.n_nodes),
+                                  "z": np.zeros(self.n_nodes),
+                                  "a": np.zeros(self.n_nodes),
+                                  "b": np.zeros(self.n_nodes),
+                                  "g": np.zeros(self.n_nodes)}
+
         # matrices
         self.m = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
                            self.n_nodes * DOFS_PER_NODE[self.domain_size]))
@@ -160,6 +175,13 @@ class StraightBeam(object):
                              [self.parameters['x'][i+1], self.parameters['ly'][i+1], self.parameters['lz'][i+1]]])
             e = TimoshenkoBeamElement(self.parameters, self.element_params, coord, i, self.domain_size)
             self.elements.append(e)
+
+        self.nodal_coordinates["x0"] = list(e.ReferenceCoords[0] for e in self.elements)
+        self.nodal_coordinates["x0"].append(self.elements[-1].ReferenceCoords[1])
+        self.nodal_coordinates["y0"] = list(e.ReferenceCoords[2] for e in self.elements)
+        self.nodal_coordinates["y0"].append(self.elements[-1].ReferenceCoords[3])
+        self.nodal_coordinates["z0"] = list(e.ReferenceCoords[4] for e in self.elements)
+        self.nodal_coordinates["z0"].append(self.elements[-1].ReferenceCoords[5])
 
     def initialize_element_geometric_parameters(self):
         # geometric
