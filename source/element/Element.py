@@ -13,7 +13,6 @@ class Element(object):
         self.E = self.material_params['e']
         self.rho = self.material_params['rho']
         self.nu = self.material_params['nu']
-        self.G = self.material_params['g'] = self.E / 2 / (1 + self.nu)
 
         # area
         self.A = element_params['a']
@@ -46,6 +45,7 @@ class Element(object):
         self.Ip = self.Iy + self.Iz
 
     def evaluate_relative_importance_of_shear(self):
+        self.G = self.E / 2 / (1 + self.nu)
         # relative importance of the shear deformation to the bending one
         self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
         self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
@@ -57,7 +57,8 @@ class Element(object):
         pass
 
     def _print_element_information(self):
-        pass
+        msg = str(self.domain_size) + " Base Class Element " + str(self.index) + "\n"
+        print(msg)
 
     def _calculate_reference_length(self):
         dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
