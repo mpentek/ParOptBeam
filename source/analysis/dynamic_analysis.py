@@ -447,14 +447,14 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-        if not self.parameters['output']['animate_skin_model_time_history']:
-            for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                                  DOF_LABELS[self.structure_model.domain_size]):
-                start = idx
-                step = DOFS_PER_NODE[self.structure_model.domain_size]
-                stop = self.solver.displacement.shape[0] + idx - step
-                self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                               1:step]
+        print("Copying time step solution from solver")
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.solver.displacement.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
+                                                                                           1:step]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -478,20 +478,10 @@ class DynamicAnalysis(AnalysisType):
                                          force,
                                          scaling)
 
-    def get_output_for_visualiser(self):
-        """"
-        This function writes out the nodal dofs of the deformed state for visualiser
-        """
-
-        output = {}
-        for key, val in self.structure_model.nodal_coordinates.items():
-            output[key] = val.tolist()
-
-        return output
-
     def animate_skin_model_time_history(self, skin_model_params):
         print("Animating skin model time history")
         if not self.parameters['output']['animate_time_history']:
+            print("Copying time step solution from solver")
             for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
                                   DOF_LABELS[self.structure_model.domain_size]):
                 start = idx
@@ -508,8 +498,7 @@ class DynamicAnalysis(AnalysisType):
             self.parameters['output']['skin_model_animation_parameters']['end_record']
         skin_model_params["dynamic_analysis"]["record_step"] = \
             self.parameters['output']['skin_model_animation_parameters']['record_step']
-
-        skin_model_params["dofs_input"] = self.get_output_for_visualiser()
+        skin_model_params["dofs_input"] = self.structure_model.nodal_coordinates
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
 
