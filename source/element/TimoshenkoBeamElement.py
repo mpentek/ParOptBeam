@@ -7,13 +7,8 @@ class TimoshenkoBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
         super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
-        # polar moment of inertia
-        # assuming equivalency with circle
-        self.Ip = self.Iy + self.Iz
-
-        # relative importance of the shear deformation to the bending one
-        self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
-        self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
+        self.evaluate_torsional_inertia()
+        self.evaluate_relative_importance_of_shear()
 
         self._print_element_information()
 
