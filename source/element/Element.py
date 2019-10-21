@@ -2,9 +2,12 @@ import numpy as np
 
 
 class Element(object):
-    def __init__(self, material_params, element_params, nodal_coords, domain_size):
+    def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
         self.material_params = material_params
         self.domain_size = domain_size
+
+        # nodal index - defined along the x axis
+        self.index = index
 
         # material properties
         self.E = self.material_params['e']

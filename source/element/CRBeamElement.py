@@ -23,8 +23,8 @@ def rotate_vector(quaternion, vector):
 
 
 class CRBeamElement(Element):
-    def __init__(self, material_params, element_params, nodal_coords, domain_size):
-        super().__init__(material_params, element_params, nodal_coords, domain_size)
+    def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
+        super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
         # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
         # placeholder for one time step deformation to calculate the increment
