@@ -73,7 +73,6 @@
                           [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
                           [0, 6.0, -9.0], [0, -6.0, -9.0]
             ],
-            "contour_density": 1,
             "record_animation": true,
             "visualize_line_structure": true,
             "beam_direction": "x",
@@ -106,7 +105,7 @@
                         "plot_time": [], 
                         "write_time": []
                     },
-                    "animate_time_history" : false,
+                    "animate_time_history" : true,
                     "animate_skin_model_time_history": true,
                     "skin_model_animation_parameters":{
                         "start_record": 160,

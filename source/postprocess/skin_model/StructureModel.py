@@ -89,11 +89,9 @@ class Structure:
         self.num_of_frames = len(self.element_geometry)
         self.num_of_elements = len(self.scaling_vector) + 1
         self.beam_direction = BeamDirection[params["beam_direction"]]
-        self.contour_density = params["contour_density"]
         self.element_length = self.beam_length / (self.num_of_elements - 1)
         self.print_structure_info()
 
-        self.densify_contour(self.contour_density)
         self.elements = np.empty(self.num_of_elements, dtype=Element)
         self.create_elements()
         self.frames = np.empty(self.num_of_frames, dtype=Frame)
@@ -144,30 +142,6 @@ class Structure:
                 frame = Frame(self.elements, i)
                 self.frames[i] = frame
 
-    def densify_contour(self, parts=5):
-        if parts > 1:
-            new_element_geometry = []
-            for i in range(len(self.element_geometry)):
-                new_element_geometry.append(self.element_geometry[i])
-
-                new_element_geometry += self._get_equidistant_points(
-                    [self.element_geometry[i % len(self.element_geometry)][DIRECTION_VECTOR[beam_direction_index + 1]],
-                     self.element_geometry[i % len(self.element_geometry)][DIRECTION_VECTOR[beam_direction_index + 2]]],
-                    [self.element_geometry[(i + 1) % len(self.element_geometry)][
-                         DIRECTION_VECTOR[beam_direction_index + 1]],
-                     self.element_geometry[(i + 1) % len(self.element_geometry)][
-                         DIRECTION_VECTOR[beam_direction_index + 2]]],
-                    parts)
-            # print(DIRECTION_VECTOR[beam_direction_index])
-            self.element_geometry = new_element_geometry
-
-    @staticmethod
-    def _get_equidistant_points(p1, p2, parts):
-        return [{DIRECTION_VECTOR[beam_direction_index]: 0.0, DIRECTION_VECTOR[beam_direction_index + 1]: val1,
-                 DIRECTION_VECTOR[beam_direction_index + 2]: val2} for val1, val2 in
-                zip(np.linspace(p1[0], p2[0], parts + 1),
-                    np.linspace(p1[1], p2[1], parts + 1))]
-
     def apply_transformation_for_structure(self):
         for e in self.elements:
             for i in range(len(e.nodes)):
@@ -197,7 +171,6 @@ def test():
              "geometry": [[0, 15.0, 3.0], [0, 6.0, 9.0], [0, -6.0, 9.0],
                           [0, -15.0, 3.0], [0, -6.0, -9.0], [0, 6.0, -9.0]
                           ],
-             "contour_density": 1,
              "record_animation": False,
              "visualize_line_structure": True,
              "beam_direction": "x",
