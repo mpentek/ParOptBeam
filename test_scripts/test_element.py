@@ -13,14 +13,14 @@ def test_timoshenko_element():
     material_params['pz'] = 1.0
     material_params['ip'] = 1.0
 
-    element = TimoshenkoBeamElement(material_params, element_params, coords, '3D')
+    element = TimoshenkoBeamElement(material_params, element_params, coords, 0, '3D')
     K = element.get_element_stiffness_matrix()
     print(K)
 
 
 def test_crbeam_element():
     coords = np.array([[1., 0.5, 0.1], [2., 0.2, 0.9]])
-    element = CRBeamElement(material_params, element_params, coords, '3D')
+    element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
     element.Iteration = 1
     element.previous_deformation = element.current_deformation
