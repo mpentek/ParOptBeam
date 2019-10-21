@@ -355,9 +355,9 @@ class OptimizableStraightBeam(object):
     def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, initial_a_sz, multiplier_fctr):
 
         for e in self.model.elements:
-            e.Iy = multiplier_fctr * initial_iy[e.index]
+            e.Iy = multiplier_fctr[0] * initial_iy[e.index]
             # assuming a linear dependency of shear areas
-            e.Asz = multiplier_fctr * initial_a_sz[e.index]
+            e.Asz = multiplier_fctr[1] * initial_a_sz[e.index]
             # NOTE: do not forget to update further dependencies
             e.evaluate_relative_importance_of_shear()
             e.evaluate_torsional_inertia()
@@ -416,9 +416,9 @@ class OptimizableStraightBeam(object):
     def bending_z_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iz, initial_a_sy, multiplier_fctr):
 
         for e in self.model.elements:
-            e.Iz = multiplier_fctr * initial_iz[e.index]
+            e.Iz = multiplier_fctr[0] * initial_iz[e.index]
             # assuming a linear dependency of shear areas
-            e.Asy = multiplier_fctr * initial_a_sy[e.index]
+            e.Asy = multiplier_fctr[1] * initial_a_sy[e.index]
 
             # NOTE: do not forget to update further dependencies
             e.evaluate_relative_importance_of_shear()
@@ -485,8 +485,8 @@ class OptimizableStraightBeam(object):
     def torsional_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_it, initial_ip, multiplier_fctr):
 
         for e in self.model.elements:
-            e.It = initial_it[e.index]
-            e.Ip = initial_ip[e.index]
+            e.It = multiplier_fctr[0] * initial_it[e.index]
+            e.Ip = multiplier_fctr[1] * initial_ip[e.index]
 
         # re-evaluate
         self.model.calculate_global_matrices()
