@@ -15,6 +15,13 @@ class TimoshenkoBeamElement(Element):
     def _print_element_information(self):
         msg = str(self.domain_size) + " Timoshenko Beam Element " + str(self.index) + "\n"
         msg += "Initial coordinates: " + str(self.ReferenceCoords) + "\n"
+        msg += "A: " + str(self.A) + "\n"
+        msg += "Asy: " + str(self.Asy) + "\n"
+        msg += "Asz: " + str(self.Asz) + "\n"
+        msg += "Iy: " + str(self.Iy) + "\n"
+        msg += "Iz: " + str(self.Iz) + "\n"
+        msg += "Pz: " + str(self.Pz) + "\n"
+        msg += "Py: " + str(self.Py) + "\n"
         print(msg)
 
     def get_element_mass_matrix(self):
@@ -104,13 +111,13 @@ class TimoshenkoBeamElement(Element):
             m_zb = m_const / 210 / (1 + Pz) ** 2
             #
             m_zb_11 = 70 * Pz ** 2 + 147 * Pz + 78
-            m_zb_12 = -(35 * Pz ** 2 + 77 * Pz + 44) * self.L / 4
+            m_zb_12 = -(35 * Pz ** 2 + 77 * Pz + 44) * self.L / 4.
             m_zb_13 = 35 * Pz ** 2 + 63 * Pz + 27
-            m_zb_14 = (35 * Pz ** 2 + 63 * Pz + 26) * self.L / 4
+            m_zb_14 = (35 * Pz ** 2 + 63 * Pz + 26) * self.L / 4.
             #
-            m_zb_22 = (7 * Pz ** 2 + 14 * Pz + 8) * self.L ** 2 / 4
+            m_zb_22 = (7 * Pz ** 2 + 14 * Pz + 8) * self.L ** 2 / 4.
             m_zb_23 = -m_zb_14
-            m_zb_24 = -(7 * Pz ** 2 + 14 * Pz + 6) * self.L ** 2 / 4
+            m_zb_24 = -(7 * Pz ** 2 + 14 * Pz + 6) * self.L ** 2 / 4.
             #
             m_zb_33 = m_zb_11
             m_zb_34 = - m_zb_12
@@ -122,23 +129,22 @@ class TimoshenkoBeamElement(Element):
                                              [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
                                              [m_zb_14, m_zb_24, m_zb_34, m_zb_44]])
             # rotation
-            m_zb = self.rho * self.Iy / \
-                   30 / (1 + Pz) ** 2 / self.L
-            #
-            m_zb_11 = 36
-            m_zb_12 = (15 * Pz - 3) * self.L
+            m_zb = self.rho * self.Iy / 30. / (1 + Pz) ** 2 / self.L
+
+            m_zb_11 = 36.
+            m_zb_12 = (15. * Pz - 3) * self.L
             m_zb_13 = -m_zb_11
             m_zb_14 = m_zb_12
-            #
+
             m_zb_22 = (10 * Pz ** 2 + 5 * Pz + 4) * self.L ** 2
             m_zb_23 = -m_zb_12
             m_zb_24 = (5 * Pz ** 2 - 5 * Pz - 1) * self.L ** 2
-            #
+
             m_zb_33 = m_zb_11
             m_zb_34 = -m_zb_12
-            #
+
             m_zb_44 = m_zb_22
-            #
+
             m_el_zb_rot = m_zb * np.array([[m_zb_11, m_zb_12, m_zb_13, m_zb_14],
                                            [m_zb_12, m_zb_22, m_zb_23, m_zb_24],
                                            [m_zb_13, m_zb_23, m_zb_33, m_zb_34],
