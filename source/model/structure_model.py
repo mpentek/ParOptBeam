@@ -28,18 +28,17 @@ from scipy import linalg
 from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
 from source.auxiliary.global_definetions import *
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
 
 
 class StraightBeam(object):
     """
-    A 2D/3D prismatic homogenous isotropic Timoshenko beam element
+    A 2D/3D prismatic homogeneous isotropic Timoshenko beam element
     Including shear and rotationary inertia and deformation
     Using a consistent mass formulation
 
     Definition of axes:
         1. Longitudinal axis: x with rotation alpha around x
-        2. Transversal axes: 
+        2. Transversal axes:
             y with rotation beta around y 
             z with rotation gamma around z
 
@@ -78,7 +77,7 @@ class StraightBeam(object):
         self.name = parameters["name"]
 
         # TODO: validate and assign parameters
-        # NOTE: for now using the assumption of the prismatic homogenous isotropic beam
+        # NOTE: for now using the assumption of the prismatic homogeneous isotropic beam
         self.parameters = {'rho': parameters["system_parameters"]["material"]["density"],
                            'e': parameters["system_parameters"]["material"]["youngs_modulus"],
                            'nu': parameters["system_parameters"]["material"]["poisson_ratio"],
@@ -103,23 +102,42 @@ class StraightBeam(object):
                 'c_k': val["outrigger_stiffness"]
             })
 
-        # geometric
-        self.initialize_user_defined_geometric_parameters()
-        self.evaluate_torsional_inertia()
-
-        # relative importance of the shear deformation to the bending one
-        self.evaluate_relative_importance_of_shear()
-
         # define element type
+        self.n_nodes = self.parameters['n_el'] + 1
+        self.lx_i = self.parameters['lx'] / self.parameters['n_el']
+        self.nodal_coordinates = {}
         self.element_params = {}
         self.elements = []
+        self.initialize_elements()
 
         # initialize empty place holders for point stiffness and mass entries
         self.point_stiffness = {'idxs': [], 'vals': []}
         self.point_mass = {'idxs': [], 'vals': []}
 
+        # matrices
+        self.m = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        self.comp_m = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        self.k = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        self.comp_k = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        self.b = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        self.comp_b = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+
+        # boundary conditions
+        self.all_dofs_global = np.arange(self.n_nodes * DOFS_PER_NODE[self.domain_size])
+
+        self.elastic_bc_dofs = {}
         self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
         self.apply_bcs()
+
+        # result placeholders
+        self.mode_identification_results = {}
+        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': []}
 
         # after initial setup
         self.calculate_global_matrices()
@@ -127,36 +145,48 @@ class StraightBeam(object):
 
     def initialize_elements(self):
         # running coordinate x - in the middle of each beam element
-        self.parameters['x'] = [(x + 0.5) / self.parameters['n_el'] * self.parameters['lx']
-                                for x in list(range(self.parameters['n_el']))]
+        self.parameters['x'] = [(x + 0.5) / self.n_nodes * self.parameters['lx']
+                                for x in list(range(self.n_nodes))]
+        # geometric
+        self.initialize_element_geometric_parameters()
 
         # # length of one element - assuming an equidistant grid
-        self.parameters['lx_i'] = self.parameters['lx'] / self.parameters['n_el']
+        indices = np.arange(self.parameters['n_el'] + 1)
 
+        from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
 
-        length_coords = self.element.L * \
-                        np.arange(self.parameters['n_el'] + 1)
+        for i in indices[:-1]:
+            coord = np.array([[self.parameters['x'][i], self.parameters['ly'][i], self.parameters['lz'][i]],
+                             [self.parameters['x'][i+1], self.parameters['ly'][i+1], self.parameters['lz'][i+1]]])
+            e = TimoshenkoBeamElement(self.parameters, self.element_params, coord, i, self.domain_size)
+            self.elements.append(e)
 
-        self.nodal_coordinates = {"x0": length_coords,
-                                  # all zeroes as it is being centered and undeformed - user defined center
-                                  "y0": np.zeros(len(length_coords)),
-                                  "z0": np.zeros(len(length_coords)),
-                                  "a0": np.zeros(len(length_coords)),
-                                  "b0": np.zeros(len(length_coords)),
-                                  "g0": np.zeros(len(length_coords)),
-                                  # placeholders for nodal dofs - will be overwritten during analysis
-                                  "y": np.zeros(len(length_coords)),
-                                  "z": np.zeros(len(length_coords)),
-                                  "a": np.zeros(len(length_coords)),
-                                  "b": np.zeros(len(length_coords)),
-                                  "g": np.zeros(len(length_coords))}
+    def initialize_element_geometric_parameters(self):
+        # geometric
+        # characteristics lengths
 
-        self.n_nodes = self.parameters['n_el'] + 1
+        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
+            x, 'c_ly') for x in self.parameters['x']]
+        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
+            x, 'c_lz') for x in self.parameters['x']]
+        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
+        # element properties
+        for x in self.parameters['x']:
+            # area
+            self.element_params['a'] = self.evaluate_characteristic_on_interval(x, 'c_a')
+
+            # effective area of shear
+            self.element_params['asy'] = self.evaluate_characteristic_on_interval(x, 'c_a_sy')
+            self.element_params['asz'] = self.evaluate_characteristic_on_interval(x, 'c_a_sz')
+            # second moment of inertia
+            self.element_params['iy'] = self.evaluate_characteristic_on_interval(x, 'c_iy')
+            self.element_params['iz'] = self.evaluate_characteristic_on_interval(x, 'c_iz')
+            # torsion constant
+            self.element_params['it'] = self.evaluate_characteristic_on_interval(x, 'c_it')
 
     def apply_elastic_bcs(self):
         # handle potential elastic BCs
-        self.elastic_bc_dofs = {}
         if 'elastic_fixity_dofs' in self.parameters:
             elastic_bc_dofs_tmp = self.parameters["elastic_fixity_dofs"]
         else:
@@ -191,13 +221,11 @@ class StraightBeam(object):
                 self.point_stiffness['idxs'].append([val, val])
                 # with this additional value
                 self.point_stiffness['vals'].append(elastic_bc_dofs_tmp[key])
-        # apply the point masses and point stiffness from outtriggers         
+        # apply the point masses and point stiffness from outriggers
         self.apply_point_values()
 
     def apply_bcs(self):
         # TODO: make BC handling cleaner and compact
-        self.all_dofs_global = np.arange(
-            self.n_nodes * DOFS_PER_NODE[self.domain_size])
         bc = '\"' + \
              self.parameters["boundary_conditions"] + '\"'
         if bc in AVAILABLE_BCS:
@@ -224,73 +252,26 @@ class StraightBeam(object):
         self.dofs_to_keep = list(set(self.all_dofs_global) - set(bc_dofs_global))
 
     def apply_point_values(self):
-        # point stiffness and point masses at respective dof for the outtrigger 
+        # point stiffness and point masses at respective dof for the outrigger
         for values in self.parameters['intervals']:
             if values['bounds'][1] == "End":
-                outtriger_id = int(self.parameters['lx'] / self.element.L)
+                outtriger_id = int(self.parameters['lx'] / self.lx_i)
             else:
-                outtriger_id = int(values['bounds'][1] / self.element.L)
+                outtriger_id = int(values['bounds'][1] / self.lx_i)
             id_val = outtriger_id * DOFS_PER_NODE[self.domain_size]
-            # affects only diagonal entries and for transilation al DOF and not rotational DOF
+            # affects only diagonal entries and for translation al DOF and not rotational DOF
             for i in range(int(np.ceil(DOFS_PER_NODE[self.domain_size] / 2))):
                 self.point_stiffness['idxs'].append([id_val + i, id_val + i])
                 self.point_stiffness['vals'].append(values['c_k'])
                 self.point_mass['idxs'].append([id_val + i, id_val + i])
                 self.point_mass['vals'].append(values['c_m'])
-            # out tigger stiffnss in x, Y, and Z the same ?? AK: need to check 
-
-    def initialize_user_defined_geometric_parameters(self):
-        # geometric
-        # characteristics lengths
-
-        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
-            x, 'c_ly') for x in self.parameters['x']]
-        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
-            x, 'c_lz') for x in self.parameters['x']]
-        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
-
-        # element properties
-        for x in self.parameters['x']:
-            # area
-            self.element_params['a'] = self.evaluate_characteristic_on_interval(x, 'c_a')
-
-            # effective area of shear
-            self.element_params['asy'] = self.evaluate_characteristic_on_interval(x, 'c_a_sy')
-            self.element_params['asz'] = self.evaluate_characteristic_on_interval(x, 'c_a_sz')
-            # second moment of inertia
-            self.element_params['iy'] = self.evaluate_characteristic_on_interval(x, 'c_iy')
-            self.element_params['iz'] = self.evaluate_characteristic_on_interval(x, 'c_iz')
-            # torsion constant
-            self.element_params['it'] = self.evaluate_characteristic_on_interval(x, 'c_it')
-            self.element_params['py'] = [12 * self.E * self.element_params['iz'] / (
-                    G * self.element_params['asy'] * self.L ** 2)
-
-
-
-    def evaluate_relative_importance_of_shear(self, is_bernoulli=False):
-        self.element.Py = [12 * self.element.E * a / (
-                self.element.G * b * self.element.L ** 2) for a, b in
-                           zip(self.element.Iz, self.element.Asy)]
-        self.element.Pz = [12 * self.element.E * a / (
-                self.element.G * b * self.element.L ** 2) for a, b in
-                           zip(self.element.Iy, self.element.Asz)]
-
-        if is_bernoulli:
-            # NOTE: Bernoulli beam set to 0.0
-            self.element.Py = [0.0 for a, b in zip(self.element.Iz, self.element.Asy)]
-            self.element.Pz = [0.0 for a, b in zip(self.element.Iy, self.element.Asz)]
-
-    def evaluate_torsional_inertia(self):
-        # polar moment of inertia
-        # assuming equivalency with circle
-        self.element.Ip = [a + b for a, b in zip(self.element.Iy, self.element.Iz)]
+            # outrigger stiffness in x, Y, and Z the same ?? AK: need to check
 
     def calculate_total_mass(self, print_to_console=False):
         self.parameters['m_tot'] = 0.0
-        for i in range(len(self.parameters['x'])):
-            self.parameters['m_tot'] += self.element.A[i] * \
-                                        self.element.rho * self.element.L
-        # TODO: Add outtrigger masses to this entry
+        for element in self.elements:
+            self.parameters['m_tot'] += element.A * element.rho * element.L
+        # TODO: Add outrigger masses to this entry
         if print_to_console:
             print('CURRENT:')
             print('total mass ', self.parameters['m_tot'])
@@ -320,8 +301,6 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
-        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': []}
-
         for i in range(considered_modes):
             decomposed_eigenmode = {}
             rel_contrib = {}
@@ -339,7 +318,7 @@ class StraightBeam(object):
                     # to make comparable to translation dofs
                     rel_contrib[label] = self.charact_length * linalg.norm(decomposed_eigenmode[label])
                 else:
-                    # for translatio dofs
+                    # for translation dofs
                     rel_contrib[label] = linalg.norm(decomposed_eigenmode[label])
 
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
@@ -354,8 +333,6 @@ class StraightBeam(object):
                 considered_modes = len(self.dofs_to_keep)
 
         self.decompose_and_quantify_eigenmodes()
-
-        self.mode_identification_results = {}
 
         for i in range(considered_modes):
 
@@ -429,78 +406,26 @@ class StraightBeam(object):
             print('lz: ', ['{:.2f}'.format(x)
                            for x in self.parameters['lz']], '\n')
 
-            print('a: ', ['{:.2f}'.format(x)
-                          for x in self.element.A], '\n')
-            print('a_sy: ', ['{:.2f}'.format(x)
-                             for x in self.element.Asy], '\n')
-            print('a_sz: ', ['{:.2f}'.format(x)
-                             for x in self.element.Asz], '\n')
+            fig = plt.figure(1)
+            plt.plot(self.parameters['x'], self.parameters['ly'],
+                     'r-', marker='*', label='ly')
+            plt.plot(self.parameters['x'], self.parameters['lz'],
+                     'g-', marker='^', label='lz')
+            plt.legend()
+            plt.grid()
 
-            print('iy: ', ['{:.2f}'.format(x)
-                           for x in self.element.Iy], '\n')
-            print('iz: ', ['{:.2f}'.format(x)
-                           for x in self.element.Iz], '\n')
-            print('ip: ', ['{:.2f}'.format(x)
-                           for x in self.element.Ip], '\n')
-            print('it: ', ['{:.2f}'.format(x)
-                           for x in self.element.It], '\n')
+            if pdf_report is not None:
+                pdf_report.savefig()
+                plt.close(fig)
 
-        fig = plt.figure(1)
-        plt.plot(self.parameters['x'], self.element.A,
-                 'k-', marker='o', label='a')
-        plt.plot(self.parameters['x'], self.element.Asy,
-                 'r-', marker='*', label='a_sy')
-        plt.plot(self.parameters['x'], self.element.Asz,
-                 'g-', marker='^', label='a_sz')
-        plt.legend()
-        plt.grid()
-
-        if pdf_report is not None:
-            pdf_report.savefig()
-            plt.close(fig)
-
-        fig = plt.figure(2)
-        plt.plot(self.parameters['x'], self.element.It,
-                 'k-', marker='o', label='it')
-        plt.plot(self.parameters['x'], self.element.Iy,
-                 'r-', marker='*', label='iy')
-        plt.plot(self.parameters['x'], self.element.Iz,
-                 'g-', marker='^', label='iz')
-        plt.plot(self.parameters['x'], self.element.Ip,
-                 'c-', marker='|', label='ip')
-        plt.legend()
-        plt.grid()
-
-        if pdf_report is not None:
-            pdf_report.savefig()
-            plt.close(fig)
-
-        fig = plt.figure(3)
-        plt.plot(self.parameters['x'], self.parameters['ly'],
-                 'r-', marker='*', label='ly')
-        plt.plot(self.parameters['x'], self.parameters['lz'],
-                 'g-', marker='^', label='lz')
-        plt.legend()
-        plt.grid()
-
-        if pdf_report is not None:
-            pdf_report.savefig()
-            plt.close(fig)
-
-        fig = plt.figure(4)
-        plt.plot(self.parameters['x'], self.element.Py,
-                 'r-', marker='*', label='py')
-        plt.plot(self.parameters['x'], self.element.Pz,
-                 'g-', marker='^', label='pz')
-        plt.legend()
-        plt.grid()
-
-        if pdf_report is not None:
-            pdf_report.savefig()
-            plt.close(fig)
-
-        if display_plot:
-            plt.show()
+            for e in self.elements:
+                print('a: ', '{:.2f}'.format(e.A), '\n')
+                print('a_sy: ', '{:.2f}'.format(e.Asy), '\n')
+                print('a_sz: ', '{:.2f}'.format(e.Asz), '\n')
+                print('iy: ', '{:.2f}'.format(e.Iy), '\n')
+                print('iz: ', '{:.2f}'.format(e.Iz), '\n')
+                print('ip: ', '{:.2f}'.format(e.Ip), '\n')
+                print('it: ', '{:.2f}'.format(e.It), '\n')
 
     def apply_bc_by_reduction(self, matrix, axis='both'):
         '''
@@ -610,16 +535,16 @@ class StraightBeam(object):
         glob_matrix = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
                                 self.n_nodes * DOFS_PER_NODE[self.domain_size]))
 
-        # fill global stiffness matix entries
-        for i in range(self.parameters['n_el']):
-            el_matrix = self.element.get_el_mass(i)
+        # fill global stiffness matrix entries
+        for element in self.elements:
+            el_matrix = element.get_element_mass_matrix()
             glob_matrix[
-            DOFS_PER_NODE[self.domain_size] * i: DOFS_PER_NODE[self.domain_size] * i +
-                                                 DOFS_PER_NODE[
-                                                     self.domain_size] * NODES_PER_LEVEL,
-            DOFS_PER_NODE[self.domain_size] * i: DOFS_PER_NODE[self.domain_size] * i +
-                                                 DOFS_PER_NODE[
-                                                     self.domain_size] * NODES_PER_LEVEL] += el_matrix
+            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
+                                                             DOFS_PER_NODE[
+                                                                 self.domain_size] * NODES_PER_LEVEL,
+            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
+                                                             DOFS_PER_NODE[
+                                                                 self.domain_size] * NODES_PER_LEVEL] += el_matrix
 
         for idx, val in zip(self.point_mass['idxs'], self.point_mass['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
@@ -631,14 +556,15 @@ class StraightBeam(object):
         glob_matrix = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
                                 self.n_nodes * DOFS_PER_NODE[self.domain_size]))
 
-        # fill global stiffness matix entries
-        for i in range(self.parameters['n_el']):
-            el_matrix = self.element.get_el_stiffness(i)
+        # fill global stiffness matrix entries
+        for element in self.elements:
+            el_matrix = element.get_element_stiffness_matrix()
             glob_matrix[
-            DOFS_PER_NODE[self.domain_size] * i: DOFS_PER_NODE[self.domain_size] * i +
-                                                 DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL,
-            DOFS_PER_NODE[self.domain_size] * i: DOFS_PER_NODE[self.domain_size] * i +
-                                                 DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL] += el_matrix
+            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
+                                                             DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL,
+            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
+                                                             DOFS_PER_NODE[
+                                                                 self.domain_size] * NODES_PER_LEVEL] += el_matrix
 
         for idx, val in zip(self.point_stiffness['idxs'], self.point_stiffness['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
