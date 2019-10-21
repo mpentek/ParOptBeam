@@ -40,6 +40,16 @@ class Element(object):
         # reference length of one element
         self.L = self._calculate_reference_length()
 
+    def evaluate_torsional_inertia(self):
+        # polar moment of inertia
+        # assuming equivalency with circle
+        self.Ip = self.Iy + self.Iz
+
+    def evaluate_relative_importance_of_shear(self):
+        # relative importance of the shear deformation to the bending one
+        self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
+        self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
+
     def get_element_stiffness_matrix(self):
         pass
 
