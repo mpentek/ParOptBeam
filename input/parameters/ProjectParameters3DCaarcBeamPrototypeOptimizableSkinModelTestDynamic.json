@@ -106,7 +106,7 @@
                         "plot_time": [], 
                         "write_time": []
                     },
-                    "animate_time_history" : false,
+                    "animate_time_history" : true,
                     "animate_skin_model_time_history": true,
                     "skin_model_animation_parameters":{
                         "start_record": 160,

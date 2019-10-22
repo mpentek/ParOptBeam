@@ -448,14 +448,13 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-        if not self.parameters['output']['animate_skin_model_time_history']:
-            for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                                  StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
-                start = idx
-                step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
-                stop = self.solver.displacement.shape[0] + idx - step
-                self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                               1:step]
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.solver.displacement.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
+                                                                                           1:step]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
