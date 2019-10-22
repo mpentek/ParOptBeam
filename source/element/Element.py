@@ -6,6 +6,8 @@ class Element(object):
         self.material_params = material_params
         self.domain_size = domain_size
 
+        self.isNonlinear = False
+
         # nodal index - defined along the x axis
         self.index = index
 
@@ -51,6 +53,17 @@ class Element(object):
         self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
 
     def get_element_stiffness_matrix(self):
+        ke = self._get_element_stiffness_matrix_material()
+
+        if self.isNonlinear:
+            ke += self._get_element_stiffness_matrix_geometry()
+
+        return ke
+
+    def _get_element_stiffness_matrix_material(self):
+        pass
+
+    def _get_element_stiffness_matrix_geometry(self):
         pass
 
     def get_element_mass_matrix(self):
