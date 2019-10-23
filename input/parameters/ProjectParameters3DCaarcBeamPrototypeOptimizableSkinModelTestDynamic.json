@@ -3,6 +3,7 @@
         "name": "CaarcBeamPrototypeOptimizable",
         "domain_size": "3D",
         "system_parameters": {
+            "element_type": "Timoshenko",
             "material": {
                 "density": 160.0,
                 "youngs_modulus": 2.861e8,

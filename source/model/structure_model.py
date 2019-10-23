@@ -29,7 +29,9 @@ from scipy import linalg
 from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
 from source.auxiliary.global_definetions import *
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-
+from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
+from source.element.BernouliBeamElement import BernoulliBeamElement
+from source.element.CRBeamElement import CRBeamElement
 
 class StraightBeam(object):
     """
@@ -84,7 +86,9 @@ class StraightBeam(object):
                            'nu': parameters["system_parameters"]["material"]["poisson_ratio"],
                            'zeta': parameters["system_parameters"]["material"]["damping_ratio"],
                            'lx': parameters["system_parameters"]["geometry"]["length_x"],
-                           'n_el': parameters["system_parameters"]["geometry"]["number_of_elements"], 'intervals': []}
+                           'n_el': parameters["system_parameters"]["geometry"]["number_of_elements"],
+                           'element_type': parameters["system_parameters"]["element_type"],
+                           'intervals': []}
 
         # defined on intervals as piecewise continuous function on an interval starting from 0.0
         for val in parameters["system_parameters"]["geometry"]["defined_on_intervals"]:
@@ -102,14 +106,6 @@ class StraightBeam(object):
                 'c_m': val["outrigger_mass"],
                 'c_k': val["outrigger_stiffness"]
             })
-
-        # geometric
-        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
-            x, 'c_ly') for x in self.parameters['x']]
-        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
-            x, 'c_lz') for x in self.parameters['x']]
-        # characteristics lengths
-        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         # define element type
         self.n_elements = self.parameters['n_el']
@@ -161,13 +157,29 @@ class StraightBeam(object):
         self.parameters['x_mid'] = [(x + 0.5) / self.n_elements * self.parameters['lx']
                                     for x in list(range(self.n_elements))]
 
-        from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
+        # geometric
+        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
+            x, 'c_ly') for x in self.parameters['x']]
+        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
+            x, 'c_lz') for x in self.parameters['x']]
+        # characteristics lengths
+        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         for i in range(self.n_elements):
             element_params = self.initialize_element_geometric_parameters(i)
             coord = np.array([[self.parameters['x'][i], 0.0, 0.0],
                               [self.parameters['x'][i + 1], 0.0, 0.0]])
-            e = TimoshenkoBeamElement(self.parameters, element_params, coord, i, self.domain_size)
+            if self.parameters['element_type'] == "Timoshenko":
+                e = TimoshenkoBeamElement(self.parameters, element_params, coord, i, self.domain_size)
+            elif self.parameters['element_type'] == "Bernoulli":
+                e = BernoulliBeamElement(self.parameters, element_params, coord, i, self.domain_size)
+            elif self.parameters['element_type'] == "CRBeam":
+                e = CRBeamElement(self.parameters, element_params, coord, i, self.domain_size)
+            else:
+                err_msg = "The requested element type \"" + self.parameters["element_type"]
+                err_msg += "\" is not available \n"
+                err_msg += "Choose one of: \"Bernoulli\", \"Timoshenko\", \"CRBeam\"\n"
+                raise Exception(err_msg)
             self.elements.append(e)
 
         self.initialize_reference_coordinate()
