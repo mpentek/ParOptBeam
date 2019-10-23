@@ -253,8 +253,7 @@ def animate_result(title, array_time, geometry, force, scaling):
     # TODO extend and use plot limits
 
     geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis],
-                            geometry["deformation"][1] * scaling["deformation"] +
-                            geometry["undeformed"][1][:, np.newaxis],
+                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis],
                             geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis]]
 
     xmin = np.min(geometry["deformed"][0])
