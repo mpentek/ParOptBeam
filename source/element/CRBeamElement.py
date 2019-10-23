@@ -26,6 +26,8 @@ class CRBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
         super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
+        self.evaluate_relative_importance_of_shear()
+
         # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
         # placeholder for one time step deformation to calculate the increment
         self.current_deformation = np.zeros(self.ElementSize)
@@ -77,15 +79,15 @@ class CRBeamElement(Element):
         # resizing the matrices + create memory for LHS
         StiffnessMatrix = np.zeros([self.ElementSize, self.ElementSize])
         # creating LHS
-        StiffnessMatrix += self._get_local_stiffness_matrix_material()
-        StiffnessMatrix += self._get_local_stiffness_matrix_geometry()
+        StiffnessMatrix += self._get_element_stiffness_matrix_material()
+        StiffnessMatrix += self._get_element_stiffness_matrix_geometry()
         # transformation M = T * M * trans(T)
         aux_matrix = np.matmul(TransformationMatrix, StiffnessMatrix)
         StiffnessMatrix = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
 
         return StiffnessMatrix
 
-    def _get_local_stiffness_matrix_material(self):
+    def _get_element_stiffness_matrix_material(self):
         """
             elastic part of the total stiffness matrix
         """
@@ -151,7 +153,7 @@ class CRBeamElement(Element):
 
         return ke_const
 
-    def _get_local_stiffness_matrix_geometry(self):
+    def _get_element_stiffness_matrix_geometry(self):
         """
             geometric part of the total stiffness matrix
         """
