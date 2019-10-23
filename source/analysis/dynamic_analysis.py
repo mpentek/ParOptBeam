@@ -156,7 +156,7 @@ class DynamicAnalysis(AnalysisType):
             result_data = self.solver.acceleration[dof, :]
         elif selected_result == 'reaction':
             if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
-                result_data = self.dynamic_reaction[dof, :]
+                result_data = self.solver.dynamic_reaction[dof, :]
             else:
                 err_msg = "The selected DoF \"" + str(dof)
                 err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
@@ -191,7 +191,7 @@ class DynamicAnalysis(AnalysisType):
             result_data = self.solver.acceleration[dof, :]
         elif selected_result == 'reaction':
             if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
-                result_data = self.dynamic_reaction[dof, :]
+                result_data = self.solver.dynamic_reaction[dof, :]
             else:
                 err_msg = "The selected DoF \"" + str(dof)
                 err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
