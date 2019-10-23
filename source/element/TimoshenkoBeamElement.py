@@ -14,7 +14,9 @@ class TimoshenkoBeamElement(Element):
 
     def _print_element_information(self):
         msg = str(self.domain_size) + " Timoshenko Beam Element " + str(self.index) + "\n"
-        msg += "Initial coordinates: " + str(self.ReferenceCoords) + "\n"
+        msg += "Initial coordinates: \n"
+        msg += str(self.ReferenceCoords[:3]) + "\n"
+        msg += str(self.ReferenceCoords[3:]) + "\n"
         msg += "A: " + str(self.A) + "\n"
         msg += "Asy: " + str(self.Asy) + "\n"
         msg += "Asz: " + str(self.Asz) + "\n"
@@ -188,7 +190,11 @@ class TimoshenkoBeamElement(Element):
 
         return m_el
 
-    def get_element_stiffness_matrix(self):
+    # TODO implement geometry contribution of the timoshenko beam
+    def _get_element_stiffness_matrix_geometry(self):
+        pass
+
+    def _get_element_stiffness_matrix_material(self):
         """
         stiffness values for one level
         VERSION 2
