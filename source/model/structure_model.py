@@ -5,7 +5,8 @@ Project:Lecture - Structural Wind Engineering WS17-18
 
         Structure model base class and derived classes for related structures
 
-Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, catharina.czech@tum.de, peter.kupas@tum.de
+Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, catharina.czech@tum.de,
+        peter.kupas@tum.de, mengjie.zhao@tum.de
 
 Note:   UPDATE: The script has been written using publicly available information and
         data, use accordingly. It has been written and tested with Python 2.7.9.
@@ -17,7 +18,7 @@ Note:   UPDATE: The script has been written using publicly available information
             matplotlib.pyplot
 
 Created on:  22.11.2017
-Last update: 09.07.2018
+Last update: 23.10.2019
 '''
 # ===============================================================================
 
@@ -102,32 +103,27 @@ class StraightBeam(object):
                 'c_k': val["outrigger_stiffness"]
             })
 
+        # geometric
+        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
+            x, 'c_ly') for x in self.parameters['x']]
+        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
+            x, 'c_lz') for x in self.parameters['x']]
+        # characteristics lengths
+        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
+
         # define element type
-        self.n_nodes = self.parameters['n_el'] + 1
+        self.n_elements = self.parameters['n_el']
+        self.n_nodes = self.n_elements + 1
+        # placeholder for solutions
+        self.nodal_coordinates = {}
         self.lx_i = self.parameters['lx'] / self.parameters['n_el']
         self.nodal_coordinates = {}
-        self.element_params = {}
         self.elements = []
         self.initialize_elements()
 
         # initialize empty place holders for point stiffness and mass entries
         self.point_stiffness = {'idxs': [], 'vals': []}
         self.point_mass = {'idxs': [], 'vals': []}
-
-        # placeholder for solutions
-        self.nodal_coordinates = {"x0": np.zeros(self.n_nodes),
-                                  # all zeroes as it is being centered and undeformed - user defined center
-                                  "y0": np.zeros(self.n_nodes),
-                                  "z0": np.zeros(self.n_nodes),
-                                  "a0": np.zeros(self.n_nodes),
-                                  "b0": np.zeros(self.n_nodes),
-                                  "g0": np.zeros(self.n_nodes),
-                                  # placeholders for nodal dofs - will be overwritten during analysis
-                                  "y": np.zeros(self.n_nodes),
-                                  "z": np.zeros(self.n_nodes),
-                                  "a": np.zeros(self.n_nodes),
-                                  "b": np.zeros(self.n_nodes),
-                                  "g": np.zeros(self.n_nodes)}
 
         # matrices
         self.m = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
@@ -160,52 +156,49 @@ class StraightBeam(object):
 
     def initialize_elements(self):
         # running coordinate x - in the middle of each beam element
-        self.parameters['x'] = [(x + 0.5) / self.n_nodes * self.parameters['lx']
+        self.parameters['x'] = [x / self.n_elements * self.parameters['lx']
                                 for x in list(range(self.n_nodes))]
-        # geometric
-        self.initialize_element_geometric_parameters()
-
-        # # length of one element - assuming an equidistant grid
-        indices = np.arange(self.parameters['n_el'] + 1)
+        self.parameters['x_mid'] = [(x + 0.5) / self.n_elements * self.parameters['lx']
+                                    for x in list(range(self.n_elements))]
 
         from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
 
-        for i in indices[:-1]:
-            coord = np.array([[self.parameters['x'][i], self.parameters['ly'][i], self.parameters['lz'][i]],
-                             [self.parameters['x'][i+1], self.parameters['ly'][i+1], self.parameters['lz'][i+1]]])
-            e = TimoshenkoBeamElement(self.parameters, self.element_params, coord, i, self.domain_size)
+        for i in range(self.n_elements):
+            element_params = self.initialize_element_geometric_parameters(i)
+            coord = np.array([[self.parameters['x'][i], 0.0, 0.0],
+                              [self.parameters['x'][i + 1], 0.0, 0.0]])
+            e = TimoshenkoBeamElement(self.parameters, element_params, coord, i, self.domain_size)
             self.elements.append(e)
 
+        self.initialize_reference_coordinate()
+
+    def initialize_reference_coordinate(self):
         self.nodal_coordinates["x0"] = list(e.ReferenceCoords[0] for e in self.elements)
-        self.nodal_coordinates["x0"].append(self.elements[-1].ReferenceCoords[1])
+        self.nodal_coordinates["x0"].append(self.elements[-1].ReferenceCoords[3])
+        self.nodal_coordinates["x0"] = np.asarray(self.nodal_coordinates["x0"])
         self.nodal_coordinates["y0"] = list(e.ReferenceCoords[2] for e in self.elements)
-        self.nodal_coordinates["y0"].append(self.elements[-1].ReferenceCoords[3])
+        self.nodal_coordinates["y0"].append(self.elements[-1].ReferenceCoords[4])
+        self.nodal_coordinates["y0"] = np.asarray(self.nodal_coordinates["y0"])
         self.nodal_coordinates["z0"] = list(e.ReferenceCoords[4] for e in self.elements)
         self.nodal_coordinates["z0"].append(self.elements[-1].ReferenceCoords[5])
+        self.nodal_coordinates["z0"] = np.asarray(self.nodal_coordinates["z0"])
 
-    def initialize_element_geometric_parameters(self):
-        # geometric
-        # characteristics lengths
-
-        self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
-            x, 'c_ly') for x in self.parameters['x']]
-        self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
-            x, 'c_lz') for x in self.parameters['x']]
-        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
-
+    def initialize_element_geometric_parameters(self, i):
+        element_params = {}
         # element properties
-        for x in self.parameters['x']:
-            # area
-            self.element_params['a'] = self.evaluate_characteristic_on_interval(x, 'c_a')
+        x = self.parameters['x_mid'][i]
+        # area
+        element_params['a'] = self.evaluate_characteristic_on_interval(x, 'c_a')
 
-            # effective area of shear
-            self.element_params['asy'] = self.evaluate_characteristic_on_interval(x, 'c_a_sy')
-            self.element_params['asz'] = self.evaluate_characteristic_on_interval(x, 'c_a_sz')
-            # second moment of inertia
-            self.element_params['iy'] = self.evaluate_characteristic_on_interval(x, 'c_iy')
-            self.element_params['iz'] = self.evaluate_characteristic_on_interval(x, 'c_iz')
-            # torsion constant
-            self.element_params['it'] = self.evaluate_characteristic_on_interval(x, 'c_it')
+        # effective area of shear
+        element_params['asy'] = self.evaluate_characteristic_on_interval(x, 'c_a_sy')
+        element_params['asz'] = self.evaluate_characteristic_on_interval(x, 'c_a_sz')
+        # second moment of inertia
+        element_params['iy'] = self.evaluate_characteristic_on_interval(x, 'c_iy')
+        element_params['iz'] = self.evaluate_characteristic_on_interval(x, 'c_iz')
+        # torsion constant
+        element_params['it'] = self.evaluate_characteristic_on_interval(x, 'c_it')
+        return element_params
 
     def apply_elastic_bcs(self):
         # handle potential elastic BCs
