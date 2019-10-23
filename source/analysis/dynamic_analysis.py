@@ -102,6 +102,7 @@ class DynamicAnalysis(AnalysisType):
         self.comp_k = np.copy(self.structure_model.comp_k)
         self.comp_b = np.copy(self.structure_model.comp_b)
 
+        # tranformation to the modal coordinates
         if self.transform_into_modal:
             self.comp_m = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_m)
             self.comp_b = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_b)
