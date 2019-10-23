@@ -119,7 +119,9 @@ class DynamicAnalysis(AnalysisType):
             force = np.dot(np.transpose(self.structure_model.eigen_modes_raw), force)
 
         self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
-                                   [self.comp_m, self.comp_b, self.comp_k], initial_conditions, force)
+                                   [self.comp_m, self.comp_b, self.comp_k],
+                                   initial_conditions, force,
+                                   self.structure_model.a, self.structure_model.elastic_bc_dofs)
 
     def solve(self):
 
@@ -138,37 +140,6 @@ class DynamicAnalysis(AnalysisType):
             self.solver.velocity)
         self.solver.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.solver.acceleration)
-
-        self.compute_reactions()
-
-    def compute_reactions(self):
-        # forward multiplying to compute the forces and reactions
-        # NOTE: check if this is needed, seems to be unused
-        # ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
-
-        # TODO: check if this still correct in modal coordinates
-        # if self.transform_into_modal:
-        #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'), self.solver.acceleration)
-        #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'), self.solver.velocity)
-        #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'), self.solver.displacement)
-        # else:
-        f1 = np.matmul(self.structure_model.m, self.solver.acceleration)
-        f2 = np.matmul(self.structure_model.b, self.solver.velocity)
-        f3 = np.matmul(self.structure_model.k, self.solver.displacement)
-        self.dynamic_reaction = self.force - f1 - f2 - f3
-
-        # TODO: check if the treatment of elastic bc dofs is correct
-        # TODO: check if this still applies in modal coordinates
-        for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
-            # assuming a Rayleigh-model
-            damping_val = stiffness_val * self.structure_model.a[1]
-
-            f1 = 0.0 * self.solver.acceleration[dof_id]
-            f2 = damping_val * self.solver.velocity[dof_id]
-            f3 = stiffness_val * self.solver.displacement[dof_id]
-
-            # overwrite the existing value with one solely from spring stiffness and damping
-            self.dynamic_reaction[dof_id] = f1 + f2 + f3
 
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
