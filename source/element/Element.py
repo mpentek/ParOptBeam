@@ -34,8 +34,9 @@ class Element(object):
         self.LocalSize = self.NumberOfNodes * self.Dimension
         self.ElementSize = self.LocalSize * 2
 
-        # element geometry Node A, Node B
-        self.ReferenceCoords = nodal_coords.reshape(self.LocalSize)
+        # element geometry
+        # [Ax, Bx, Ay, By, Az, Bz]
+        self.ReferenceCoords = np.transpose(nodal_coords).reshape(self.LocalSize)
         # element current nodal positions
         self.CurrentCoords = self.ReferenceCoords
         # reference length of one element
@@ -74,8 +75,8 @@ class Element(object):
         print(msg)
 
     def _calculate_reference_length(self):
-        dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
-        dy = self.ReferenceCoords[2] - self.ReferenceCoords[3]
-        dz = self.ReferenceCoords[4] - self.ReferenceCoords[5]
+        dx = self.ReferenceCoords[0] - self.ReferenceCoords[3]
+        dy = self.ReferenceCoords[1] - self.ReferenceCoords[4]
+        dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
         length = np.sqrt(dx * dx + dy * dy + dz * dz)
         return length

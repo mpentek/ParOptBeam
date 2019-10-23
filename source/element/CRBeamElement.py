@@ -24,6 +24,11 @@ def rotate_vector(quaternion, vector):
 
 class CRBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
+        if domain_size == '2D':
+            err_msg = "2D CR-Beam element not implemented"
+            err_msg += "Please use only 3D CR-Beam element"
+            raise Exception(err_msg)
+
         super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
         self.evaluate_relative_importance_of_shear()
@@ -53,8 +58,15 @@ class CRBeamElement(Element):
         self._print_element_information()
 
     def _print_element_information(self):
-        msg = str(self.domain_size) + " Co-Rotational Beam Element\n"
-        msg += "Element Size: " + str(self.ElementSize) + "\n"
+        msg = str(self.domain_size) + " Co-Rotational Beam Element" + str(self.index) + "\n"
+        msg += "Initial coordinates: \n"
+        msg += str(self.ReferenceCoords[0:6:2]) + "\n"
+        msg += str(self.ReferenceCoords[1:6:2]) + "\n"
+        msg += "A: " + str(self.A) + "\n"
+        msg += "Asy: " + str(self.Asy) + "\n"
+        msg += "Asz: " + str(self.Asz) + "\n"
+        msg += "Iy: " + str(self.Iy) + "\n"
+        msg += "Iz: " + str(self.Iz) + "\n"
         print(msg)
 
     def get_element_mass_matrix(self):

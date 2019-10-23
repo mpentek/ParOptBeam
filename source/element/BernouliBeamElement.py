@@ -13,8 +13,8 @@ class BernoulliBeamElement(TimoshenkoBeamElement):
     def _print_element_information(self):
         msg = str(self.domain_size) + " Bernoulli Beam Element " + str(self.index) + "\n"
         msg += "Initial coordinates: \n"
-        msg += str(self.ReferenceCoords[:3]) + "\n"
-        msg += str(self.ReferenceCoords[3:]) + "\n"
+        msg += str(self.ReferenceCoords[0:6:2]) + "\n"
+        msg += str(self.ReferenceCoords[1:6:2]) + "\n"
         msg += "A: " + str(self.A) + "\n"
         msg += "Asy: " + str(self.Asy) + "\n"
         msg += "Asz: " + str(self.Asz) + "\n"
