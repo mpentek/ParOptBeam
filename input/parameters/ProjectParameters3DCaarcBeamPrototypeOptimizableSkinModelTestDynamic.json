@@ -4,8 +4,8 @@
         "domain_size": "3D",
         "system_parameters": {
             "element_params": {
-                "type": "Bernoulli",
-                "is_nonlinear": false
+                "type": "CRBeam",
+                "is_nonlinear": true
             },
             "material": {
                 "density": 160.0,
@@ -87,7 +87,7 @@
         "runs": [{
                 "type" : "dynamic_analysis",
                 "settings": {
-                    "solver_type": "Linear",
+                    "solver_type": "Picard",
                     "run_in_modal_coordinates": true,
                     "time":{
                         "integration_scheme": "GenAlpha",
