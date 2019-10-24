@@ -31,8 +31,8 @@ class ResidualBasedSolver(Solver):
 
     def solve(self):
         # time loop
-        # for i in range(0, len(self.array_time)):
-        for i in range(0, 10):
+        for i in range(0, len(self.array_time)):
+        # for i in range(0, 10):
             self.step = i
             current_time = self.array_time[i]
             print("time: ", "{0:.2f}".format(current_time))

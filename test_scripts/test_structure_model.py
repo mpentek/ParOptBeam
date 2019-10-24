@@ -5,6 +5,7 @@ params = {
     "name": "CaarcBeamPrototypeOptimizable",
     "domain_size": "3D",
     "system_parameters": {
+        "element_type": "CRBeam",
         "material": {
             "density": 160.0,
             "youngs_modulus": 2.861e8,
