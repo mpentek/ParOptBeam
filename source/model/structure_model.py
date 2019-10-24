@@ -312,7 +312,7 @@ class StraightBeam(object):
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)
 
-    def decompose_and_quantify_eigenmodes(self, considered_modes=10):
+    def decompose_and_quantify_eigenmodes(self, considered_modes=15):
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
@@ -347,7 +347,7 @@ class StraightBeam(object):
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
 
-    def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
+    def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)

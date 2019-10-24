@@ -91,7 +91,7 @@ class EigenvalueAnalysis(AnalysisType):
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
 
-    def write_eigenmode_summary(self, considered_modes=10):
+    def write_eigenmode_summary(self, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
@@ -118,7 +118,7 @@ class EigenvalueAnalysis(AnalysisType):
                                      file_header,
                                      lines)
 
-    def plot_eigenmode_summary(self, pdf_report, display_plot, considered_modes=10):
+    def plot_eigenmode_summary(self, pdf_report, display_plot, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
