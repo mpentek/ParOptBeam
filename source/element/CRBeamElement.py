@@ -33,15 +33,7 @@ class CRBeamElement(Element):
 
         self.evaluate_relative_importance_of_shear()
 
-        # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
-        # placeholder for one time step deformation to calculate the increment
-        self.current_deformation = np.zeros(self.ElementSize)
-        self.previous_deformation = np.zeros(self.ElementSize)
-
         self.Iteration = 0
-
-        # nodal forces
-        self.qe = np.zeros(self.ElementSize)
 
         # transformation matrix
         self.S = np.zeros([self.ElementSize, self.LocalSize])
@@ -58,10 +50,14 @@ class CRBeamElement(Element):
         self._print_element_information()
 
     def _print_element_information(self):
-        msg = str(self.domain_size) + " Co-Rotational Beam Element " + str(self.index) + "\n"
+        if self.isNonlinear:
+            msg = "Nonlinear "
+        else:
+            msg = "Linear "
+        msg += str(self.domain_size) + " Co-Rotational Beam Element " + str(self.index) + "\n"
         msg += "Initial coordinates: \n"
-        msg += str(self.ReferenceCoords[0:6:2]) + "\n"
-        msg += str(self.ReferenceCoords[1:6:2]) + "\n"
+        msg += str(self.ReferenceCoords[:3]) + "\n"
+        msg += str(self.ReferenceCoords[3:]) + "\n"
         msg += "L: " + str(self.L) + "\n"
         msg += "A: " + str(self.A) + "\n"
         msg += "Asy: " + str(self.Asy) + "\n"
@@ -71,6 +67,18 @@ class CRBeamElement(Element):
         print(msg)
 
     def get_element_mass_matrix(self):
+        MassMatrix = self._get_consistent_mass_matrix()
+        rotation_matrix = np.zeros([self.ElementSize, self.ElementSize])
+        if self.Iteration == 0:
+            rotation_matrix = self._calculate_initial_local_cs()
+        else:
+            rotation_matrix = self._assemble_small_in_big_matrix(self.LocalRotationMatrix, rotation_matrix)
+
+        aux_maxtrix = np.matmul(rotation_matrix, MassMatrix)
+        MassMatrix = np.matmul(aux_maxtrix, np.transpose(rotation_matrix))
+        return MassMatrix
+
+    def _get_consistent_mass_matrix(self):
         """
             there are two options for mass matrix calculation, either the consistent mass matrix or the lumped mass matrix
             here the consistent mass matrix is calculated because the lumped mass matrix is singular for beam elements
