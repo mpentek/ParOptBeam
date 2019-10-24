@@ -5,7 +5,8 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.solving_strategies.strategies.linear_solver import LinearSolver
-from source.solving_strategies.strategies.rasidual_based_picard_solver import ResidualBasedPicardSolver
+from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
+from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
@@ -119,10 +120,27 @@ class DynamicAnalysis(AnalysisType):
         if self.transform_into_modal:
             force = np.dot(np.transpose(self.structure_model.eigen_modes_raw), force)
 
-        self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
-                                   [self.comp_m, self.comp_b, self.comp_k],
-                                   initial_conditions, force,
-                                   self.structure_model)
+        print(self.parameters)
+        if self.parameters["settings"]["solver_type"] == "Linear":
+            self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
+                                       [self.comp_m, self.comp_b, self.comp_k],
+                                       initial_conditions, force,
+                                       self.structure_model)
+        elif self.parameters["settings"]["solver_type"] == "Picard":
+            self.solver = ResidualBasedPicardSolver(self.array_time, time_integration_scheme, self.dt,
+                                                    [self.comp_m, self.comp_b, self.comp_k],
+                                                    initial_conditions, force,
+                                                    self.structure_model)
+        elif self.parameters["settings"]["solver_type"] == "NewtonRaphson":
+            self.solver = ResidualBasedNewtonRaphsonSolver(self.array_time, time_integration_scheme, self.dt,
+                                                    [self.comp_m, self.comp_b, self.comp_k],
+                                                    initial_conditions, force,
+                                                    self.structure_model)
+        else:
+            err_msg = "The requested solver type \"" + self.parameters["settings"]["solver_type"]
+            err_msg += "\" is not available \n"
+            err_msg += "Choose one of: \"Linear\", \"Picard\", \"NewtonRaphson\"\n"
+            raise Exception(err_msg)
 
     def solve(self):
 

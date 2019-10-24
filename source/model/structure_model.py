@@ -87,7 +87,8 @@ class StraightBeam(object):
                            'zeta': parameters["system_parameters"]["material"]["damping_ratio"],
                            'lx': parameters["system_parameters"]["geometry"]["length_x"],
                            'n_el': parameters["system_parameters"]["geometry"]["number_of_elements"],
-                           'element_type': parameters["system_parameters"]["element_type"],
+                           'element_type': parameters["system_parameters"]["element_params"]["type"],
+                           'is_nonlinear': parameters["system_parameters"]["element_params"]["is_nonlinear"],
                            'intervals': []}
 
         # defined on intervals as piecewise continuous function on an interval starting from 0.0
@@ -611,8 +612,8 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
-        self.a = np.linalg.solve(0.5 *
-                                 np.array(
+        self.rayleigh_coefficients = np.linalg.solve(0.5 *
+                                                     np.array(
                                      [[1 / self.eig_values[self.eig_freqs_sorted_indices[mode_i]],
                                        self.eig_values[
                                            self.eig_freqs_sorted_indices[mode_i]]],
@@ -620,7 +621,7 @@ class StraightBeam(object):
                                        self.eig_values[
                                            self.eig_freqs_sorted_indices[
                                                mode_j]]]]),
-                                 [zeta_i, zeta_j])
+                                                     [zeta_i, zeta_j])
 
         # return back the whole matrix - without BCs applied
-        return self.a[0] * self.m + self.a[1] * self.k
+        return self.rayleigh_coefficients[0] * self.m + self.rayleigh_coefficients[1] * self.k
