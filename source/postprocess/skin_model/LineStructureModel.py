@@ -83,6 +83,7 @@ class LineStructure:
         msg = "=============================================\n"
         msg += "LINE STRUCTURE MODEL INFO \n"
         msg += "NUMBER OF NODES:\t" + str(self.num_of_nodes) + "\n"
+        msg += "UNDEFORMED GEOMETRY:\t" + str(self.undeformed) + "\n"
         msg += "=============================================\n"
         print(msg)
 

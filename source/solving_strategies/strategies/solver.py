@@ -32,12 +32,20 @@ from source.solving_strategies.schemes.bdf2_scheme import BDF2
 
 
 class Solver(object):
-    def __init__(self, array_time, time_integration_scheme, dt, comp_model, initial_conditions, force):
+    def __init__(self,
+                 array_time, time_integration_scheme, dt,
+                 comp_model,
+                 initial_conditions,
+                 force,
+                 structure_model):
         # vector of time
         self.array_time = array_time
 
         # time step
         self.dt = dt
+
+        # iteration
+        self.step = 0
 
         # mass, damping and spring stiffness
         self.M = comp_model[0]
@@ -47,6 +55,9 @@ class Solver(object):
         # external forces
         self.force = force
 
+        # for reaction calculation
+        self.structure_model = structure_model
+
         # placeholders for the solution
         rows = len(initial_conditions[0])
         cols = len(self.array_time)
@@ -55,6 +66,7 @@ class Solver(object):
         self.displacement = np.zeros((rows, cols))
         self.velocity = np.zeros((rows, cols))
         self.acceleration = np.zeros((rows, cols))
+        self.dynamic_reaction = np.zeros((rows, cols))
 
         # initializing scheme
         self._init_scheme(time_integration_scheme, comp_model, initial_conditions)
@@ -94,3 +106,33 @@ class Solver(object):
 
     def solve(self):
         pass
+
+    def _compute_reaction(self, u, v, a):
+
+        # TODO: check if this still correct in modal coordinates
+        # if self.transform_into_modal:
+        #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'),
+        #                    self.solver.acceleration)
+        #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'),
+        #                    self.solver.velocity)
+        #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'),
+        #                    self.solver.displacement)
+        # else:
+        f1 = np.dot(self.M, a)
+        f2 = np.dot(self.B, v)
+        f3 = np.dot(self.K, u)
+        dynamic_reaction = self.force[:, self.step] - f1 - f2 - f3
+
+        # TODO: check if the treatment of elastic bc dofs is correct
+        # TODO: check if this still applies in modal coordinates
+        for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
+            # assuming a Rayleigh-model
+            damping_val = stiffness_val * self.structure_model.rayleigh_coefficients[1]
+
+            f1 = 0.0 * a[dof_id]
+            f2 = damping_val * v[dof_id]
+            f3 = stiffness_val * u[dof_id]
+
+            # overwrite the existing value with one solely from spring stiffness and damping
+            dynamic_reaction[dof_id] = f1 + f2 + f3
+        return dynamic_reaction

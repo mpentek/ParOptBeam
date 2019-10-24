@@ -5,12 +5,14 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-from source.auxiliary import global_definitions as GD
 from source.solving_strategies.strategies.linear_solver import LinearSolver
+from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
+from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.global_definitions import *
 
 
 def transform_into_modal_coordinates(modal_transform_matrix, matrix):
@@ -103,6 +105,7 @@ class DynamicAnalysis(AnalysisType):
         self.comp_k = np.copy(self.structure_model.comp_k)
         self.comp_b = np.copy(self.structure_model.comp_b)
 
+        # tranformation to the modal coordinates
         if self.transform_into_modal:
             self.comp_m = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_m)
             self.comp_b = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_b)
@@ -118,8 +121,27 @@ class DynamicAnalysis(AnalysisType):
         if self.transform_into_modal:
             force = np.dot(np.transpose(self.structure_model.eigen_modes_raw), force)
 
-        self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
-                                   [self.comp_m, self.comp_b, self.comp_k], initial_conditions, force)
+        print(self.parameters)
+        if self.parameters["settings"]["solver_type"] == "Linear":
+            self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
+                                       [self.comp_m, self.comp_b, self.comp_k],
+                                       initial_conditions, force,
+                                       self.structure_model)
+        elif self.parameters["settings"]["solver_type"] == "Picard":
+            self.solver = ResidualBasedPicardSolver(self.array_time, time_integration_scheme, self.dt,
+                                                    [self.comp_m, self.comp_b, self.comp_k],
+                                                    initial_conditions, force,
+                                                    self.structure_model)
+        elif self.parameters["settings"]["solver_type"] == "NewtonRaphson":
+            self.solver = ResidualBasedNewtonRaphsonSolver(self.array_time, time_integration_scheme, self.dt,
+                                                    [self.comp_m, self.comp_b, self.comp_k],
+                                                    initial_conditions, force,
+                                                    self.structure_model)
+        else:
+            err_msg = "The requested solver type \"" + self.parameters["settings"]["solver_type"]
+            err_msg += "\" is not available \n"
+            err_msg += "Choose one of: \"Linear\", \"Picard\", \"NewtonRaphson\"\n"
+            raise Exception(err_msg)
 
     def solve(self):
 
@@ -139,37 +161,6 @@ class DynamicAnalysis(AnalysisType):
         self.solver.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.solver.acceleration)
 
-        self.compute_reactions()
-
-    def compute_reactions(self):
-        # forward multiplying to compute the forces and reactions
-        # NOTE: check if this is needed, seems to be unused
-        # ixgrid = np.ix_(self.structure_model.bcs_to_keep, [0])
-
-        # TODO: check if this still correct in modal coordinates
-        # if self.transform_into_modal:
-        #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'), self.solver.acceleration)
-        #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'), self.solver.velocity)
-        #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'), self.solver.displacement)
-        # else:
-        f1 = np.matmul(self.structure_model.m, self.solver.acceleration)
-        f2 = np.matmul(self.structure_model.b, self.solver.velocity)
-        f3 = np.matmul(self.structure_model.k, self.solver.displacement)
-        self.dynamic_reaction = self.force - f1 - f2 - f3
-
-        # TODO: check if the treatment of elastic bc dofs is correct
-        # TODO: check if this still applies in modal coordinates
-        for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
-            # assuming a Rayleigh-model
-            damping_val = stiffness_val * self.structure_model.a[1]
-
-            f1 = 0.0 * self.solver.acceleration[dof_id]
-            f2 = damping_val * self.solver.velocity[dof_id]
-            f3 = stiffness_val * self.solver.displacement[dof_id]
-
-            # overwrite the existing value with one solely from spring stiffness and damping
-            self.dynamic_reaction[dof_id] = f1 + f2 + f3
-
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
         Pass to plot function:
@@ -185,7 +176,7 @@ class DynamicAnalysis(AnalysisType):
             result_data = self.solver.acceleration[dof, :]
         elif selected_result == 'reaction':
             if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
-                result_data = self.dynamic_reaction[dof, :]
+                result_data = self.solver.dynamic_reaction[dof, :]
             else:
                 err_msg = "The selected DoF \"" + str(dof)
                 err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
@@ -220,7 +211,7 @@ class DynamicAnalysis(AnalysisType):
             result_data = self.solver.acceleration[dof, :]
         elif selected_result == 'reaction':
             if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
-                result_data = self.dynamic_reaction[dof, :]
+                result_data = self.solver.dynamic_reaction[dof, :]
             else:
                 err_msg = "The selected DoF \"" + str(dof)
                 err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
@@ -264,10 +255,10 @@ class DynamicAnalysis(AnalysisType):
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -310,10 +301,10 @@ class DynamicAnalysis(AnalysisType):
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -359,10 +350,10 @@ class DynamicAnalysis(AnalysisType):
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -405,10 +396,10 @@ class DynamicAnalysis(AnalysisType):
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -448,10 +439,11 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
+        print("Copying time step solution from solver")
+        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                              DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step]
@@ -478,22 +470,12 @@ class DynamicAnalysis(AnalysisType):
                                          force,
                                          scaling)
 
-    def get_output_for_visualiser(self):
-        """"
-        This function writes out the nodal dofs of the deformed state for visualiser
-        """
-
-        output = {}
-        for key, val in self.structure_model.nodal_coordinates.items():
-            output[key] = val.tolist()
-
-        return output
-
     def animate_skin_model_time_history(self, skin_model_params):
         print("Animating skin model time history")
         if not self.parameters['output']['animate_time_history']:
-            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                                  GD.DOF_LABELS[self.structure_model.domain_size]):
+            print("Copying time step solution from solver")
+            for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
+                                  DOF_LABELS[self.structure_model.domain_size]):
                 start = idx
                 step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
                 stop = self.solver.displacement.shape[0] + idx - step
@@ -508,8 +490,7 @@ class DynamicAnalysis(AnalysisType):
             self.parameters['output']['skin_model_animation_parameters']['end_record']
         skin_model_params["dynamic_analysis"]["record_step"] = \
             self.parameters['output']['skin_model_animation_parameters']['record_step']
-
-        skin_model_params["dofs_input"] = self.get_output_for_visualiser()
+        skin_model_params["dofs_input"] = self.structure_model.nodal_coordinates
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
 

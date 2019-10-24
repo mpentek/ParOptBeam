@@ -51,7 +51,7 @@ for available_model in available_models:
 
     # additional changes due to optimization
     if 'optimization_parameters' in parameters:
-        # return the model of the optimizable instance to preserve what is required by analyzis
+        # return the model of the obtainable instance to preserve what is required by analyzis
         from source.model.optimizable_structure_model import OptimizableStraightBeam
         beam_model = OptimizableStraightBeam(
             beam_model, parameters['optimization_parameters']['adapt_for_target_values']).model
