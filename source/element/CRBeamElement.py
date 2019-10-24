@@ -58,10 +58,11 @@ class CRBeamElement(Element):
         self._print_element_information()
 
     def _print_element_information(self):
-        msg = str(self.domain_size) + " Co-Rotational Beam Element" + str(self.index) + "\n"
+        msg = str(self.domain_size) + " Co-Rotational Beam Element " + str(self.index) + "\n"
         msg += "Initial coordinates: \n"
         msg += str(self.ReferenceCoords[0:6:2]) + "\n"
         msg += str(self.ReferenceCoords[1:6:2]) + "\n"
+        msg += "L: " + str(self.L) + "\n"
         msg += "A: " + str(self.A) + "\n"
         msg += "Asy: " + str(self.Asy) + "\n"
         msg += "Asz: " + str(self.Asz) + "\n"
@@ -70,15 +71,121 @@ class CRBeamElement(Element):
         print(msg)
 
     def get_element_mass_matrix(self):
+        """
+            there are two options for mass matrix calculation, either the consistent mass matrix or the lumped mass matrix
+            here the consistent mass matrix is calculated because the lumped mass matrix is singular for beam elements
+        """
         MassMatrix = np.zeros([self.ElementSize, self.ElementSize])
-        total_mass = self.A * self.L * self.rho
-        temp = 0.5 * total_mass
-        # translational mass
-        for i in range(self.NumberOfNodes):
-            for j in range(self.Dimension):
-                index = i * (self.Dimension * 2) + j
-                MassMatrix[index, index] = temp
+        L2 = self.L * self.L
+        Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
+        Phiy = (12.0 * self.E * self.Iy) / (L2 * self.G * self.Asz)
+
+        # rotational inertia
+        IRy = self.Iy
+        IRz = self.Iz
+
+        CTy = (self.rho * self.A * self.L) / ((1 + Phiy) * (1 + Phiy))
+        CTz = (self.rho * self.A * self.L) / ((1 + Phiz) * (1 + Phiz))
+        CRy = (self.rho * IRy) / ((1 + Phiy) * (1 + Phiy) * self.L)
+        CRz = (self.rho * IRz) / ((1 + Phiz) * (1 + Phiz) * self.L)
+
+        # longitudinal forces + torsional moment
+        M00 = (1.0 / 3.0) * self.A * self.rho * self.L
+        M06 = M00 / 2.0
+        M33 = (self.It * self.L * self.rho) / 3.0
+        M39 = M33 / 2.0
+
+        MassMatrix[0, 0] = M00
+        MassMatrix[0, 6] = M06
+        MassMatrix[6, 6] = M00
+        MassMatrix[3, 3] = M33
+        MassMatrix[3, 9] = M39
+        MassMatrix[9, 9] = M33
+
+        temp_bending_mass_matrix = self.build_single_mass_matrix(Phiz, CTz, CRz, self.L, +1)
+
+        MassMatrix[1, 1] = temp_bending_mass_matrix[0, 0]
+        MassMatrix[1, 5] = temp_bending_mass_matrix[0, 1]
+        MassMatrix[1, 7] = temp_bending_mass_matrix[0, 2]
+        MassMatrix[1, 11] = temp_bending_mass_matrix[0, 3]
+        MassMatrix[5, 5] = temp_bending_mass_matrix[1, 1]
+        MassMatrix[5, 7] = temp_bending_mass_matrix[1, 2]
+        MassMatrix[5, 11] = temp_bending_mass_matrix[1, 3]
+        MassMatrix[7, 7] = temp_bending_mass_matrix[2, 2]
+        MassMatrix[7, 11] = temp_bending_mass_matrix[2, 3]
+        MassMatrix[11, 11] = temp_bending_mass_matrix[3, 3]
+
+        temp_bending_mass_matrix = self.build_single_mass_matrix(Phiy, CTy, CRy, self.L, -1)
+
+        MassMatrix[2, 2] = temp_bending_mass_matrix[0, 0]
+        MassMatrix[2, 4] = temp_bending_mass_matrix[0, 1]
+        MassMatrix[2, 8] = temp_bending_mass_matrix[0, 2]
+        MassMatrix[2, 10] = temp_bending_mass_matrix[0, 3]
+        MassMatrix[4, 4] = temp_bending_mass_matrix[1, 1]
+        MassMatrix[4, 8] = temp_bending_mass_matrix[1, 2]
+        MassMatrix[4, 10] = temp_bending_mass_matrix[1, 3]
+        MassMatrix[8, 8] = temp_bending_mass_matrix[2, 2]
+        MassMatrix[8, 10] = temp_bending_mass_matrix[2, 3]
+        MassMatrix[10, 10] = temp_bending_mass_matrix[3, 3]
+
+        for i in range(self.ElementSize):
+            for j in range(i):
+                MassMatrix[j, i] = MassMatrix[i, j]
+
         return MassMatrix
+
+    def build_single_mass_matrix(self, Phi, CT, CR, L, dir):
+        MatSize = self.NumberOfNodes * 2
+        mass_matrix = np.zeros([MatSize, MatSize])
+        temp_mass_matrix = np.zeros([MatSize, MatSize])
+
+        Phi2 = Phi * Phi
+        L2 = L * L
+
+        temp_mass_matrix[0, 0] = (13.0 / 35.0) + (7.0 / 10.0) * Phi + (1.0 / 3.0) * Phi2
+        temp_mass_matrix[0, 1] = dir * ((11.0 / 210.0) + (11.0 / 210.0) * Phi + (1.0 / 24.0) * Phi2) * L
+        temp_mass_matrix[0, 2] = (9.0 / 70.0) + (3.0 / 10.0) * Phi + (1.0 / 6.0) * Phi2
+        temp_mass_matrix[0, 3] = -((13.0 / 420.0) + (3.0 / 40.0) * Phi + (1.0 / 24.0) * Phi2) * L * dir
+
+        temp_mass_matrix[1, 0] = temp_mass_matrix[0, 1]
+        temp_mass_matrix[1, 1] = ((1.0 / 105.0) + (1.0 / 60.0) * Phi + (1.0 / 120.0) * Phi2) * L2
+
+        temp_mass_matrix[1, 2] = dir * ((13.0 / 420.0) + (3.0 / 40.0) * Phi + (1.0 / 24.0) * Phi2) * L
+        temp_mass_matrix[1, 3] = -((1.0 / 140.0) + (1.0 / 60.0) * Phi + (1.0 / 120.0) * Phi2) * L2
+        temp_mass_matrix[2, 0] = temp_mass_matrix[0, 2]
+        temp_mass_matrix[2, 1] = temp_mass_matrix[1, 2]
+        temp_mass_matrix[2, 2] = (13.0 / 35.0) + (7.0 / 10.0) * Phi + (1.0 / 3.0) * Phi2
+        temp_mass_matrix[2, 3] = -((11.0 / 210.0) + (11.0 / 210.0) * Phi + (1.0 / 24.0) * Phi2) * L * dir
+        temp_mass_matrix[3, 0] = temp_mass_matrix[0, 3]
+        temp_mass_matrix[3, 1] = temp_mass_matrix[1, 3]
+        temp_mass_matrix[3, 2] = temp_mass_matrix[2, 3]
+        temp_mass_matrix[3, 3] = ((1.0 / 105.0) + (1.0 / 60.0) * Phi + (1.0 / 120.0) * Phi2) * L2
+        
+        temp_mass_matrix *= CT
+        mass_matrix += temp_mass_matrix
+        temp_mass_matrix = np.zeros([MatSize, MatSize])
+
+        temp_mass_matrix[0, 0] = 6.0 / 5.0
+        temp_mass_matrix[0, 1] = dir * ((1.0 / 10.0) - (1.0 / 2.0) * Phi) * L
+        temp_mass_matrix[0, 2] = -6.0 / 5.0
+        temp_mass_matrix[0, 3] = dir * ((1.0 / 10.0) - (1.0 / 2.0) * Phi) * L
+        temp_mass_matrix[1, 0] = temp_mass_matrix[0, 1]
+        temp_mass_matrix[1, 1] = ((2.0 / 15.0) + (1.0 / 6.0) * Phi + (1.0 / 3.0) * Phi2) * L2
+        temp_mass_matrix[1, 2] = dir * ((-1.0 / 10.0) + (1.0 / 2.0) * Phi) * L
+        temp_mass_matrix[1, 3] = -((1.0 / 30.0) + (1.0 / 6.0) * Phi - (1.0 / 6.0) * Phi2) * L2
+        temp_mass_matrix[2, 0] = temp_mass_matrix[0, 2]
+        temp_mass_matrix[2, 1] = temp_mass_matrix[1, 2]
+        temp_mass_matrix[2, 2] = 6.0 / 5.0
+        temp_mass_matrix[2, 3] = dir * ((-1.0 / 10.0) + (1.0 / 2.0) * Phi) * L
+        temp_mass_matrix[3, 0] = temp_mass_matrix[0, 3]
+        temp_mass_matrix[3, 1] = temp_mass_matrix[1, 3]
+        temp_mass_matrix[3, 2] = temp_mass_matrix[2, 3]
+        temp_mass_matrix[3, 3] = ((2.0 / 15.0) + (1.0 / 6.0) * Phi + (1.0 / 3.0) * Phi2) * L2
+        
+        temp_mass_matrix *= CR
+        mass_matrix += temp_mass_matrix
+
+        return mass_matrix
 
     def get_element_stiffness_matrix(self):
         if self.Iteration == 0:
@@ -178,7 +285,7 @@ class CRBeamElement(Element):
         mz_B = self.qe[11]
 
         L = self._calculate_current_length()
-        Qy = -1.00 * (mz_A + mz_B) / L
+        Qy = -1.0 * (mz_A + mz_B) / L
         Qz = (my_A + my_B) / L
 
         kg_const = np.zeros([self.ElementSize, self.ElementSize])
@@ -198,15 +305,15 @@ class CRBeamElement(Element):
         kg_const[1, 5] = N / 10.0
 
         kg_const[1, 6] = kg_const[0, 7]
-        kg_const[1, 7] = -1.00 * kg_const[1, 1]
+        kg_const[1, 7] = -1.0 * kg_const[1, 1]
         kg_const[1, 9] = my_B / L
-        kg_const[1, 10] = -1.00 * kg_const[1, 4]
+        kg_const[1, 10] = -1.0 * kg_const[1, 4]
         kg_const[1, 11] = kg_const[1, 5]
 
         kg_const[2, 0] = kg_const[0, 2]
         kg_const[2, 2] = kg_const[1, 1]
         kg_const[2, 3] = mz_A / L
-        kg_const[2, 4] = -1.00 * kg_const[1, 5]
+        kg_const[2, 4] = -1.0 * kg_const[1, 5]
         kg_const[2, 5] = kg_const[1, 4]
         kg_const[2, 6] = kg_const[0, 8]
         kg_const[2, 8] = kg_const[1, 7]
@@ -217,22 +324,22 @@ class CRBeamElement(Element):
         for i in range(3):
             kg_const[3, i] = kg_const[i, 3]
 
-        kg_const[3, 4] = (-mz_A / 3.00) + (mz_B / 6.00)
-        kg_const[3, 5] = (my_A / 3.00) - (my_B / 6.00)
+        kg_const[3, 4] = (-mz_A / 3.0) + (mz_B / 6.0)
+        kg_const[3, 5] = (my_A / 3.0) - (my_B / 6.0)
         kg_const[3, 7] = -my_A / L
         kg_const[3, 8] = -mz_A / L
-        kg_const[3, 10] = L * Qy / 6.00
-        kg_const[3, 11] = L * Qz / 6.00
+        kg_const[3, 10] = L * Qy / 6.0
+        kg_const[3, 11] = L * Qz / 6.0
 
         for i in range(4):
             kg_const[4, i] = kg_const[i, 4]
 
-        kg_const[4, 4] = 2.00 * L * N / 15.00
+        kg_const[4, 4] = 2.0 * L * N / 15.0
         kg_const[4, 7] = -Mt / L
-        kg_const[4, 8] = N / 10.00
+        kg_const[4, 8] = N / 10.0
         kg_const[4, 9] = kg_const[3, 10]
-        kg_const[4, 10] = -L * N / 30.00
-        kg_const[4, 11] = Mt / 2.00
+        kg_const[4, 10] = -L * N / 30.0
+        kg_const[4, 11] = Mt / 2.0
 
         for i in range(5):
             kg_const[5, i] = kg_const[i, 5]
@@ -241,7 +348,7 @@ class CRBeamElement(Element):
         kg_const[5, 7] = -N / 10.0
         kg_const[5, 8] = -Mt / L
         kg_const[5, 9] = kg_const[3, 11]
-        kg_const[5, 10] = -1.00 * kg_const[4, 11]
+        kg_const[5, 10] = -1.0 * kg_const[4, 11]
         kg_const[5, 11] = kg_const[4, 10]
 
         for i in range(6):
@@ -254,7 +361,7 @@ class CRBeamElement(Element):
             kg_const[7, i] = kg_const[i, 7]
 
         kg_const[7, 7] = kg_const[1, 1]
-        kg_const[7, 9] = -1.00 * kg_const[1, 9]
+        kg_const[7, 9] = -1.0 * kg_const[1, 9]
         kg_const[7, 10] = kg_const[4, 1]
         kg_const[7, 11] = kg_const[2, 4]
 
@@ -262,15 +369,15 @@ class CRBeamElement(Element):
             kg_const[8, i] = kg_const[i, 8]
 
         kg_const[8, 8] = kg_const[1, 1]
-        kg_const[8, 9] = -1.00 * kg_const[2, 9]
+        kg_const[8, 9] = -1.0 * kg_const[2, 9]
         kg_const[8, 10] = kg_const[1, 5]
         kg_const[8, 11] = kg_const[1, 4]
 
         for i in range(9):
             kg_const[9, i] = kg_const[i, 9]
 
-        kg_const[9, 10] = (mz_A / 6.00) - (mz_B / 3.00)
-        kg_const[9, 11] = (-my_A / 6.00) + (my_B / 3.00)
+        kg_const[9, 10] = (mz_A / 6.0) - (mz_B / 3.0)
+        kg_const[9, 11] = (-my_A / 6.0) + (my_B / 3.0)
 
         for i in range(10):
             kg_const[10, i] = kg_const[i, 10]
@@ -334,22 +441,22 @@ class CRBeamElement(Element):
     def _calculate_transformation_s(self):
         L = self._calculate_current_length()
 
-        self.S[0, 3] = -1.00
-        self.S[1, 5] = 2.00 / L
-        self.S[2, 4] = -2.00 / L
-        self.S[3, 0] = -1.00
-        self.S[4, 1] = -1.00
-        self.S[4, 4] = 1.00
-        self.S[5, 2] = -1.00
-        self.S[5, 5] = 1.00
-        self.S[6, 3] = 1.00
-        self.S[7, 5] = -2.00 / L
-        self.S[8, 4] = 2.00 / L
-        self.S[9, 0] = 1.00
-        self.S[10, 1] = 1.00
-        self.S[10, 4] = 1.00
-        self.S[11, 2] = 1.00
-        self.S[11, 5] = 1.00
+        self.S[0, 3] = -1.0
+        self.S[1, 5] = 2.0 / L
+        self.S[2, 4] = -2.0 / L
+        self.S[3, 0] = -1.0
+        self.S[4, 1] = -1.0
+        self.S[4, 4] = 1.0
+        self.S[5, 2] = -1.0
+        self.S[5, 5] = 1.0
+        self.S[6, 3] = 1.0
+        self.S[7, 5] = -2.0 / L
+        self.S[8, 4] = 2.0 / L
+        self.S[9, 0] = 1.0
+        self.S[10, 1] = 1.0
+        self.S[10, 4] = 1.0
+        self.S[11, 2] = 1.0
+        self.S[11, 5] = 1.0
 
     def _calculate_local_nodal_forces(self):
         # element force t
@@ -403,15 +510,15 @@ class CRBeamElement(Element):
         drA_vec = 0.50 * d_phi_a
         drB_vec = 0.50 * d_phi_b
 
-        drA_sca = 0.00
-        drB_sca = 0.00
+        drA_sca = 0.0
+        drB_sca = 0.0
 
         for i in range(0, self.Dimension):
             drA_sca += drA_vec[i] * drA_vec[i]
             drB_sca += drB_vec[i] * drB_vec[i]
 
-        drA_sca = np.sqrt(1.00 - drA_sca)
-        drB_sca = np.sqrt(1.00 - drB_sca)
+        drA_sca = np.sqrt(1.0 - drA_sca)
+        drB_sca = np.sqrt(1.0 - drB_sca)
 
         # Node A
         temp_vec = self._QuaternionVEC_A
@@ -547,10 +654,10 @@ class CRBeamElement(Element):
         if vector_norm > EPSILON:
             direction_vector_x /= vector_norm
 
-        if np.linalg.norm(direction_vector_x[2] - 1.00) < EPSILON:
+        if np.linalg.norm(direction_vector_x[2] - 1.0) < EPSILON:
             v2[1] = 1.0
             v3[0] = -1.0
-        elif np.linalg.norm(direction_vector_x[2] + 1.00) < EPSILON:
+        elif np.linalg.norm(direction_vector_x[2] + 1.0) < EPSILON:
             v2[1] = 1.0
             v3[0] = 1.0
         else:
@@ -597,3 +704,4 @@ class CRBeamElement(Element):
 
         length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
         return length
+
