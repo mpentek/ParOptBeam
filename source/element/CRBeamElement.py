@@ -706,9 +706,9 @@ class CRBeamElement(Element):
         dv = self.current_deformation[2] - self.current_deformation[3]
         dw = self.current_deformation[4] - self.current_deformation[5]
 
-        dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
-        dy = self.ReferenceCoords[3] - self.ReferenceCoords[3]
-        dz = self.ReferenceCoords[4] - self.ReferenceCoords[5]
+        dx = self.ReferenceCoords[0] - self.ReferenceCoords[3]
+        dy = self.ReferenceCoords[1] - self.ReferenceCoords[4]
+        dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
 
         length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
         return length

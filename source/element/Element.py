@@ -93,8 +93,8 @@ class Element(object):
         pass
 
     def _calculate_reference_length(self):
-        dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
-        dy = self.ReferenceCoords[2] - self.ReferenceCoords[3]
-        dz = self.ReferenceCoords[4] - self.ReferenceCoords[5]
+        dx = self.ReferenceCoords[0] - self.ReferenceCoords[3]
+        dy = self.ReferenceCoords[1] - self.ReferenceCoords[4]
+        dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
         length = np.sqrt(dx * dx + dy * dy + dz * dz)
         return length
