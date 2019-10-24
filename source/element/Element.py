@@ -6,7 +6,7 @@ class Element(object):
         self.material_params = material_params
         self.domain_size = domain_size
 
-        self.isNonlinear = False
+        self.isNonlinear = material_params['is_nonlinear']
 
         # nodal index - defined along the x axis
         self.index = index
@@ -35,12 +35,34 @@ class Element(object):
         self.ElementSize = self.LocalSize * 2
 
         # element geometry
-        # [Ax, Bx, Ay, By, Az, Bz]
-        self.ReferenceCoords = np.transpose(nodal_coords).reshape(self.LocalSize)
+        # element geometry Node A, Node B
+        self.ReferenceCoords = nodal_coords.reshape(self.LocalSize)
         # element current nodal positions
         self.CurrentCoords = self.ReferenceCoords
         # reference length of one element
         self.L = self._calculate_reference_length()
+
+        # nonlinear elements needs the nodal forces and deformations for the geometric stiffness calculation
+        if self.isNonlinear:
+            # nodal forces
+            self.qe = np.zeros(self.ElementSize)
+            # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
+            # placeholder for one time step deformation to calculate the increment
+            self.current_deformation = np.zeros(self.ElementSize)
+            self.previous_deformation = np.zeros(self.ElementSize)
+
+    def _print_element_information(self):
+        if self.isNonlinear:
+            msg = "Nonlinear "
+        else:
+            msg = "Linear "
+        msg += str(self.domain_size) + " Base Class Element " + str(self.index) + "\n"
+        print(msg)
+
+    def update_nodal_information(self, deformation, reaction):
+        self.previous_deformation = self.current_deformation
+        self.current_deformation = deformation
+        self.qe = reaction
 
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
@@ -70,13 +92,9 @@ class Element(object):
     def get_element_mass_matrix(self):
         pass
 
-    def _print_element_information(self):
-        msg = str(self.domain_size) + " Base Class Element " + str(self.index) + "\n"
-        print(msg)
-
     def _calculate_reference_length(self):
-        dx = self.ReferenceCoords[0] - self.ReferenceCoords[3]
-        dy = self.ReferenceCoords[1] - self.ReferenceCoords[4]
-        dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
+        dx = self.ReferenceCoords[0] - self.ReferenceCoords[1]
+        dy = self.ReferenceCoords[2] - self.ReferenceCoords[3]
+        dz = self.ReferenceCoords[4] - self.ReferenceCoords[5]
         length = np.sqrt(dx * dx + dy * dy + dz * dz)
         return length
