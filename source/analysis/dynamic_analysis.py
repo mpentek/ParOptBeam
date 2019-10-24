@@ -12,6 +12,7 @@ import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.global_definitions import *
 
 
 def transform_into_modal_coordinates(modal_transform_matrix, matrix):

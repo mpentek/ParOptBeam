@@ -363,9 +363,12 @@ class StraightBeam(object):
                         eff_modal_denominator = 0.0
                         total_mass = 0.0
 
-                        for i in range(len(self.parameters['x'])):
-                            storey_mass = self.parameters['a'][i] * \
-                                                self.parameters['rho'] * self.parameters['lx_i']
+                        vec_a = list(e.A for e in self.elements)
+                        vec_lx = list(e.L for e in self.elements)
+
+                        for i in range(self.n_elements):
+                            storey_mass = vec_a[i] * \
+                                                self.parameters['rho'] * vec_lx[i]
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
                                 storey_mass *= (self.parameters['lz'][i]**2 + self.parameters['ly'][i]**2)/12

@@ -8,7 +8,7 @@ Last update: 16.10.2019
 # ===============================================================================
 
 from source.solving_strategies.strategies.solver import Solver
-from source.auxiliary.global_definetions import *
+from source.auxiliary.global_definitions import *
 
 
 class ResidualBasedSolver(Solver):
