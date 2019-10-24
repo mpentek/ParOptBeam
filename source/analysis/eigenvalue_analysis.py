@@ -153,10 +153,13 @@ class EigenvalueAnalysis(AnalysisType):
         for mode, mode_ids in self.structure_model.mode_identification_results.items():
             type_counter = 0
             for mode_id in mode_ids:
+                m_id = list(mode_id.keys())[0]
+                # TODO use different datatype to avoid list(mode_id.keys())[0]
+                
                 type_counter += 1
                 counter += 1
                 lines.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
-                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[mode_id-1]]), mode])
+                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), mode])
 
         file_header = '# Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
@@ -180,17 +183,29 @@ class EigenvalueAnalysis(AnalysisType):
         for mode, mode_ids in self.structure_model.mode_identification_results.items():
             type_counter = 0
             for mode_id in mode_ids:
+                m_id = list(mode_id.keys())[0]
+                [eff_mass, rel_part] = mode_id[m_id]
                 type_counter += 1
                 counter += 1
-                table_data.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
-                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[mode_id-1]]), mode])
+                table_data.append([str(counter), 
+                                   str(m_id), 
+                                   str(type_counter), 
+                                   '{:.3f}'.format(self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), 
+                                   mode,
+                                   '{:.3f}'.format(eff_mass),
+                                   '{:.3f}'.format(rel_part)])
 
         plot_title = 'Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
 
         row_labels = None
-        column_labels = ['ConsideredModesCounter', 'Mode',
-                         'TypeCounter', 'Eigenfrequency [Hz]', 'Type']
+        column_labels = ['ConsideredModes', 
+                         'Mode',
+                         'TypeCounter', 
+                         'Eigenfrequency\n [Hz]', 
+                         'Type', 
+                         'EffModalMass\n [kg] or [kg*m^2]', 
+                         'RelPart\n EffModalMass/TotalMass']
 
         plotter_utilities.plot_table(pdf_report,
                                      display_plot,

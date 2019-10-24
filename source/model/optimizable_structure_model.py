@@ -374,7 +374,9 @@ class OptimizableStraightBeam(object):
         identifier = 'sway_y'
         mode_ids = self.model.mode_identification_results[identifier]
 
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
+        # TODO use different datatype to avoid list(mode_id.keys())[0]
+        m_id = list(mode_ids[0].keys())[0]
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iz = self.model.parameters['iz']
@@ -433,8 +435,10 @@ class OptimizableStraightBeam(object):
 
         identifier = 'sway_z'
         mode_ids = self.model.mode_identification_results[identifier]
-
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
+        
+        # TODO use different datatype to avoid list(mode_id.keys())[0]
+        m_id = list(mode_ids[0].keys())[0]
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_it = self.model.parameters['it']
@@ -499,7 +503,9 @@ class OptimizableStraightBeam(object):
         identifier = 'torsional'
         mode_ids = self.model.mode_identification_results[identifier]
 
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
+        # TODO use different datatype to avoid list(mode_id.keys())[0]
+        m_id = list(mode_ids[0].keys())[0]
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
