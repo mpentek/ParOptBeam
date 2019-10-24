@@ -8,3 +8,21 @@ With effort made to be compatible/usable with the interface of [Kratos Multiphis
 
 The project is free under the BSD-3 license
 
+# Features available
+## Beam types:
+* Bernoulli beam
+* Timoshenko beam
+* Co-rotational beam
+
+## Boundary conditions
+* fixed-fixed
+* pinned-pinned
+* fixed-pinned
+* pinned-fixed
+* fixed-free
+* free-fixed
+
+## Analysis
+* eigenvalue analysis
+* dynamic analysis
+* static analysis
