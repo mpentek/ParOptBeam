@@ -26,7 +26,7 @@ import numpy as np
 from scipy import linalg
 
 from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
-from source.auxiliary.global_definetions import *
+from source.auxiliary.global_definitions import *
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
 

@@ -5,12 +5,12 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
+from source.auxiliary import global_definitions as GD
 from source.solving_strategies.strategies.linear_solver import LinearSolver
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.global_definetions import *
 
 
 def transform_into_modal_coordinates(modal_transform_matrix, matrix):
@@ -264,10 +264,10 @@ class DynamicAnalysis(AnalysisType):
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -310,10 +310,10 @@ class DynamicAnalysis(AnalysisType):
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -359,10 +359,10 @@ class DynamicAnalysis(AnalysisType):
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -405,10 +405,10 @@ class DynamicAnalysis(AnalysisType):
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -448,10 +448,10 @@ class DynamicAnalysis(AnalysisType):
         """
 
         print("Animating time history in DynamicAnalysis \n")
-        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                              DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step]
@@ -492,10 +492,10 @@ class DynamicAnalysis(AnalysisType):
     def animate_skin_model_time_history(self, skin_model_params):
         print("Animating skin model time history")
         if not self.parameters['output']['animate_time_history']:
-            for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                                  DOF_LABELS[self.structure_model.domain_size]):
+            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                                  GD.DOF_LABELS[self.structure_model.domain_size]):
                 start = idx
-                step = DOFS_PER_NODE[self.structure_model.domain_size]
+                step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
                 stop = self.solver.displacement.shape[0] + idx - step
                 self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                                1:step]

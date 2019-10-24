@@ -6,6 +6,7 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
+from source.auxiliary import global_definitions as GD
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
@@ -221,10 +222,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
                                                                            1:step][:, selected_mode]
@@ -274,10 +275,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
                                                                            1:step][:, selected_mode]
@@ -328,10 +329,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
 
@@ -381,17 +382,17 @@ class EigenvalueAnalysis(AnalysisType):
         array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
             0, self.period[selected_mode], time_steps))  # AK: can this be called an array time ?
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
                                                                            1:step][:, selected_mode][:, np.newaxis] * array_time
 
         # for remaining dofs - case of 2D - create placeholders in correct format
-        remaining_labels = list(set(StraightBeam.DOF_LABELS['3D'])-set(
-            StraightBeam.DOF_LABELS[self.structure_model.domain_size]))
+        remaining_labels = list(set(GD.DOF_LABELS['3D'])-set(
+            GD.DOF_LABELS[self.structure_model.domain_size]))
         for label in remaining_labels:
             self.structure_model.nodal_coordinates[label] = np.zeros(
                 (self.structure_model.n_nodes, len(array_time)))
