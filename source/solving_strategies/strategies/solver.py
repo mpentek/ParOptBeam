@@ -56,8 +56,7 @@ class Solver(object):
         self.force = force
 
         # for reaction calculation
-        self.elastic_bc_dofs = structure_model.elastic_bc_dofs
-        self.rayleigh_coefficients = structure_model.rayleigh_coefficients
+        self.structure_model = structure_model
 
         # placeholders for the solution
         rows = len(initial_conditions[0])
@@ -126,9 +125,9 @@ class Solver(object):
 
         # TODO: check if the treatment of elastic bc dofs is correct
         # TODO: check if this still applies in modal coordinates
-        for dof_id, stiffness_val in self.elastic_bc_dofs.items():
+        for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
             # assuming a Rayleigh-model
-            damping_val = stiffness_val * self.rayleigh_coefficients[1]
+            damping_val = stiffness_val * self.structure_model.rayleigh_coefficients[1]
 
             f1 = 0.0 * a[dof_id]
             f2 = damping_val * v[dof_id]
