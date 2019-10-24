@@ -347,6 +347,7 @@ class StraightBeam(object):
                     rel_contrib[label] = linalg.norm(decomposed_eigenmode[label])
 
                 # adding computation of modal mass
+                # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
                 # TODO: for now using element mass (as constant) and nodal dof value - make consistent
                 # IMPORTANT
                 if label in ['x', 'y', 'z', 'a']:
