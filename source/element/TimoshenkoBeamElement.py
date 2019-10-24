@@ -5,6 +5,9 @@ from source.element.Element import Element
 
 class TimoshenkoBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
+        if material_params['is_nonlinear']:
+            err_msg = "Nonlinear TimoshenkoBeamElement is not yet implemented"
+            raise Exception(err_msg)
         super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
         self.evaluate_torsional_inertia()
