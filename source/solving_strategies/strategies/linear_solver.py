@@ -16,10 +16,9 @@ class LinearSolver(Solver):
                  comp_model,
                  initial_conditions,
                  force,
-                 a,
-                 elastic_bc_dofs):
+                 structure_model):
         super().__init__(array_time, time_integration_scheme, dt,
-                         comp_model, initial_conditions, force, a, elastic_bc_dofs)
+                         comp_model, initial_conditions, force, structure_model)
 
     def _print_solver_info(self):
         print("Linear Solver")

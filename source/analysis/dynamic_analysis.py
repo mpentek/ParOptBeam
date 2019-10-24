@@ -5,6 +5,7 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.solving_strategies.strategies.linear_solver import LinearSolver
+from source.solving_strategies.strategies.rasidual_based_picard_solver import ResidualBasedPicardSolver
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
@@ -121,7 +122,7 @@ class DynamicAnalysis(AnalysisType):
         self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
                                    [self.comp_m, self.comp_b, self.comp_k],
                                    initial_conditions, force,
-                                   self.structure_model.a, self.structure_model.elastic_bc_dofs)
+                                   self.structure_model)
 
     def solve(self):
 

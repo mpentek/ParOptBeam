@@ -37,8 +37,7 @@ class Solver(object):
                  comp_model,
                  initial_conditions,
                  force,
-                 a,
-                 elastic_bc_dofs):
+                 structure_model):
         # vector of time
         self.array_time = array_time
 
@@ -57,8 +56,8 @@ class Solver(object):
         self.force = force
 
         # for reaction calculation
-        self.elastic_bc_dofs = elastic_bc_dofs
-        self.a = a
+        self.elastic_bc_dofs = structure_model.elastic_bc_dofs
+        self.rayleigh_coefficients = structure_model.rayleigh_coefficients
 
         # placeholders for the solution
         rows = len(initial_conditions[0])
@@ -129,7 +128,7 @@ class Solver(object):
         # TODO: check if this still applies in modal coordinates
         for dof_id, stiffness_val in self.elastic_bc_dofs.items():
             # assuming a Rayleigh-model
-            damping_val = stiffness_val * self.a[1]
+            damping_val = stiffness_val * self.rayleigh_coefficients[1]
 
             f1 = 0.0 * a[dof_id]
             f2 = damping_val * v[dof_id]
