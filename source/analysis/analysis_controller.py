@@ -4,7 +4,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.global_definetions import *
+from source.auxiliary.global_definitions import *
 
 
 class AnalysisController(object):

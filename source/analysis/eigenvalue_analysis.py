@@ -6,6 +6,7 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
+from source.auxiliary import global_definitions as GD
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
@@ -90,7 +91,7 @@ class EigenvalueAnalysis(AnalysisType):
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
 
-    def write_eigenmode_summary(self, considered_modes=10):
+    def write_eigenmode_summary(self, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
@@ -117,7 +118,7 @@ class EigenvalueAnalysis(AnalysisType):
                                      file_header,
                                      lines)
 
-    def plot_eigenmode_summary(self, pdf_report, display_plot, considered_modes=10):
+    def plot_eigenmode_summary(self, pdf_report, display_plot, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
@@ -152,10 +153,13 @@ class EigenvalueAnalysis(AnalysisType):
         for mode, mode_ids in self.structure_model.mode_identification_results.items():
             type_counter = 0
             for mode_id in mode_ids:
+                m_id = list(mode_id.keys())[0]
+                # TODO use different datatype to avoid list(mode_id.keys())[0]
+                
                 type_counter += 1
                 counter += 1
                 lines.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
-                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[mode_id-1]]), mode])
+                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), mode])
 
         file_header = '# Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
@@ -179,17 +183,29 @@ class EigenvalueAnalysis(AnalysisType):
         for mode, mode_ids in self.structure_model.mode_identification_results.items():
             type_counter = 0
             for mode_id in mode_ids:
+                m_id = list(mode_id.keys())[0]
+                [eff_mass, rel_part] = mode_id[m_id]
                 type_counter += 1
                 counter += 1
-                table_data.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
-                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[mode_id-1]]), mode])
+                table_data.append([str(counter), 
+                                   str(m_id), 
+                                   str(type_counter), 
+                                   '{:.3f}'.format(self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), 
+                                   mode,
+                                   '{:.3f}'.format(eff_mass),
+                                   '{:.3f}'.format(rel_part)])
 
         plot_title = 'Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
 
         row_labels = None
-        column_labels = ['ConsideredModesCounter', 'Mode',
-                         'TypeCounter', 'Eigenfrequency [Hz]', 'Type']
+        column_labels = ['ConsideredModes', 
+                         'Mode',
+                         'TypeCounter', 
+                         'Eigenfrequency\n [Hz]', 
+                         'Type', 
+                         'EffModalMass\n [kg] or [kg*m^2]', 
+                         'RelPart\n EffModalMass/TotalMass']
 
         plotter_utilities.plot_table(pdf_report,
                                      display_plot,
@@ -221,10 +237,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
                                                                            1:step][:, selected_mode]
@@ -274,10 +290,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
                                                                            1:step][:, selected_mode]
@@ -328,10 +344,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
 
@@ -381,17 +397,17 @@ class EigenvalueAnalysis(AnalysisType):
         array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
             0, self.period[selected_mode], time_steps))  # AK: can this be called an array time ?
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.eigenform.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
                                                                            1:step][:, selected_mode][:, np.newaxis] * array_time
 
         # for remaining dofs - case of 2D - create placeholders in correct format
-        remaining_labels = list(set(StraightBeam.DOF_LABELS['3D'])-set(
-            StraightBeam.DOF_LABELS[self.structure_model.domain_size]))
+        remaining_labels = list(set(GD.DOF_LABELS['3D'])-set(
+            GD.DOF_LABELS[self.structure_model.domain_size]))
         for label in remaining_labels:
             self.structure_model.nodal_coordinates[label] = np.zeros(
                 (self.structure_model.n_nodes, len(array_time)))

@@ -21,7 +21,9 @@
                     "shear_area_z" : [1125.0],
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227812.5],
-                    "torsional_moment_of_inertia" : [238140.0]}]
+                    "torsional_moment_of_inertia" : [238140.0],                    
+                    "outrigger_mass": 0.0,
+                    "outrigger_stiffness": 0.0}]
             }
         },
         "boundary_conditions": "fixed-free"

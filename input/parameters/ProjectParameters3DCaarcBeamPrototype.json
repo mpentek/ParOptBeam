@@ -21,7 +21,9 @@
                     "shear_area_z" : [1460.0],
                     "moment_of_inertia_y" : [178646.0],
                     "moment_of_inertia_z" : [364583.0],
-                    "torsional_moment_of_inertia" : [420175.0]},
+                    "torsional_moment_of_inertia" : [420175.0],
+                    "outrigger_mass": 0.0,
+                    "outrigger_stiffness": 0.0},
                     {
                     "interval_bounds" : [60.0, 120.0],
                     "length_y": [45.0],
@@ -31,7 +33,9 @@
                     "shear_area_z" : [1125.0],
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227812.5],
-                    "torsional_moment_of_inertia" : [238140.0]},
+                    "torsional_moment_of_inertia" : [238140.0],
+                    "outrigger_mass": 0.0,
+                    "outrigger_stiffness": 0.0},
                     {
                     "interval_bounds" : [120.0, "End"],
                     "length_y": [40.0],
@@ -41,7 +45,9 @@
                     "shear_area_z" : [833.0],
                     "moment_of_inertia_y" : [52083.0],
                     "moment_of_inertia_z" : [133333.0],
-                    "torsional_moment_of_inertia" : [122500.0]}]
+                    "torsional_moment_of_inertia" : [122500.0],
+                    "outrigger_mass": 0.0,
+                    "outrigger_stiffness": 0.0}]
             }
         },
         "boundary_conditions": "fixed-free"

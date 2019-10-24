@@ -27,7 +27,7 @@ import numpy as np
 from scipy import linalg
 
 from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
-from source.auxiliary.global_definetions import *
+from source.auxiliary.global_definitions import *
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
 from source.element.BernouliBeamElement import BernoulliBeamElement
@@ -319,7 +319,7 @@ class StraightBeam(object):
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)
 
-    def decompose_and_quantify_eigenmodes(self, considered_modes=10):
+    def decompose_and_quantify_eigenmodes(self, considered_modes=15):
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
@@ -329,9 +329,13 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
+        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [], 'rel_participation' : []}
+
         for i in range(considered_modes):
             decomposed_eigenmode = {}
             rel_contrib = {}
+            eff_modal_mass = {}
+            rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[i]
 
             for idx, label in zip(list(range(DOFS_PER_NODE[self.domain_size])),
@@ -349,10 +353,46 @@ class StraightBeam(object):
                     # for translation dofs
                     rel_contrib[label] = linalg.norm(decomposed_eigenmode[label])
 
+                # adding computation of modal mass
+                # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
+                # TODO: for now using element mass (as constant) and nodal dof value - make consistent
+                # IMPORTANT
+                if label in ['x', 'y', 'z', 'a']:
+                    if rel_contrib[label] > THRESHOLD:
+                        eff_modal_numerator = 0.0
+                        eff_modal_denominator = 0.0
+                        total_mass = 0.0
+
+                        for i in range(len(self.parameters['x'])):
+                            storey_mass = self.parameters['a'][i] * \
+                                                self.parameters['rho'] * self.parameters['lx_i']
+                            if label == 'a':
+                                # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
+                                storey_mass *= (self.parameters['lz'][i]**2 + self.parameters['ly'][i]**2)/12
+
+                                # TODO check as torsion 4-5-6 does not seem to be ok in the results
+
+                            total_mass += storey_mass
+                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][i]
+                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][i]**2
+
+                        eff_modal_mass[label] = eff_modal_numerator**2 / eff_modal_denominator
+                        rel_participation[label] = eff_modal_mass[label] / total_mass     
+
+                    else:
+                        eff_modal_mass[label] = 0.0
+                        rel_participation[label] = 0.0
+                else:
+                    # TODO for now for rotations
+                    eff_modal_mass[label] = 0.0
+                    rel_participation[label] = 0.0
+
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
+            self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
+            self.decomposed_eigenmodes['rel_participation'].append(rel_participation)
 
-    def identify_decoupled_eigenmodes(self, considered_modes=10, print_to_console=False):
+    def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
@@ -376,11 +416,15 @@ class StraightBeam(object):
                 # TODO: check if robust enough for modes where 2 DoFs are involved
                 if match_for_case_id:
                     if case_id in self.mode_identification_results:
-                        self.mode_identification_results[case_id].append(
-                            selected_mode + 1)
+                        self.mode_identification_results[case_id].append({
+                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
+                            })
                     else:
-                        self.mode_identification_results[case_id] = [
-                            selected_mode + 1]
+                        self.mode_identification_results[case_id] = [{
+                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
+                            }]
 
         if print_to_console:
             print('Result of decoupled eigenmode identification for the first ' +
@@ -389,8 +433,10 @@ class StraightBeam(object):
             for mode, mode_ids in self.mode_identification_results.items():
                 print('  Mode:', mode)
                 for mode_id in mode_ids:
-                    print('    Eigenform ' + str(mode_id) + ' with eigenfrequency ' + '{:.2f}'.format(
-                        self.eig_freqs[self.eig_freqs_sorted_indices[mode_id - 1]]) + ' Hz')
+                    m_id = list(mode_id.keys())[0]
+                    # TODO use different datatype to avoid list(mode_id.keys())[0]
+                    print('    Eigenform ' + str(m_id) + ' with eigenfrequency ' + '{:.2f}'.format(
+                        self.eig_freqs[self.eig_freqs_sorted_indices[m_id - 1]]) + ' Hz')
 
     def eigenvalue_solve(self):
         # raw results

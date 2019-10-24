@@ -1,0 +1,69 @@
+{
+    "model_parameters": {
+        "name": "CaarcBeamForModal",
+        "domain_size": "3D",
+        "system_parameters": {
+            "material": {
+                "density": 160.0,
+                "youngs_modulus": 2.861e8,
+                "poisson_ratio": 0.1,
+                "damping_ratio": 0.0
+            },
+            "geometry": {
+                "length_x": 180.0,
+                "number_of_elements": 24,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0, "End"],
+                    "length_y": [45.0],
+                    "length_z": [30.0],
+                    "area"    : [1350.0],
+                    "shear_area_y" : [1125.0],
+                    "shear_area_z" : [1125.0],
+                    "moment_of_inertia_y" : [101250.0],
+                    "moment_of_inertia_z" : [227812.5],
+                    "torsional_moment_of_inertia" : [238140.0],
+                    "outrigger_mass": 0.0,
+                    "outrigger_stiffness": 0.0}]
+            }
+        },
+        "boundary_conditions": "fixed-free"
+    },
+    "optimization_parameters": {
+        "adapt_for_target_values": {
+            "density_for_total_mass": 38880000.0,
+            "geometric_properties_for": {
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
+                "corresponding_mode_ids" : [1, 1, 1],
+                "corresponding_eigenfrequencies": [0.2,0.23,0.40]}
+        }},
+    "analyses_parameters":{
+        "report_options": {
+            "combine_plots_into_pdf" : true,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : false
+        },
+        "runs": [{
+                "type": "eigenvalue_analysis",
+                "settings": {
+                    "normalization": "mass_normalized"},
+                "input":{},
+                "output":{
+                    "eigenmode_summary": {
+                        "write" : true, 
+                        "plot" : true},
+                    "eigenmode_identification": {
+                        "write" : true, 
+                        "plot" : true},
+                    "selected_eigenmode": {
+                        "plot_mode": [1,2,3], 
+                        "write_mode": [5,6,7],
+                        "animate_mode": [1]},
+                    "selected_eigenmode_range": {
+                        "help": "maximum 4 modes per range at a time",
+                        "considered_ranges": [[1,4], [5,7]], 
+                        "plot_range": [true, true], 
+                        "write_range": [true, false]}
+                    }
+            }]}
+}
