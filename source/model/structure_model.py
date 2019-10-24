@@ -348,6 +348,7 @@ class StraightBeam(object):
 
                 # adding computation of modal mass
                 # TODO: for now using element mass (as constant) and nodal dof value - make consistent
+                # IMPORTANT
                 if label in ['x', 'y', 'z', 'a']:
                     if rel_contrib[label] > THRESHOLD:
                         eff_modal_numerator = 0.0
