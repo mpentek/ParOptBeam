@@ -26,3 +26,8 @@ The project is free under the BSD-3 license
 * eigenvalue analysis
 * dynamic analysis
 * static analysis
+
+## Output
+* output file of selected degree of freedoms at selected time 
+* 1D animation of dynamic analysis results for selected time
+* mapped 3D animation of dynamic analysis results for selected time
