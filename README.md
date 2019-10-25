@@ -6,7 +6,7 @@ Motivated but not limited to usage in education as well as for research purposes
 
 With effort made to be compatible/usable with the interface of [Kratos Multiphisics](https://github.com/KratosMultiphysics)
 
-The project is free under the BSD 3-Clause License [![License][license-image]][license]
+The project is free under the BSD 3-Clause License
 
 # Features available
 ## Beam types:
