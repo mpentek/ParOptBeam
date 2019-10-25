@@ -1,4 +1,4 @@
-BSD License 2.0 - 3-clause license
+BSD 3-clause
 
 Copyright (c) 
     2019
