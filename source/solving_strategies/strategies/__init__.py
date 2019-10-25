@@ -1,0 +1,2 @@
+def strategies():
+    return None
