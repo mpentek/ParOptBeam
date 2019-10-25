@@ -3,7 +3,7 @@ BSD License 2.0 - 3-clause license
 Copyright (c) 
     2019
     
-    Mate Pentek, Anoop Kodakkal, Mengjie Zhao
+    Mate Pentek, Anoop Kodakkal, Klaus Sautter, Mengjie Zhao, Andreas Riedl
     
     Chair of Structural Analysis,
         TUM Department of Civil, Geo and Environmental Engineering
