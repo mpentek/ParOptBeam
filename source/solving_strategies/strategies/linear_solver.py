@@ -43,4 +43,4 @@ class LinearSolver(Solver):
                     self.acceleration[:, i])
 
             # update results
-            self.scheme.update_structure_time_step()
+            self.scheme.update()
