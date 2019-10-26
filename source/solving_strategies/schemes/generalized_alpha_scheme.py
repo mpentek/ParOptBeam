@@ -78,6 +78,15 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         print("beta: ", self.beta)
         print(" ")
 
+    def predict_velocity(self, u1):
+        v1 = self.a1v * (u1 - self.un1) + self.a2v * self.vn1 + self.a3v * self.an1
+        return v1
+
+    # TODO: GenAlpha needs to take u1 as input, which is not general
+    def predict_acceleration(self, v1):
+        a1 = self.a1a * (self.u1 - self.un1) + self.a2a * self.vn1 + self.a3a * self.an1
+        return a1
+
     def solve_single_step(self, f1):
 
         F = (1.0 - self.alphaF) * f1 + self.alphaF * self.f0
@@ -93,10 +102,8 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
 
         # updates self.u1,v1,a1
         self.u1 = np.linalg.solve(self.LHS, RHS)
-        self.v1 = self.a1v * (self.u1 - self.un1) + \
-            self.a2v * self.vn1 + self.a3v * self.an1
-        self.a1 = self.a1a * (self.u1 - self.un1) + \
-            self.a2a * self.vn1 + self.a3a * self.an1
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
 
     def update_structure_time_step(self):
         # update displacement, velocity and acceleration

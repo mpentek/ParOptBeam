@@ -30,25 +30,36 @@ class RungeKutta4(TimeIntegrationScheme):
         print("dt: ", self.dt)
         print(" ")
 
+    def predict_velocity(self, u1):
+        v1 = self.v1 + (self.l0 + 2*(self.l1 + self.l2) + self.l3)/6.0
+        return v1
+
+    def predict_acceleration(self, v1):
+        a1 = (v1 - self.vn1) / self.dt
+        return a1
+
     def solve_single_step(self, f1):
 
         # calculates self.un0,vn0,an0
         f_mid = (f1 + self.f1) / 2.0
 
-        k0 = self.dt * self.v1
-        l0 = self.dt * np.dot(self.InvM, (-np.dot(self.B, self.v1) - np.dot(self.K, self.u1) + self.f1))
+        self.k0 = self.dt * self.v1
+        self.l0 = self.dt * np.dot(self.InvM, (-np.dot(self.B, self.v1) - np.dot(self.K, self.u1) + self.f1))
 
-        k1 = self.dt * (0.5*l0 + self.v1)
-        l1 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*l0 + self.v1)) - np.dot(self.K, (0.5*k0 + self.u1)) + f_mid))
-        k2 = self.dt * (0.5*l1 + self.v1)
-        l2 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*l1 + self.v1)) - np.dot(self.K, (0.5*k1 + self.u1)) + f_mid))
-        k3 = self.dt * (l2 + self.v1)
-        l3 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (l2 + self.v1)) - np.dot(self.K, (k2 + self.u1)) + f1))
+        self.k1 = self.dt * (0.5*self.l0 + self.v1)
+        self.l1 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*self.l0 + self.v1))
+                                               - np.dot(self.K, (0.5*self.k0 + self.u1)) + f_mid))
+        self.k2 = self.dt * (0.5*self.l1 + self.v1)
+        self.l2 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*self.l1 + self.v1))
+                                               - np.dot(self.K, (0.5*self.k1 + self.u1)) + f_mid))
+        self.k3 = self.dt * (self.l2 + self.v1)
+        self.l3 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (self.l2 + self.v1))
+                                               - np.dot(self.K, (self.k2 + self.u1)) + f1))
 
         # update self.u1,v1,a1
-        self.u1 = self.u1 + (k0 + 2*(k1 + k2) + k3)/6.0
-        self.v1 = self.v1 + (l0 + 2*(l1 + l2) + l3)/6.0
-        self.a1 = (self.v1 - self.v1)/self.dt
+        self.u1 = self.u1 + (self.k0 + 2*(self.k1 + self.k2) + self.k3)/6.0
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
 
         # update self.f1
         self.f1 = f1

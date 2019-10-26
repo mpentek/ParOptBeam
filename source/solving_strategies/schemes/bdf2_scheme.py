@@ -39,13 +39,20 @@ class BDF2(TimeIntegrationScheme):
         self.vn1 = self.v0
         self.un1 = self.u0
 
-        self._print_structural_setup()
         self._print_time_integration_setup()
 
     def _print_time_integration_setup(self):
         print("Printing BDF2 2nd order method integration scheme setup:")
         print("dt: ", self.dt)
         print(" ")
+
+    def predict_velocity(self, u1):
+        v1 = self.bdf0 * u1 + self.bdf1 * self.un1 + self.bdf2 * self.un2
+        return v1
+
+    def predict_acceleration(self, v1):
+        a1 = self.bdf0 * v1 + self.bdf1 * self.vn1 + self.bdf2 * self.vn2
+        return a1
 
     def solve_single_step(self, f1):
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - np.dot(self.B, self.bdf2 * self.un2)
@@ -57,8 +64,8 @@ class BDF2(TimeIntegrationScheme):
 
         # calculates self.un0,vn0,an0
         self.u1 = np.linalg.solve(self.LHS, RHS)
-        self.v1 = self.bdf0 * self.u1 + self.bdf1 * self.un1 + self.bdf2 * self.un2
-        self.a1 = self.bdf0 * self.v1 + self.bdf1 * self.vn1 + self.bdf2 * self.vn2
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
 
     def update_structure_time_step(self):
         # update self.un3 un2 un1 vn2 vn1

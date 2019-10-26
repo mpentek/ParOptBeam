@@ -24,13 +24,20 @@ class ForwardEuler1(TimeIntegrationScheme):
 
         self.LHS = self.M
 
-        self._print_structural_setup()
         self._print_time_integration_setup()
 
     def _print_time_integration_setup(self):
         print("Printing (Explicit) Forward Euler 1 st order approximation integration scheme setup:")
         print("dt: ", self.dt)
         print(" ")
+
+    def predict_velocity(self, u1):
+        v1 = (u1 - self.un1) / self.dt
+        return v1
+
+    def predict_acceleration(self, v1):
+        a1 = (v1 - self.vn1) / self.dt
+        return a1
 
     def solve_single_step(self, f1):
 
@@ -39,8 +46,8 @@ class ForwardEuler1(TimeIntegrationScheme):
         RHS += -self.dt ** 2 * np.dot (self.K, self.un2) + np.dot(self.M, (2 * self.un1 - self.un2))
         RHS += self.dt ** 2 * f1
         self.u1 = np.linalg.solve(self.LHS, RHS)
-        self.v1 = (self.u1 - self.un1) / self.dt
-        self.a1 = (self.v1 - self.vn1) / self.dt
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
 
     def update_structure_time_step(self):
         # update self.un2 un1

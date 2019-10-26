@@ -31,13 +31,21 @@ class BackwardEuler1(TimeIntegrationScheme):
         print("dt: ", self.dt)
         print(" ")
 
+    def predict_velocity(self, u1):
+        v1 = (u1 - self.un1) / self.dt
+        return v1
+
+    def predict_acceleration(self, v1):
+        a1 = (v1 - self.vn1) / self.dt
+        return a1
+
     def solve_single_step(self, f1):
         # calculates self.un0,vn0,an0
         RHS = self.dt * np.dot(self.B, self.un1) + 2 * np.dot(self.M, self.un1)
         RHS += - np.dot(self.M, self.un2) + self.dt ** 2 * f1
         self.u1 = np.linalg.solve(self.LHS, RHS)
-        self.v1 = (self.u1 - self.un1) / self.dt
-        self.a1 = (self.v1 - self.vn1) / self.dt
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
 
     def update_structure_time_step(self):
         # update self.un2 un1
