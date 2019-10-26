@@ -67,7 +67,7 @@ class RungeKutta4(TimeIntegrationScheme):
         if np.isnan(np.min(self.u1)):
             print("NaN found in displacement!")
 
-    def update_structure_time_step(self):
+    def update(self):
         # update previous steps
         self.un1 = self.u1
         self.vn1 = self.v1

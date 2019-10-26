@@ -49,7 +49,7 @@ class ForwardEuler1(TimeIntegrationScheme):
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
-    def update_structure_time_step(self):
+    def update(self):
         # update self.un2 un1
         self.un2 = self.un1
         self.un1 = self.u1

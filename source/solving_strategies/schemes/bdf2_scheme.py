@@ -67,7 +67,7 @@ class BDF2(TimeIntegrationScheme):
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
-    def update_structure_time_step(self):
+    def update(self):
         # update self.un3 un2 un1 vn2 vn1
         self.un4 = self.un3
         self.un3 = self.un2

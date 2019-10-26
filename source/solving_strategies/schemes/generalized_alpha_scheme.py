@@ -105,7 +105,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
-    def update_structure_time_step(self):
+    def update(self):
         # update displacement, velocity and acceleration
         self.un1 = self.u1
         self.vn1 = self.v1

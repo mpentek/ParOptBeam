@@ -71,6 +71,14 @@ class TimeIntegrationScheme(object):
     def solve_single_step(self, f1):
         pass
 
+    def update(self):
+        pass
+
+    def apply_increment_and_update(self, u1, du):
+        self.u1 = u1 + du
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
+
     def print_values_at_current_step(self, n):
         print("Printing values at step no: ", n, " (+1)")
         print("u0: ", self.u1)
@@ -96,3 +104,4 @@ class TimeIntegrationScheme(object):
 
     def get_old_acceleration(self):
         return self.an1
+
