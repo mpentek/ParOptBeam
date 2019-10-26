@@ -74,10 +74,11 @@ class TimeIntegrationScheme(object):
     def update(self):
         pass
 
-    def apply_increment_and_update(self, u1, du):
-        self.u1 = u1 + du
-        self.v1 = self.predict_velocity(self.u1)
-        self.a1 = self.predict_acceleration(self.v1)
+    def calculate_and_update_increment(self, ru):
+        pass
+
+    def apply_increment_and_update(self, du):
+        self.u1 += du
 
     def print_values_at_current_step(self, n):
         print("Printing values at step no: ", n, " (+1)")

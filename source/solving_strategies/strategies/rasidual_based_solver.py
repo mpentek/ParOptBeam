@@ -25,11 +25,6 @@ class ResidualBasedSolver(Solver):
         super().__init__(array_time, time_integration_scheme, dt,
                          comp_model, initial_conditions, force, structure_model)
 
-        # displacement residual
-        self.ru = 0.0
-        # displacement increment
-        self.du = 0.0
-
     def calculate_residual(self, un1):
         pass
 
@@ -39,15 +34,16 @@ class ResidualBasedSolver(Solver):
     def solve_single_step(self):
         self.scheme.solve_single_step(self.force[:, self.step])
         u1 = self.scheme.get_displacement()
-        self.calculate_residual(u1)
+        ru = self.calculate_residual(u1)
 
-        print(np.sum(self.ru))
         nr_it = 0
-        # while np.sum(self.ru) > TOL and nr_it < MAX_IT:
-        #     u1 = self.scheme.get_displacement()
-        #     self.calculate_residual(u1)
-        #     self.calculate_increment()
-        #     nr_it += 1
+        while abs(np.max(ru)) > TOL and nr_it < MAX_IT:
+            u1 = self.scheme.get_displacement()
+            ru = self.calculate_residual(u1)
+            du = self.scheme.calculate_increment(ru)
+            self.scheme.apply_increment_and_update(du)
+            nr_it += 1
+            print("Nonlinear iteration: ", str(nr_it))
 
     def solve(self):
         # time loop

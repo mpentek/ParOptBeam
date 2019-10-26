@@ -22,11 +22,7 @@ class ResidualBasedPicardSolver(ResidualBasedSolver):
         a1 = self.scheme.predict_acceleration(v1)
         f = self.force[:, self.step]
 
-        self.ru = f - (np.dot(self.M, a1) + np.dot(self.B, v1) + np.dot(self.K, u1))
-
-    def calculate_increment(self):
-        LHS = self.K
-        RHS = self.ru
-        self.du = np.linalg.solve(LHS, RHS)
+        ru = f - (np.dot(self.M, a1) + np.dot(self.B, v1) + np.dot(self.K, u1))
+        return ru
 
 
