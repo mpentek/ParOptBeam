@@ -62,6 +62,12 @@ class TimeIntegrationScheme(object):
     def predict_displacement(self):
         return 2.0 * self.u1 - self.u0
 
+    def predict_velocity(self, u1):
+        pass
+
+    def predict_acceleration(self, v1):
+        pass
+
     def solve_single_step(self, f1):
         pass
 
