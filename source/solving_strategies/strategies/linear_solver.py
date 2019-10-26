@@ -35,10 +35,12 @@ class LinearSolver(Solver):
             self.displacement[:, i] = self.scheme.get_displacement()
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
-            self.dynamic_reaction[:, i] = self._compute_reaction(
-                self.displacement[:, i],
-                self.velocity[:, i],
-                self.acceleration[:, i])
+            # TODO: only calculate reaction when user wants it
+            if self.structure_model is not None:
+                self.dynamic_reaction[:, i] = self._compute_reaction(
+                    self.displacement[:, i],
+                    self.velocity[:, i],
+                    self.acceleration[:, i])
 
             # update results
             self.scheme.update_structure_time_step()
