@@ -27,7 +27,7 @@ def test():
 
     for scheme in schemes:
 
-        solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f)
+        solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, None)
         solver.solve()
         plt.plot(array_time, solver.displacement[1, :], label=scheme)
         plt.legend()
