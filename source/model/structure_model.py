@@ -306,6 +306,11 @@ class StraightBeam(object):
             print('density: ', self.parameters['rho'])
             print()
 
+    def update_stiffness_matrix(self):
+        k = self._get_stiffness()
+        comp_k = self.apply_bc_by_reduction(self.k)
+        return comp_k
+
     def calculate_global_matrices(self):
         # using computational values for m,b,k as this reduction is done otherwise many times
 
@@ -515,25 +520,19 @@ class StraightBeam(object):
         # NOTE: should be quite robust
         # TODO: test
         if axis == 'row':
-            rows = len(self.all_dofs_global)
-            cols = matrix.shape[1]
             # make a grid of indices on interest
             ixgrid = np.ix_(self.dofs_to_keep, np.arange(matrix.shape[1]))
         elif axis == 'column':
-            rows = matrix.shape[0]
-            cols = len(self.all_dofs_global)
             # make a grid of indices on interest
             ixgrid = np.ix_(np.arange(matrix.shape[0]), self.dofs_to_keep)
         elif axis == 'both':
-            rows = len(self.all_dofs_global)
-            cols = rows
             # make a grid of indices on interest
             ixgrid = np.ix_(self.dofs_to_keep, self.dofs_to_keep)
         elif axis == 'row_vector':
-            rows = len(self.all_dofs_global)
-            cols = 1
             ixgrid = np.ix_(self.dofs_to_keep, [0])
             matrix = matrix.reshape([len(matrix), 1])
+        elif axis == 'column_vector':
+            ixgrid = np.ix_(self.dofs_to_keep)
         else:
             err_msg = "The reduction mode with input \"" + axis
             err_msg += "\" for axis is not avaialbe \n"
