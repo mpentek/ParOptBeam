@@ -28,7 +28,7 @@ class LinearSolver(Solver):
         for i in range(0, len(self.array_time)):
             self.step = i
             current_time = self.array_time[i]
-            print("time: ", "{0:.2f}".format(current_time))
+            print("time: {0:.2f}".format(current_time))
             self.scheme.solve_single_step(self.force[:, i])
 
             # appending results to the list
