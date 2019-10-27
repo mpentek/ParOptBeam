@@ -25,17 +25,10 @@ class BDF2(TimeIntegrationScheme):
 
         # structure
         # initial displacement, velocity and acceleration
-        self.an4 = self.a0
-        self.vn4 = self.v0
         self.un4 = self.u0
-        self.an3 = self.a0
-        self.vn3 = self.v0
         self.un3 = self.u0
-        self.un3 = self.u0
-        self.an2 = self.a0
         self.vn2 = self.v0
         self.un2 = self.u0
-        self.an1 = self.a0
         self.vn1 = self.v0
         self.un1 = self.u0
 
