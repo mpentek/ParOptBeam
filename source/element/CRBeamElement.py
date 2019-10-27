@@ -640,7 +640,7 @@ class CRBeamElement(Element):
         """
          This function updates incremental deformation w.r.t. to current and previous deformations
         """
-        increment_deformation = self.current_deformation - self.current_deformation
+        increment_deformation = self.current_deformation - self.previous_deformation
         return increment_deformation
 
     def _calculate_initial_local_cs(self):
