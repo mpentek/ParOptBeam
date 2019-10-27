@@ -25,22 +25,22 @@ class ResidualBasedSolver(Solver):
         super().__init__(array_time, time_integration_scheme, dt,
                          comp_model, initial_conditions, force, structure_model)
 
-    def calculate_residual(self, un1):
+    def calculate_residual(self, q):
         pass
 
-    def calculate_increment(self):
+    def calculate_increment(self, ru):
         pass
 
     def solve_single_step(self):
-        self.scheme.solve_single_step(self.force[:, self.step])
+        f_ext = self.force[:, self.step]
+        self.scheme.solve_single_step(f_ext)
 
         nr_it = 0
         ru = 1.0
         while abs(np.max(ru)) > TOL and nr_it < MAX_IT:
-            u1 = self.scheme.get_displacement()
-            ru = self.calculate_residual(u1)
-            du = self.scheme.calculate_increment(ru)
-            self.scheme.apply_increment_and_update(du)
+            ru = self.calculate_residual(f_ext)
+            du = self.calculate_increment(ru)
+            self.scheme.apply_increment(du)
             print("Nonlinear iteration: ", str(nr_it))
             print("ru = {:.2e}".format(abs(np.max(ru))))
             nr_it += 1
@@ -53,29 +53,20 @@ class ResidualBasedSolver(Solver):
             print("time: {0:.2f}".format(current_time))
 
             self.solve_single_step()
+            self.K = self.structure_model.update_stiffness_matrix()
 
             # appending results to the list
             self.displacement[:, i] = self.scheme.get_displacement()
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
 
-            # TODO: remove this once the test in test_schemes works without structure model
-            if self.structure_model is not None:
-                self.dynamic_reaction[:, i] = self._compute_reaction(
-                    self.displacement[:, i],
-                    self.velocity[:, i],
-                    self.acceleration[:, i])
-
-                # updating deformation and reaction in the element
-                for e in self.structure_model.elements:
-                    e.update_nodal_information(
-                        self.displacement[DOFS_PER_NODE[e.domain_size] * e.index:
-                                          DOFS_PER_NODE[e.domain_size] * e.index +
-                                          DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i],
-                        self.dynamic_reaction[
-                        DOFS_PER_NODE[e.domain_size] * e.index:
-                        DOFS_PER_NODE[e.domain_size] * e.index +
-                        DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i])
+            # updating deformation and reaction in the element
+            for e in self.structure_model.elements:
+                e.Iteration += 1
+                e.update_nodal_information(
+                    self.displacement[DOFS_PER_NODE[e.domain_size] * e.index:
+                                      DOFS_PER_NODE[e.domain_size] * e.index +
+                                      DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i])
 
             # update results
             self.scheme.update()
