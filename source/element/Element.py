@@ -59,10 +59,9 @@ class Element(object):
         msg += str(self.domain_size) + " Base Class Element " + str(self.index) + "\n"
         print(msg)
 
-    def update_nodal_information(self, deformation, reaction):
+    def update_nodal_information(self, deformation):
         self.previous_deformation = self.current_deformation
         self.current_deformation = deformation
-        self.qe = reaction
 
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
