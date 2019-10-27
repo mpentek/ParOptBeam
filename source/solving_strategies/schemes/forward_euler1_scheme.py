@@ -39,12 +39,6 @@ class ForwardEuler1(TimeIntegrationScheme):
         a1 = (v1 - self.vn1) / self.dt
         return a1
 
-    def calculate_increment(self, ru):
-        LHS = self.M
-        RHS = ru * self.dt ** 2
-        du = np.linalg.solve(LHS, RHS)
-        return du
-
     def solve_single_step(self, f1):
 
         # calculates self.un0,vn0,an0

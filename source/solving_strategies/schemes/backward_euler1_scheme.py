@@ -47,12 +47,6 @@ class BackwardEuler1(TimeIntegrationScheme):
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
-    def calculate_increment(self, ru):
-        LHS = (self.B * self.dt + self.K * self.dt**2 + self.M)
-        RHS = ru * self.dt ** 2
-        du = np.linalg.solve(LHS, RHS)
-        return du
-
     def update(self):
         # update self.un2 un1
         self.un2 = self.un1
