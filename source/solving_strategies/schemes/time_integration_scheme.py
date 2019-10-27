@@ -74,7 +74,7 @@ class TimeIntegrationScheme(object):
     def update(self):
         pass
 
-    def calculate_and_update_increment(self, ru):
+    def calculate_increment(self, ru):
         pass
 
     def apply_increment_and_update(self, du):
