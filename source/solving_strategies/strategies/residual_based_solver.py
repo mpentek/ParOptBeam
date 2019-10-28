@@ -15,7 +15,7 @@ import numpy as np
 # stopping criteria
 TOL = 1.e-12
 # maximum iteration
-MAX_IT = 2
+MAX_IT = 10
 
 
 class ResidualBasedSolver(Solver):
@@ -51,6 +51,8 @@ class ResidualBasedSolver(Solver):
                 i_deformation = du[i_start: i_end]
                 e.update_incremental_internal_force(i_deformation)
 
+            self.K = self.structure_model.update_stiffness_matrix()
+
             # self.scheme.apply_increment(du)
             print("Nonlinear iteration: ", str(nr_it))
             print("ru = {:.2e}".format(abs(np.max(ru))))
@@ -65,7 +67,6 @@ class ResidualBasedSolver(Solver):
             print("time: {0:.2f}".format(current_time))
 
             self.solve_single_step()
-            self.K = self.structure_model.update_stiffness_matrix()
 
             # appending results to the list
             self.displacement[:, i] = self.scheme.get_displacement()
@@ -77,7 +78,6 @@ class ResidualBasedSolver(Solver):
 
             # updating deformation and reaction in the element
             for e in self.structure_model.elements:
-                e.Iteration += 1
                 i_start = DOFS_PER_NODE[e.domain_size] * e.index
                 i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
                 i_deformation = deformation[i_start: i_end]
