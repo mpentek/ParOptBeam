@@ -46,7 +46,7 @@ class Element(object):
         if self.isNonlinear:
             # nodal forces
             self.qe = np.zeros(self.ElementSize)
-            # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
+            # [A_disp_x, A_disp_y, rot ..., B_disp_x, B_disp_y, ... rot ..]
             # placeholder for one time step deformation to calculate the increment
             self.current_deformation = np.zeros(self.ElementSize)
             self.previous_deformation = np.zeros(self.ElementSize)
