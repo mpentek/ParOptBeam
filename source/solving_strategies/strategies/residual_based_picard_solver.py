@@ -23,17 +23,5 @@ class ResidualBasedPicardSolver(ResidualBasedSolver):
         return du
 
     def calculate_residual(self, f_ext):
-        q = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
-
-        for e in self.structure_model.elements:
-            start_index = DOFS_PER_NODE[e.domain_size] * e.index
-            end_index = start_index + e.ElementSize
-
-            q[start_index:
-              DOFS_PER_NODE[e.domain_size] * e.index +
-              DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL] += e.qe
-
-        q = self.structure_model.apply_bc_by_reduction(q, 'column_vector')
-        ru = f_ext - q
-        return ru
+        pass
 
