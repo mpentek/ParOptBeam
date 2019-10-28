@@ -15,7 +15,7 @@ import numpy as np
 # stopping criteria
 TOL = 1.e-12
 # maximum iteration
-MAX_IT = 10
+MAX_IT = 2
 
 
 class ResidualBasedSolver(Solver):
@@ -63,10 +63,10 @@ class ResidualBasedSolver(Solver):
             # updating deformation and reaction in the element
             for e in self.structure_model.elements:
                 e.Iteration += 1
-                e.update_nodal_information(
-                    self.displacement[DOFS_PER_NODE[e.domain_size] * e.index:
-                                      DOFS_PER_NODE[e.domain_size] * e.index +
-                                      DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i])
+                i_start = DOFS_PER_NODE[e.domain_size] * e.index
+                i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+                i_deformation = self.displacement[i_start: i_end, i]
+                e.update_nodal_information(i_deformation)
 
             # update results
             self.scheme.update()
