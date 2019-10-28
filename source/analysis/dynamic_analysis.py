@@ -4,7 +4,6 @@ from os.path import join, isdir
 from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
-from source.model.structure_model import StraightBeam
 from source.solving_strategies.strategies.linear_solver import LinearSolver
 from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
 from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
@@ -477,7 +476,7 @@ class DynamicAnalysis(AnalysisType):
             for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
                                   DOF_LABELS[self.structure_model.domain_size]):
                 start = idx
-                step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+                step = DOFS_PER_NODE[self.structure_model.domain_size]
                 stop = self.solver.displacement.shape[0] + idx - step
                 self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                                1:step]
