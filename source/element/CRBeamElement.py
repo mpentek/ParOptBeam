@@ -213,7 +213,6 @@ class CRBeamElement(Element):
 
         # calculate local nodal forces
         self._calculate_local_nodal_forces(bisectrix, vector_difference)
-        self.qe = np.dot(TransformationMatrix, self.qe)
 
         # resizing the matrices + create memory for LHS
         StiffnessMatrix = np.zeros([self.ElementSize, self.ElementSize])
@@ -223,6 +222,7 @@ class CRBeamElement(Element):
         # transformation M = T * M * trans(T)
         aux_matrix = np.matmul(TransformationMatrix, StiffnessMatrix)
         StiffnessMatrix = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
+        self.qe = np.dot(TransformationMatrix, self.qe)
 
         return StiffnessMatrix
 
@@ -615,10 +615,12 @@ class CRBeamElement(Element):
             rotated_coordinate_system[i, 1] = rotated_ny0[i]
             rotated_coordinate_system[i, 2] = rotated_nz0[i]
 
+        CurrentCoords = self._get_current_nodal_position()
+
         # rotate basis to element axis + redefine R
         delta_x = np.zeros(self.Dimension)
         for i in range(self.Dimension):
-            delta_x[i] = self.CurrentCoords[self.Dimension + i] - self.CurrentCoords[i]
+            delta_x[i] = CurrentCoords[self.Dimension + i] - CurrentCoords[i]
         vector_norm = np.linalg.norm(delta_x)
 
         if vector_norm > EPSILON:
