@@ -37,8 +37,6 @@ class Element(object):
         # element geometry
         # element geometry Node A, Node B
         self.ReferenceCoords = nodal_coords.reshape(self.LocalSize)
-        # element current nodal positions
-        self.CurrentCoords = self.ReferenceCoords
         # reference length of one element
         self.L = self._calculate_reference_length()
 
@@ -97,3 +95,16 @@ class Element(object):
         dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
         length = np.sqrt(dx * dx + dy * dy + dz * dz)
         return length
+
+    def _get_current_nodal_position(self):
+        # element current nodal positions
+        CurrentCoords = np.zeros(self.LocalSize)
+
+        for i in range(self.NumberOfNodes):
+            k = i * self.Dimension
+            j = i * self.LocalSize
+            CurrentCoords[k] = self.ReferenceCoords[k] + self.current_deformation[j]
+            CurrentCoords[k + 1] = self.ReferenceCoords[k + 1] + self.current_deformation[j + 2]
+            CurrentCoords[k + 2] = self.ReferenceCoords[k + 2] + self.current_deformation[j + 2]
+
+        return CurrentCoords
