@@ -40,14 +40,26 @@ class ResidualBasedSolver(Solver):
         while abs(np.max(ru)) > TOL and nr_it < MAX_IT:
             ru = self.calculate_residual(f_ext)
             du = self.calculate_increment(ru)
-            self.scheme.apply_increment(du)
+
+            du = self.structure_model.recuperate_bc_by_extension(
+                du, 'column_vector')
+
+            # updating deformation and reaction in the element
+            for e in self.structure_model.elements:
+                i_start = DOFS_PER_NODE[e.domain_size] * e.index
+                i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+                i_deformation = du[i_start: i_end]
+                e.update_incremental_internal_force(i_deformation)
+
+            # self.scheme.apply_increment(du)
             print("Nonlinear iteration: ", str(nr_it))
             print("ru = {:.2e}".format(abs(np.max(ru))))
             nr_it += 1
 
     def solve(self):
         # time loop
-        for i in range(0, len(self.array_time)):
+        # for i in range(0, len(self.array_time)):
+        for i in range(0, 10):
             self.step = i
             current_time = self.array_time[i]
             print("time: {0:.2f}".format(current_time))
@@ -60,12 +72,15 @@ class ResidualBasedSolver(Solver):
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
 
+            deformation = self.structure_model.recuperate_bc_by_extension(
+                self.displacement[:, i], 'column_vector')
+
             # updating deformation and reaction in the element
             for e in self.structure_model.elements:
                 e.Iteration += 1
                 i_start = DOFS_PER_NODE[e.domain_size] * e.index
                 i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-                i_deformation = self.displacement[i_start: i_end, i]
+                i_deformation = deformation[i_start: i_end]
                 e.update_nodal_information(i_deformation)
 
             # update results
