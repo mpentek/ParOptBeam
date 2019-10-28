@@ -4,6 +4,29 @@ from cycler import cycler
 
 from source.solving_strategies.strategies.linear_solver import LinearSolver
 from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
+from source.model.structure_model import StraightBeam
+
+
+
+params = {
+    "name": "CaarcBeamPrototypeOptimizable",
+    "domain_size": "3D",
+    "system_parameters": {
+        "element_type": "CRBeam",
+        "material": {
+            "density": 160.0,
+            "youngs_modulus": 2.861e8,
+            "poisson_ratio": 0.1,
+            "damping_ratio": 0.005
+        },
+        "geometry": {
+            "length_x": 180.0,
+            "number_of_elements": 3,
+            "defined_on_intervals": []
+        }
+    },
+    "boundary_conditions": "fixed-free"
+}
 
 default_cycler = (cycler(color=['b', 'b', 'b', 'g', 'r', 'k']) +
                   cycler(linestyle=['-', '--', ':', '-', '-', '-']))
@@ -25,11 +48,15 @@ f = np.array([0.0 * array_time, 0.6 * np.sin(array_time)])
 schemes = ["ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4"]
 
 
-def test_schemes():
+def test_picard_solver():
+    schemes = ["ForwardEuler1", "BackwardEuler1"]
+    beam = StraightBeam(params)
+
     for scheme in schemes:
 
-        solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, None)
+        solver = ResidualBasedPicardSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, beam)
         solver.solve()
         plt.plot(array_time, solver.displacement[1, :], label=scheme)
         plt.legend()
     plt.show()
+
