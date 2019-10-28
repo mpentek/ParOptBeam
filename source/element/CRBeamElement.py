@@ -66,6 +66,14 @@ class CRBeamElement(Element):
         msg += "Iz: " + str(self.Iz) + "\n"
         print(msg)
 
+    def update_incremental_internal_force(self, du):
+        # update incremental displacement
+        self.current_deformation += du
+        # update local rotation matrix
+        self._update_rotation_matrix_local()
+        # update local nodal force
+        self._calculate_local_nodal_forces()
+
     def get_element_mass_matrix(self):
         MassMatrix = self._get_consistent_mass_matrix()
         rotation_matrix = np.zeros([self.ElementSize, self.ElementSize])
@@ -702,9 +710,9 @@ class CRBeamElement(Element):
         return reference_transformation
 
     def _calculate_current_length(self):
-        du = self.current_deformation[0] - self.current_deformation[1]
-        dv = self.current_deformation[2] - self.current_deformation[3]
-        dw = self.current_deformation[4] - self.current_deformation[5]
+        du = self.current_deformation[0] - self.previous_deformation[1]
+        dv = self.current_deformation[2] - self.previous_deformation[3]
+        dw = self.current_deformation[4] - self.previous_deformation[5]
 
         dx = self.ReferenceCoords[0] - self.ReferenceCoords[3]
         dy = self.ReferenceCoords[1] - self.ReferenceCoords[4]
