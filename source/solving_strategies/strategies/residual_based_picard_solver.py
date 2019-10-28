@@ -8,7 +8,7 @@ Last update: 16.10.2019
 # ===============================================================================
 import numpy as np
 
-from source.solving_strategies.strategies.rasidual_based_solver import ResidualBasedSolver
+from source.solving_strategies.strategies.residual_based_solver import ResidualBasedSolver
 from source.auxiliary.global_definitions import *
 
 
