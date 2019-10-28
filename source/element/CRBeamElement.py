@@ -645,8 +645,13 @@ class CRBeamElement(Element):
         return n_xyz, Bisectrix, VectorDifferences
 
     def _calculate_transformation_matrix(self):
+        """
+        This function calculates the transformation matrix to globalize/localize vectors and/or matrices
+        """
+        # update local CS
         AuxRotationMatrix, Bisectrix, VectorDifferences = self._update_rotation_matrix_local()
         RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        # Building the rotation matrix for the local element matrix
         RotationMatrix = self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
         return RotationMatrix, Bisectrix, VectorDifferences
 
