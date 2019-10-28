@@ -576,13 +576,19 @@ class StraightBeam(object):
             cols = 1
             ixgrid = np.ix_(self.dofs_to_keep, [0])
             matrix = matrix.reshape([len(matrix), 1])
+        elif axis == 'column_vector':
+            rows = len(self.all_dofs_global)
+            cols = 1
+            ixgrid = np.ix_(self.dofs_to_keep)
         else:
             err_msg = "The extension mode with input \"" + axis
             err_msg += "\" for axis is not avaialbe \n"
             err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
             raise Exception(err_msg)
-
-        extended_matrix = np.zeros((rows, cols))
+        if cols != 1:
+            extended_matrix = np.zeros((rows, cols))
+        else:
+            extended_matrix = np.zeros((rows, ))
         # copy the needed element into the extended matrix
         extended_matrix[ixgrid] = matrix
 
