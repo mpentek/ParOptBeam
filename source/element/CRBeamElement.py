@@ -7,17 +7,32 @@ EPSILON = sys.float_info.epsilon
 
 
 def rotate_vector(quaternion, vector):
-    b0 = 2.0 * (quaternion[1] * vector[2] - quaternion[2] * vector[1])
-    b1 = 2.0 * (quaternion[2] * vector[0] - quaternion[0] * vector[2])
-    b2 = 2.0 * (quaternion[0] * vector[1] - quaternion[1] * vector[0])
+    """
+    Rotates a vector using this quaternion.
+    Note: this is faster than constructing the rotation matrix and perform the matrix
+    multiplication for a single vector.
+    :param quaternion:
+    :param vector: the input source vector - rotated on exit
+    :return: vector
+    """
+    w = quaternion[0]
+    x = quaternion[1]
+    y = quaternion[2]
+    z = quaternion[3]
 
-    c0 = quaternion[1] * b2 - quaternion[2] * b1
-    c1 = quaternion[2] * b0 - quaternion[0] * b2
-    c2 = quaternion[0] * b1 - quaternion[1] * b0
+    # b = 2.0 (quaternion x vector)
+    b0 = 2.0 * (y * vector[2] - z * vector[1])
+    b1 = 2.0 * (z * vector[0] - x * vector[2])
+    b2 = 2.0 * (x * vector[1] - y * vector[0])
 
-    vector[0] += b0 * quaternion[3] + c0
-    vector[1] += b1 * quaternion[3] + c1
-    vector[2] += b2 * quaternion[3] + c2
+    # c = 2.0 (quaternion x b)
+    c0 = y * b2 - z * b1
+    c1 = z * b0 - x * b2
+    c2 = x * b1 - y * b0
+
+    vector[0] += b0 * w + c0
+    vector[1] += b1 * w + c1
+    vector[2] += b2 * w + c2
 
     return vector
 
@@ -63,14 +78,12 @@ class CRBeamElement(Element):
         msg += "Iz: " + str(self.Iz) + "\n"
         print(msg)
 
-    def update_incremental_internal_force(self, du):
-        # update incremental displacement
-        self.current_deformation += du
+    def update_internal_force(self):
         # update local rotation matrix
         transformation_matrix, bisectrix, vector_difference = self._calculate_transformation_matrix()
         # update local nodal force
-        self._calculate_local_nodal_forces(bisectrix, vector_difference)
-        self.qe = np.dot(transformation_matrix, self.qe)
+        qe = self._calculate_local_nodal_forces(bisectrix, vector_difference)
+        self.qe = np.dot(transformation_matrix, qe)
         self.Iteration += 1
 
     def get_element_mass_matrix(self):
@@ -175,7 +188,7 @@ class CRBeamElement(Element):
         temp_mass_matrix[3, 1] = temp_mass_matrix[1, 3]
         temp_mass_matrix[3, 2] = temp_mass_matrix[2, 3]
         temp_mass_matrix[3, 3] = ((1.0 / 105.0) + (1.0 / 60.0) * Phi + (1.0 / 120.0) * Phi2) * L2
-        
+
         temp_mass_matrix *= CT
         mass_matrix += temp_mass_matrix
         temp_mass_matrix = np.zeros([MatSize, MatSize])
@@ -196,7 +209,7 @@ class CRBeamElement(Element):
         temp_mass_matrix[3, 1] = temp_mass_matrix[1, 3]
         temp_mass_matrix[3, 2] = temp_mass_matrix[2, 3]
         temp_mass_matrix[3, 3] = ((2.0 / 15.0) + (1.0 / 6.0) * Phi + (1.0 / 3.0) * Phi2) * L2
-        
+
         temp_mass_matrix *= CR
         mass_matrix += temp_mass_matrix
 
@@ -488,7 +501,8 @@ class CRBeamElement(Element):
 
         # updating transformation matrix S
         S = self._calculate_transformation_s()
-        self.qe = np.dot(S, element_forces_t)
+        qe = np.dot(S, element_forces_t)
+        return qe
 
     def _calculate_element_forces(self, bisectrix, vector_difference):
         # reference length
@@ -669,13 +683,6 @@ class CRBeamElement(Element):
                         big_matrix[i + k, j + k] = small_matrix[i, j]
         return big_matrix
 
-    def _update_increment_deformation(self):
-        """
-         This function updates incremental deformation w.r.t. to current and previous deformations
-        """
-        increment_deformation = self.current_deformation - self.previous_deformation
-        return increment_deformation
-
     def _calculate_initial_local_cs(self):
         direction_vector_x = np.zeros(self.Dimension)
 
@@ -745,4 +752,3 @@ class CRBeamElement(Element):
 
         length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
         return length
-
