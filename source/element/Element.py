@@ -57,10 +57,6 @@ class Element(object):
         msg += str(self.domain_size) + " Base Class Element " + str(self.index) + "\n"
         print(msg)
 
-    def update_nodal_information(self, deformation):
-        self.previous_deformation = self.current_deformation
-        self.current_deformation = deformation
-
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
         # assuming equivalency with circle
@@ -104,7 +100,18 @@ class Element(object):
             k = i * self.Dimension
             j = i * self.LocalSize
             CurrentCoords[k] = self.ReferenceCoords[k] + self.current_deformation[j]
-            CurrentCoords[k + 1] = self.ReferenceCoords[k + 1] + self.current_deformation[j + 2]
+            CurrentCoords[k + 1] = self.ReferenceCoords[k + 1] + self.current_deformation[j + 1]
             CurrentCoords[k + 2] = self.ReferenceCoords[k + 2] + self.current_deformation[j + 2]
 
         return CurrentCoords
+
+    def assign_new_deformation(self, new_deformation):
+        self.previous_deformation = self.current_deformation
+        self.current_deformation = new_deformation
+
+    def _update_increment_deformation(self):
+        """
+         This function updates incremental deformation w.r.t. to current and previous deformations
+        """
+        increment_deformation = self.current_deformation - self.previous_deformation
+        return increment_deformation
