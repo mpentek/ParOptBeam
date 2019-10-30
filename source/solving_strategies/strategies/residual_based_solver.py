@@ -31,32 +31,39 @@ class ResidualBasedSolver(Solver):
     def calculate_increment(self, ru):
         pass
 
+    def update_displacement_and_force_in_element(self, new_displacement):
+        # updating displacement in the element
+        for e in self.structure_model.elements:
+            i_start = DOFS_PER_NODE[e.domain_size] * e.index
+            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            i_deformation = new_displacement[i_start: i_end]
+            e.assign_new_deformation(i_deformation)
+            e.update_internal_force()
+
     def solve_single_step(self):
         f_ext = self.force[:, self.step]
+        # predict displacement at time step n with external force f_ext
         self.scheme.solve_single_step(f_ext)
 
         nr_it = 0
-        ru = 1.0
+        # update displacement in element
+        new_displacement = self.scheme.get_displacement()
+        new_displacement = self.structure_model.recuperate_bc_by_extension(new_displacement, 'column_vector')
+        self.update_displacement_and_force_in_element(new_displacement)
+        # update residual
+        ru = self.calculate_residual(f_ext)
+
         while abs(np.max(ru)) > TOL and nr_it < MAX_IT:
-            ru = self.calculate_residual(f_ext)
-            du = self.calculate_increment(ru)
-
-            du = self.structure_model.recuperate_bc_by_extension(
-                du, 'column_vector')
-
-            # updating deformation and reaction in the element
-            for e in self.structure_model.elements:
-                i_start = DOFS_PER_NODE[e.domain_size] * e.index
-                i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-                i_deformation = du[i_start: i_end]
-                e.update_incremental_internal_force(i_deformation)
-
-            self.K = self.structure_model.update_stiffness_matrix()
-
-            # self.scheme.apply_increment(du)
+            nr_it += 1
             print("Nonlinear iteration: ", str(nr_it))
             print("ru = {:.2e}".format(abs(np.max(ru))))
-            nr_it += 1
+            self.K = self.structure_model.update_stiffness_matrix()
+            du = self.calculate_increment(ru)
+            du = self.structure_model.recuperate_bc_by_extension(du, 'column_vector')
+
+            # updating displacement in the element
+            self.update_displacement_and_force_in_element(new_displacement + du)
+            ru = self.calculate_residual(f_ext)
 
     def solve(self):
         # time loop
@@ -72,16 +79,6 @@ class ResidualBasedSolver(Solver):
             self.displacement[:, i] = self.scheme.get_displacement()
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
-
-            deformation = self.structure_model.recuperate_bc_by_extension(
-                self.displacement[:, i], 'column_vector')
-
-            # updating deformation and reaction in the element
-            for e in self.structure_model.elements:
-                i_start = DOFS_PER_NODE[e.domain_size] * e.index
-                i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-                i_deformation = deformation[i_start: i_end]
-                e.update_nodal_information(i_deformation)
 
             # update results
             self.scheme.update()
