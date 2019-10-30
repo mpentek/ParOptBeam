@@ -22,21 +22,17 @@ def test_crbeam_element():
     material_params = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
     element_params = {'a': 5., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
-    coords = np.array([[1., 0.2, 0.9], [2., 0.2, 0.9]])
+    coords = np.array([[1., 0.0, 0.0], [2., 0.0, 0.0]])
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
-    element.Iteration = 1
-    element.previous_deformation = element.current_deformation
-    element.current_deformation = np.array([0.1, 0.05, 0.04, 0.0, 0.0, 0.0, 0.2, 0.1, 0.03, 0.0, 0.0, 0.0])
+    new_displacement = [0.1, 0.1, 0.0, 0.0, 0.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    element.assign_new_deformation(new_displacement)
+    element.update_internal_force()
 
     Ke_geo = element._get_element_stiffness_matrix_geometry()
     ke_mat = element._get_element_stiffness_matrix_material()
     K = element.get_element_stiffness_matrix()
     M = element.get_element_mass_matrix()
+    f_test = np.dot(K, new_displacement)
     np.set_printoptions(precision=1)
-    print(M)
-
-
-if __name__ == '__main__':
-    test_crbeam_element()
-    # test_timoshenko_element()
