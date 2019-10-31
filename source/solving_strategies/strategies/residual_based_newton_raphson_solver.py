@@ -30,7 +30,7 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
             start_index = DOFS_PER_NODE[e.domain_size] * e.index
             end_index = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
 
-            q[start_index:end_index] += e.qe
+            q[start_index:end_index] += e.nodal_force_global
 
         q = self.structure_model.apply_bc_by_reduction(q, 'column_vector')
         ru = f_ext - q
