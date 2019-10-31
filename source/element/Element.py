@@ -43,7 +43,9 @@ class Element(object):
         # nonlinear elements needs the nodal forces and deformations for the geometric stiffness calculation
         if self.isNonlinear:
             # nodal forces
-            self.qe = np.zeros(self.ElementSize)
+            self.nodal_force_local = np.zeros(self.ElementSize)
+            self.nodal_force_global = np.zeros(self.ElementSize)
+
             # [A_disp_x, A_disp_y, rot ..., B_disp_x, B_disp_y, ... rot ..]
             # placeholder for one time step deformation to calculate the increment
             self.current_deformation = np.zeros(self.ElementSize)
