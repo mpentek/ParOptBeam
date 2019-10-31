@@ -25,7 +25,11 @@ def test_crbeam_element():
     coords = np.array([[1., 0.0, 0.0], [2., 0.0, 0.0]])
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
-    new_displacement = [0.1, 0.1, 0.0, 0.0, 0.0, 0.0,
+    Ke_geo = element._get_element_stiffness_matrix_geometry()
+    ke_mat = element._get_element_stiffness_matrix_material()
+    K = element.get_element_stiffness_matrix()
+
+    new_displacement = [0.1, 0.0, 0.0, 0.1, 0.0, 0.0,
                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     element.assign_new_deformation(new_displacement)
     element.update_internal_force()
@@ -35,4 +39,6 @@ def test_crbeam_element():
     K = element.get_element_stiffness_matrix()
     M = element.get_element_mass_matrix()
     f_test = np.dot(K, new_displacement)
+    err = f_test - element.nodal_force_global
+    print(err)
     np.set_printoptions(precision=1)
