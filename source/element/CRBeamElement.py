@@ -37,6 +37,13 @@ def rotate_vector(quaternion, vector):
     return vector
 
 
+def apply_transformation(TransformationMatrix, M):
+    # transformation M = T * M * trans(T)
+    aux_matrix = np.matmul(TransformationMatrix, M)
+    M_transformed = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
+    return M_transformed
+
+
 class CRBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
         if domain_size == '2D':
@@ -52,7 +59,10 @@ class CRBeamElement(Element):
 
         # transformation matrix
         self.LocalRotationMatrix = np.zeros([self.Dimension, self.Dimension])
+        self.TransformationMatrix = np.zeros([self.ElementSize, self.ElementSize])
 
+        # initializing transformation matrix for iteration = 0
+        self.TransformationMatrix = self._calculate_initial_local_cs()
         # for calculating deformation
         self._QuaternionVEC_A = np.zeros(self.Dimension)
         self._QuaternionVEC_B = np.zeros(self.Dimension)
