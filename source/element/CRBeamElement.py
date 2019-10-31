@@ -61,18 +61,19 @@ class CRBeamElement(Element):
         self.LocalRotationMatrix = np.zeros([self.Dimension, self.Dimension])
         self.TransformationMatrix = np.zeros([self.ElementSize, self.ElementSize])
 
-        # initializing transformation matrix for iteration = 0
-        self.TransformationMatrix = self._calculate_initial_local_cs()
-
-        # initializing bisectrix and vector_difference for calculating phi_a and phi_s
-        self.Bisectrix = np.zeros(self.Dimension)
-        self.VectorDifference = np.zeros(self.Dimension)
-
         # for calculating deformation
         self._QuaternionVEC_A = np.zeros(self.Dimension)
         self._QuaternionVEC_B = np.zeros(self.Dimension)
         self._QuaternionSCA_A = 1.0
         self._QuaternionSCA_B = 1.0
+
+        # initializing transformation matrix for iteration = 0
+        self._update_rotation_matrix_local()
+        self.TransformationMatrix = self._calculate_initial_local_cs()
+
+        # initializing bisectrix and vector_difference for calculating phi_a and phi_s
+        self.Bisectrix = np.zeros(self.Dimension)
+        self.VectorDifference = np.zeros(self.Dimension)
 
         self._print_element_information()
 
@@ -95,13 +96,10 @@ class CRBeamElement(Element):
 
     def update_internal_force(self):
         self.Iteration += 1
-        self.update_transformation_matrix()
+        self._calculate_transformation_matrix()
         # update local nodal force
         self._calculate_local_nodal_forces()
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
-
-    def update_transformation_matrix(self):
-        self.TransformationMatrix, self.Bisectrix, self.VectorDifference = self._calculate_transformation_matrix()
 
     def get_element_mass_matrix(self):
         MassMatrix = self._get_consistent_mass_matrix()
@@ -533,11 +531,9 @@ class CRBeamElement(Element):
 
     def _calculate_antisymmetric_deformation_mode(self):
         phi_a = np.zeros(self.Dimension)
-        rotated_nx0 = np.zeros(self.Dimension)
 
         if self.Iteration != 0:
-            for i in range(0, self.Dimension):
-                rotated_nx0[i] = self.LocalRotationMatrix[i, 0]
+            rotated_nx0 = self.LocalRotationMatrix[:, 0]
             temp_vector = np.cross(rotated_nx0, self.Bisectrix)
             phi_a = np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
             phi_a *= 4.0
@@ -583,7 +579,9 @@ class CRBeamElement(Element):
         for i in range(self.Dimension):
             self._QuaternionSCA_B -= drB_vec[i] * temp_vec[i]
 
-        self._QuaternionVEC_B = drB_sca * temp_vec + temp_scalar * drB_vec + np.cross(drB_vec, temp_vec)
+        self._QuaternionVEC_B = drB_sca * temp_vec
+        self._QuaternionVEC_B += temp_scalar * drB_vec
+        self._QuaternionVEC_B += np.cross(drB_vec, temp_vec)
 
         # scalar part of difference quaternion
         scalar_diff = (self._QuaternionSCA_A + self._QuaternionSCA_B) * (self._QuaternionSCA_A + self._QuaternionSCA_B)
@@ -622,10 +620,9 @@ class CRBeamElement(Element):
         rotated_nz0 = rotate_vector(quaternion, rotated_nz0)
 
         rotated_coordinate_system = np.zeros([self.Dimension, self.Dimension])
-        for i in range(self.Dimension):
-            rotated_coordinate_system[i, 0] = rotated_nx0[i]
-            rotated_coordinate_system[i, 1] = rotated_ny0[i]
-            rotated_coordinate_system[i, 2] = rotated_nz0[i]
+        rotated_coordinate_system[:, 0] = rotated_nx0
+        rotated_coordinate_system[:, 1] = rotated_ny0
+        rotated_coordinate_system[:, 2] = rotated_nz0
 
         CurrentCoords = self._get_current_nodal_position()
 
@@ -646,26 +643,25 @@ class CRBeamElement(Element):
 
         n_xyz = np.zeros([self.Dimension, self.Dimension])
 
-        for i in range(0, self.Dimension):
-            n_xyz[i, 0] = -rotated_coordinate_system[i, 0]
-            n_xyz[i, 1] = rotated_coordinate_system[i, 1]
-            n_xyz[i, 2] = rotated_coordinate_system[i, 2]
+        n_xyz[:, 0] = -rotated_coordinate_system[:, 0]
+        n_xyz[:, 1] = rotated_coordinate_system[:, 1]
+        n_xyz[:, 2] = rotated_coordinate_system[:, 2]
 
         Identity = np.identity(self.Dimension)
         Identity -= 2.0 * np.outer(Bisectrix, Bisectrix)
         n_xyz = np.matmul(Identity, n_xyz)
         self.LocalRotationMatrix = n_xyz
-        return n_xyz, Bisectrix, VectorDifferences
+        self.Bisectrix = Bisectrix
+        self.VectorDifference = VectorDifferences
 
     def _calculate_transformation_matrix(self):
         """
         This function calculates the transformation matrix to globalize/localize vectors and/or matrices
         """
         # update local CS
-        AuxRotationMatrix, Bisectrix, VectorDifferences = self._update_rotation_matrix_local()
+        self._update_rotation_matrix_local()
         # Building the rotation matrix for the local element matrix
-        RotationMatrix = self._assemble_small_in_big_matrix(AuxRotationMatrix)
-        return RotationMatrix, Bisectrix, VectorDifferences
+        self.TransformationMatrix = self._assemble_small_in_big_matrix(self.LocalRotationMatrix)
 
     def _assemble_small_in_big_matrix(self, small_matrix):
         numerical_limit = EPSILON
