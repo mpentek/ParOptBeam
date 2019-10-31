@@ -308,7 +308,7 @@ class StraightBeam(object):
 
     def update_stiffness_matrix(self):
         k = self._get_stiffness()
-        comp_k = self.apply_bc_by_reduction(self.k)
+        comp_k = self.apply_bc_by_reduction(k)
         return comp_k
 
     def calculate_global_matrices(self):
