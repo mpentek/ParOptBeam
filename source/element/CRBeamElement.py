@@ -63,6 +63,11 @@ class CRBeamElement(Element):
 
         # initializing transformation matrix for iteration = 0
         self.TransformationMatrix = self._calculate_initial_local_cs()
+
+        # initializing bisectrix and vector_difference for calculating phi_a and phi_s
+        self.Bisectrix = np.zeros(self.Dimension)
+        self.VectorDifference = np.zeros(self.Dimension)
+
         # for calculating deformation
         self._QuaternionVEC_A = np.zeros(self.Dimension)
         self._QuaternionVEC_B = np.zeros(self.Dimension)
@@ -89,24 +94,19 @@ class CRBeamElement(Element):
         print(msg)
 
     def update_internal_force(self):
-        # update local rotation matrix
-        transformation_matrix, bisectrix, vector_difference = self._calculate_transformation_matrix()
-        # update local nodal force
-        qe = self._calculate_local_nodal_forces(bisectrix, vector_difference)
-        self.qe = np.dot(transformation_matrix, qe)
         self.Iteration += 1
+        self.update_transformation_matrix()
+        # update local nodal force
+        self._calculate_local_nodal_forces()
+        self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
+
+    def update_transformation_matrix(self):
+        self.TransformationMatrix, self.Bisectrix, self.VectorDifference = self._calculate_transformation_matrix()
 
     def get_element_mass_matrix(self):
         MassMatrix = self._get_consistent_mass_matrix()
-        rotation_matrix = np.zeros([self.ElementSize, self.ElementSize])
-        if self.Iteration == 0:
-            rotation_matrix = self._calculate_initial_local_cs()
-        else:
-            rotation_matrix = self._assemble_small_in_big_matrix(self.LocalRotationMatrix, rotation_matrix)
-
-        aux_maxtrix = np.matmul(rotation_matrix, MassMatrix)
-        MassMatrix = np.matmul(aux_maxtrix, np.transpose(rotation_matrix))
-        return MassMatrix
+        TransformedMassMatrix = apply_transformation(self.TransformationMatrix, MassMatrix)
+        return TransformedMassMatrix
 
     def _get_consistent_mass_matrix(self):
         """
@@ -226,34 +226,23 @@ class CRBeamElement(Element):
         return mass_matrix
 
     def get_element_stiffness_matrix(self):
-        bisectrix = np.zeros(self.Dimension)
-        vector_difference = np.zeros(self.Dimension)
-
-        if self.Iteration == 0:
-            TransformationMatrix = self._calculate_initial_local_cs()
-        else:
-            TransformationMatrix, bisectrix, vector_difference = self._calculate_transformation_matrix()
-
         # calculate local nodal forces
-        self._calculate_local_nodal_forces(bisectrix, vector_difference)
+        self._calculate_local_nodal_forces()
 
         # resizing the matrices + create memory for LHS
-        StiffnessMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        Ke = np.zeros([self.ElementSize, self.ElementSize])
         # creating LHS
-        StiffnessMatrix += self._get_element_stiffness_matrix_material()
-        StiffnessMatrix += self._get_element_stiffness_matrix_geometry()
-        # transformation M = T * M * trans(T)
-        aux_matrix = np.matmul(TransformationMatrix, StiffnessMatrix)
-        StiffnessMatrix = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
-        self.qe = np.dot(TransformationMatrix, self.qe)
+        Ke += self._get_element_stiffness_matrix_material()
+        Ke += self._get_element_stiffness_matrix_geometry()
 
-        return StiffnessMatrix
+        TransformedStiffnessMatrix = apply_transformation(self.TransformationMatrix, Ke)
+        return TransformedStiffnessMatrix
 
     def _get_element_stiffness_matrix_material(self):
         """
             elastic part of the total stiffness matrix
         """
-        L = self._calculate_current_length()
+        L = self.L
 
         # shear coefficients
         Psi_y = self._calculate_psi(self.Iy, self.Asz)
@@ -320,119 +309,119 @@ class CRBeamElement(Element):
             geometric part of the total stiffness matrix
         """
 
-        N = self.qe[6]
-        Mt = self.qe[9]
-        my_A = self.qe[4]
-        mz_A = self.qe[5]
-        my_B = self.qe[10]
-        mz_B = self.qe[11]
+        N = self.nodal_force_local[6]
+        Mt = self.nodal_force_local[9]
+        my_A = self.nodal_force_local[4]
+        mz_A = self.nodal_force_local[5]
+        my_B = self.nodal_force_local[10]
+        mz_B = self.nodal_force_local[11]
 
         L = self._calculate_current_length()
         Qy = -1.0 * (mz_A + mz_B) / L
         Qz = (my_A + my_B) / L
 
-        kg_const = np.zeros([self.ElementSize, self.ElementSize])
+        ke_geo = np.zeros([self.ElementSize, self.ElementSize])
 
-        kg_const[0, 1] = -Qy / L
-        kg_const[0, 2] = -Qz / L
-        kg_const[0, 7] = -1.0 * kg_const[0, 1]
-        kg_const[0, 8] = -1.0 * kg_const[0, 2]
+        ke_geo[0, 1] = -Qy / L
+        ke_geo[0, 2] = -Qz / L
+        ke_geo[0, 7] = -1.0 * ke_geo[0, 1]
+        ke_geo[0, 8] = -1.0 * ke_geo[0, 2]
 
-        kg_const[1, 0] = kg_const[0, 1]
+        ke_geo[1, 0] = ke_geo[0, 1]
 
-        kg_const[1, 1] = 1.2 * N / L
+        ke_geo[1, 1] = 1.2 * N / L
 
-        kg_const[1, 3] = my_A / L
-        kg_const[1, 4] = Mt / L
+        ke_geo[1, 3] = my_A / L
+        ke_geo[1, 4] = Mt / L
 
-        kg_const[1, 5] = N / 10.0
+        ke_geo[1, 5] = N / 10.0
 
-        kg_const[1, 6] = kg_const[0, 7]
-        kg_const[1, 7] = -1.0 * kg_const[1, 1]
-        kg_const[1, 9] = my_B / L
-        kg_const[1, 10] = -1.0 * kg_const[1, 4]
-        kg_const[1, 11] = kg_const[1, 5]
+        ke_geo[1, 6] = ke_geo[0, 7]
+        ke_geo[1, 7] = -1.0 * ke_geo[1, 1]
+        ke_geo[1, 9] = my_B / L
+        ke_geo[1, 10] = -1.0 * ke_geo[1, 4]
+        ke_geo[1, 11] = ke_geo[1, 5]
 
-        kg_const[2, 0] = kg_const[0, 2]
-        kg_const[2, 2] = kg_const[1, 1]
-        kg_const[2, 3] = mz_A / L
-        kg_const[2, 4] = -1.0 * kg_const[1, 5]
-        kg_const[2, 5] = kg_const[1, 4]
-        kg_const[2, 6] = kg_const[0, 8]
-        kg_const[2, 8] = kg_const[1, 7]
-        kg_const[2, 9] = mz_B / L
-        kg_const[2, 10] = kg_const[2, 4]
-        kg_const[2, 11] = kg_const[1, 10]
+        ke_geo[2, 0] = ke_geo[0, 2]
+        ke_geo[2, 2] = ke_geo[1, 1]
+        ke_geo[2, 3] = mz_A / L
+        ke_geo[2, 4] = -1.0 * ke_geo[1, 5]
+        ke_geo[2, 5] = ke_geo[1, 4]
+        ke_geo[2, 6] = ke_geo[0, 8]
+        ke_geo[2, 8] = ke_geo[1, 7]
+        ke_geo[2, 9] = mz_B / L
+        ke_geo[2, 10] = ke_geo[2, 4]
+        ke_geo[2, 11] = ke_geo[1, 10]
 
         for i in range(3):
-            kg_const[3, i] = kg_const[i, 3]
+            ke_geo[3, i] = ke_geo[i, 3]
 
-        kg_const[3, 4] = (-mz_A / 3.0) + (mz_B / 6.0)
-        kg_const[3, 5] = (my_A / 3.0) - (my_B / 6.0)
-        kg_const[3, 7] = -my_A / L
-        kg_const[3, 8] = -mz_A / L
-        kg_const[3, 10] = L * Qy / 6.0
-        kg_const[3, 11] = L * Qz / 6.0
+        ke_geo[3, 4] = (-mz_A / 3.0) + (mz_B / 6.0)
+        ke_geo[3, 5] = (my_A / 3.0) - (my_B / 6.0)
+        ke_geo[3, 7] = -my_A / L
+        ke_geo[3, 8] = -mz_A / L
+        ke_geo[3, 10] = L * Qy / 6.0
+        ke_geo[3, 11] = L * Qz / 6.0
 
         for i in range(4):
-            kg_const[4, i] = kg_const[i, 4]
+            ke_geo[4, i] = ke_geo[i, 4]
 
-        kg_const[4, 4] = 2.0 * L * N / 15.0
-        kg_const[4, 7] = -Mt / L
-        kg_const[4, 8] = N / 10.0
-        kg_const[4, 9] = kg_const[3, 10]
-        kg_const[4, 10] = -L * N / 30.0
-        kg_const[4, 11] = Mt / 2.0
+        ke_geo[4, 4] = 2.0 * L * N / 15.0
+        ke_geo[4, 7] = -Mt / L
+        ke_geo[4, 8] = N / 10.0
+        ke_geo[4, 9] = ke_geo[3, 10]
+        ke_geo[4, 10] = -L * N / 30.0
+        ke_geo[4, 11] = Mt / 2.0
 
         for i in range(5):
-            kg_const[5, i] = kg_const[i, 5]
+            ke_geo[5, i] = ke_geo[i, 5]
 
-        kg_const[5, 5] = kg_const[4, 4]
-        kg_const[5, 7] = -N / 10.0
-        kg_const[5, 8] = -Mt / L
-        kg_const[5, 9] = kg_const[3, 11]
-        kg_const[5, 10] = -1.0 * kg_const[4, 11]
-        kg_const[5, 11] = kg_const[4, 10]
+        ke_geo[5, 5] = ke_geo[4, 4]
+        ke_geo[5, 7] = -N / 10.0
+        ke_geo[5, 8] = -Mt / L
+        ke_geo[5, 9] = ke_geo[3, 11]
+        ke_geo[5, 10] = -1.0 * ke_geo[4, 11]
+        ke_geo[5, 11] = ke_geo[4, 10]
 
         for i in range(6):
-            kg_const[6, i] = kg_const[i, 6]
+            ke_geo[6, i] = ke_geo[i, 6]
 
-        kg_const[6, 7] = kg_const[0, 1]
-        kg_const[6, 8] = kg_const[0, 2]
+        ke_geo[6, 7] = ke_geo[0, 1]
+        ke_geo[6, 8] = ke_geo[0, 2]
 
         for i in range(7):
-            kg_const[7, i] = kg_const[i, 7]
+            ke_geo[7, i] = ke_geo[i, 7]
 
-        kg_const[7, 7] = kg_const[1, 1]
-        kg_const[7, 9] = -1.0 * kg_const[1, 9]
-        kg_const[7, 10] = kg_const[4, 1]
-        kg_const[7, 11] = kg_const[2, 4]
+        ke_geo[7, 7] = ke_geo[1, 1]
+        ke_geo[7, 9] = -1.0 * ke_geo[1, 9]
+        ke_geo[7, 10] = ke_geo[4, 1]
+        ke_geo[7, 11] = ke_geo[2, 4]
 
         for i in range(8):
-            kg_const[8, i] = kg_const[i, 8]
+            ke_geo[8, i] = ke_geo[i, 8]
 
-        kg_const[8, 8] = kg_const[1, 1]
-        kg_const[8, 9] = -1.0 * kg_const[2, 9]
-        kg_const[8, 10] = kg_const[1, 5]
-        kg_const[8, 11] = kg_const[1, 4]
+        ke_geo[8, 8] = ke_geo[1, 1]
+        ke_geo[8, 9] = -1.0 * ke_geo[2, 9]
+        ke_geo[8, 10] = ke_geo[1, 5]
+        ke_geo[8, 11] = ke_geo[1, 4]
 
         for i in range(9):
-            kg_const[9, i] = kg_const[i, 9]
+            ke_geo[9, i] = ke_geo[i, 9]
 
-        kg_const[9, 10] = (mz_A / 6.0) - (mz_B / 3.0)
-        kg_const[9, 11] = (-my_A / 6.0) + (my_B / 3.0)
+        ke_geo[9, 10] = (mz_A / 6.0) - (mz_B / 3.0)
+        ke_geo[9, 11] = (-my_A / 6.0) + (my_B / 3.0)
 
         for i in range(10):
-            kg_const[10, i] = kg_const[i, 10]
+            ke_geo[10, i] = ke_geo[i, 10]
 
-        kg_const[10, 10] = kg_const[4, 4]
+        ke_geo[10, 10] = ke_geo[4, 4]
 
         for i in range(11):
-            kg_const[11, i] = kg_const[i, 11]
+            ke_geo[11, i] = ke_geo[i, 11]
 
-        kg_const[11, 11] = kg_const[4, 4]
+        ke_geo[11, 11] = ke_geo[4, 4]
 
-        return kg_const
+        return ke_geo
 
     def _calculate_deformation_stiffness(self):
         L = self.L
@@ -449,9 +438,9 @@ class CRBeamElement(Element):
         Kd[5, 5] = 3.0 * self.E * self.Iz * Psi_z / L
 
         l = self._calculate_current_length()
-        N = self.qe[6]
-        Qy = -1.0 * (self.qe[5] + self.qe[11]) / l
-        Qz = 1.0 * (self.qe[4] + self.qe[10]) / l
+        N = self.nodal_force_local[6]
+        Qy = -1.0 * (self.nodal_force_local[5] + self.nodal_force_local[11]) / l
+        Qz = 1.0 * (self.nodal_force_local[4] + self.nodal_force_local[10]) / l
 
         N1 = l * N / 12.0
         N2 = l * N / 20.0
@@ -504,25 +493,24 @@ class CRBeamElement(Element):
 
         return S
 
-    def _calculate_local_nodal_forces(self, bisectrix, vector_difference):
+    def _calculate_local_nodal_forces(self):
 
         # element force t
-        element_forces_t = self._calculate_element_forces(bisectrix, vector_difference)
+        element_forces_t = self._calculate_element_forces()
 
         # updating transformation matrix S
         S = self._calculate_transformation_s()
-        qe = np.dot(S, element_forces_t)
-        return qe
+        self.nodal_force_local = np.dot(S, element_forces_t)
 
-    def _calculate_element_forces(self, bisectrix, vector_difference):
+    def _calculate_element_forces(self):
         # reference length
         L = self.L
         # current length
         l = self._calculate_current_length()
         # symmetric deformation mode
-        phi_s = self._calculate_symmetric_deformation_mode(vector_difference)
+        phi_s = self._calculate_symmetric_deformation_mode()
         # asymmetric deformation mode
-        phi_a = self._calculate_antisymmetric_deformation_mode(bisectrix)
+        phi_a = self._calculate_antisymmetric_deformation_mode()
 
         deformation_modes_total_v = np.zeros(self.LocalSize)
         deformation_modes_total_v[3] = l - L
@@ -536,21 +524,21 @@ class CRBeamElement(Element):
         element_forces_t = np.dot(Kd, deformation_modes_total_v)
         return element_forces_t
 
-    def _calculate_symmetric_deformation_mode(self, vector_difference):
+    def _calculate_symmetric_deformation_mode(self):
         phi_s = np.zeros(self.Dimension)
         if self.Iteration != 0:
-            phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), vector_difference)
+            phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), self.VectorDifference)
             phi_s *= 4.0
         return phi_s
 
-    def _calculate_antisymmetric_deformation_mode(self, bisectrix):
+    def _calculate_antisymmetric_deformation_mode(self):
         phi_a = np.zeros(self.Dimension)
         rotated_nx0 = np.zeros(self.Dimension)
 
         if self.Iteration != 0:
             for i in range(0, self.Dimension):
                 rotated_nx0[i] = self.LocalRotationMatrix[i, 0]
-            temp_vector = np.cross(rotated_nx0, bisectrix)
+            temp_vector = np.cross(rotated_nx0, self.Bisectrix)
             phi_a = np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
             phi_a *= 4.0
         return phi_a
@@ -665,9 +653,8 @@ class CRBeamElement(Element):
 
         Identity = np.identity(self.Dimension)
         Identity -= 2.0 * np.outer(Bisectrix, Bisectrix)
-
-        self.LocalRotationMatrix = n_xyz
         n_xyz = np.matmul(Identity, n_xyz)
+        self.LocalRotationMatrix = n_xyz
         return n_xyz, Bisectrix, VectorDifferences
 
     def _calculate_transformation_matrix(self):
@@ -676,14 +663,14 @@ class CRBeamElement(Element):
         """
         # update local CS
         AuxRotationMatrix, Bisectrix, VectorDifferences = self._update_rotation_matrix_local()
-        RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
         # Building the rotation matrix for the local element matrix
-        RotationMatrix = self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
+        RotationMatrix = self._assemble_small_in_big_matrix(AuxRotationMatrix)
         return RotationMatrix, Bisectrix, VectorDifferences
 
-    def _assemble_small_in_big_matrix(self, small_matrix, big_matrix):
+    def _assemble_small_in_big_matrix(self, small_matrix):
         numerical_limit = EPSILON
-        big_matrix.fill(0.)
+        big_matrix = np.zeros([self.ElementSize, self.ElementSize])
+
         for k in range(0, self.ElementSize, self.Dimension):
             for i in range(self.Dimension):
                 for j in range(self.Dimension):
@@ -746,8 +733,7 @@ class CRBeamElement(Element):
             temp_matrix[i, 1] = v2[i]
             temp_matrix[i, 2] = v3[i]
 
-        reference_transformation = np.zeros([self.ElementSize, self.ElementSize])
-        reference_transformation = self._assemble_small_in_big_matrix(temp_matrix, reference_transformation)
+        reference_transformation = self._assemble_small_in_big_matrix(temp_matrix)
 
         return reference_transformation
 
