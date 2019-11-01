@@ -214,7 +214,6 @@ class OptimizableStraightBeam(object):
             e.E = multiplier_fctr * initial_e
 
             # NOTE: do not forget to update G and further dependencies
-            e.G = e.E / 2 / (1 + e.nu)
             e.evaluate_relative_importance_of_shear()
 
         # re-evaluate
@@ -259,10 +258,10 @@ class OptimizableStraightBeam(object):
             print()
 
     def adjust_longitudinal_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_a = (e.A for e in self.model.elements)
+        initial_a = list(e.A for e in self.model.elements)
         # assuming a linear dependency of shear areas
-        initial_a_sy = (e.Asy for e in self.model.elements)
-        initial_a_sz = (e.Asz for e in self.model.elements)
+        initial_a_sy = list(e.Asy for e in self.model.elements)
+        initial_a_sz = list(e.Asz for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.longitudinal_geometric_stiffness_objective_function,
@@ -299,7 +298,7 @@ class OptimizableStraightBeam(object):
             # NOTE: do not forget to update further dependencies
             e.evaluate_relative_importance_of_shear()
 
-        # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
+        # NOTE: it seems to need total mass and in general difficult/insensitive to tuning...
         # TODO:
         # self.adjust_density_for_target_total_mass(target_total_mass)
 
