@@ -58,6 +58,7 @@ class CRBeamElement(Element):
         self.Iteration = 0
 
         # transformation matrix T = [nx0, ny0, nz0]
+        self.LocalReferenceRotationMatrix = self._calculate_initial_local_cs()
         # transformation matrix T = [nx, ny, nz]
         self.LocalRotationMatrix = np.zeros([self.Dimension, self.Dimension])
         # transformation matrix
@@ -630,9 +631,9 @@ class CRBeamElement(Element):
         rotated_nz0 = rotate_vector(quaternion, rotated_nz0)
 
         rotated_coordinate_system = np.zeros([self.Dimension, self.Dimension])
-        rotated_coordinate_system[:, 0] = rotated_nx0
-        rotated_coordinate_system[:, 1] = rotated_ny0
-        rotated_coordinate_system[:, 2] = rotated_nz0
+        rotated_nx = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[0])
+        rotated_ny = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[1])
+        rotated_nz = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[2])
 
         CurrentCoords = self._get_current_nodal_position()
 
