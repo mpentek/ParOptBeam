@@ -10,7 +10,7 @@ EPSILON = sys.float_info.epsilon
 def apply_transformation(transformation_matrix, M):
     # transformation M = T * M * trans(T)
     aux_matrix = np.matmul(transformation_matrix, M)
-    M_transformed = np.matmul(aux_matrix, np.transpose(transformation_matrix))
+    M_transformed = np.matmul(aux_matrix, transformation_matrix.T)
     return M_transformed
 
 
@@ -501,7 +501,7 @@ class CRBeamElement(Element):
             reference: Eq. (4.53) Klaus
         :return: phi_s
         """
-        phi_s = 4.0 * np.dot((np.transpose(self.LocalRotationMatrix)), self.VectorDifference)
+        phi_s = 4.0 * np.dot(self.LocalRotationMatrix.T, self.VectorDifference)
         return phi_s
 
     def _calculate_antisymmetric_deformation_mode(self):
@@ -512,7 +512,7 @@ class CRBeamElement(Element):
         """
         rotated_nx = self.LocalRotationMatrix[:, 0]
         temp_vector = np.cross(rotated_nx, self.Bisector)
-        phi_a = 4.0 * np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
+        phi_a = 4.0 * np.dot(self.LocalRotationMatrix.T, temp_vector)
         return phi_a
 
     def _update_rotation_matrix_local(self):
@@ -530,13 +530,13 @@ class CRBeamElement(Element):
         drA_vec = 0.50 * d_phi_a
         drB_vec = 0.50 * d_phi_b
 
-        drA_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drA_vec))
-        drB_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drB_vec))
+        drA_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drA_vec))
+        drB_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drB_vec))
 
         # Node A
         rA_sca = self.rA_sca
         rA_vec = self.rA_vec
-        self.rA_sca = drA_sca * rA_sca - np.dot(np.transpose(drA_vec), rA_vec)
+        self.rA_sca = drA_sca * rA_sca - np.dot(drA_vec.T, rA_vec)
         self.rA_vec = drA_sca * rA_vec + \
                       rA_sca * drA_vec + \
                       np.cross(drA_vec, rA_vec)
@@ -544,7 +544,7 @@ class CRBeamElement(Element):
         # Node B
         rB_sca = self.rB_sca
         rB_vec = self.rB_vec
-        self.rB_sca = drB_sca * rB_sca - np.dot(np.transpose(drB_vec), rB_vec)
+        self.rB_sca = drB_sca * rB_sca - np.dot(drB_vec.T, rB_vec)
         self.rB_vec = drB_sca * rB_vec + \
                       rB_sca * drB_vec + \
                       np.cross(drB_vec, rB_vec)
@@ -581,11 +581,13 @@ class CRBeamElement(Element):
         n /= np.linalg.norm(n)
 
         # note that the vectors are stored column wise in matrix n_xyz, therefore transpose
-        #         ┌    |  |  |    ┐
+        #         ┌               ┐
+        #         |    |  |  |    |
         # n_xyz = |   -nx ny nz   |
-        #         └    |  |  |    ┘
+        #         |    |  |  |    |
+        #         └               ┘
         n_xyz = np.array([-rotated_nx, rotated_ny, rotated_nz]).T
-        tmp = np.outer(n, np.transpose(n))
+        tmp = np.outer(n, n.T)
         tmp = (np.identity(self.Dimension) - 2 * tmp)
         n_xyz = np.dot(tmp, n_xyz)
         self.LocalRotationMatrix = n_xyz
