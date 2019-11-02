@@ -534,13 +534,13 @@ class CRBeamElement(Element):
         drB_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drB_vec))
 
         # Node A
-        self.rA_sca = drA_sca * self.rA_sca - np.dot(np.transpose(drA_vec), drA_vec)
+        self.rA_sca = drA_sca * self.rA_sca - np.dot(np.transpose(drA_vec), self.rA_vec)
         self.rA_vec = drA_sca * self.rA_vec \
                       + self.rA_sca * drA_vec \
                       + np.cross(drA_vec, self.rA_vec)
 
         # Node B
-        self.rB_sca = drB_sca * self.rB_sca - np.dot(np.transpose(drB_vec), drB_vec)
+        self.rB_sca = drB_sca * self.rB_sca - np.dot(np.transpose(drB_vec), self.rB_vec)
         self.rB_vec = drB_sca * self.rB_vec + self.rB_sca * drB_vec + np.cross(drB_vec, self.rB_vec)
 
         # scalar part of difference quaternion
