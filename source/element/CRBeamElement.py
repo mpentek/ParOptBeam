@@ -55,7 +55,6 @@ class CRBeamElement(Element):
 
         self.evaluate_relative_importance_of_shear()
 
-        self.Iteration = 0
 
         # transformation matrix T = [nx0, ny0, nz0]
         self.LocalReferenceRotationMatrix = self._calculate_initial_local_cs()
@@ -75,7 +74,7 @@ class CRBeamElement(Element):
 
         # initializing transformation matrix for iteration = 0
         self._update_rotation_matrix_local()
-        self.TransformationMatrix = self._calculate_initial_local_cs()
+        self.TransformationMatrix = self._assemble_small_in_big_matrix(self.LocalReferenceRotationMatrix)
 
         # initializing bisector and vector_difference for calculating phi_a and phi_s
         self.Bisectrix = np.zeros(self.Dimension)
@@ -101,7 +100,7 @@ class CRBeamElement(Element):
         print(msg)
 
     def update_internal_force(self):
-        self.Iteration += 1
+        self._update_rotation_matrix_local()
         self._calculate_transformation_matrix()
         # update local nodal force
         self._calculate_local_nodal_forces()
