@@ -55,7 +55,6 @@ class CRBeamElement(Element):
 
         self.evaluate_relative_importance_of_shear()
 
-
         # transformation matrix T = [nx0, ny0, nz0]
         self.LocalReferenceRotationMatrix = self._calculate_initial_local_cs()
         # transformation matrix T = [nx, ny, nz]
@@ -518,12 +517,9 @@ class CRBeamElement(Element):
         phi_a = self._calculate_antisymmetric_deformation_mode()
 
         self.v[3] = l - L
-        deformation_modes_total_v[3] = l - L
 
         self.v[:3] = phi_s
         self.v[4:6] = phi_a[1:3]
-        for i in range(2):
-            deformation_modes_total_v[i + 4] = phi_a[i + 1]
 
         Kd = self._calculate_deformation_stiffness()
         element_forces_t = np.dot(Kd, self.v)
@@ -535,6 +531,7 @@ class CRBeamElement(Element):
             reference: Eq. (4.53) Klaus
         :return: phi_s
         """
+        phi_s = 4.0 * np.dot((np.transpose(self.LocalRotationMatrix)), self.VectorDifference)
         return phi_s
 
     def _calculate_antisymmetric_deformation_mode(self):
@@ -543,8 +540,9 @@ class CRBeamElement(Element):
             reference: Eq. (4.54) Klaus
         :return: phi_a
         """
-            phi_a = np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
+        rotated_nx = self.LocalRotationMatrix[:, 0]
         temp_vector = np.cross(rotated_nx, self.Bisector)
+        phi_a = 4.0 * np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
         return phi_a
 
     def _update_rotation_matrix_local(self):
@@ -555,9 +553,8 @@ class CRBeamElement(Element):
             Cambridge Univ. Press, 2009.
         """
         increment_deformation = self._update_increment_deformation()
-        for i in range(0, self.Dimension):
-            d_phi_a[i] = increment_deformation[i + 3]
-            d_phi_b[i] = increment_deformation[i + 9]
+        d_phi_a = increment_deformation[3:6]
+        d_phi_b = increment_deformation[9:12]
 
         # calculating quaternions
         drA_vec = 0.50 * d_phi_a
@@ -566,72 +563,35 @@ class CRBeamElement(Element):
         drA_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drA_vec))
         drB_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drB_vec))
 
-        for i in range(0, self.Dimension):
-            drA_sca += drA_vec[i] * drA_vec[i]
-            drB_sca += drB_vec[i] * drB_vec[i]
-
-        drA_sca = np.sqrt(1.0 - drA_sca)
-        drB_sca = np.sqrt(1.0 - drB_sca)
-
         # Node A
         self.rA_sca = drA_sca * self.rA_sca - np.dot(np.transpose(drA_vec), drA_vec)
         self.rA_vec = drA_sca * self.rA_vec \
                       + self.rA_sca * drA_vec \
                       + np.cross(drA_vec, self.rA_vec)
-            self._QuaternionSCA_A -= drA_vec[i] * temp_vec[i]
-
-        self._QuaternionVEC_A = drA_sca * temp_vec
-        self._QuaternionVEC_A += temp_scalar * drA_vec
-        self._QuaternionVEC_A += np.cross(drA_vec, temp_vec)
 
         # Node B
         self.rB_sca = drB_sca * self.rB_sca - np.dot(np.transpose(drB_vec), drB_vec)
         self.rB_vec = drB_sca * self.rB_vec + self.rB_sca * drB_vec + np.cross(drB_vec, self.rB_vec)
-        self._QuaternionVEC_B = drB_sca * temp_scalar
-        for i in range(self.Dimension):
-            self._QuaternionSCA_B -= drB_vec[i] * temp_vec[i]
-
-        self._QuaternionVEC_B = drB_sca * temp_vec
-        self._QuaternionVEC_B += temp_scalar * drB_vec
-        self._QuaternionVEC_B += np.cross(drB_vec, temp_vec)
 
         # scalar part of difference quaternion
-        scalar_diff = (self._QuaternionSCA_A + self._QuaternionSCA_B) * (self._QuaternionSCA_A + self._QuaternionSCA_B)
-        temp_vec = self._QuaternionVEC_A + self._QuaternionVEC_B
-        scalar_diff += np.linalg.norm(temp_vec) * np.linalg.norm(temp_vec)
-        scalar_diff = 0.5 * np.sqrt(scalar_diff)
+        s = 0.5 * np.sqrt(((self.rA_sca + self.rB_sca) ** 2 +
+                            np.linalg.norm(self.rA_vec + self.rB_vec) ** 2))
 
         # mean rotation quaternion
-        mean_rotation_scalar = (self._QuaternionSCA_A + self._QuaternionSCA_B) * 0.50 / scalar_diff
-        mean_rotation_vector = (self._QuaternionVEC_A + self._QuaternionVEC_B) * 0.50 / scalar_diff
+        mean_rotation_scalar = (self.rA_sca + self.rB_sca) * 0.50 / s
+        mean_rotation_vector = (self.rA_vec + self.rB_vec) * 0.50 / s
 
         # vector part of difference quaternion
-        VectorDifferences = self._QuaternionSCA_A * self._QuaternionVEC_B
-        VectorDifferences -= self._QuaternionSCA_A * self._QuaternionVEC_A
-        VectorDifferences += np.cross(self._QuaternionVEC_A, self._QuaternionVEC_B)
+        VectorDifferences = self.rA_sca * self.rB_vec - self.rA_sca * self.rA_vec + np.cross(self.rA_vec, self.rB_vec)
+        VectorDifferences /= 2*s
 
-        VectorDifferences = 0.5 * VectorDifferences / scalar_diff
         # rotate initial element basis
         r0 = mean_rotation_scalar
         r1 = mean_rotation_vector[0]
         r2 = mean_rotation_vector[1]
         r3 = mean_rotation_vector[2]
-        reference_transformation = self._calculate_initial_local_cs()
-        rotated_nx0 = np.zeros(self.Dimension)
-        rotated_ny0 = np.zeros(self.Dimension)
-        rotated_nz0 = np.zeros(self.Dimension)
 
-        for i in range(self.Dimension):
-            rotated_nx0[i] = reference_transformation[i, 0]
-            rotated_ny0[i] = reference_transformation[i, 1]
-            rotated_nz0[i] = reference_transformation[i, 2]
-
-        quaternion = [r0, r1, r2, r3]
-        rotated_nx0 = rotate_vector(quaternion, rotated_nx0)
-        rotated_ny0 = rotate_vector(quaternion, rotated_ny0)
-        rotated_nz0 = rotate_vector(quaternion, rotated_nz0)
-
-        rotated_coordinate_system = np.zeros([self.Dimension, self.Dimension])
+        self.Quaternion = Quaternion(w=r0, x=r1, y=r2, z=r3)
         rotated_nx = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[0])
         rotated_ny = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[1])
         rotated_nz = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[2])
@@ -639,26 +599,14 @@ class CRBeamElement(Element):
         CurrentCoords = self._get_current_nodal_position()
 
         # rotate basis to element axis + redefine R
-        delta_x = np.zeros(self.Dimension)
-        for i in range(self.Dimension):
-            delta_x[i] = CurrentCoords[self.Dimension + i] - CurrentCoords[i]
-        vector_norm = np.linalg.norm(delta_x)
+        delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
+        delta_x /= np.linalg.norm(delta_x)
 
-        if vector_norm > EPSILON:
-            delta_x /= vector_norm
+        # vector n of Eq. (4.79) Klaus
+        n = rotated_nx + delta_x
 
-        Bisectrix = rotated_nx0 + delta_x
-        vector_norm = np.linalg.norm(Bisectrix)
-
-        if vector_norm > EPSILON:
-            Bisectrix /= vector_norm
-
-        n_xyz = np.zeros([self.Dimension, self.Dimension])
-
-        n_xyz[:, 0] = -rotated_coordinate_system[:, 0]
-        n_xyz[:, 1] = rotated_coordinate_system[:, 1]
-        n_xyz[:, 2] = rotated_coordinate_system[:, 2]
-
+        n_xyz = np.array([-rotated_nx, rotated_ny, rotated_nz])
+        n_xyz = np.dot((np.identity(self.Dimension) - 2 * np.dot(n, np.transpose(n))), n_xyz)
         Identity = np.identity(self.Dimension)
         Identity -= 2.0 * np.outer(Bisectrix, Bisectrix)
         n_xyz = np.matmul(Identity, n_xyz)
