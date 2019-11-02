@@ -259,10 +259,10 @@ class OptimizableStraightBeam(object):
             print()
 
     def adjust_longitudinal_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
-        initial_a = (e.A for e in self.model.elements)
+        initial_a = list(e.A for e in self.model.elements)
         # assuming a linear dependency of shear areas
-        initial_a_sy = (e.Asy for e in self.model.elements)
-        initial_a_sz = (e.Asz for e in self.model.elements)
+        initial_a_sy = list(e.Asy for e in self.model.elements)
+        initial_a_sz = list (e.Asz for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.longitudinal_geometric_stiffness_objective_function,

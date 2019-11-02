@@ -2,17 +2,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 from cycler import cycler
 
-from source.solving_strategies.strategies.linear_solver import LinearSolver
 from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
 from source.model.structure_model import StraightBeam
-
 
 
 params = {
     "name": "CaarcBeamPrototypeOptimizable",
     "domain_size": "3D",
     "system_parameters": {
-        "element_type": "CRBeam",
+        "element_params": {
+            "type": "CRBeam",
+            "is_nonlinear": True
+        },
         "material": {
             "density": 160.0,
             "youngs_modulus": 2.861e8,
@@ -20,9 +21,20 @@ params = {
             "damping_ratio": 0.005
         },
         "geometry": {
-            "length_x": 180.0,
-            "number_of_elements": 3,
-            "defined_on_intervals": []
+            "length_x": 100.0,
+            "number_of_elements": 1,
+            "defined_on_intervals": [{
+                "interval_bounds": [0.0, 100.0],
+                "length_y": [50.0],
+                "length_z": [35.0],
+                "area": [1750.0],
+                "shear_area_y": [1460.0],
+                "shear_area_z": [1460.0],
+                "moment_of_inertia_y": [178646.0],
+                "moment_of_inertia_z": [364583.0],
+                "torsional_moment_of_inertia": [420175.0],
+                "outrigger_mass": [0.0],
+                "outrigger_stiffness": [0.0]}]
         }
     },
     "boundary_conditions": "fixed-free"
@@ -49,14 +61,10 @@ schemes = ["ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "Ru
 
 
 def test_picard_solver():
-    schemes = ["ForwardEuler1", "BackwardEuler1"]
+    scheme = "BackwardEuler1"
     beam = StraightBeam(params)
 
-    for scheme in schemes:
-
-        solver = ResidualBasedPicardSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, beam)
-        solver.solve()
-        plt.plot(array_time, solver.displacement[1, :], label=scheme)
-        plt.legend()
+    solver = ResidualBasedPicardSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, beam)
+    solver.solve()
+    plt.plot(array_time, solver.displacement[1, :])
     plt.show()
-

@@ -5,7 +5,10 @@ params = {
     "name": "CaarcBeamPrototypeOptimizable",
     "domain_size": "3D",
     "system_parameters": {
-        "element_type": "CRBeam",
+        "element_params": {
+            "type": "CRBeam",
+            "is_nonlinear": True
+        },
         "material": {
             "density": 160.0,
             "youngs_modulus": 2.861e8,
@@ -60,6 +63,3 @@ params = {
 def test_structure_model():
     beam = StraightBeam(params)
 
-
-if __name__ == '__main__':
-    test_structure_model()
