@@ -77,7 +77,7 @@ class CRBeamElement(Element):
         self.TransformationMatrix = self._assemble_small_in_big_matrix(self.LocalReferenceRotationMatrix)
 
         # initializing bisector and vector_difference for calculating phi_a and phi_s
-        self.Bisectrix = np.zeros(self.Dimension)
+        self.Bisector = np.zeros(self.Dimension)
         self.VectorDifference = np.zeros(self.Dimension)
 
         self._print_element_information()
@@ -544,7 +544,7 @@ class CRBeamElement(Element):
         :return: phi_a
         """
             phi_a = np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
-            phi_a *= 4.0
+        temp_vector = np.cross(rotated_nx, self.Bisector)
         return phi_a
 
     def _update_rotation_matrix_local(self):
@@ -663,7 +663,7 @@ class CRBeamElement(Element):
         Identity -= 2.0 * np.outer(Bisectrix, Bisectrix)
         n_xyz = np.matmul(Identity, n_xyz)
         self.LocalRotationMatrix = n_xyz
-        self.Bisectrix = Bisectrix
+        self.Bisector = n
         self.VectorDifference = VectorDifferences
 
     def _calculate_transformation_matrix(self):
