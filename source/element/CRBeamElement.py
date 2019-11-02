@@ -488,7 +488,7 @@ class CRBeamElement(Element):
 
         self.v[3] = l - L
 
-        self.v[:3] = phi_s
+        self.v[0:3] = phi_s
         self.v[4:6] = phi_a[1:3]
 
         Kd = self._calculate_deformation_stiffness()
@@ -552,7 +552,7 @@ class CRBeamElement(Element):
         mean_rotation_vector = (self.rA_vec + self.rB_vec) * 0.50 / s
 
         # vector part of difference quaternion, s_vec
-        VectorDifferences = self.rA_sca * self.rB_vec - self.rA_sca * self.rA_vec + np.cross(self.rA_vec, self.rB_vec)
+        VectorDifferences = self.rA_sca * self.rB_vec - self.rB_sca * self.rA_vec + np.cross(self.rA_vec, self.rB_vec)
         VectorDifferences /= 2 * s
 
         # rotate initial element basis
