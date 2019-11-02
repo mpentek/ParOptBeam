@@ -1,4 +1,5 @@
 import numpy as np
+from pyquaternion import Quaternion
 import sys
 
 from source.element.Element import Element
@@ -100,9 +101,9 @@ class CRBeamElement(Element):
 
     def update_internal_force(self):
         self._update_rotation_matrix_local()
-        self._calculate_transformation_matrix()
         # update local nodal force
         self._calculate_local_nodal_forces()
+        self._calculate_transformation_matrix()
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
 
     def get_element_mass_matrix(self):
@@ -581,7 +582,7 @@ class CRBeamElement(Element):
         mean_rotation_scalar = (self.rA_sca + self.rB_sca) * 0.50 / s
         mean_rotation_vector = (self.rA_vec + self.rB_vec) * 0.50 / s
 
-        # vector part of difference quaternion
+        # vector part of difference quaternion, s_vec
         VectorDifferences = self.rA_sca * self.rB_vec - self.rA_sca * self.rA_vec + np.cross(self.rA_vec, self.rB_vec)
         VectorDifferences /= 2*s
 
@@ -604,11 +605,12 @@ class CRBeamElement(Element):
 
         # vector n of Eq. (4.79) Klaus
         n = rotated_nx + delta_x
+        n /= np.linalg.norm(n)
 
         n_xyz = np.array([-rotated_nx, rotated_ny, rotated_nz])
         n_xyz = np.dot((np.identity(self.Dimension) - 2 * np.dot(n, np.transpose(n))), n_xyz)
         Identity = np.identity(self.Dimension)
-        Identity -= 2.0 * np.outer(Bisectrix, Bisectrix)
+        Identity -= 2.0 * np.outer(n, np.transpose(n))
         n_xyz = np.matmul(Identity, n_xyz)
         self.LocalRotationMatrix = n_xyz
         self.Bisector = n
@@ -618,8 +620,6 @@ class CRBeamElement(Element):
         """
         This function calculates the transformation matrix to globalize/localize vectors and/or matrices
         """
-        # update local CS
-        self._update_rotation_matrix_local()
         # Building the rotation matrix for the local element matrix
         self.TransformationMatrix = self._assemble_small_in_big_matrix(self.LocalRotationMatrix)
 
@@ -642,7 +642,6 @@ class CRBeamElement(Element):
         for i in range(self.Dimension):
             direction_vector_x[i] = (self.ReferenceCoords[i + self.Dimension] - self.ReferenceCoords[i])
 
-        temp_matrix = np.zeros([self.Dimension, self.Dimension])
         # no user defined local axis 2 input available
         theta_custom = 0.0
         global_z = np.zeros(self.Dimension)
@@ -684,11 +683,6 @@ class CRBeamElement(Element):
             if vector_norm > EPSILON:
                 v3 /= vector_norm
 
-        for i in range(self.Dimension):
-            temp_matrix[i, 0] = direction_vector_x[i]
-            temp_matrix[i, 1] = v2[i]
-            temp_matrix[i, 2] = v3[i]
-
-        reference_transformation = self._assemble_small_in_big_matrix(temp_matrix)
+        reference_transformation = np.array([direction_vector_x, v2, v3])
 
         return reference_transformation
