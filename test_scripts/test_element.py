@@ -53,7 +53,7 @@ def test_crbeam_element():
         assert l - l_sol < TOL
     except AssertionError:
         msg = "##################################################################################\n"
-        msg += "Mistake in current length calculation"
+        msg += "Mistake in current length calculation\n"
         msg += "Current length is suppose to be:\n" + str(l_sol)
         msg += "\nIt is however:\n" + str(l)
         print(msg)
@@ -120,12 +120,14 @@ def test_crbeam_element():
         print(msg)
 
     dv = element.v
-    dv_sol = np.dot(np.transpose(S), dp)
+    # Eq.(4.84) Klaus, with relate to the local axis
+    dv_sol = np.dot(S.T, dp)
+
     try:
         assert (dv - dv_sol < TOL).all()
     except AssertionError:
         msg = "##################################################################################\n"
-        msg += "Mistake in deformation mode calculation"
+        msg += "Mistake in deformation mode calculation\n"
         msg += "T is suppose to be:\n" + str(dv_sol)
         msg += "\nIt is however:\n" + str(dv)
         print(msg)
