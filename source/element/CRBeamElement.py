@@ -68,10 +68,10 @@ class CRBeamElement(Element):
         self.v = np.zeros(self.LocalSize)
 
         # for calculating deformation
-        self._QuaternionVEC_A = np.zeros(self.Dimension)
-        self._QuaternionVEC_B = np.zeros(self.Dimension)
-        self._QuaternionSCA_A = 1.0
-        self._QuaternionSCA_B = 1.0
+        self.rA_vec = np.zeros(self.Dimension)
+        self.rB_vec = np.zeros(self.Dimension)
+        self.rA_sca = 1.0
+        self.rB_sca = 1.0
 
         # initializing transformation matrix for iteration = 0
         self._update_rotation_matrix_local()
@@ -562,8 +562,8 @@ class CRBeamElement(Element):
         drA_vec = 0.50 * d_phi_a
         drB_vec = 0.50 * d_phi_b
 
-        drA_sca = 0.0
-        drB_sca = 0.0
+        drA_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drA_vec))
+        drB_sca = np.sqrt(1.0 - np.dot(np.transpose(drA_vec), drB_vec))
 
         for i in range(0, self.Dimension):
             drA_sca += drA_vec[i] * drA_vec[i]
@@ -573,10 +573,10 @@ class CRBeamElement(Element):
         drB_sca = np.sqrt(1.0 - drB_sca)
 
         # Node A
-        temp_vec = self._QuaternionVEC_A
-        temp_scalar = self._QuaternionSCA_A
-        self._QuaternionVEC_A = drA_sca * temp_scalar
-        for i in range(self.Dimension):
+        self.rA_sca = drA_sca * self.rA_sca - np.dot(np.transpose(drA_vec), drA_vec)
+        self.rA_vec = drA_sca * self.rA_vec \
+                      + self.rA_sca * drA_vec \
+                      + np.cross(drA_vec, self.rA_vec)
             self._QuaternionSCA_A -= drA_vec[i] * temp_vec[i]
 
         self._QuaternionVEC_A = drA_sca * temp_vec
@@ -584,8 +584,8 @@ class CRBeamElement(Element):
         self._QuaternionVEC_A += np.cross(drA_vec, temp_vec)
 
         # Node B
-        temp_vec = self._QuaternionVEC_B
-        temp_scalar = self._QuaternionSCA_B
+        self.rB_sca = drB_sca * self.rB_sca - np.dot(np.transpose(drB_vec), drB_vec)
+        self.rB_vec = drB_sca * self.rB_vec + self.rB_sca * drB_vec + np.cross(drB_vec, self.rB_vec)
         self._QuaternionVEC_B = drB_sca * temp_scalar
         for i in range(self.Dimension):
             self._QuaternionSCA_B -= drB_vec[i] * temp_vec[i]
