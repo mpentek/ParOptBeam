@@ -739,15 +739,3 @@ class CRBeamElement(Element):
         reference_transformation = self._assemble_small_in_big_matrix(temp_matrix)
 
         return reference_transformation
-
-    def _calculate_current_length(self):
-        du = self.current_deformation[6] - self.current_deformation[0]
-        dv = self.current_deformation[7] - self.current_deformation[1]
-        dw = self.current_deformation[8] - self.current_deformation[2]
-
-        dx = self.ReferenceCoords[3] - self.ReferenceCoords[0]
-        dy = self.ReferenceCoords[4] - self.ReferenceCoords[1]
-        dz = self.ReferenceCoords[5] - self.ReferenceCoords[2]
-
-        length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
-        return length
