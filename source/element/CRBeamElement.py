@@ -7,41 +7,10 @@ from source.element.Element import Element
 EPSILON = sys.float_info.epsilon
 
 
-def rotate_vector(quaternion, vector):
-    """
-    Rotates a vector using this quaternion.
-    Note: this is faster than constructing the rotation matrix and perform the matrix
-    multiplication for a single vector.
-    :param quaternion:
-    :param vector: the input source vector - rotated on exit
-    :return: vector
-    """
-    w = quaternion[0]
-    x = quaternion[1]
-    y = quaternion[2]
-    z = quaternion[3]
-
-    # b = 2.0 (quaternion x vector)
-    b0 = 2.0 * (y * vector[2] - z * vector[1])
-    b1 = 2.0 * (z * vector[0] - x * vector[2])
-    b2 = 2.0 * (x * vector[1] - y * vector[0])
-
-    # c = 2.0 (quaternion x b)
-    c0 = y * b2 - z * b1
-    c1 = z * b0 - x * b2
-    c2 = x * b1 - y * b0
-
-    vector[0] += b0 * w + c0
-    vector[1] += b1 * w + c1
-    vector[2] += b2 * w + c2
-
-    return vector
-
-
-def apply_transformation(TransformationMatrix, M):
+def apply_transformation(transformation_matrix, M):
     # transformation M = T * M * trans(T)
-    aux_matrix = np.matmul(TransformationMatrix, M)
-    M_transformed = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
+    aux_matrix = np.matmul(transformation_matrix, M)
+    M_transformed = np.matmul(aux_matrix, np.transpose(transformation_matrix))
     return M_transformed
 
 
@@ -576,7 +545,7 @@ class CRBeamElement(Element):
 
         # scalar part of difference quaternion
         s = 0.5 * np.sqrt(((self.rA_sca + self.rB_sca) ** 2 +
-                            np.linalg.norm(self.rA_vec + self.rB_vec) ** 2))
+                           np.linalg.norm(self.rA_vec + self.rB_vec) ** 2))
 
         # mean rotation quaternion
         mean_rotation_scalar = (self.rA_sca + self.rB_sca) * 0.50 / s
@@ -584,7 +553,7 @@ class CRBeamElement(Element):
 
         # vector part of difference quaternion, s_vec
         VectorDifferences = self.rA_sca * self.rB_vec - self.rA_sca * self.rA_vec + np.cross(self.rA_vec, self.rB_vec)
-        VectorDifferences /= 2*s
+        VectorDifferences /= 2 * s
 
         # rotate initial element basis
         r0 = mean_rotation_scalar
