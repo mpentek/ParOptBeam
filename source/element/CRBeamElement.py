@@ -556,12 +556,10 @@ class CRBeamElement(Element):
         VectorDifferences /= 2 * s
 
         # rotate initial element basis
-        r0 = mean_rotation_scalar
-        r1 = mean_rotation_vector[0]
-        r2 = mean_rotation_vector[1]
-        r3 = mean_rotation_vector[2]
-
-        self.Quaternion = Quaternion(w=r0, x=r1, y=r2, z=r3)
+        self.Quaternion = Quaternion(w=mean_rotation_scalar,
+                                     x=mean_rotation_vector[0],
+                                     y=mean_rotation_vector[1],
+                                     z=mean_rotation_vector[2])
         rotated_nx = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[0])
         rotated_ny = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[1])
         rotated_nz = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[2])
@@ -576,11 +574,14 @@ class CRBeamElement(Element):
         n = rotated_nx + delta_x
         n /= np.linalg.norm(n)
 
-        n_xyz = np.array([-rotated_nx, rotated_ny, rotated_nz])
-        n_xyz = np.dot((np.identity(self.Dimension) - 2 * np.dot(n, np.transpose(n))), n_xyz)
-        Identity = np.identity(self.Dimension)
-        Identity -= 2.0 * np.outer(n, np.transpose(n))
-        n_xyz = np.matmul(Identity, n_xyz)
+        # note that the vectors are stored column wise in matrix n_xyz, therefore transpose
+        #         ┌    |  |  |    ┐
+        # n_xyz = |   -nx ny nz   |
+        #         └    |  |  |    ┘
+        n_xyz = np.array([-rotated_nx, rotated_ny, rotated_nz]).T
+        tmp = np.outer(n, np.transpose(n))
+        tmp = (np.identity(self.Dimension) - 2 * tmp)
+        n_xyz = np.dot(tmp, n_xyz)
         self.LocalRotationMatrix = n_xyz
         self.Bisector = n
         self.VectorDifference = VectorDifferences

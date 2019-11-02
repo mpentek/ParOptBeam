@@ -79,8 +79,6 @@ def test_crbeam_element():
     r2 = element.Quaternion[2]
     r3 = element.Quaternion[3]
 
-    print("Quaternion: " + str(element.Quaternion))
-
     T_sol = np.array([
             [r0 ** 2 + r1 ** 2 - r2 ** 2 - r3 ** 2, 2 * (r1 * r2 - r0 * r3), 2 * (r1 * r3 + r0 * r2)],
             [2 * (r1 * r2 + r0 * r3), r0 ** 2 - r1 ** 2 + r2 ** 2 - r3 ** 2, 2 * (r2 * r3 - r0 * r1)],
@@ -89,10 +87,11 @@ def test_crbeam_element():
     ])
     T = element.LocalRotationMatrix
 
-
     try:
         assert (T - T_sol < TOL).all()
     except AssertionError:
+        print("Quaternion: " + str(element.Quaternion))
+        print("Reference Rotation Matrix:\n" + str(element.LocalReferenceRotationMatrix))
         msg = "Mistake in local transformation matrix calculation\n"
         msg += "T is suppose to be:\n" + str(T_sol)
         msg += "\nIt is however:\n" + str(T)
@@ -103,7 +102,10 @@ def test_crbeam_element():
     try:
         assert (dv - dv_sol < TOL).all()
     except AssertionError:
-        print("Mistake in deformation mode calculation")
+        msg = "Mistake in deformation mode calculation"
+        msg += "T is suppose to be:\n" + str(dv_sol)
+        msg += "\nIt is however:\n" + str(dv)
+        print(msg)
 
     ke_mat_2 = element._get_element_stiffness_matrix_material()
 
