@@ -31,11 +31,11 @@ def test_crbeam_element():
     ke_mat_1 = element._get_element_stiffness_matrix_material()
     K = element.get_element_stiffness_matrix()
 
-    dp = [0.2, 0.1, 0.0, 0.2, 0.0, 0.0,
+    dp = [0.2, 0.6, 0.0, 0.0, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     element.assign_new_deformation(dp)
     new_coords = element._get_current_nodal_position()
-    new_coords_sol = [1.2, 0.1, 0.0, 2.0, 0.0, 0.0]
+    new_coords_sol = [1.2, 0.6, 0.0, 2.0, 0.0, 0.0]
 
     try:
         assert (new_coords - new_coords_sol < TOL).all()
@@ -47,7 +47,7 @@ def test_crbeam_element():
         print(msg)
 
     l = element._calculate_current_length()
-    l_sol = np.sqrt(0.8**2 + 0.1**2)
+    l_sol = np.sqrt(0.8**2 + 0.6**2)
 
     try:
         assert l - l_sol < TOL
@@ -91,7 +91,6 @@ def test_crbeam_element():
             [r0 ** 2 + r1 ** 2 - r2 ** 2 - r3 ** 2, 2 * (r1 * r2 - r0 * r3), 2 * (r1 * r3 + r0 * r2)],
             [2 * (r1 * r2 + r0 * r3), r0 ** 2 - r1 ** 2 + r2 ** 2 - r3 ** 2, 2 * (r2 * r3 - r0 * r1)],
             [2 * (r3 * r1 - r0 * r2), 2 * (r3 * r2 + r0 * r1), r0 ** 2 - r1 ** 2 - r2 ** 2 + r3 ** 2],
-
     ])
 
     nx = T_tmp[:, 0]
@@ -114,21 +113,41 @@ def test_crbeam_element():
         msg = "##################################################################################\n"
         msg += "Mistake in local transformation matrix calculation\n"
         msg += "Quaternion: " + str(element.Quaternion)
-        msg += "Reference Rotation Matrix:\n" + str(element.LocalReferenceRotationMatrix)
-        msg += "T is suppose to be:\n" + str(T_sol)
+        msg += "\nReference Rotation Matrix:\n" + str(element.LocalReferenceRotationMatrix)
+        msg += "\nT is suppose to be:\n" + str(T_sol)
         msg += "\nIt is however:\n" + str(T)
         print(msg)
 
     dv = element.v
-    # Eq.(4.84) Klaus, with relate to the local axis
-    dv_sol = np.dot(S.T, dp)
+    nx = T_sol[:, 0]
+    ny = T_sol[:, 1]
+    nz = T_sol[:, 2]
+    # Eq.(4.84) Klaus, related to the local axis
+    S_global = np.array([
+            [0., 0., 0., -nx[0], -2 * nz[0] / l, 2 * ny[0] / l],
+            [0., 0., 0., -nx[1], -2 * nz[1] / l, 2 * ny[1] / l],
+            [0., 0., 0., -nx[2], -2 * nz[2] / l, 2 * ny[2] / l],
+            [-nx[0], -ny[0], -nz[0], 0., ny[0], nz[0]],
+            [-nx[1], -ny[1], -nz[1], 0., ny[1], nz[1]],
+            [-nx[2], -ny[2], -nz[2], 0., ny[2], nz[2]],
+            [0., 0., 0., nx[0], 2 * nz[0] / l, -2 * ny[0] / l],
+            [0., 0., 0., nx[1], 2 * nz[1] / l, -2 * ny[1] / l],
+            [0., 0., 0., nx[2], 2 * nz[2] / l, -2 * ny[2] / l],
+            [nx[0], ny[0], nz[0], 0., ny[0], nz[0]],
+            [nx[1], ny[1], nz[1], 0., ny[1], nz[1]],
+            [nx[2], ny[2], nz[2], 0., ny[2], nz[2]],
+    ])
+    dv_ = np.dot(S_sol.T, dp)
+    # print(dv_)
+    dv_sol = np.dot(S_global.T, dp)
 
     try:
         assert (dv - dv_sol < TOL).all()
     except AssertionError:
         msg = "##################################################################################\n"
         msg += "Mistake in deformation mode calculation\n"
-        msg += "T is suppose to be:\n" + str(dv_sol)
+        msg += "nx = " + str(nx)
+        msg += "\nv is suppose to be:\n" + str(dv_sol)
         msg += "\nIt is however:\n" + str(dv)
         print(msg)
 
@@ -143,5 +162,15 @@ def test_crbeam_element():
         print("Ke_const wrong")
 
     f_test = np.dot(K, dp)
-    err = f_test - element.nodal_force_global
+    q = element.nodal_force_global
+
+    try:
+        assert (f_test - q < TOL).all()
+    except AssertionError:
+        msg = "##################################################################################\n"
+        msg += "Mistake in force calculation\n"
+        msg += "q is suppose to be:\n" + str(f_test)
+        msg += "\nIt is however:\n" + str(q)
+        # print(msg)
+
     np.set_printoptions(precision=1)
