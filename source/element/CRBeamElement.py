@@ -57,8 +57,10 @@ class CRBeamElement(Element):
 
         self.Iteration = 0
 
-        # transformation matrix
+        # transformation matrix T = [nx0, ny0, nz0]
+        # transformation matrix T = [nx, ny, nz]
         self.LocalRotationMatrix = np.zeros([self.Dimension, self.Dimension])
+        # transformation matrix
         self.TransformationMatrix = np.zeros([self.ElementSize, self.ElementSize])
 
         # for calculating deformation
@@ -71,7 +73,7 @@ class CRBeamElement(Element):
         self._update_rotation_matrix_local()
         self.TransformationMatrix = self._calculate_initial_local_cs()
 
-        # initializing bisectrix and vector_difference for calculating phi_a and phi_s
+        # initializing bisector and vector_difference for calculating phi_a and phi_s
         self.Bisectrix = np.zeros(self.Dimension)
         self.VectorDifference = np.zeros(self.Dimension)
 
@@ -458,7 +460,7 @@ class CRBeamElement(Element):
         return Kd
 
     def _calculate_psi(self, I, A_eff):
-        L = self._calculate_current_length()
+        # TODO: check which length to use, paper and implementation different
         phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
 
         # interpret input A_eff == 0 as shear stiff -> psi = 1.0
@@ -523,25 +525,30 @@ class CRBeamElement(Element):
         return element_forces_t
 
     def _calculate_symmetric_deformation_mode(self):
-        phi_s = np.zeros(self.Dimension)
-        if self.Iteration != 0:
-            phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), self.VectorDifference)
-            phi_s *= 4.0
+        """
+            this function calculates symmetric part of vector v
+            reference: Eq. (4.53) Klaus
+        :return: phi_s
+        """
         return phi_s
 
     def _calculate_antisymmetric_deformation_mode(self):
-        phi_a = np.zeros(self.Dimension)
-
-        if self.Iteration != 0:
-            rotated_nx0 = self.LocalRotationMatrix[:, 0]
-            temp_vector = np.cross(rotated_nx0, self.Bisectrix)
+        """
+            this function calculates anti-symmetric part of v
+            reference: Eq. (4.54) Klaus
+        :return: phi_a
+        """
             phi_a = np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
             phi_a *= 4.0
         return phi_a
 
     def _update_rotation_matrix_local(self):
-        d_phi_a = np.zeros(self.Dimension)
-        d_phi_b = np.zeros(self.Dimension)
+        """
+        this function updates the local transformation matrix T = [nx, ny, nz]
+        Check reference in [p.134]:
+            Steen Krenk. Non-linear modeling and analysis of solids and structures.
+            Cambridge Univ. Press, 2009.
+        """
         increment_deformation = self._update_increment_deformation()
         for i in range(0, self.Dimension):
             d_phi_a[i] = increment_deformation[i + 3]
