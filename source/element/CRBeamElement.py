@@ -63,6 +63,9 @@ class CRBeamElement(Element):
         # transformation matrix
         self.TransformationMatrix = np.zeros([self.ElementSize, self.ElementSize])
 
+        # deformation modes v = [phi_s_x, phi_s_y, phi_s_z, u phi_a_y, phi_a_z]
+        self.v = np.zeros(self.LocalSize)
+
         # for calculating deformation
         self._QuaternionVEC_A = np.zeros(self.Dimension)
         self._QuaternionVEC_B = np.zeros(self.Dimension)
@@ -512,16 +515,16 @@ class CRBeamElement(Element):
         # asymmetric deformation mode
         phi_a = self._calculate_antisymmetric_deformation_mode()
 
-        deformation_modes_total_v = np.zeros(self.LocalSize)
+        self.v[3] = l - L
         deformation_modes_total_v[3] = l - L
 
-        for i in range(3):
-            deformation_modes_total_v[i] = phi_s[i]
+        self.v[:3] = phi_s
+        self.v[4:6] = phi_a[1:3]
         for i in range(2):
             deformation_modes_total_v[i + 4] = phi_a[i + 1]
 
         Kd = self._calculate_deformation_stiffness()
-        element_forces_t = np.dot(Kd, deformation_modes_total_v)
+        element_forces_t = np.dot(Kd, self.v)
         return element_forces_t
 
     def _calculate_symmetric_deformation_mode(self):
