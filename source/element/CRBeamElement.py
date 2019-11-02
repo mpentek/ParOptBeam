@@ -464,6 +464,8 @@ class CRBeamElement(Element):
 
     def _calculate_psi(self, I, A_eff):
         # TODO: check which length to use, paper and implementation different
+        # L = self._calculate_current_length()
+        L = self.L
         phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
 
         # interpret input A_eff == 0 as shear stiff -> psi = 1.0
@@ -475,19 +477,19 @@ class CRBeamElement(Element):
 
     def _calculate_transformation_s(self):
         S = np.zeros([self.ElementSize, self.LocalSize])
-        L = self._calculate_current_length()
+        l = self._calculate_current_length()
 
         S[0, 3] = -1.0
-        S[1, 5] = 2.0 / L
-        S[2, 4] = -2.0 / L
+        S[1, 5] = 2.0 / l
+        S[2, 4] = -2.0 / l
         S[3, 0] = -1.0
         S[4, 1] = -1.0
         S[4, 4] = 1.0
         S[5, 2] = -1.0
         S[5, 5] = 1.0
         S[6, 3] = 1.0
-        S[7, 5] = -2.0 / L
-        S[8, 4] = 2.0 / L
+        S[7, 5] = -2.0 / l
+        S[8, 4] = 2.0 / l
         S[9, 0] = 1.0
         S[10, 1] = 1.0
         S[10, 4] = 1.0
