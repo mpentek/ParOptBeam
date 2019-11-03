@@ -583,14 +583,23 @@ class CRBeamElement(Element):
         rotated_ny = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[1])
         rotated_nz = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[2])
 
+        rotated_coordinate_system = np.array([rotated_nx, rotated_ny, rotated_nz])
+
+        self.LocalRotationMatrix = self._rotate_basis_to_element_axis(rotated_coordinate_system)
+
+    def _rotate_basis_to_element_axis(self, rotated_coordinate_system):
         CurrentCoords = self._get_current_nodal_position()
+
+        nx = rotated_coordinate_system[0]
+        ny = rotated_coordinate_system[1]
+        nz = rotated_coordinate_system[2]
 
         # rotate basis to element axis + redefine R
         delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
         delta_x /= np.linalg.norm(delta_x)
 
-        # vector n of Eq. (4.79) Klaus
-        n = rotated_nx + delta_x
+        # vector n of Eq. (4.78) Klaus
+        n = nx + delta_x
         n /= np.linalg.norm(n)
 
         # note that the vectors are stored column wise in matrix n_xyz, therefore transpose
@@ -599,13 +608,13 @@ class CRBeamElement(Element):
         # n_xyz = |   -nx ny nz   |
         #         |    |  |  |    |
         #         └               ┘
-        n_xyz = np.array([-rotated_nx, rotated_ny, rotated_nz]).T
+        n_xyz = np.array([-nx, ny, nz]).T
         tmp = np.outer(n, n.T)
         tmp = (np.identity(self.Dimension) - 2 * tmp)
-        n_xyz = np.dot(tmp, n_xyz)
+        n_xyz = np.matmul(tmp, n_xyz)
         self.LocalRotationMatrix = n_xyz
         self.Bisector = n
-        self.VectorDifference = VectorDifferences
+        return n_xyz
 
     def _calculate_transformation_matrix(self):
         """
