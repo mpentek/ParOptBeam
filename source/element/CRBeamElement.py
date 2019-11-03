@@ -87,6 +87,8 @@ class CRBeamElement(Element):
         self._assign_new_deformation(self.current_deformation + dp)
         self.IncrementalDeformation = np.array(dp)
 
+        self._update_rotation_matrix_local()
+
         # Element extension:
         CurrentCoords = self._get_current_nodal_position()
         delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
