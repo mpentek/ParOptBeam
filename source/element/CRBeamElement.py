@@ -97,15 +97,15 @@ class CRBeamElement(Element):
         ny = self.LocalRotationMatrix[:, 1]
         nz = self.LocalRotationMatrix[:, 2]
 
-        d_phi_a = self.incremental_deformation[3:6]
-        d_phi_b = self.incremental_deformation[9:12]
+        d_phi_A = self.IncrementalDeformation[3:6]
+        d_phi_B = self.IncrementalDeformation[9:12]
 
         # updating incremental phi_s Eq. (5.125) Krenk
-        d_phi_s = np.dot(self.LocalRotationMatrix.T, d_phi_b - d_phi_a)
+        d_phi_s = np.dot(self.LocalRotationMatrix.T, d_phi_B - d_phi_A)
         self.phi_s += d_phi_s
 
         # updating incremental phi_a Eq. (5.126) Krenk
-        tmp = (d_phi_b - d_phi_a) - 2 * np.cross(nx, delta_x)/l
+        tmp = (d_phi_B + d_phi_A) - 2 * np.cross(nx, delta_u)/l
         d_phi_a = np.dot(self.LocalRotationMatrix.T, tmp)
         self.phi_a += d_phi_a
 
