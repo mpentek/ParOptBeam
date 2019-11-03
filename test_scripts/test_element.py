@@ -31,7 +31,7 @@ def test_crbeam_element():
     ke_mat_1 = element._get_element_stiffness_matrix_material()
     K = element.get_element_stiffness_matrix()
 
-    dp = [0.2, 0.6, 0.0, 0.0, 0.0, 0.0,
+    dp = [0.2, 0.6, 0.0, 0.1, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     element.update_incremental(dp)
     new_coords = element._get_current_nodal_position()
