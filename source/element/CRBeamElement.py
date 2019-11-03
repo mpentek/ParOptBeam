@@ -90,8 +90,8 @@ class CRBeamElement(Element):
         self._update_rotation_matrix_local()
 
         # Element extension:
-        CurrentCoords = self._get_current_nodal_position()
-        delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
+        # Eq. (5.126)
+        delta_u = self.IncrementalDeformation[6:9] - self.IncrementalDeformation[0:3]
         l = self._calculate_current_length()
 
         # Symmetric and anti-symmetric rotation increments:
