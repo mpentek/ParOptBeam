@@ -34,6 +34,10 @@ class CRBeamElement(Element):
 
         # deformation modes v = [phi_s_x, phi_s_y, phi_s_z, u phi_a_y, phi_a_z]
         self.v = np.zeros(self.LocalSize)
+        # symmetric part of vector v
+        self.phi_s = np.zeros(self.Dimension)
+        # anti-symmetric part of vector v
+        self.phi_a = np.zeros(self.Dimension)
 
         # for calculating deformation
         self.rA_vec = np.zeros(self.Dimension)
@@ -47,7 +51,7 @@ class CRBeamElement(Element):
 
         # initializing bisector and vector_difference for calculating phi_a and phi_s
         self.Bisector = np.zeros(self.Dimension)
-        self.VectorDifference = np.zeros(self.Dimension)
+        self.VectorDifferences = np.zeros(self.Dimension)
 
         self._print_element_information()
 
