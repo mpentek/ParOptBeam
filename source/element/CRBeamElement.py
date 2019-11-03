@@ -534,9 +534,10 @@ class CRBeamElement(Element):
         d_phi_b = increment_deformation[9:12]
 
         # calculating quaternions
-        drA_vec = 0.50 * d_phi_a
-        drB_vec = 0.50 * d_phi_b
-
+        # Eq.(4.70) Klaus
+        drA_vec = 0.5 * d_phi_a
+        drB_vec = 0.5 * d_phi_b
+        # Eq.(4.70) Klaus
         drA_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drA_vec))
         drB_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drB_vec))
 
@@ -557,16 +558,21 @@ class CRBeamElement(Element):
                       np.cross(drB_vec, rB_vec)
 
         # scalar part of difference quaternion
+        # Eq.(4.72) Klaus
         s = 0.5 * np.sqrt(((self.rA_sca + self.rB_sca) ** 2 +
                            np.linalg.norm(self.rA_vec + self.rB_vec) ** 2))
 
         # mean rotation quaternion
-        mean_rotation_scalar = (self.rA_sca + self.rB_sca) * 0.50 / s
-        mean_rotation_vector = (self.rA_vec + self.rB_vec) * 0.50 / s
+        # Eq.(4.74) Klaus
+        mean_rotation_scalar = (self.rA_sca + self.rB_sca) * 0.5 / s
+        # Eq.(4.75) Klaus
+        mean_rotation_vector = (self.rA_vec + self.rB_vec) * 0.5 / s
 
+        # Eq.(4.73) Klaus
         # vector part of difference quaternion, s_vec
-        VectorDifferences = self.rA_sca * self.rB_vec - self.rB_sca * self.rA_vec + np.cross(self.rA_vec, self.rB_vec)
-        VectorDifferences /= 2 * s
+        self.VectorDifferences = self.rA_sca * self.rB_vec - self.rB_sca * self.rA_vec + \
+                                 np.cross(self.rA_vec, self.rB_vec)
+        self.VectorDifferences /= 2 * s
 
         # rotate initial element basis
         self.Quaternion = Quaternion(w=mean_rotation_scalar,
