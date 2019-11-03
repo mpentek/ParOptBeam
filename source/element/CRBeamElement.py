@@ -76,7 +76,7 @@ class CRBeamElement(Element):
         print(msg)
 
     def update_total(self, new_displacement):
-        self.assign_new_deformation(new_displacement)
+        self._assign_new_deformation(new_displacement)
         self._update_rotation_matrix_local()
         # update local nodal force
         self._calculate_local_nodal_forces()
@@ -84,7 +84,7 @@ class CRBeamElement(Element):
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
 
     def update_incremental(self, dp):
-        self.assign_new_deformation(self.current_deformation + dp)
+        self._assign_new_deformation(self.current_deformation + dp)
         self.IncrementalDeformation = np.array(dp)
 
         # Element extension:
