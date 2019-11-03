@@ -119,7 +119,7 @@ class Element(object):
 
         return CurrentCoords
 
-    def assign_new_deformation(self, new_deformation):
+    def _assign_new_deformation(self, new_deformation):
         self.previous_deformation = self.current_deformation
         self.current_deformation = new_deformation
 
