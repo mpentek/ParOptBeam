@@ -75,11 +75,65 @@ class CRBeamElement(Element):
         msg += "Iz: " + str(self.Iz) + "\n"
         print(msg)
 
-    def update_internal_force(self):
+    def update_total(self, new_displacement):
+        self.assign_new_deformation(new_displacement)
         self._update_rotation_matrix_local()
         # update local nodal force
         self._calculate_local_nodal_forces()
         self._calculate_transformation_matrix()
+        self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
+
+    def update_incremental(self, dp):
+        self.assign_new_deformation(self.current_deformation + dp)
+        self.incremental_deformation = np.array(dp)
+
+        # Element extension:
+        CurrentCoords = self._get_current_nodal_position()
+        delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
+        l = self._calculate_current_length()
+
+        # Symmetric and anti-symmetric rotation increments:
+        nx = self.LocalRotationMatrix[:, 0]
+        ny = self.LocalRotationMatrix[:, 1]
+        nz = self.LocalRotationMatrix[:, 2]
+
+        d_phi_a = self.incremental_deformation[3:6]
+        d_phi_b = self.incremental_deformation[9:12]
+
+        # updating incremental phi_s Eq. (5.125) Krenk
+        d_phi_s = np.dot(self.LocalRotationMatrix.T, d_phi_b - d_phi_a)
+        self.phi_s += d_phi_s
+
+        # updating incremental phi_a Eq. (5.126) Krenk
+        tmp = (d_phi_b - d_phi_a) - 2 * np.cross(nx, delta_x)/l
+        d_phi_a = np.dot(self.LocalRotationMatrix.T, tmp)
+        self.phi_a += d_phi_a
+
+        # Rotate element basis around axis:
+        RotationMatrix = np.array([
+            [np.cos(d_phi_a[0]), -np.sin(d_phi_a[0])],
+            [np.sin(d_phi_a[0]), np.cos(d_phi_a[0])]
+        ])
+        n_yz = np.array([ny, nz]).T
+        n_yz_rotated = np.matmul(n_yz, RotationMatrix)
+
+        rotated_coordinate_system = np.array([nx, n_yz_rotated[:, 0], n_yz_rotated[:, 1]])
+        self.LocalRotationMatrix = self._rotate_basis_to_element_axis(rotated_coordinate_system)
+
+        # updating deformation mode vector
+        self.v[3] = l - self.L
+        self.v[0:3] = self.phi_s
+        self.v[4:6] = self.phi_a[1:3]
+
+        Kd = self._calculate_deformation_stiffness()
+        t = np.dot(Kd, self.v)
+
+        # updating transformation matrix S
+        S = self._calculate_transformation_s()
+
+        # updating nodal element force
+        self.nodal_force_local = np.dot(S, t)
+        # update global nodal force
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
 
     def get_element_mass_matrix(self):
@@ -205,9 +259,6 @@ class CRBeamElement(Element):
         return mass_matrix
 
     def get_element_stiffness_matrix(self):
-        # calculate local nodal forces
-        self._calculate_local_nodal_forces()
-
         # resizing the matrices + create memory for LHS
         Ke = np.zeros([self.ElementSize, self.ElementSize])
         # creating LHS
@@ -612,7 +663,6 @@ class CRBeamElement(Element):
         tmp = np.outer(n, n.T)
         tmp = (np.identity(self.Dimension) - 2 * tmp)
         n_xyz = np.matmul(tmp, n_xyz)
-        self.LocalRotationMatrix = n_xyz
         self.Bisector = n
         return n_xyz
 
