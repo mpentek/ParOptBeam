@@ -74,8 +74,8 @@ class TimeIntegrationScheme(object):
     def update(self):
         pass
 
-    def apply_increment(self, du):
-        self.u1 += du
+    def update_displacement(self, u_new):
+        self.u1 = u_new
 
     def print_values_at_current_step(self, n):
         print("Printing values at step no: ", n, " (+1)")
