@@ -109,6 +109,9 @@ class CRBeamElement(Element):
         # updating incremental phi_a Eq. (5.126) Krenk
         tmp = (d_phi_B + d_phi_A) - 2 * np.cross(nx, delta_u)/l
         d_phi_a = np.dot(self.LocalRotationMatrix.T, tmp)
+
+        # updating phi_s and phi_a
+        self.phi_s += d_phi_s
         self.phi_a += d_phi_a
 
         # Rotate element basis around axis:
