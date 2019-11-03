@@ -489,14 +489,14 @@ class CRBeamElement(Element):
         # current length
         l = self._calculate_current_length()
         # symmetric deformation mode
-        phi_s = self._calculate_symmetric_deformation_mode()
+        self.phi_s = self._calculate_symmetric_deformation_mode()
         # asymmetric deformation mode
-        phi_a = self._calculate_antisymmetric_deformation_mode()
+        self.phi_a = self._calculate_antisymmetric_deformation_mode()
 
         self.v[3] = l - L
 
-        self.v[0:3] = phi_s
-        self.v[4:6] = phi_a[1:3]
+        self.v[0:3] = self.phi_s
+        self.v[4:6] = self.phi_a[1:3]
 
         Kd = self._calculate_deformation_stiffness()
         element_forces_t = np.dot(Kd, self.v)
@@ -508,7 +508,7 @@ class CRBeamElement(Element):
             reference: Eq. (4.53) Klaus
         :return: phi_s
         """
-        phi_s = 4.0 * np.dot(self.LocalRotationMatrix.T, self.VectorDifference)
+        phi_s = 4.0 * np.dot(self.LocalRotationMatrix.T, self.VectorDifferences)
         return phi_s
 
     def _calculate_antisymmetric_deformation_mode(self):
