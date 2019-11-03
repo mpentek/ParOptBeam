@@ -54,7 +54,7 @@ class CRBeamElement(Element):
         self.VectorDifferences = np.zeros(self.Dimension)
 
         # incremental update
-        self.incremental_deformation = np.zeros(self.ElementSize)
+        self.IncrementalDeformation = np.zeros(self.ElementSize)
 
         self._print_element_information()
 
@@ -85,7 +85,7 @@ class CRBeamElement(Element):
 
     def update_incremental(self, dp):
         self.assign_new_deformation(self.current_deformation + dp)
-        self.incremental_deformation = np.array(dp)
+        self.IncrementalDeformation = np.array(dp)
 
         # Element extension:
         CurrentCoords = self._get_current_nodal_position()
