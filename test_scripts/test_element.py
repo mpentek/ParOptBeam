@@ -167,6 +167,6 @@ def test_crbeam_element():
         msg += "Mistake in force calculation\n"
         msg += "q is suppose to be:\n" + str(f_test)
         msg += "\nIt is however:\n" + str(q)
-        # print(msg)
+        print(msg)
 
     np.set_printoptions(precision=1)
