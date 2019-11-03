@@ -80,7 +80,7 @@ class CRBeamElement(Element):
         self._update_rotation_matrix_local()
         # update local nodal force
         self._calculate_local_nodal_forces()
-        self._calculate_transformation_matrix()
+        self._update_transformation_matrix()
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
 
     def update_incremental(self, dp):
@@ -90,7 +90,6 @@ class CRBeamElement(Element):
         self._update_rotation_matrix_local()
 
         # Element extension:
-        # Eq. (5.126)
         delta_u = self.IncrementalDeformation[6:9] - self.IncrementalDeformation[0:3]
         l = self._calculate_current_length()
 
@@ -137,6 +136,10 @@ class CRBeamElement(Element):
 
         # updating nodal element force
         self.nodal_force_local = np.dot(S, t)
+
+        # update transformation matrix
+        self._update_transformation_matrix()
+
         # update global nodal force
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
 
@@ -670,7 +673,7 @@ class CRBeamElement(Element):
         self.Bisector = n
         return n_xyz
 
-    def _calculate_transformation_matrix(self):
+    def _update_transformation_matrix(self):
         """
         This function calculates the transformation matrix to globalize/localize vectors and/or matrices
         """
