@@ -13,7 +13,7 @@ import numpy as np
 
 # TODO: take these values as user input
 # stopping criteria
-TOL = 1.e-12
+TOL = 1.e-5
 # maximum iteration
 MAX_IT = 10
 
@@ -89,7 +89,6 @@ class ResidualBasedSolver(Solver):
     def solve(self):
         # time loop
         for i in range(0, len(self.array_time)):
-        # for i in range(0, 10):
             self.step = i
             current_time = self.array_time[i]
             print("time: {0:.2f}".format(current_time))
