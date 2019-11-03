@@ -47,6 +47,17 @@ class ResidualBasedSolver(Solver):
             dp_e = dp[i_start: i_end]
             e.update_incremental(dp_e)
 
+    def get_displacement_from_element(self):
+        u = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
+
+        for e in self.structure_model.elements:
+            i_start = DOFS_PER_NODE[e.domain_size] * e.index
+            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            u[i_start:i_end] += e.current_deformation
+
+        u = self.structure_model.apply_bc_by_reduction(u, 'column_vector')
+        return u
+
     def solve_single_step(self):
         f_ext = self.force[:, self.step]
         # predict displacement at time step n with external force f_ext
@@ -71,6 +82,9 @@ class ResidualBasedSolver(Solver):
             # updating displacement in the element
             self.update_incremental(du)
             ru = self.calculate_residual(f_ext)
+
+        u_new = self.get_displacement_from_element()
+        self.scheme.update_displacement(u_new)
 
     def solve(self):
         # time loop
