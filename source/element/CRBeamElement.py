@@ -53,6 +53,9 @@ class CRBeamElement(Element):
         self.Bisector = np.zeros(self.Dimension)
         self.VectorDifferences = np.zeros(self.Dimension)
 
+        # incremental update
+        self.incremental_deformation = np.zeros(self.ElementSize)
+
         self._print_element_information()
 
     def _print_element_information(self):
