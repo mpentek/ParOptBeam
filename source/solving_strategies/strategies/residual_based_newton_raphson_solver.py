@@ -18,9 +18,9 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         super().__init__(array_time, time_integration_scheme, dt,
                          comp_model, initial_conditions, force, structure_model)
 
-    def calculate_increment(self, ru):
-        du = np.linalg.solve(self.K, ru)
-        return du
+    def calculate_increment(self, r):
+        dp = np.linalg.solve(self.K, r)
+        return dp
 
     def calculate_residual(self, f_ext):
         q = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
