@@ -31,14 +31,21 @@ class ResidualBasedSolver(Solver):
     def calculate_increment(self, ru):
         pass
 
-    def update_displacement_and_force_in_element(self, new_displacement):
+    def update_displacement(self, new_displacement):
         # updating displacement in the element
         for e in self.structure_model.elements:
             i_start = DOFS_PER_NODE[e.domain_size] * e.index
             i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-            i_deformation = new_displacement[i_start: i_end]
-            e.assign_new_deformation(i_deformation)
-            e.update_internal_force()
+            new_displacement_e = new_displacement[i_start: i_end]
+            e.update_total(new_displacement_e)
+
+    def update_incremental(self, dp):
+        # updating displacement in the element
+        for e in self.structure_model.elements:
+            i_start = DOFS_PER_NODE[e.domain_size] * e.index
+            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            dp_e = dp[i_start: i_end]
+            e.update_incremental(dp_e)
 
     def solve_single_step(self):
         f_ext = self.force[:, self.step]
@@ -49,7 +56,7 @@ class ResidualBasedSolver(Solver):
         # update displacement in element
         new_displacement = self.scheme.get_displacement()
         new_displacement = self.structure_model.recuperate_bc_by_extension(new_displacement, 'column_vector')
-        self.update_displacement_and_force_in_element(new_displacement)
+        self.update_displacement(new_displacement)
         # update residual
         ru = self.calculate_residual(f_ext)
 
@@ -62,13 +69,13 @@ class ResidualBasedSolver(Solver):
             du = self.structure_model.recuperate_bc_by_extension(du, 'column_vector')
 
             # updating displacement in the element
-            self.update_displacement_and_force_in_element(new_displacement + du)
+            self.update_incremental(du)
             ru = self.calculate_residual(f_ext)
 
     def solve(self):
         # time loop
-        # for i in range(0, len(self.array_time)):
-        for i in range(0, 10):
+        for i in range(0, len(self.array_time)):
+        # for i in range(0, 10):
             self.step = i
             current_time = self.array_time[i]
             print("time: {0:.2f}".format(current_time))
