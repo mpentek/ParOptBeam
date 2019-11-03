@@ -77,10 +77,13 @@ class CRBeamElement(Element):
 
     def update_total(self, new_displacement):
         self._assign_new_deformation(new_displacement)
+        # update local transformation matrix T
         self._update_rotation_matrix_local()
-        # update local nodal force
+        # update local nodal force qe
         self._calculate_local_nodal_forces()
+        # assemble T into global transformation matrix R
         self._update_transformation_matrix()
+        # update global nodal force q
         self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
 
     def update_incremental(self, dp):
@@ -654,7 +657,7 @@ class CRBeamElement(Element):
 
         # rotate basis to element axis + redefine R
         delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
-        delta_x /= np.linalg.norm(delta_x)
+        # delta_x /= np.linalg.norm(delta_x)
 
         # vector n of Eq. (4.78) Klaus
         n = nx + delta_x
