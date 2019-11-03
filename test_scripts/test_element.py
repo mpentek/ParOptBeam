@@ -33,12 +33,12 @@ def test_crbeam_element():
 
     dp = [0.2, 0.6, 0.0, 0.0, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    element.assign_new_deformation(dp)
+    element.update_incremental(dp)
     new_coords = element._get_current_nodal_position()
     new_coords_sol = [1.2, 0.6, 0.0, 2.0, 0.0, 0.0]
 
     try:
-        assert (new_coords - new_coords_sol < TOL).all()
+        assert (abs(new_coords - new_coords_sol) < TOL).all()
     except AssertionError:
         msg = "##################################################################################\n"
         msg += "Mistake in coordinate update\n"
@@ -76,11 +76,9 @@ def test_crbeam_element():
     ])
 
     try:
-        assert (S - S_sol < TOL).all()
+        assert (abs(S - S_sol) < TOL).all()
     except AssertionError:
         print("Mistake in local transformation matrix S calculation")
-
-    element.update_internal_force()
 
     r0 = element.Quaternion[0]
     r1 = element.Quaternion[1]
@@ -108,7 +106,7 @@ def test_crbeam_element():
     T = element.LocalRotationMatrix
 
     try:
-        assert (T - T_sol < TOL).all()
+        assert (abs(T - T_sol) < TOL).all()
     except AssertionError:
         msg = "##################################################################################\n"
         msg += "Mistake in local transformation matrix calculation\n"
@@ -137,12 +135,10 @@ def test_crbeam_element():
             [nx[1], ny[1], nz[1], 0., ny[1], nz[1]],
             [nx[2], ny[2], nz[2], 0., ny[2], nz[2]],
     ])
-    dv_ = np.dot(S_sol.T, dp)
-    # print(dv_)
     dv_sol = np.dot(S_global.T, dp)
-
     try:
-        assert (dv - dv_sol < TOL).all()
+        assert (abs(dv - dv_sol) < TOL).all()
+        print(dv- dv_sol)
     except AssertionError:
         msg = "##################################################################################\n"
         msg += "Mistake in deformation mode calculation\n"
@@ -165,7 +161,7 @@ def test_crbeam_element():
     q = element.nodal_force_global
 
     try:
-        assert (f_test - q < TOL).all()
+        assert (abs(f_test - q) < TOL).all()
     except AssertionError:
         msg = "##################################################################################\n"
         msg += "Mistake in force calculation\n"
