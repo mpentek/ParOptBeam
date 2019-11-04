@@ -66,10 +66,10 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         # update residual
         r = self.calculate_residual(f_ext)
 
-        while abs(np.max(r)) > TOL and nr_it < MAX_IT:
+        while abs(np.linalg.norm(r)) > TOL and nr_it < MAX_IT:
             nr_it += 1
             print("Nonlinear iteration: ", str(nr_it))
-            print("ru = {:.2e}".format(abs(np.max(r))))
+            print("ru = {:.2e}".format(abs(np.linalg.norm(r))))
             dp = self.calculate_increment(r)
             dp = self.structure_model.recuperate_bc_by_extension(dp, 'column_vector')
 
