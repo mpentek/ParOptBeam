@@ -21,15 +21,14 @@ def test_timoshenko_element():
 TOL = 1e-12
 
 
-def test_crbeam_element():
-    material_params = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
-    element_params = {'a': 5., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
+def test_crbeam_element_update_incremental():
+    material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
+    element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
-    coords = np.array([[1., 0.0, 0.0], [2.0, 0.0, 0.0]])
+    coords = np.array([[100., 0.0, 0.0], [200.0, 0.0, 0.0]])
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
     ke_mat_1 = element._get_element_stiffness_matrix_material()
-    K = element.get_element_stiffness_matrix()
 
     dp = [0.2, 0.6, 0.0, 0.1, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -120,7 +119,7 @@ def test_crbeam_element():
     nx = T_sol[:, 0]
     ny = T_sol[:, 1]
     nz = T_sol[:, 2]
-    # Eq.(4.84) Klaus, related to the local axis
+    # Eq.(4.60) Klaus, related to the local axis
     S_global = np.array([
             [0., 0., 0., -nx[0], -2 * nz[0] / l, 2 * ny[0] / l],
             [0., 0., 0., -nx[1], -2 * nz[1] / l, 2 * ny[1] / l],
@@ -135,6 +134,7 @@ def test_crbeam_element():
             [nx[1], ny[1], nz[1], 0., ny[1], nz[1]],
             [nx[2], ny[2], nz[2], 0., ny[2], nz[2]],
     ])
+    # Eq.(4.84) Klaus
     dv_sol = np.dot(S_global.T, dp)
     try:
         assert (abs(dv - dv_sol) < TOL).all()
@@ -149,13 +149,27 @@ def test_crbeam_element():
 
     ke_mat_2 = element._get_element_stiffness_matrix_material()
 
-    K = element.get_element_stiffness_matrix()
-
     try:
         assert (ke_mat_1 - ke_mat_2 < TOL).all()
     except AssertionError:
         print("Ke_const wrong")
 
+    np.set_printoptions(precision=1)
+
+
+def test_crbeam_element_update_total():
+    material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
+    element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
+
+    coords = np.array([[100., 0.0, 0.0], [200.0, 0.0, 0.0]])
+    element = CRBeamElement(material_params, element_params, coords, 0, '3D')
+
+    dp = [0.2, 0.0, 0.0, 0.0, 0.0, 0.0,
+          0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    element.update_total(dp)
+
+    element.update_total(dp)
+    K = element.get_element_stiffness_matrix()
     f_test = np.dot(K, dp)
     q = element.nodal_force_global
 
