@@ -150,7 +150,6 @@ def test_crbeam_element():
     ke_mat_2 = element._get_element_stiffness_matrix_material()
 
     K = element.get_element_stiffness_matrix()
-    M = element.get_element_mass_matrix()
 
     try:
         assert (ke_mat_1 - ke_mat_2 < TOL).all()

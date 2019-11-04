@@ -76,6 +76,13 @@ class TimeIntegrationScheme(object):
 
     def update_displacement(self, u_new):
         self.u1 = u_new
+        self.v1 = self.predict_velocity(self.u1)
+        self.a1 = self.predict_acceleration(self.v1)
+
+    def update_comp_model(self, new_comp_model):
+        self.M = new_comp_model[0]
+        self.B = new_comp_model[1]
+        self.K = new_comp_model[2]
 
     def print_values_at_current_step(self, n):
         print("Printing values at step no: ", n, " (+1)")
