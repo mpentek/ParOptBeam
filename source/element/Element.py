@@ -120,6 +120,7 @@ class Element(object):
         return CurrentCoords
 
     def _assign_new_deformation(self, new_deformation):
+        new_deformation = np.array(new_deformation)
         self.previous_deformation = self.current_deformation
         self.current_deformation = new_deformation
 
