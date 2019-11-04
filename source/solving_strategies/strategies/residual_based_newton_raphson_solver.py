@@ -87,10 +87,9 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         dp = np.linalg.solve(self.K, r)
         return dp
 
-    def calculate_residual(self, f_ext):
+    def _compute_reaction(self):
         q = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
 
-        # TODO: calculate the residual in the element, because otherwise the boundary condtion wouldn't apply
         for e in self.structure_model.elements:
             start_index = DOFS_PER_NODE[e.domain_size] * e.index
             end_index = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
@@ -98,5 +97,9 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
             q[start_index:end_index] += e.nodal_force_global
 
         q = self.structure_model.apply_bc_by_reduction(q, 'column_vector')
-        ru = f_ext - q
-        return ru
+        return q
+
+    def calculate_residual(self, f_ext):
+        q = self._compute_reaction()
+        r = f_ext - q
+        return r

@@ -46,6 +46,7 @@ class ResidualBasedSolver(Solver):
             self.displacement[:, i] = self.scheme.get_displacement()
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
+            self.dynamic_reaction = self._compute_reaction()
 
             # update results
             self.scheme.update()
