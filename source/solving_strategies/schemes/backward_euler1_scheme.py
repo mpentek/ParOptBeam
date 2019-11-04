@@ -16,8 +16,6 @@ class BackwardEuler1(TimeIntegrationScheme):
 
         super().__init__(dt, comp_model, initial_conditions)
 
-        self.LHS = self.M + self.B * self.dt + self.K * self.dt ** 2
-
         # initial values for time integration
         self.un1 = self.u0
         self.un2 = self.u0
@@ -40,10 +38,13 @@ class BackwardEuler1(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
+        # LHS needs to be updated in case of non-linear elements
+        LHS = self.M + self.B * self.dt + self.K * self.dt ** 2
+
         # calculates self.un0,vn0,an0
         RHS = self.dt * np.dot(self.B, self.un1) + 2 * np.dot(self.M, self.un1)
         RHS += - np.dot(self.M, self.un2) + self.dt ** 2 * f1
-        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.u1 = np.linalg.solve(LHS, RHS)
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 

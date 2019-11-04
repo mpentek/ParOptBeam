@@ -21,8 +21,6 @@ class BDF2(TimeIntegrationScheme):
         self.bdf1 = -2. / self.dt
         self.bdf2 = 0.5 / self.dt
 
-        self.LHS = self.bdf0 * self.B + self.K + self.bdf0 * self.bdf0 * self.M
-
         # structure
         # initial displacement, velocity and acceleration
         self.un4 = self.u0
@@ -48,6 +46,9 @@ class BDF2(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
+        # LHS needs to be updated in case of non-linear elements
+        LHS = self.bdf0 * self.B + self.K + self.bdf0 * self.bdf0 * self.M
+
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - np.dot(self.B, self.bdf2 * self.un2)
         RHS += - 2 * self.bdf0 * self.bdf1 * np.dot(self.M, self.un1)
         RHS += - 2 * self.bdf0 * self.bdf2 * np.dot(self.M, self.un2)
@@ -56,7 +57,7 @@ class BDF2(TimeIntegrationScheme):
         RHS += -     self.bdf2 * self.bdf2 * np.dot(self.M, self.un4) + f1
 
         # calculates self.un0,vn0,an0
-        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.u1 = np.linalg.solve(LHS, RHS)
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 

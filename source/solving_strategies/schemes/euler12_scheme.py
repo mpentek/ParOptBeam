@@ -16,8 +16,6 @@ class Euler12(TimeIntegrationScheme):
 
         super().__init__(dt, comp_model, initial_conditions)
 
-        self.LHS = self.M + np.dot(self.B, self.dt / 2)
-
         # initial values for time integration
         self.un2 = self.u0
         self.un1 = self.u0
@@ -41,12 +39,15 @@ class Euler12(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
+        # LHS needs to be updated in case of non-linear elements
+        LHS = self.M + np.dot(self.B, self.dt / 2)
+
         RHS = f1 * self.dt ** 2 + \
             np.dot(self.un1, (2 * self.M - self.K * self.dt ** 2))
         RHS += np.dot(self.un2, (-self.M + self.B * self.dt/2))
 
         # calculates self.un0,vn0,an0
-        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.u1 = np.linalg.solve(LHS, RHS)
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
