@@ -600,7 +600,7 @@ class CRBeamElement(Element):
         drB_vec = 0.5 * d_phi_b
         # Eq.(4.70) Klaus
         drA_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drA_vec))
-        drB_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drB_vec))
+        drB_sca = np.sqrt(1.0 - np.dot(drB_vec.T, drB_vec))
 
         # Node A
         rA_sca = self.rA_sca
