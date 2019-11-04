@@ -464,12 +464,17 @@ class CRBeamElement(Element):
         return ke_geo
 
     def _calculate_deformation_stiffness(self):
+        """
+        This function calculates the element stiffness w.r.t. deformation modes
+        :return: Kd
+        """
         L = self.L
         Psi_y = self._calculate_psi(self.Iy, self.Asz)
         Psi_z = self._calculate_psi(self.Iz, self.Asy)
 
         Kd = np.zeros([self.LocalSize, self.LocalSize])
 
+        # Eq.(4.87) Klaus, material contribution of the deformation stiffness matrix
         Kd[0, 0] = self.G * self.It / L
         Kd[1, 1] = self.E * self.Iy / L
         Kd[2, 2] = self.E * self.Iz / L
@@ -477,6 +482,7 @@ class CRBeamElement(Element):
         Kd[4, 4] = 3.0 * self.E * self.Iy * Psi_y / L
         Kd[5, 5] = 3.0 * self.E * self.Iz * Psi_z / L
 
+        # Eq.(4.115) Klaus, geometric contribution of the deformation stiffness matrix
         l = self._calculate_current_length()
         N = self.nodal_force_local[6]
         Qy = -1.0 * (self.nodal_force_local[5] + self.nodal_force_local[11]) / l
@@ -500,8 +506,6 @@ class CRBeamElement(Element):
         return Kd
 
     def _calculate_psi(self, I, A_eff):
-        # TODO: check which length to use, paper and implementation different
-        # L = self._calculate_current_length()
         L = self.L
         phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
 
