@@ -8,6 +8,7 @@
 
 local
 
+# in INPUT only the forces for the 2 generic cases should be kept
 input/force
 
 !input/force/
@@ -16,6 +17,7 @@ input/force/*
 !input/force/generic_building
 !input/force/generic_pylon
 
+# in OUTPUT only the results for the 2 generic cases should be kept
 output/
 
 !output/
