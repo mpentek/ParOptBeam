@@ -17,6 +17,8 @@ input/force/*
 !input/force/generic_building
 !input/force/generic_pylon
 
+input/parameters/caarc/
+
 # in OUTPUT only the results for the 2 generic cases should be kept
 output/
 
@@ -25,4 +27,6 @@ output/
 # output/*
 # !output/GenericBuilding
 # !output/GenericPylon
+
+run_caarc_parametric.py
 
