@@ -291,22 +291,22 @@ class CRBeamElement(Element):
 
         ke_const = np.zeros([self.ElementSize, self.ElementSize])
 
-        self.L3 = L * L * L
-        self.L2 = L * L
+        L3 = L * L * L
+        L2 = L * L
 
         ke_const[0, 0] = self.E * self.A / L
         ke_const[6, 0] = -1.0 * ke_const[0, 0]
         ke_const[0, 6] = ke_const[6, 0]
         ke_const[6, 6] = ke_const[0, 0]
 
-        ke_const[1, 1] = 12.0 * self.E * self.Iz * Psi_z / self.L3
+        ke_const[1, 1] = 12.0 * self.E * self.Iz * Psi_z / L3
         ke_const[1, 7] = -1.0 * ke_const[1, 1]
-        ke_const[1, 5] = 6.0 * self.E * self.Iz * Psi_z / self.L2
+        ke_const[1, 5] = 6.0 * self.E * self.Iz * Psi_z / L2
         ke_const[1, 11] = ke_const[1, 5]
 
-        ke_const[2, 2] = 12.0 * self.E * self.Iy * Psi_y / self.L3
+        ke_const[2, 2] = 12.0 * self.E * self.Iy * Psi_y / L3
         ke_const[2, 8] = -1.0 * ke_const[2, 2]
-        ke_const[2, 4] = -6.0 * self.E * self.Iy * Psi_y / self.L2
+        ke_const[2, 4] = -6.0 * self.E * self.Iy * Psi_y / L2
         ke_const[2, 10] = ke_const[2, 4]
 
         ke_const[4, 2] = ke_const[2, 4]
@@ -357,40 +357,40 @@ class CRBeamElement(Element):
         my_B = self.nodal_force_local[10]
         mz_B = self.nodal_force_local[11]
 
-        L = self._calculate_current_length()
-        Qy = -1.0 * (mz_A + mz_B) / L
-        Qz = (my_A + my_B) / L
+        l = self._calculate_current_length()
+        Qy = -1.0 * (mz_A + mz_B) / l
+        Qz = (my_A + my_B) / l
 
         ke_geo = np.zeros([self.ElementSize, self.ElementSize])
 
-        ke_geo[0, 1] = -Qy / L
-        ke_geo[0, 2] = -Qz / L
+        ke_geo[0, 1] = -Qy / l
+        ke_geo[0, 2] = -Qz / l
         ke_geo[0, 7] = -1.0 * ke_geo[0, 1]
         ke_geo[0, 8] = -1.0 * ke_geo[0, 2]
 
         ke_geo[1, 0] = ke_geo[0, 1]
 
-        ke_geo[1, 1] = 1.2 * N / L
+        ke_geo[1, 1] = 1.2 * N / l
 
-        ke_geo[1, 3] = my_A / L
-        ke_geo[1, 4] = Mt / L
+        ke_geo[1, 3] = my_A / l
+        ke_geo[1, 4] = Mt / l
 
         ke_geo[1, 5] = N / 10.0
 
         ke_geo[1, 6] = ke_geo[0, 7]
         ke_geo[1, 7] = -1.0 * ke_geo[1, 1]
-        ke_geo[1, 9] = my_B / L
+        ke_geo[1, 9] = my_B / l
         ke_geo[1, 10] = -1.0 * ke_geo[1, 4]
         ke_geo[1, 11] = ke_geo[1, 5]
 
         ke_geo[2, 0] = ke_geo[0, 2]
         ke_geo[2, 2] = ke_geo[1, 1]
-        ke_geo[2, 3] = mz_A / L
+        ke_geo[2, 3] = mz_A / l
         ke_geo[2, 4] = -1.0 * ke_geo[1, 5]
         ke_geo[2, 5] = ke_geo[1, 4]
         ke_geo[2, 6] = ke_geo[0, 8]
         ke_geo[2, 8] = ke_geo[1, 7]
-        ke_geo[2, 9] = mz_B / L
+        ke_geo[2, 9] = mz_B / l
         ke_geo[2, 10] = ke_geo[2, 4]
         ke_geo[2, 11] = ke_geo[1, 10]
 
@@ -399,19 +399,19 @@ class CRBeamElement(Element):
 
         ke_geo[3, 4] = (-mz_A / 3.0) + (mz_B / 6.0)
         ke_geo[3, 5] = (my_A / 3.0) - (my_B / 6.0)
-        ke_geo[3, 7] = -my_A / L
-        ke_geo[3, 8] = -mz_A / L
-        ke_geo[3, 10] = L * Qy / 6.0
-        ke_geo[3, 11] = L * Qz / 6.0
+        ke_geo[3, 7] = -my_A / l
+        ke_geo[3, 8] = -mz_A / l
+        ke_geo[3, 10] = l * Qy / 6.0
+        ke_geo[3, 11] = l * Qz / 6.0
 
         for i in range(4):
             ke_geo[4, i] = ke_geo[i, 4]
 
-        ke_geo[4, 4] = 2.0 * L * N / 15.0
-        ke_geo[4, 7] = -Mt / L
+        ke_geo[4, 4] = 2.0 * l * N / 15.0
+        ke_geo[4, 7] = -Mt / l
         ke_geo[4, 8] = N / 10.0
         ke_geo[4, 9] = ke_geo[3, 10]
-        ke_geo[4, 10] = -L * N / 30.0
+        ke_geo[4, 10] = -l * N / 30.0
         ke_geo[4, 11] = Mt / 2.0
 
         for i in range(5):
@@ -419,7 +419,7 @@ class CRBeamElement(Element):
 
         ke_geo[5, 5] = ke_geo[4, 4]
         ke_geo[5, 7] = -N / 10.0
-        ke_geo[5, 8] = -Mt / L
+        ke_geo[5, 8] = -Mt / l
         ke_geo[5, 9] = ke_geo[3, 11]
         ke_geo[5, 10] = -1.0 * ke_geo[4, 11]
         ke_geo[5, 11] = ke_geo[4, 10]
