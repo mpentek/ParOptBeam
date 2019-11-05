@@ -1,2 +1,0 @@
-adaptive: 373 steps
-constant: 1999 steps
