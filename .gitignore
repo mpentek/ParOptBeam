@@ -20,9 +20,9 @@ input/force/*
 # in OUTPUT only the results for the 2 generic cases should be kept
 output/
 
-!output/
+# !output/
 
-output/*
-!output/GenericBuilding
-!output/GenericPylon
+# output/*
+# !output/GenericBuilding
+# !output/GenericPylon
 
