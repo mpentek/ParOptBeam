@@ -167,8 +167,14 @@ class CRBeamElement(Element):
         """
         MassMatrix = np.zeros([self.ElementSize, self.ElementSize])
         L2 = self.L * self.L
-        Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
-        Phiy = (12.0 * self.E * self.Iy) / (L2 * self.G * self.Asz)
+
+        Phiz = 0.0
+        Phiy = 1.0
+
+        if self.Asz != 0.0:
+            Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
+        if self.Asy != 0.0:
+            Phiy = (12.0 * self.E * self.Iy) / (L2 * self.G * self.Asz)
 
         # rotational inertia
         IRy = self.Iy
@@ -525,12 +531,12 @@ class CRBeamElement(Element):
 
     def _calculate_psi(self, I, A_eff):
         L = self.L
-        phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
 
         # interpret input A_eff == 0 as shear stiff -> psi = 1.0
         if A_eff == 0.0:
             psi = 1.0
         else:
+            phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
             psi = 1.0 / (1.0 + phi)
         return psi
 
