@@ -18,6 +18,8 @@ input/force/*
 
 output/
 
+!output/
+
 output/*
 !output/GenericBuilding
 !output/GenericPylon

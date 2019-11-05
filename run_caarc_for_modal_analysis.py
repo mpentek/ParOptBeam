@@ -41,7 +41,7 @@ for available_model in available_models:
 
     # ==============================================
     # Parameter read
-    with open(join(*['input', 'parameters', available_model]), 'r') as parameter_file:
+    with open(join(*['input', 'parameters_old_to_be_removed', available_model]), 'r') as parameter_file:
         parameters = json.loads(parameter_file.read())
 
     # create initial model
