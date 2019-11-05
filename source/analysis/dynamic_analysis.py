@@ -12,7 +12,7 @@ import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.global_definitions import *
+import source.auxiliary.global_definitions as GD
 
 
 def transform_into_modal_coordinates(modal_transform_matrix, matrix):
@@ -49,35 +49,50 @@ class DynamicAnalysis(AnalysisType):
                      - self.parameters['settings']['time']['start']) / self.dt) + 1
         self.array_time = np.linspace(start, stop, steps)
 
-        # load parameters
-        '''
-        FOR NOW ONLY AVAILABLE for
-        1 elements - 2 nodes
-        2 elements - 3 nodes
-        3 elements - 4 nodes
-        6 elements - 7 nodes
-        12 elements - 13 nodes
-        24 elements - 25 nodes
-        '''
-        possible_n_el_cases = [1, 2, 3, 6, 12, 24]
-        if structure_model.parameters['n_el'] not in possible_n_el_cases:
-            err_msg = "The number of element input \"" + \
-                      str(structure_model.parameters['n_el'])
-            err_msg += "\" is not allowed for Dynamic Analysis \n"
-            err_msg += "Choose one of: "
-            err_msg += ', '.join([str(x) for x in possible_n_el_cases])
-            raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        force = np.load(join(*['input', 'force', 'force_dynamic' +
-                               '_turb' + str(structure_model.parameters['n_el'] + 1) + '.npy']))
+        if self.parameters['input']['file_path'] == 'some/path':
+            err_msg = self.parameters['input']['file_path']
+            err_msg += " is not a valid file!"
+            raise Exception(err_msg)
+        else:
+            print(self.parameters['input']['file_path'] + ' set as load file path in DynamicAnalysis')
+            force = np.load(self.parameters['input']['file_path'])
 
         super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))
         # overwriting attribute from base constructors
         self.force = force
 
-        # self.time = time
-        # np.arange(self.time[0], self.time[1] + self.dt, self.dt)
+        # check dimensionality
+        # of time
+        len_time_gen_array = len(self.array_time)
+        len_time_force = len(self.force[0])
+        if len_time_gen_array != len_time_force:
+            err_msg = "The length " + str(len_time_gen_array) + " of the time array generated based upon parameters\n"
+            err_msg += "specified in \"runs\" -> for \"type\":\"dynamic_analysis\" -> \"settings\" -> \"time\"\n"
+            err_msg += "does not match the time series length " + str(len_time_force) + " of the load time history\n"
+            err_msg += "specified in \"runs\" -> for \"type\":\"dynamic_analysis\" -> \"input\" -> \"file_path\"!\n"
+            raise Exception(err_msg)
+
+        # of nodes-dofs
+        n_dofs_model = structure_model.n_nodes * GD.DOFS_PER_NODE[structure_model.domain_size]
+        n_dofs_force = len(self.force)
+        if n_dofs_model != n_dofs_force:
+            err_msg = "The number of the degrees of freedom " + str(n_dofs_model) + " of the structural model\n"
+            err_msg += "does not match the degrees of freedom " + str(n_dofs_force) + " of the load time history\n"
+            err_msg += "specified in \"runs\" -> for \"type\":\"dynamic_analysis\" -> \"input\" -> \"file_path\"!\n"
+            err_msg += "The structural model has:\n"
+            err_msg += "   " + str(structure_model.n_elements) + " number of elements\n"
+            err_msg += "   " + str(structure_model.n_nodes) + " number of nodes\n"
+            err_msg += "   " + str(n_dofs_model) + " number of dofs.\n"
+            err_msg += "The naming of the force time history should reflect the number of nodes\n"
+            err_msg += "using the convention \"dynamic_force_<n_nodes>_nodes.npy\"\n"
+            digits_in_filename = [s for s in self.parameters['input']['file_path'].split('_') if s.isdigit()]
+            if len(digits_in_filename) == 1:
+                err_msg += "where currently <n_nodes> = " + digits_in_filename[0] + " (separated by underscores)!"
+            else:
+                err_msg += "but found multiple digits: " + ', '.join(digits_in_filename) + " (separated by underscores)!"
+            raise Exception(err_msg)
 
         rows = len(self.structure_model.apply_bc_by_reduction(
             self.structure_model.k))
@@ -196,13 +211,13 @@ class DynamicAnalysis(AnalysisType):
                                               result_data,
                                               self.array_time)
 
-    def write_result_at_dof(self, dof, selected_result):
+    def write_result_at_dof(self, global_folder_path, dof, selected_result):
         """
         Pass to plot function:
             Plots the time series of required quantitiy 
         """
-        print('Plotting result for selected dof in dynamic analysis \n')
-        plot_title = selected_result.capitalize() + ' at DoF ' + str(dof)
+        print('Writing result for selected dof in DynamicAnalysis \n')
+
         if selected_result == 'displacement':
             result_data = self.solver.displacement[dof, :]
         elif selected_result == 'velocity':
@@ -231,13 +246,8 @@ class DynamicAnalysis(AnalysisType):
 
         file_name = 'dynamic_analysis_result_' + \
                     selected_result + '_for_dof_' + str(dof) + '.dat'
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
-
-        writer_utilities.write_result_at_dof(join(absolute_folder_path, file_name),
+        
+        writer_utilities.write_result_at_dof(join(global_folder_path, file_name),
                                              file_header,
                                              result_data,
                                              self.array_time)
@@ -255,10 +265,10 @@ class DynamicAnalysis(AnalysisType):
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
 
-        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                              DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -288,7 +298,7 @@ class DynamicAnalysis(AnalysisType):
                                       scaling,
                                       1)
 
-    def write_selected_time(self, selected_time):
+    def write_selected_time(self, global_folder_path, selected_time):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -301,10 +311,10 @@ class DynamicAnalysis(AnalysisType):
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
 
-        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                              DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -328,13 +338,8 @@ class DynamicAnalysis(AnalysisType):
 
         file_name = 'dynamic_analysis_selected_time_' + \
                     str(selected_time) + 's.dat'
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def plot_selected_step(self, pdf_report, display_plots, selected_step):
@@ -350,10 +355,10 @@ class DynamicAnalysis(AnalysisType):
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
-        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                              DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -383,7 +388,7 @@ class DynamicAnalysis(AnalysisType):
                                       scaling,
                                       1)
 
-    def write_selected_step(self, selected_step):
+    def write_selected_step(self, global_folder_path, selected_step):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -396,10 +401,10 @@ class DynamicAnalysis(AnalysisType):
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
 
-        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                              DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step][:, idx_time]
@@ -422,13 +427,8 @@ class DynamicAnalysis(AnalysisType):
                       str(self.array_time[idx_time]) + " [s]"
 
         file_name = 'dynamic_analysis_selected_step_' + str(idx_time) + '.dat'
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def animate_time_history(self):
@@ -440,10 +440,10 @@ class DynamicAnalysis(AnalysisType):
 
         print("Animating time history in DynamicAnalysis \n")
         print("Copying time step solution from solver")
-        for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                              DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                            1:step]
@@ -474,8 +474,8 @@ class DynamicAnalysis(AnalysisType):
         print("Animating skin model time history")
         if not self.parameters['output']['animate_time_history']:
             print("Copying time step solution from solver")
-            for idx, label in zip(list(range(DOFS_PER_NODE[self.structure_model.domain_size])),
-                                  DOF_LABELS[self.structure_model.domain_size]):
+            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                                  GD.DOF_LABELS[self.structure_model.domain_size]):
                 start = idx
                 step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
                 stop = self.solver.displacement.shape[0] + idx - step
@@ -494,7 +494,7 @@ class DynamicAnalysis(AnalysisType):
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
 
-    def postprocess(self, pdf_report, display_plots, skin_model_params):
+    def postprocess(self, global_folder_path, pdf_report, display_plots, skin_model_params):
         """
         Postprocess something
         """
@@ -504,13 +504,13 @@ class DynamicAnalysis(AnalysisType):
             self.plot_selected_time(pdf_report, display_plots, time)
 
         for time in self.parameters['output']['selected_instance']['write_time']:
-            self.write_selected_time(time)
+            self.write_selected_time(global_folder_path, time)
 
         for step in self.parameters['output']['selected_instance']['plot_step']:
             self.plot_selected_step(pdf_report, display_plots, step)
 
         for step in self.parameters['output']['selected_instance']['write_step']:
-            self.write_selected_step(step)
+            self.write_selected_step(global_folder_path, step)
 
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
@@ -526,7 +526,7 @@ class DynamicAnalysis(AnalysisType):
                         self.plot_result_at_dof(
                             pdf_report, display_plots, dof_id, res)
                     if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
-                        self.write_result_at_dof(dof_id, res)
+                        self.write_result_at_dof(global_folder_path, dof_id, res)
                 else:
                     err_msg = "The selected result \"" + res
                     err_msg += "\" is not avaialbe \n"

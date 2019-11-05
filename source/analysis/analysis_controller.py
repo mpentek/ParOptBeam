@@ -19,6 +19,7 @@ class AnalysisController(object):
 
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
+        "global_output_folder": "some/path",
         "report_options": {},
         "runs": [],
         "skin_model_parameters": {}}
@@ -37,16 +38,24 @@ class AnalysisController(object):
             AnalysisController.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
-        # TODO: some more robust checks and assigns
+        if self.parameters['global_output_folder'] == "some/path":
+            self.global_output_folder = join("output", self.model.name)
+        else:
+            self.global_output_folder = join(
+                "output", self.parameters['global_output_folder'])
+
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(self.global_output_folder):
+            makedirs(self.global_output_folder)
+
+        print(self.global_output_folder +
+              ' set as absolute folder path in AnalysisController')
+
         if self.parameters['report_options']['combine_plots_into_pdf']:
             file_name = 'analyses_results_report.pdf'
-            absolute_folder_path = join("output", self.model.name)
-            # make sure that the absolute path to the desired output folder exists
-            if not isdir(absolute_folder_path):
-                makedirs(absolute_folder_path)
 
             self.report_pdf = PdfPages(
-                join(absolute_folder_path, file_name))
+                join(self.global_output_folder, file_name))
         else:
             self.report_pdf = None
 
@@ -101,10 +110,12 @@ class AnalysisController(object):
             analysis.solve()
 
     def postprocess(self):
-        self.model.plot_model_properties(self.report_pdf, self.display_plots, self.skin_model_params)
+        self.model.plot_model_properties(
+            self.report_pdf, self.display_plots, self.skin_model_params)
 
         for analysis in self.analyses:
-            analysis.postprocess(self.report_pdf, self.display_plots, self.skin_model_params)
+            analysis.postprocess(self.global_output_folder, self.report_pdf,
+                                 self.display_plots, self.skin_model_params)
 
         try:
             self.report_pdf.close()

@@ -6,9 +6,13 @@
 *.avi
 *.mp4
 
-input/force/25_turb/
-input/force/25_no_turb/
-output/
-
 local
+
+/input/force
+!/input/force/generic_building
+!/input/force/generic_pylon
+
+/output/
+!/output/GenericBuilding
+!/output/GenericPylon
 

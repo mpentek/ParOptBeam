@@ -5,6 +5,8 @@ from source.element.Element import Element
 
 class TimoshenkoBeamElement(Element):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
+
+        # TODO: we should not aim to handle material nonlinearity - or it seems more likely to be a naming problem
         if material_params['is_nonlinear']:
             err_msg = "Nonlinear TimoshenkoBeamElement is not yet implemented"
             raise Exception(err_msg)

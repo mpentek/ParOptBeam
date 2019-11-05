@@ -1,0 +1,110 @@
+{
+    "model_parameters": {
+        "name": "CaarcBeamPrototypeOptimizable",
+        "domain_size": "3D",
+        "system_parameters": {
+            "material": {
+                "density": 160.0,
+                "youngs_modulus": 2.861e8,
+                "poisson_ratio": 0.1,
+                "damping_ratio": 0.005
+            },
+            "geometry": {
+                "length_x": 180.0,
+                "number_of_elements": 24,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0, 60.0],
+                    "length_y": [50.0],
+                    "length_z": [35.0],
+                    "area"    : [1750.0],
+                    "shear_area_y" : [1460.0],
+                    "shear_area_z" : [1460.0],
+                    "moment_of_inertia_y" : [178646.0],
+                    "moment_of_inertia_z" : [364583.0],
+                    "torsional_moment_of_inertia" : [420175.0],
+                    "outrigger_mass": [0.0], 
+                    "outrigger_stiffness": [0.0]},
+                    {
+                    "interval_bounds" : [60.0, 120.0],
+                    "length_y": [45.0],
+                    "length_z": [30.0],
+                    "area"    : [1350.0],
+                    "shear_area_y" : [1125.0],
+                    "shear_area_z" : [1125.0],
+                    "moment_of_inertia_y" : [101250.0],
+                    "moment_of_inertia_z" : [227812.5],
+                    "torsional_moment_of_inertia" : [238140.0],
+                    "outrigger_mass": [0.0], 
+                    "outrigger_stiffness": [0.0]},
+                    {
+                    "interval_bounds" : [120.0, "End"],
+                    "length_y": [40.0],
+                    "length_z": [25.0],
+                    "area"    : [1000.0],
+                    "shear_area_y" : [833.0],
+                    "shear_area_z" : [833.0],
+                    "moment_of_inertia_y" : [52083.0],
+                    "moment_of_inertia_z" : [133333.0],
+                    "torsional_moment_of_inertia" : [122500.0],
+                    "outrigger_mass": [0.0], 
+                    "outrigger_stiffness": [0.0]}]
+            }
+        },
+        "boundary_conditions": "fixed-free"
+    },
+    "optimization_parameters": {
+        "adapt_for_target_values": {
+            "density_for_total_mass": 38880000.0,
+            "geometric_properties_for": {
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "partition_shear_bending": [-1, 1],
+                "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
+                "corresponding_mode_ids" : [1, 1, 1],
+                "corresponding_eigenfrequencies": [0.5550,0.10,0.40]}
+        }},
+    "analyses_parameters":{
+        "report_options": {
+            "combine_plots_into_pdf" : true,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : true
+        },
+        "skin_model_parameters":{
+            "geometry": [ [0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
+                          [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
+                          [0, 6.0, -9.0], [0, -6.0, -9.0]
+            ],
+            "contour_density": 1,
+            "record_animation": true,
+            "visualize_line_structure": true,
+            "beam_direction": "x",
+            "scaling_vector": [1.5, 1.4, 1.3, 1.2, 1.0, 1.0, 1.2, 1.3, 1.4, 1.5],
+            "eigenmode_scaling_factor" : 1e5,
+            "dynamic_scaling_factor" : 1e3
+        },
+        "runs": [{
+                "type": "eigenvalue_analysis",
+                "settings": {
+                    "normalization": "mass_normalized"},
+                "input":{},
+                "output":{
+                    "eigenmode_summary": {
+                        "write" : false, 
+                        "plot" : false},
+                    "eigenmode_identification": {
+                        "write" : false, 
+                        "plot" : false},
+                    "selected_eigenmode": {
+                        "plot_mode": [1], 
+                        "write_mode": [1],
+                        "animate_mode": [1], 
+                        "animate_skin_model": [1]},
+                    "selected_eigenmode_range": {
+                        "help": "maximum 4 modes per range at a time",
+                        "considered_ranges": [[1,4], [5,7]], 
+                        "plot_range": [true, true], 
+                        "write_range": [true, true]}
+                    }
+            }
+        ]
+    }
+}
