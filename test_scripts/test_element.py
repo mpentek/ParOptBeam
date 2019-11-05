@@ -18,14 +18,14 @@ def test_timoshenko_element():
     print(K)
 
 
-TOL = 1e-12
+TOL = 1e-6
 
 
 def test_crbeam_element_update_incremental():
     material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
     element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
-    coords = np.array([[100., 0.0, 0.0], [200.0, 0.0, 0.0]])
+    coords = np.array([[1., 0.0, 0.0], [2.0, 0.0, 0.0]])
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
     ke_mat_1 = element._get_element_stiffness_matrix_material()
@@ -164,15 +164,13 @@ def test_crbeam_element_update_total():
     coords = np.array([[100., 0.0, 0.0], [200.0, 0.0, 0.0]])
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
-    dp = [0.2, 0.0, 0.0, 0.0, 0.0, 0.0,
+    dp_v = [0.0, 0.4, 0.0, 0.0, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-    element.update_total(dp)
 
-    element.update_total(dp)
+    element.update_total(dp_v)
     K = element.get_element_stiffness_matrix()
-    f_test = np.dot(K, dp)
+    f_test = np.dot(K, dp_v)
     q = element.nodal_force_global
-
     try:
         assert (abs(f_test - q) < TOL).all()
     except AssertionError:
