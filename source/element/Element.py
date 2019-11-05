@@ -66,9 +66,14 @@ class Element(object):
 
     def evaluate_relative_importance_of_shear(self):
         self.G = self.E / 2 / (1 + self.nu)
+        self.Py = 0.0
+        self.Pz = 0.0
+
         # relative importance of the shear deformation to the bending one
-        self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
-        self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
+        if self.Asy != 0.0:
+            self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
+        if self.Asz != 0.0:
+            self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
 
     def get_element_stiffness_matrix(self):
         ke = self._get_element_stiffness_matrix_material()
