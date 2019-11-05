@@ -405,6 +405,8 @@ class StraightBeam(object):
 
         self.decompose_and_quantify_eigenmodes()
 
+        self.mode_identification_results = {}
+
         for i in range(considered_modes):
 
             selected_mode = self.eig_freqs_sorted_indices[i]

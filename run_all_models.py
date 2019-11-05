@@ -36,19 +36,20 @@ from source.analysis.analysis_controller import AnalysisController
 # NOTE: all currently available files
 available_models = [
     # TODO: check model parameters for correctness
-    'ProjectParameters3DPylonCadBeam.json',
-    # with various elastic modulus
-    'ProjectParameters3DPylonSofiBeam.json',
-    'ProjectParameters3DPylonSofiBeamReducedE.json',
-    # with elastic foundation
-    'ProjectParameters3DPylonSofiBeamWithFoundationSoft.json',
-    'ProjectParameters3DPylonSofiBeamWithFoundationMid.json',
-    'ProjectParameters3DPylonSofiBeamWithFoundationHard.json',
+    # 'ProjectParameters3DPylonCadBeam.json',
+    # # with various elastic modulus
+    # 'ProjectParameters3DPylonSofiBeam.json',
+    # 'ProjectParameters3DPylonSofiBeamReducedE.json',
+    # # with elastic foundation
+    # 'ProjectParameters3DPylonSofiBeamWithFoundationSoft.json',
+    # 'ProjectParameters3DPylonSofiBeamWithFoundationMid.json',
+    # 'ProjectParameters3DPylonSofiBeamWithFoundationHard.json',
     #
     'ProjectParameters3DCaarcBeam.json',
     #
-    'ProjectParameters3DCaarcBeamPrototype.json',
-    'ProjectParameters3DCaarcBeamPrototypeOptimizable.json']
+    # 'ProjectParameters3DCaarcBeamPrototype.json',
+    # 'ProjectParameters3DCaarcBeamPrototypeOptimizable.json'
+    ]
 
 for available_model in available_models:
 
