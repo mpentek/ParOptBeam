@@ -48,10 +48,12 @@ class Visualiser:
             self.dt = self.period / self.steps
             self.frame_time = np.linspace(0, self.period, self.steps)
             self.plot_title += "Eigenmode: " + str(self.mode) \
-                              + " Frequency: " + '{0:.2f}'.format(self.frequency) \
-                              + " Period:" + '{0:.2f}'.format(self.period) + "[s]"
+                + " Frequency: " + '{0:.2f}'.format(self.frequency) \
+                + " Period:" + \
+                '{0:.2f}'.format(self.period) + "[s]"
             self.writer = Writer(fps=self.steps / self.period, bitrate=1800)
-            self.file = join(self.result_path, 'mode_' + self.mode + '_skin_model.mp4')
+            self.file = join(self.result_path, 'mode_' +
+                             self.mode + '_skin_model.mp4')
 
         if "dynamic_analysis" in params:
             self.scale = params["dynamic_scaling_factor"]
@@ -60,9 +62,11 @@ class Visualiser:
             self.end_record = params["dynamic_analysis"]["end_record"]
             self.record_step = params["dynamic_analysis"]["record_step"]
             self.start_step = int(self.start_record / self.dt)
-            self.frame_time = np.arange(self.start_record, self.end_record + self.dt, self.dt * self.record_step)
+            self.frame_time = np.arange(
+                self.start_record, self.end_record + self.dt, self.dt * self.record_step)
             self.plot_title = "Dyanimc Analyis: Deformation over time"
-            self.writer = Writer(fps=1/(self.record_step * self.dt), bitrate=1800)
+            self.writer = Writer(
+                fps=1/(self.record_step * self.dt), bitrate=1800)
             self.file = join(self.result_path,  'dynamic' + '_skin_model.mp4')
 
         self.animate_steps = len(self.frame_time)
@@ -70,8 +74,8 @@ class Visualiser:
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(
             111, projection='3d')
-            # TODO: after an error this was commented out: currently not possible to set aspect ratio manually
-            #, aspect='equal', azim=-60, elev=10)
+        # TODO: after an error this was commented out: currently not possible to set aspect ratio manually
+        # , aspect='equal', azim=-60, elev=10)
 
         self.animate()
 
@@ -118,11 +122,11 @@ class Visualiser:
 
     def scale_deformation(self, obj):
         x_vec = obj.undeformed[0] + \
-                np.subtract(obj.deformed[0], obj.undeformed[0]) * self.scale
+            np.subtract(obj.deformed[0], obj.undeformed[0]) * self.scale
         y_vec = obj.undeformed[1] + \
-                np.subtract(obj.deformed[1], obj.undeformed[1]) * self.scale
+            np.subtract(obj.deformed[1], obj.undeformed[1]) * self.scale
         z_vec = obj.undeformed[2] + \
-                np.subtract(obj.deformed[2], obj.undeformed[2]) * self.scale
+            np.subtract(obj.deformed[2], obj.undeformed[2]) * self.scale
         return x_vec, y_vec, z_vec
 
     def visualise_line_structure(self):
@@ -131,9 +135,12 @@ class Visualiser:
         z = np.array([z_vec, z_vec])
         self.ax.plot_wireframe(x_vec, y_vec, z, color='b', linewidth=3)
         for node in self.line_structure.nodes:
-            x = node.undeformed[0] + (node.deformed[0] - node.undeformed[0]) * self.scale
-            y = node.undeformed[1] + (node.deformed[1] - node.undeformed[1]) * self.scale
-            z = node.undeformed[2] + (node.deformed[2] - node.undeformed[2]) * self.scale
+            x = node.undeformed[0] + \
+                (node.deformed[0] - node.undeformed[0]) * self.scale
+            y = node.undeformed[1] + \
+                (node.deformed[1] - node.undeformed[1]) * self.scale
+            z = node.undeformed[2] + \
+                (node.deformed[2] - node.undeformed[2]) * self.scale
             self.ax.scatter(x, y, z, marker='o', c='r', s=50)
 
     def visualise_structure(self):
@@ -194,7 +201,8 @@ class Visualiser:
         if self.is_visualize_line_structure:
             self.visualise_line_structure()
         self.set_coordinate_in_real_size()
-        self.ax.text(0, 5, 15, '{0:.2f}'.format(self.frame_time[step]) + "[s]", fontsize=20, color='red')
+        self.ax.text(0, 5, 15, '{0:.2f}'.format(
+            self.frame_time[step]) + "[s]", fontsize=20, color='red')
 
     def parallel_update(self, step):
         pass
@@ -202,69 +210,69 @@ class Visualiser:
 
 def test():
     param_eigvalue = {
-             "length": 100.0,
-             "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
-                          [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
-                          [0, 6.0, -9.0], [0, -6.0, -9.0]],
-             "contour_density": 1,
-             "record_animation": True,
-             "visualize_line_structure": True,
-             "beam_direction": "x",
-             "scaling_vector": [1.0, 1.0, 1.0],
-             "result_path": '.',
-             "eigenvalue_analysis": {
-                 'mode': '1',
-                 'frequency': 0.1,
-                 'period': 4.0
-             },
-             "eigenmode_scaling_factor": 1.5,
-             "dynamic_scaling_factor": 2.0,
-             "dofs_input": {
-                 "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
-                 "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "z0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
-                 "y": [[0.0, 0.1], [0.0, 0.2], [0.0, 0.3], [0.0, 0.4], [0.0, 0.5]],
-                 "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 5.0], [0.0, 0.0]],
-                 "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi/12, 0.0]],
-                 "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
-                 "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
-                 "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
+        "length": 100.0,
+        "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
+                     [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
+                     [0, 6.0, -9.0], [0, -6.0, -9.0]],
+        "contour_density": 1,
+        "record_animation": True,
+        "visualize_line_structure": True,
+        "beam_direction": "x",
+        "scaling_vector": [1.0, 1.0, 1.0],
+        "result_path": '.',
+        "eigenvalue_analysis": {
+            'mode': '1',
+            'frequency': 0.1,
+            'period': 4.0
+        },
+        "eigenmode_scaling_factor": 1.5,
+        "dynamic_scaling_factor": 2.0,
+        "dofs_input": {
+            "x0": [0.0, 25.0, 50.0, 75.0, 100.0],
+            "y0": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "z0": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "a0": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "b0": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "g0": [0.0, 0.0, 0.0, 0.0, 0.0],
+            "y": [[0.0, 0.1], [0.0, 0.2], [0.0, 0.3], [0.0, 0.4], [0.0, 0.5]],
+            "z": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 5.0], [0.0, 0.0]],
+            "a": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [np.pi/12, 0.0]],
+            "b": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]],
+            "g": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, np.pi/15]],
+            "x": [[0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]}}
 
     param_dynamic = {
-             "length": 100.0,
-             "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
-                          [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
-                          [0, 6.0, -9.0], [0, -6.0, -9.0]],
-             "contour_density": 1,
-             "record_animation": True,
-             "visualize_line_structure": True,
-             "beam_direction": "x",
-             "scaling_vector": [1.0, 1.0, 1.0],
-             "result_path": '.',
-             "dynamic_analysis": {
-                  'time_step': 0.5,
-                  'start_record': 0.5,
-                  'end_record': 1.5,
-                  'record_step': 1
-             },
-             "eigenmode_scaling_factor": 1.5,
-             "dynamic_scaling_factor": 2.0,
-             "dofs_input": {
-                 "x0": [0.0, 50.0, 100.0],
-                 "y0": [0.0, 0.0, 0.0],
-                 "z0": [0.0, 0.0, 0.0],
-                 "a0": [0.0, 0.0, 0.0],
-                 "b0": [0.0, 0.0, 0.0],
-                 "g0": [0.0, 0.0, 0.0],
-                 "y": [[0.0, 0.1, 0.2, 0.3], [0.0, 0.3, 0.4, 0.5], [0.0, 0.5, 0.6, 0.9]],
-                 "z": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                 "a": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/12, np.pi/10, np.pi/8, np.pi/6]],
-                 "b": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
-                 "g": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/10, np.pi/15, np.pi/30, 0.0]],
-                 "x": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]}}
+        "length": 100.0,
+        "geometry": [[0, -15.0, -3.0], [0, -15.0, 3.0], [0, -6.0, 9.0],
+                     [0, 6.0, 9.0], [0, 15.0, 3.0], [0, 15.0, -3.0],
+                     [0, 6.0, -9.0], [0, -6.0, -9.0]],
+        "contour_density": 1,
+        "record_animation": True,
+        "visualize_line_structure": True,
+        "beam_direction": "x",
+        "scaling_vector": [1.0, 1.0, 1.0],
+        "result_path": '.',
+        "dynamic_analysis": {
+            'time_step': 0.5,
+            'start_record': 0.5,
+            'end_record': 1.5,
+            'record_step': 1
+        },
+        "eigenmode_scaling_factor": 1.5,
+        "dynamic_scaling_factor": 2.0,
+        "dofs_input": {
+            "x0": [0.0, 50.0, 100.0],
+            "y0": [0.0, 0.0, 0.0],
+            "z0": [0.0, 0.0, 0.0],
+            "a0": [0.0, 0.0, 0.0],
+            "b0": [0.0, 0.0, 0.0],
+            "g0": [0.0, 0.0, 0.0],
+            "y": [[0.0, 0.1, 0.2, 0.3], [0.0, 0.3, 0.4, 0.5], [0.0, 0.5, 0.6, 0.9]],
+            "z": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+            "a": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/12, np.pi/10, np.pi/8, np.pi/6]],
+            "b": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+            "g": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [np.pi/10, np.pi/15, np.pi/30, 0.0]],
+            "x": [[0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]}}
 
     v = Visualiser(param_eigvalue)
 

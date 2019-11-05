@@ -16,7 +16,8 @@ class Node:
     def print_info(self):
         msg = "########################################################\n"
         msg += "Node Fix Position [" + str(self.undeformed[0]) + " " + \
-               str(self.undeformed[1]) + " " + str(self.undeformed[2]) + "]: \n"
+               str(self.undeformed[1]) + " " + \
+            str(self.undeformed[2]) + "]: \n"
         try:
             msg += "dx = " + str(self.displacement[0]) + "\t"
             msg += "dy = " + str(self.displacement[1]) + "\t"
@@ -25,7 +26,7 @@ class Node:
             msg += "theta_y = " + str(self.angular_displacement[1]) + "\t"
             msg += "theta_z = " + str(self.angular_displacement[2]) + "\n"
             msg += "Transformed Position: [" + str(self.deformed[0]) + " " + \
-               str(self.deformed[1]) + " " + str(self.deformed[2]) + "]:\n"
+                str(self.deformed[1]) + " " + str(self.deformed[2]) + "]:\n"
             msg += "########################################################\n"
 
         except AttributeError:
@@ -45,15 +46,18 @@ class Node:
         # transformation matrix derived from the symbolic generation
         M = np.array([
             [1.0 * cos(beta) * cos(gamma),
-             -1.0 * cos(alpha) * sin(gamma) + 1.0 * cos(gamma) * sin(alpha) * sin(beta),
+             -1.0 * cos(alpha) * sin(gamma) + 1.0 *
+             cos(gamma) * sin(alpha) * sin(beta),
              1.0 * cos(alpha) * cos(gamma) * sin(beta) + 1.0 * sin(alpha) * sin(gamma), 1.0 * dx],
             [1.0 * cos(beta) * sin(gamma), 1.0 * cos(alpha) * cos(gamma) + 1.0 * sin(alpha) * sin(beta) * sin(gamma),
              1.0 * cos(alpha) * sin(beta) * sin(gamma) - 1.0 * cos(gamma) * sin(alpha), 1.0 * dy],
-            [-1.0 * sin(beta), 1.0 * cos(beta) * sin(alpha), 1.0 * cos(alpha) * cos(beta), 1.0 * dz],
+            [-1.0 * sin(beta), 1.0 * cos(beta) * sin(alpha),
+             1.0 * cos(alpha) * cos(beta), 1.0 * dz],
             [0, 0, 0, 1.0]
         ])
 
-        previous_coordinate = np.append(self.undeformed, np.array(1.0)).reshape(4, 1)
+        previous_coordinate = np.append(
+            self.undeformed, np.array(1.0)).reshape(4, 1)
         new_coordinate = M.dot(previous_coordinate)
         new_coordinate = new_coordinate.reshape(1, 4)
         self.deformed = new_coordinate[0][0:3]

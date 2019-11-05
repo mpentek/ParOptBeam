@@ -35,34 +35,47 @@ class StaticAnalysis(AnalysisType):
 
         # TODO include some specifiers in the parameters, do not hard code
         if get_adjusted_path_string(self.parameters['input']['file_path']) == get_adjusted_path_string('some/path'):
-            err_msg = get_adjusted_path_string(self.parameters['input']['file_path'])
+            err_msg = get_adjusted_path_string(
+                self.parameters['input']['file_path'])
             err_msg += " is not a valid file!"
             raise Exception(err_msg)
         else:
-            print(get_adjusted_path_string(self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
-            if self.parameters['input']['is_time_history_file']: 
-                self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))[:, self.parameters['input']['selected_time_step']]
+            print(get_adjusted_path_string(
+                self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
+            if self.parameters['input']['is_time_history_file']:
+                self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))[
+                    :, self.parameters['input']['selected_time_step']]
             else:
-                self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))
+                self.force = np.load(get_adjusted_path_string(
+                    self.parameters['input']['file_path']))
 
         # of nodes-dofs
-        n_dofs_model = structure_model.n_nodes * GD.DOFS_PER_NODE[structure_model.domain_size]
+        n_dofs_model = structure_model.n_nodes * \
+            GD.DOFS_PER_NODE[structure_model.domain_size]
         n_dofs_force = len(self.force)
         if n_dofs_model != n_dofs_force:
-            err_msg = "The number of the degrees of freedom " + str(n_dofs_model) + " of the structural model\n"
-            err_msg += "does not match the degrees of freedom " + str(n_dofs_force) + " of the load time history\n"
+            err_msg = "The number of the degrees of freedom " + \
+                str(n_dofs_model) + " of the structural model\n"
+            err_msg += "does not match the degrees of freedom " + \
+                str(n_dofs_force) + " of the load time history\n"
             err_msg += "specified in \"runs\" -> for \"type\":\"static_analysis\" -> \"input\" -> \"file_path\"!\n"
             err_msg += "The structural model has:\n"
-            err_msg += "   " + str(structure_model.n_elements) + " number of elements\n"
-            err_msg += "   " + str(structure_model.n_nodes) + " number of nodes\n"
+            err_msg += "   " + \
+                str(structure_model.n_elements) + " number of elements\n"
+            err_msg += "   " + \
+                str(structure_model.n_nodes) + " number of nodes\n"
             err_msg += "   " + str(n_dofs_model) + " number of dofs.\n"
             err_msg += "The naming of the force time history should reflect the number of nodes\n"
             err_msg += "using the convention \"<force_type>_force_<n_nodes>_nodes.npy\"\n"
-            digits_in_filename = [s for s in self.parameters['input']['file_path'].split('_') if s.isdigit()]
+            digits_in_filename = [
+                s for s in self.parameters['input']['file_path'].split('_') if s.isdigit()]
             if len(digits_in_filename) == 1:
-                err_msg += "where currently <n_nodes> = " + digits_in_filename[0] + " (separated by underscores)!"
+                err_msg += "where currently <n_nodes> = " + \
+                    digits_in_filename[0] + " (separated by underscores)!"
             else:
-                err_msg += "but found multiple digits: " + ', '.join(digits_in_filename) + " (separated by underscores)!"
+                err_msg += "but found multiple digits: " + \
+                    ', '.join(digits_in_filename) + \
+                    " (separated by underscores)!"
             raise Exception(err_msg)
 
     def solve(self):

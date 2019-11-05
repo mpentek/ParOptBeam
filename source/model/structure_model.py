@@ -1,27 +1,3 @@
-# ===============================================================================
-'''
-Project:Lecture - Structural Wind Engineering WS17-18
-        Chair of Structural Analysis @ TUM - A. Michalski, R. Wuchner, M. Pentek
-
-        Structure model base class and derived classes for related structures
-
-Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, catharina.czech@tum.de,
-        peter.kupas@tum.de, mengjie.zhao@tum.de
-
-Note:   UPDATE: The script has been written using publicly available information and
-        data, use accordingly. It has been written and tested with Python 2.7.9.
-        Tested and works also with Python 3.4.3 (already see differences in print).
-        Module dependencies (-> line 61-74):
-            python
-            numpy
-            sympy
-            matplotlib.pyplot
-
-Created on:  22.11.2017
-Last update: 23.10.2019
-'''
-# ===============================================================================
-
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import linalg
@@ -29,9 +5,11 @@ from scipy import linalg
 from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
 from source.auxiliary.global_definitions import *
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
-from source.element.BernouliBeamElement import BernoulliBeamElement
-from source.element.CRBeamElement import CRBeamElement
+
+# TODO: move import where the element is initialized self.parameters['element_type'] == ...
+from source.element.timoshenko_beam_element import TimoshenkoBeamElement
+from source.element.bernouli_beam_element import BernoulliBeamElement
+from source.element.cr_beam_element import CRBeamElement
 
 class StraightBeam(object):
     """

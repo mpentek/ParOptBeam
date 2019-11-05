@@ -1,29 +1,3 @@
-# ===============================================================================
-'''
-Project:Lecture - Structural Wind Engineering WS17-18 
-        Chair of Structural Analysis @ TUM - A. Michalski, R. Wuchner, M. Pentek
-        
-        Time integration scheme base class and derived classes for specific implementations
-
-Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, klaus.sautter@tum.de
-
-
-      
-Note:   UPDATE: The script has been written using publicly available information and 
-        data, use accordingly. It has been written and tested with Python 2.7.9.
-        Tested and works also with Python 3.4.3 (already see differences in print).
-        Module dependencies (-> line 61-74): 
-            python
-            numpy
-            sympy
-            matplotlib.pyplot
-
-Created on:  22.11.2017
-Last update: 09.07.2019
-'''
-# ===============================================================================
-
-
 import numpy as np
 
 

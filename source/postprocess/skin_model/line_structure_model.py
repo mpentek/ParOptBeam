@@ -1,6 +1,6 @@
 import numpy as np
 from source.postprocess.skin_model.node_model import Node
-# from joblib import Parallel, delayed
+
 
 class LineStructure:
     def __init__(self, params):
@@ -13,12 +13,18 @@ class LineStructure:
         self.num_of_nodes = len(params["dofs_input"]["x0"])
         self.dofs_input = params["dofs_input"]
         self.steps = len(self.dofs_input["x"][0])
-        self.input_x = np.asarray(self.dofs_input["x"]).reshape(self.steps * self.num_of_nodes)
-        self.input_y = np.asarray(self.dofs_input["y"]).reshape(self.steps * self.num_of_nodes)
-        self.input_z = np.asarray(self.dofs_input["z"]).reshape(self.steps * self.num_of_nodes)
-        self.input_a = np.asarray(self.dofs_input["a"]).reshape(self.steps * self.num_of_nodes)
-        self.input_b = np.asarray(self.dofs_input["b"]).reshape(self.steps * self.num_of_nodes)
-        self.input_g = np.asarray(self.dofs_input["g"]).reshape(self.steps * self.num_of_nodes)
+        self.input_x = np.asarray(self.dofs_input["x"]).reshape(
+            self.steps * self.num_of_nodes)
+        self.input_y = np.asarray(self.dofs_input["y"]).reshape(
+            self.steps * self.num_of_nodes)
+        self.input_z = np.asarray(self.dofs_input["z"]).reshape(
+            self.steps * self.num_of_nodes)
+        self.input_a = np.asarray(self.dofs_input["a"]).reshape(
+            self.steps * self.num_of_nodes)
+        self.input_b = np.asarray(self.dofs_input["b"]).reshape(
+            self.steps * self.num_of_nodes)
+        self.input_g = np.asarray(self.dofs_input["g"]).reshape(
+            self.steps * self.num_of_nodes)
 
         # initializing variables needed by LineStructure
         self.nodes = np.empty(self.num_of_nodes, dtype=Node)
@@ -26,7 +32,8 @@ class LineStructure:
         self.deformed = np.ndarray((3, self.num_of_nodes), dtype=float)
 
         self.displacement = np.ndarray((3, self.num_of_nodes), dtype=float)
-        self.angular_displacement = np.ndarray((3, self.num_of_nodes), dtype=float)
+        self.angular_displacement = np.ndarray(
+            (3, self.num_of_nodes), dtype=float)
 
         self.init()
         self.print_line_structure_info()
@@ -68,9 +75,6 @@ class LineStructure:
             self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
             return self.nodes[i]
 
-        # if RUN_PARALLEL:
-        #     self.nodes = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_dof)(i) for i in range(self.num_of_nodes))
-        # else:
         for i in range(self.num_of_nodes):
             self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
 
@@ -93,18 +97,10 @@ class LineStructure:
             self.deformed[0][i] = self.nodes[i].deformed[0]
             self.deformed[1][i] = self.nodes[i].deformed[1]
             self.deformed[2][i] = self.nodes[i].deformed[2]
-            merged = [self.nodes[i], self.deformed[0][i], self.deformed[1][i], self.deformed[2][i]]
+            merged = [self.nodes[i], self.deformed[0][i],
+                      self.deformed[1][i], self.deformed[2][i]]
             return merged
 
-        # if RUN_PARALLEL:
-        #     merged_solution = Parallel(n_jobs=NUM_OF_CORES)(delayed(apply_nodal_transformation)(i)
-        #                                                     for i in range(self.num_of_nodes))
-        #     merged_solution = np.asarray(merged_solution).transpose()
-        #     self.nodes = merged_solution[0]
-        #     self.deformed[0] = merged_solution[1]
-        #     self.deformed[1] = merged_solution[2]
-        #     self.deformed[2] = merged_solution[3]
-        # else:
         for i in range(self.num_of_nodes):
             self.nodes[i].apply_transformation()
             self.deformed[0][i] = self.nodes[i].deformed[0]

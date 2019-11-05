@@ -1,12 +1,3 @@
-# ===============================================================================
-"""
-        Derived classes from Solver
-
-Created on:  15.10.2019
-Last update: 16.10.2019
-"""
-# ===============================================================================
-
 from source.solving_strategies.strategies.solver import Solver
 from source.auxiliary.global_definitions import *
 
@@ -32,7 +23,7 @@ class ResidualBasedSolver(Solver):
     def solve(self):
         # time loop
         for i in range(0, len(self.array_time)):
-        # for i in range(0, 10):
+            # for i in range(0, 10):
             self.step = i
             current_time = self.array_time[i]
             print("time: ", "{0:.2f}".format(current_time))
@@ -54,9 +45,9 @@ class ResidualBasedSolver(Solver):
                                       DOFS_PER_NODE[e.domain_size] * e.index +
                                       DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i],
                     self.dynamic_reaction[
-                    DOFS_PER_NODE[e.domain_size] * e.index:
-                    DOFS_PER_NODE[e.domain_size] * e.index +
-                    DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i])
+                        DOFS_PER_NODE[e.domain_size] * e.index:
+                        DOFS_PER_NODE[e.domain_size] * e.index +
+                        DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL, i])
 
             # update results
             self.scheme.update_structure_time_step()

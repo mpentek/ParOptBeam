@@ -1,28 +1,6 @@
-# ===============================================================================
-'''
-Project:Lecture - Structural Wind Engineering WS17-18 
-        Chair of Structural Analysis @ TUM - A. Michalski, R. Wuchner, M. Pentek
-        
-        Time integration scheme base class and derived classes for specific implementations
-
-Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, klaus.sautter@tum.de
-
-
-      
-Note:   UPDATE: The script has been written using publicly available information and 
-        data, use accordingly. It has been written and tested with Python 2.7.9.
-        Tested and works also with Python 3.4.3 (already see differences in print).
-        Module dependencies (-> line 61-74): 
-            python
-            numpy
-            sympy
-            matplotlib.pyplot
-
-Created on:  15.10.2017
-Last update: 15.10.2019
-'''
-# ===============================================================================
 import numpy as np
+
+#TODO: move specific import to the relate init_scheme
 from source.solving_strategies.schemes.generalized_alpha_scheme import GeneralizedAlphaScheme
 from source.solving_strategies.schemes.euler12_scheme import Euler12
 from source.solving_strategies.schemes.forward_euler1_scheme import ForwardEuler1
@@ -69,20 +47,24 @@ class Solver(object):
         self.dynamic_reaction = np.zeros((rows, cols))
 
         # initializing scheme
-        self._init_scheme(time_integration_scheme, comp_model, initial_conditions)
+        self._init_scheme(time_integration_scheme,
+                          comp_model, initial_conditions)
 
         self._print_structural_setup()
         self._print_solver_info()
 
     def _init_scheme(self, time_integration_scheme, comp_model, initial_conditions):
         if time_integration_scheme == "GenAlpha":
-            self.scheme = GeneralizedAlphaScheme(self.dt, comp_model, initial_conditions)
+            self.scheme = GeneralizedAlphaScheme(
+                self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "Euler12":
             self.scheme = Euler12(self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "ForwardEuler1":
-            self.scheme = ForwardEuler1(self.dt, comp_model, initial_conditions)
+            self.scheme = ForwardEuler1(
+                self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "BackwardEuler1":
-            self.scheme = BackwardEuler1(self.dt, comp_model, initial_conditions)
+            self.scheme = BackwardEuler1(
+                self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "RungeKutta4":
             self.scheme = RungeKutta4(self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "BDF2":
@@ -127,7 +109,8 @@ class Solver(object):
         # TODO: check if this still applies in modal coordinates
         for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
             # assuming a Rayleigh-model
-            damping_val = stiffness_val * self.structure_model.rayleigh_coefficients[1]
+            damping_val = stiffness_val * \
+                self.structure_model.rayleigh_coefficients[1]
 
             f1 = 0.0 * a[dof_id]
             f2 = damping_val * v[dof_id]

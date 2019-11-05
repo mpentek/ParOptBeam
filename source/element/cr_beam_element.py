@@ -1,7 +1,7 @@
 import numpy as np
 import sys
 
-from source.element.Element import Element
+from source.element.beam_element import BeamElement
 
 EPSILON = sys.float_info.epsilon
 
@@ -22,7 +22,7 @@ def rotate_vector(quaternion, vector):
     return vector
 
 
-class CRBeamElement(Element):
+class CRBeamElement(BeamElement):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
         if domain_size == '2D':
             err_msg = "2D CR-Beam element not implemented"

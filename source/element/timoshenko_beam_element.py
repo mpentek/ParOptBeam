@@ -1,9 +1,9 @@
 import numpy as np
 
-from source.element.Element import Element
+from source.element.beam_element import BeamElement
 
 
-class TimoshenkoBeamElement(Element):
+class TimoshenkoBeamElement(BeamElement):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
 
         # TODO: we should not aim to handle material nonlinearity - or it seems more likely to be a naming problem

@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class Element(object):
+class BeamElement(object):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
         self.material_params = material_params
         self.domain_size = domain_size
@@ -56,7 +56,8 @@ class Element(object):
             msg = "Nonlinear "
         else:
             msg = "Linear "
-        msg += str(self.domain_size) + " Base Class Element " + str(self.index) + "\n"
+        msg += str(self.domain_size) + " Base Class Element " + \
+            str(self.index) + "\n"
         print(msg)
 
     def update_nodal_information(self, deformation, reaction):

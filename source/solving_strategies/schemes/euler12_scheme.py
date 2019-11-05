@@ -56,4 +56,3 @@ class Euler12(TimeIntegrationScheme):
         self.un1 = self.u1
         self.vn2 = self.vn1
         self.vn1 = self.v1
-

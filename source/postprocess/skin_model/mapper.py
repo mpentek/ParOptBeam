@@ -25,14 +25,16 @@ class Mapper:
         self.map_line_structure_to_structure()
 
     def map_line_structure_to_structure(self):
-        s_vec = self.line_structure.undeformed[int(self.structure.beam_direction)]
+        s_vec = self.line_structure.undeformed[int(
+            self.structure.beam_direction)]
         disp_vec = self.line_structure.displacement
         ang_disp_vec = self.line_structure.angular_displacement
 
         for i in range(self.structure.num_of_elements):
             mid_p = self._get_element_mid_points(self.structure.elements[i])
             s = mid_p[int(self.structure.beam_direction)]
-            inter_disp, inter_ang_disp = self._interpolate_dofs(s, s_vec, disp_vec, ang_disp_vec)
+            inter_disp, inter_ang_disp = self._interpolate_dofs(
+                s, s_vec, disp_vec, ang_disp_vec)
 
             for node in self.structure.elements[i].nodes:
                 node.assign_dofs(inter_disp, inter_ang_disp)

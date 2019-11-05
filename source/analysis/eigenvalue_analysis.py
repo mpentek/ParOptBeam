@@ -149,7 +149,7 @@ class EigenvalueAnalysis(AnalysisType):
             for mode_id in mode_ids:
                 m_id = list(mode_id.keys())[0]
                 # TODO use different datatype to avoid list(mode_id.keys())[0]
-                
+
                 type_counter += 1
                 counter += 1
                 lines.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
@@ -176,10 +176,11 @@ class EigenvalueAnalysis(AnalysisType):
                 [eff_mass, rel_part] = mode_id[m_id]
                 type_counter += 1
                 counter += 1
-                table_data.append([str(counter), 
-                                   str(m_id), 
-                                   str(type_counter), 
-                                   '{:.3f}'.format(self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), 
+                table_data.append([str(counter),
+                                   str(m_id),
+                                   str(type_counter),
+                                   '{:.3f}'.format(
+                                       self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]),
                                    mode,
                                    '{:.3f}'.format(eff_mass),
                                    '{:.3f}'.format(rel_part)])
@@ -188,12 +189,12 @@ class EigenvalueAnalysis(AnalysisType):
             str(counter) + ' mode(s)\n'
 
         row_labels = None
-        column_labels = ['ConsideredModes', 
+        column_labels = ['ConsideredModes',
                          'Mode',
-                         'TypeCounter', 
-                         'Eigenfrequency\n [Hz]', 
-                         'Type', 
-                         'EffModalMass\n [kg] or [kg*m^2]', 
+                         'TypeCounter',
+                         'Eigenfrequency\n [Hz]',
+                         'Type',
+                         'EffModalMass\n [kg] or [kg*m^2]',
                          'RelPart\n EffModalMass/TotalMass']
 
         plotter_utilities.plot_table(pdf_report,
@@ -427,7 +428,8 @@ class EigenvalueAnalysis(AnalysisType):
                                          scaling)
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
-        skin_model_params["result_path"] = join("output", self.structure_model.name)
+        skin_model_params["result_path"] = join(
+            "output", self.structure_model.name)
         skin_model_params["eigenvalue_analysis"] = {}
         skin_model_params["eigenvalue_analysis"]["mode"] = str(mode)
         skin_model_params["eigenvalue_analysis"]["frequency"] = self.frequency[mode]
@@ -465,7 +467,8 @@ class EigenvalueAnalysis(AnalysisType):
 
         if skin_model_params is not None:
             for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
-                self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
+                self.animate_skin_model_for_selected_eigenmode(
+                    mode, skin_model_params)
 
         # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)

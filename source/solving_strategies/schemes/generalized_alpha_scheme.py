@@ -79,12 +79,14 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         print(" ")
 
     def predict_velocity(self, u1):
-        v1 = self.a1v * (u1 - self.un1) + self.a2v * self.vn1 + self.a3v * self.an1
+        v1 = self.a1v * (u1 - self.un1) + self.a2v * \
+            self.vn1 + self.a3v * self.an1
         return v1
 
     # TODO: GenAlpha needs to take u1 as input, which is not general
     def predict_acceleration(self, v1):
-        a1 = self.a1a * (self.u1 - self.un1) + self.a2a * self.vn1 + self.a3a * self.an1
+        a1 = self.a1a * (self.u1 - self.un1) + self.a2a * \
+            self.vn1 + self.a3a * self.an1
         return a1
 
     def solve_single_step(self, f1):

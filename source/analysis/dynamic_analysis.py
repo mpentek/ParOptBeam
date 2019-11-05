@@ -52,12 +52,15 @@ class DynamicAnalysis(AnalysisType):
 
         # TODO include some specifiers in the parameters, do not hard code
         if get_adjusted_path_string(self.parameters['input']['file_path']) == get_adjusted_path_string('some/path'):
-            err_msg = get_adjusted_path_string(self.parameters['input']['file_path'])
+            err_msg = get_adjusted_path_string(
+                self.parameters['input']['file_path'])
             err_msg += " is not a valid file!"
             raise Exception(err_msg)
         else:
-            print(get_adjusted_path_string(self.parameters['input']['file_path']) + ' set as load file path in DynamicAnalysis')
-            force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))
+            print(get_adjusted_path_string(
+                self.parameters['input']['file_path']) + ' set as load file path in DynamicAnalysis')
+            force = np.load(get_adjusted_path_string(
+                self.parameters['input']['file_path']))
 
         super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))
@@ -69,30 +72,42 @@ class DynamicAnalysis(AnalysisType):
         len_time_gen_array = len(self.array_time)
         len_time_force = len(self.force[0])
         if len_time_gen_array != len_time_force:
-            err_msg = "The length " + str(len_time_gen_array) + " of the time array generated based upon parameters\n"
+            err_msg = "The length " + \
+                str(len_time_gen_array) + \
+                " of the time array generated based upon parameters\n"
             err_msg += "specified in \"runs\" -> for \"type\":\"dynamic_analysis\" -> \"settings\" -> \"time\"\n"
-            err_msg += "does not match the time series length " + str(len_time_force) + " of the load time history\n"
+            err_msg += "does not match the time series length " + \
+                str(len_time_force) + " of the load time history\n"
             err_msg += "specified in \"runs\" -> for \"type\":\"dynamic_analysis\" -> \"input\" -> \"file_path\"!\n"
             raise Exception(err_msg)
 
         # of nodes-dofs
-        n_dofs_model = structure_model.n_nodes * GD.DOFS_PER_NODE[structure_model.domain_size]
+        n_dofs_model = structure_model.n_nodes * \
+            GD.DOFS_PER_NODE[structure_model.domain_size]
         n_dofs_force = len(self.force)
         if n_dofs_model != n_dofs_force:
-            err_msg = "The number of the degrees of freedom " + str(n_dofs_model) + " of the structural model\n"
-            err_msg += "does not match the degrees of freedom " + str(n_dofs_force) + " of the load time history\n"
+            err_msg = "The number of the degrees of freedom " + \
+                str(n_dofs_model) + " of the structural model\n"
+            err_msg += "does not match the degrees of freedom " + \
+                str(n_dofs_force) + " of the load time history\n"
             err_msg += "specified in \"runs\" -> for \"type\":\"dynamic_analysis\" -> \"input\" -> \"file_path\"!\n"
             err_msg += "The structural model has:\n"
-            err_msg += "   " + str(structure_model.n_elements) + " number of elements\n"
-            err_msg += "   " + str(structure_model.n_nodes) + " number of nodes\n"
+            err_msg += "   " + \
+                str(structure_model.n_elements) + " number of elements\n"
+            err_msg += "   " + \
+                str(structure_model.n_nodes) + " number of nodes\n"
             err_msg += "   " + str(n_dofs_model) + " number of dofs.\n"
             err_msg += "The naming of the force time history should reflect the number of nodes\n"
             err_msg += "using the convention \"dynamic_force_<n_nodes>_nodes.npy\"\n"
-            digits_in_filename = [s for s in self.parameters['input']['file_path'].split('_') if s.isdigit()]
+            digits_in_filename = [
+                s for s in self.parameters['input']['file_path'].split('_') if s.isdigit()]
             if len(digits_in_filename) == 1:
-                err_msg += "where currently <n_nodes> = " + digits_in_filename[0] + " (separated by underscores)!"
+                err_msg += "where currently <n_nodes> = " + \
+                    digits_in_filename[0] + " (separated by underscores)!"
             else:
-                err_msg += "but found multiple digits: " + ', '.join(digits_in_filename) + " (separated by underscores)!"
+                err_msg += "but found multiple digits: " + \
+                    ', '.join(digits_in_filename) + \
+                    " (separated by underscores)!"
             raise Exception(err_msg)
 
         rows = len(self.structure_model.apply_bc_by_reduction(
@@ -123,9 +138,12 @@ class DynamicAnalysis(AnalysisType):
 
         # tranformation to the modal coordinates
         if self.transform_into_modal:
-            self.comp_m = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_m)
-            self.comp_b = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_b)
-            self.comp_k = transform_into_modal_coordinates(self.structure_model.eigen_modes_raw, self.comp_k)
+            self.comp_m = transform_into_modal_coordinates(
+                self.structure_model.eigen_modes_raw, self.comp_m)
+            self.comp_b = transform_into_modal_coordinates(
+                self.structure_model.eigen_modes_raw, self.comp_b)
+            self.comp_k = transform_into_modal_coordinates(
+                self.structure_model.eigen_modes_raw, self.comp_k)
 
         if force.shape[1] != len(self.array_time):
             err_msg = "The time step for forces does not match the time step defined"
@@ -135,7 +153,8 @@ class DynamicAnalysis(AnalysisType):
         force = self.structure_model.apply_bc_by_reduction(self.force, 'row')
 
         if self.transform_into_modal:
-            force = np.dot(np.transpose(self.structure_model.eigen_modes_raw), force)
+            force = np.dot(np.transpose(
+                self.structure_model.eigen_modes_raw), force)
 
         print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
@@ -145,16 +164,19 @@ class DynamicAnalysis(AnalysisType):
                                        self.structure_model)
         elif self.parameters["settings"]["solver_type"] == "Picard":
             self.solver = ResidualBasedPicardSolver(self.array_time, time_integration_scheme, self.dt,
-                                                    [self.comp_m, self.comp_b, self.comp_k],
+                                                    [self.comp_m, self.comp_b,
+                                                        self.comp_k],
                                                     initial_conditions, force,
                                                     self.structure_model)
         elif self.parameters["settings"]["solver_type"] == "NewtonRaphson":
             self.solver = ResidualBasedNewtonRaphsonSolver(self.array_time, time_integration_scheme, self.dt,
-                                                    [self.comp_m, self.comp_b, self.comp_k],
-                                                    initial_conditions, force,
-                                                    self.structure_model)
+                                                           [self.comp_m, self.comp_b,
+                                                               self.comp_k],
+                                                           initial_conditions, force,
+                                                           self.structure_model)
         else:
-            err_msg = "The requested solver type \"" + self.parameters["settings"]["solver_type"]
+            err_msg = "The requested solver type \"" + \
+                self.parameters["settings"]["solver_type"]
             err_msg += "\" is not available \n"
             err_msg += "Choose one of: \"Linear\", \"Picard\", \"NewtonRaphson\"\n"
             raise Exception(err_msg)
@@ -164,11 +186,14 @@ class DynamicAnalysis(AnalysisType):
         print("Solving the structure for dynamic loads \n")
         self.solver.solve()
 
-        # transforming back to normal coordinates : 
+        # transforming back to normal coordinates :
         if self.transform_into_modal:
-            self.solver.displacement = np.matmul(self.structure_model.eigen_modes_raw, self.solver.displacement)
-            self.solver.velocity = np.matmul(self.structure_model.eigen_modes_raw, self.solver.velocity)
-            self.solver.acceleration = np.matmul(self.structure_model.eigen_modes_raw, self.solver.acceleration)
+            self.solver.displacement = np.matmul(
+                self.structure_model.eigen_modes_raw, self.solver.displacement)
+            self.solver.velocity = np.matmul(
+                self.structure_model.eigen_modes_raw, self.solver.velocity)
+            self.solver.acceleration = np.matmul(
+                self.structure_model.eigen_modes_raw, self.solver.acceleration)
 
         self.solver.displacement = self.structure_model.recuperate_bc_by_extension(
             self.solver.displacement)
@@ -247,7 +272,7 @@ class DynamicAnalysis(AnalysisType):
 
         file_name = 'dynamic_analysis_result_' + \
                     selected_result + '_for_dof_' + str(dof) + '.dat'
-        
+
         writer_utilities.write_result_at_dof(join(global_folder_path, file_name),
                                              file_header,
                                              result_data,
@@ -272,7 +297,7 @@ class DynamicAnalysis(AnalysisType):
             step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                           1:step][:, idx_time]
+                                                                                     1:step][:, idx_time]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -318,7 +343,7 @@ class DynamicAnalysis(AnalysisType):
             step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                           1:step][:, idx_time]
+                                                                                     1:step][:, idx_time]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -362,7 +387,7 @@ class DynamicAnalysis(AnalysisType):
             step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                           1:step][:, idx_time]
+                                                                                     1:step][:, idx_time]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -408,7 +433,7 @@ class DynamicAnalysis(AnalysisType):
             step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                           1:step][:, idx_time]
+                                                                                     1:step][:, idx_time]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -447,7 +472,7 @@ class DynamicAnalysis(AnalysisType):
             step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.solver.displacement.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                           1:step]
+                                                                                     1:step]
 
         geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
                                    self.structure_model.nodal_coordinates["y0"],
@@ -481,8 +506,9 @@ class DynamicAnalysis(AnalysisType):
                 step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
                 stop = self.solver.displacement.shape[0] + idx - step
                 self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
-                                                                                               1:step]
-        skin_model_params["result_path"] = join("output", self.structure_model.name)
+                                                                                         1:step]
+        skin_model_params["result_path"] = join(
+            "output", self.structure_model.name)
         skin_model_params["dynamic_analysis"] = {}
         skin_model_params["dynamic_analysis"]["time_step"] = self.parameters['settings']['time']['step']
         skin_model_params["dynamic_analysis"]["start_record"] = \
@@ -527,7 +553,8 @@ class DynamicAnalysis(AnalysisType):
                         self.plot_result_at_dof(
                             pdf_report, display_plots, dof_id, res)
                     if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
-                        self.write_result_at_dof(global_folder_path, dof_id, res)
+                        self.write_result_at_dof(
+                            global_folder_path, dof_id, res)
                 else:
                     err_msg = "The selected result \"" + res
                     err_msg += "\" is not avaialbe \n"

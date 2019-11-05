@@ -1,6 +1,6 @@
 import numpy as np
 
-from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
+from source.element.timoshenko_beam_element import TimoshenkoBeamElement
 
 
 class BernoulliBeamElement(TimoshenkoBeamElement):
@@ -14,7 +14,8 @@ class BernoulliBeamElement(TimoshenkoBeamElement):
         self.evaluate_relative_importance_of_shear()
 
     def _print_element_information(self):
-        msg = str(self.domain_size) + " Bernoulli Beam Element " + str(self.index) + "\n"
+        msg = str(self.domain_size) + " Bernoulli Beam Element " + \
+            str(self.index) + "\n"
         msg += "Initial coordinates: \n"
         msg += str(self.ReferenceCoords[:3]) + "\n"
         msg += str(self.ReferenceCoords[3:]) + "\n"
