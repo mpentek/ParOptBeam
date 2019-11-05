@@ -25,6 +25,10 @@ class CRBeamElement(Element):
 
         self.evaluate_relative_importance_of_shear()
 
+        # shear coefficients
+        self.Psi_y = self._calculate_psi(self.Iy, self.Asz)
+        self.Psi_z = self._calculate_psi(self.Iz, self.Asy)
+
         # transformation matrix T = [nx0, ny0, nz0]
         self.LocalReferenceRotationMatrix = self._calculate_initial_local_cs()
         # transformation matrix T = [nx, ny, nz]
@@ -55,6 +59,10 @@ class CRBeamElement(Element):
 
         # incremental update
         self.IncrementalDeformation = np.zeros(self.ElementSize)
+
+        # Storing constant matrices to avoid computation overload
+        self.Ke_mat = self._get_element_stiffness_matrix_material()
+        self.Kd_mat = self._calculate_deformation_stiffness_material()
 
         self._print_element_information()
 
@@ -270,10 +278,9 @@ class CRBeamElement(Element):
         return mass_matrix
 
     def get_element_stiffness_matrix(self):
-        # resizing the matrices + create memory for LHS
-        Ke = np.zeros([self.ElementSize, self.ElementSize])
+        # Initializing the with the geometric stiffness
+        Ke = self.Ke_mat
         # creating LHS
-        Ke += self._get_element_stiffness_matrix_material()
         Ke += self._get_element_stiffness_matrix_geometry()
 
         TransformedStiffnessMatrix = apply_transformation(self.TransformationMatrix, Ke)
@@ -286,8 +293,8 @@ class CRBeamElement(Element):
         L = self.L
 
         # shear coefficients
-        Psi_y = self._calculate_psi(self.Iy, self.Asz)
-        Psi_z = self._calculate_psi(self.Iz, self.Asy)
+        Psi_y = self.Psi_y
+        Psi_z = self.Psi_z
 
         ke_const = np.zeros([self.ElementSize, self.ElementSize])
 
@@ -464,17 +471,18 @@ class CRBeamElement(Element):
 
         return ke_geo
 
-    def _calculate_deformation_stiffness(self):
+    def _calculate_deformation_stiffness_material(self):
         """
-        This function calculates the element stiffness w.r.t. deformation modes
+        This function calculates the material part of the element stiffness w.r.t. deformation modes
         :return: Kd
         """
         L = self.L
-        Psi_y = self._calculate_psi(self.Iy, self.Asz)
-        Psi_z = self._calculate_psi(self.Iz, self.Asy)
+
+        Psi_y = self.Psi_y
+        Psi_z = self.Psi_z
 
         # Eq.(4.87) Klaus, material contribution of the deformation stiffness matrix
-        Kd = np.array([
+        Kd_mat = np.array([
             [self.G * self.It / L, 0., 0., 0., 0., 0.],
             [0., self.E * self.Iy / L, 0., 0., 0., 0.],
             [0., 0., self.E * self.Iz / L, 0., 0., 0.],
@@ -482,6 +490,14 @@ class CRBeamElement(Element):
             [0., 0., 0., 0.,3.0 * self.E * self.Iy * Psi_y / L, 0.],
             [0., 0., 0., 0., 0., 3.0 * self.E * self.Iz * Psi_z / L],
         ])
+        return Kd_mat
+
+    def _calculate_deformation_stiffness(self):
+        """
+        This function calculates the element stiffness w.r.t. deformation modes
+        :return: Kd
+        """
+        Kd = self.Kd_mat
 
         # Eq.(4.115) Klaus, geometric contribution of the deformation stiffness matrix
         l = self._calculate_current_length()
