@@ -661,7 +661,7 @@ class CRBeamElement(Element):
 
         # rotate basis to element axis + redefine R
         delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
-        # delta_x /= np.linalg.norm(delta_x)
+        delta_x /= np.linalg.norm(delta_x)
 
         # vector n of Eq. (4.78) Klaus
         n = nx + delta_x
