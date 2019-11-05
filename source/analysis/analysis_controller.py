@@ -4,7 +4,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.global_definitions import *
+from source.auxiliary.other_utilities import get_adjusted_path_string
 
 
 class AnalysisController(object):
@@ -38,11 +38,11 @@ class AnalysisController(object):
             AnalysisController.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
-        if self.parameters['global_output_folder'] == "some/path":
+        if get_adjusted_path_string(self.parameters['global_output_folder']) == get_adjusted_path_string("some/path"):
             self.global_output_folder = join("output", self.model.name)
         else:
             self.global_output_folder = join(
-                "output", self.parameters['global_output_folder'])
+                "output", get_adjusted_path_string(self.parameters['global_output_folder']))
 
         # make sure that the absolute path to the desired output folder exists
         if not isdir(self.global_output_folder):

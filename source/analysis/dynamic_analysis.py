@@ -12,6 +12,7 @@ import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.other_utilities import get_adjusted_path_string
 import source.auxiliary.global_definitions as GD
 
 
@@ -50,13 +51,13 @@ class DynamicAnalysis(AnalysisType):
         self.array_time = np.linspace(start, stop, steps)
 
         # TODO include some specifiers in the parameters, do not hard code
-        if self.parameters['input']['file_path'] == 'some/path':
-            err_msg = self.parameters['input']['file_path']
+        if get_adjusted_path_string(self.parameters['input']['file_path']) == get_adjusted_path_string('some/path'):
+            err_msg = get_adjusted_path_string(self.parameters['input']['file_path'])
             err_msg += " is not a valid file!"
             raise Exception(err_msg)
         else:
-            print(self.parameters['input']['file_path'] + ' set as load file path in DynamicAnalysis')
-            force = np.load(self.parameters['input']['file_path'])
+            print(get_adjusted_path_string(self.parameters['input']['file_path']) + ' set as load file path in DynamicAnalysis')
+            force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))
 
         super().__init__(structure_model, self.parameters["type"])
         # print("Force: ", len(force))
