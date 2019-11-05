@@ -8,11 +8,17 @@
 
 local
 
-/input/force
-!/input/force/generic_building
-!/input/force/generic_pylon
+input/force
 
-/output/
-!/output/GenericBuilding
-!/output/GenericPylon
+!input/force/
+
+input/force/*
+!input/force/generic_building
+!input/force/generic_pylon
+
+output/
+
+output/*
+!output/GenericBuilding
+!output/GenericPylon
 
