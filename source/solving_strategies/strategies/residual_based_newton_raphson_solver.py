@@ -24,14 +24,6 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         super().__init__(array_time, time_integration_scheme, dt,
                          comp_model, initial_conditions, force, structure_model)
 
-    def update_total(self, new_displacement):
-        # updating displacement in the element
-        for e in self.structure_model.elements:
-            i_start = DOFS_PER_NODE[e.domain_size] * e.index
-            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-            new_displacement_e = new_displacement[i_start: i_end]
-            e.update_total(new_displacement_e)
-
     def update_incremental(self, dp):
         # updating displacement in the element
         for e in self.structure_model.elements:
@@ -39,17 +31,6 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
             i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
             dp_e = dp[i_start: i_end]
             e.update_incremental(dp_e)
-
-    def get_displacement_from_element(self):
-        u = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
-
-        for e in self.structure_model.elements:
-            i_start = DOFS_PER_NODE[e.domain_size] * e.index
-            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-            u[i_start:i_end] += e.current_deformation
-
-        u = self.structure_model.apply_bc_by_reduction(u, 'column_vector')
-        return u
 
     def solve_single_step(self):
         f_ext = self.force[:, self.step]
@@ -100,6 +81,6 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         return q
 
     def calculate_residual(self, f_ext):
-        q = self._compute_reaction()
+        q = self._compute_reaction
         r = f_ext - q
         return r
