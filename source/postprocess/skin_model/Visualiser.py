@@ -69,7 +69,9 @@ class Visualiser:
 
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(
-            111, projection='3d', aspect='equal', azim=-60, elev=10)
+            111, projection='3d')
+            # TODO: after an error this was commented out: currently not possible to set aspect ratio manually
+            #, aspect='equal', azim=-60, elev=10)
 
         self.animate()
 
