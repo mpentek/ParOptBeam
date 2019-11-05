@@ -108,7 +108,7 @@ class CRBeamElement(Element):
         d_phi_s = np.dot(self.LocalRotationMatrix.T, d_phi_B - d_phi_A)
 
         # updating incremental phi_a Eq. (5.126) Krenk
-        tmp = (d_phi_B + d_phi_A) - 2 * np.cross(nx, delta_u)/l
+        tmp = (d_phi_B + d_phi_A) - 2 * np.cross(nx, delta_u) / l
         d_phi_a = np.dot(self.LocalRotationMatrix.T, tmp)
 
         # updating phi_s and phi_a
@@ -473,15 +473,15 @@ class CRBeamElement(Element):
         Psi_y = self._calculate_psi(self.Iy, self.Asz)
         Psi_z = self._calculate_psi(self.Iz, self.Asy)
 
-        Kd = np.zeros([self.LocalSize, self.LocalSize])
-
         # Eq.(4.87) Klaus, material contribution of the deformation stiffness matrix
-        Kd[0, 0] = self.G * self.It / L
-        Kd[1, 1] = self.E * self.Iy / L
-        Kd[2, 2] = self.E * self.Iz / L
-        Kd[3, 3] = self.E * self.A / L
-        Kd[4, 4] = 3.0 * self.E * self.Iy * Psi_y / L
-        Kd[5, 5] = 3.0 * self.E * self.Iz * Psi_z / L
+        Kd = np.array([
+            [self.G * self.It / L, 0., 0., 0., 0., 0.],
+            [0., self.E * self.Iy / L, 0., 0., 0., 0.],
+            [0., 0., self.E * self.Iz / L, 0., 0., 0.],
+            [0., 0., 0., self.E * self.A / L, 0., 0.],
+            [0., 0., 0., 0.,3.0 * self.E * self.Iy * Psi_y / L, 0.],
+            [0., 0., 0., 0., 0., 3.0 * self.E * self.Iz * Psi_z / L],
+        ])
 
         # Eq.(4.115) Klaus, geometric contribution of the deformation stiffness matrix
         l = self._calculate_current_length()
@@ -494,15 +494,16 @@ class CRBeamElement(Element):
         Qy1 = -l * Qy / 6.0
         Qz1 = -l * Qz / 6.0
 
-        Kd[1, 1] += N1
-        Kd[2, 2] += N1
-        Kd[4, 4] += N2
-        Kd[5, 5] += N2
+        Kd_geo = np.array([
+            [0., Qy1, Qz1, 0., 0., 0.],
+            [Qy1, N1, 0., 0., 0., 0.],
+            [Qz1, 0., N1, 0., 0., 0.],
+            [0., 0., 0., 0., 0., 0.],
+            [0., 0., 0., 0., N2, 0.],
+            [0., 0., 0.,  0., 0., N2]
+        ])
 
-        Kd[0, 1] += Qy1
-        Kd[0, 2] += Qz1
-        Kd[1, 0] += Qy1
-        Kd[2, 0] += Qz1
+        Kd += Kd_geo
 
         return Kd
 
@@ -518,25 +519,26 @@ class CRBeamElement(Element):
         return psi
 
     def _calculate_transformation_s(self):
-        S = np.zeros([self.ElementSize, self.LocalSize])
+        """
+        Transformation Matrix: from Element Forces to Nodal Forces
+        Eq.(4.61) Klaus
+        """
         l = self._calculate_current_length()
 
-        S[0, 3] = -1.0
-        S[1, 5] = 2.0 / l
-        S[2, 4] = -2.0 / l
-        S[3, 0] = -1.0
-        S[4, 1] = -1.0
-        S[4, 4] = 1.0
-        S[5, 2] = -1.0
-        S[5, 5] = 1.0
-        S[6, 3] = 1.0
-        S[7, 5] = -2.0 / l
-        S[8, 4] = 2.0 / l
-        S[9, 0] = 1.0
-        S[10, 1] = 1.0
-        S[10, 4] = 1.0
-        S[11, 2] = 1.0
-        S[11, 5] = 1.0
+        S = np.array([
+            [0., 0., 0., -1, 0., 0.],
+            [0., 0., 0., 0., 0., 2 / l],
+            [0., 0., 0., 0., -2 / l, 0.],
+            [-1., 0., 0., 0., 0., 0.],
+            [0., -1., 0., 0., 1., 0.],
+            [0., 0., -1., 0., 0., 1.],
+            [0., 0., 0., 1., 0., 0.],
+            [0., 0., 0., 0., 0., -2 / l],
+            [0., 0., 0., 0., 2 / l, 0.],
+            [1., 0., 0., 0., 0., 0.],
+            [0., 1., 0., 0., 1., 0.],
+            [0., 0., 1., 0., 0., 1.],
+        ])
 
         return S
 
