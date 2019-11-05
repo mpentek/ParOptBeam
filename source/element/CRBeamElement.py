@@ -127,7 +127,8 @@ class CRBeamElement(Element):
         self.LocalRotationMatrix = self._rotate_basis_to_element_axis(rotated_coordinate_system)
 
         # updating deformation mode vector
-        self.v[3] = l - self.L
+        delta_x = self.current_deformation[6:9] - self.current_deformation[0:3]
+        self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
         self.v[0:3] = self.phi_s
         self.v[4:6] = self.phi_a[1:3]
 
@@ -558,7 +559,9 @@ class CRBeamElement(Element):
         # asymmetric deformation mode
         self.phi_a = self._calculate_antisymmetric_deformation_mode()
 
-        self.v[3] = l - L
+        delta_x = self.current_deformation[6:9] - self.current_deformation[0:3]
+        self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
+        # self.v[3] = l - L
 
         self.v[0:3] = self.phi_s
         self.v[4:6] = self.phi_a[1:3]
