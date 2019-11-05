@@ -343,8 +343,8 @@ def animate_result(title, array_time, geometry, force, scaling):
     # call the animator.  blit=True means only re-draw the parts that have
     # changed.
     # frames = number of columns in result
-    anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                   frames=len(array_time[::step])-1, interval=20, blit=True)
+    animation.FuncAnimation(fig, animate, init_func=init,
+                            frames=len(array_time[::step])-1, interval=20, blit=True)
 
     plt.show()
 
@@ -409,10 +409,10 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
     plt.title(plot_title)
 
     # Add a table at the bottom of the axes
-    the_table = ax.table(cellText=table_data,
-                         rowLabels=row_labels,
-                         colLabels=column_labels,
-                         loc='center')
+    ax.table(cellText=table_data,
+            rowLabels=row_labels,
+            colLabels=column_labels,
+            loc='center')
     
     fig.tight_layout()
 
