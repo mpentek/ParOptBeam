@@ -1,11 +1,6 @@
 import numpy as np
-from source.postprocess.skin_model.NodeModel import Node
-from joblib import Parallel, delayed
-import multiprocessing
-
-NUM_OF_CORES = multiprocessing.cpu_count()
-RUN_PARALLEL = False
-
+from source.postprocess.skin_model.node_model import Node
+# from joblib import Parallel, delayed
 
 class LineStructure:
     def __init__(self, params):
@@ -73,11 +68,11 @@ class LineStructure:
             self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
             return self.nodes[i]
 
-        if RUN_PARALLEL:
-            self.nodes = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_dof)(i) for i in range(self.num_of_nodes))
-        else:
-            for i in range(self.num_of_nodes):
-                self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
+        # if RUN_PARALLEL:
+        #     self.nodes = Parallel(n_jobs=NUM_OF_CORES)(delayed(assign_nodal_dof)(i) for i in range(self.num_of_nodes))
+        # else:
+        for i in range(self.num_of_nodes):
+            self.nodes[i].assign_dofs(displacement[i], angular_displacement[i])
 
     def print_line_structure_info(self):
         msg = "=============================================\n"
@@ -101,20 +96,20 @@ class LineStructure:
             merged = [self.nodes[i], self.deformed[0][i], self.deformed[1][i], self.deformed[2][i]]
             return merged
 
-        if RUN_PARALLEL:
-            merged_solution = Parallel(n_jobs=NUM_OF_CORES)(delayed(apply_nodal_transformation)(i)
-                                                            for i in range(self.num_of_nodes))
-            merged_solution = np.asarray(merged_solution).transpose()
-            self.nodes = merged_solution[0]
-            self.deformed[0] = merged_solution[1]
-            self.deformed[1] = merged_solution[2]
-            self.deformed[2] = merged_solution[3]
-        else:
-            for i in range(self.num_of_nodes):
-                self.nodes[i].apply_transformation()
-                self.deformed[0][i] = self.nodes[i].deformed[0]
-                self.deformed[1][i] = self.nodes[i].deformed[1]
-                self.deformed[2][i] = self.nodes[i].deformed[2]
+        # if RUN_PARALLEL:
+        #     merged_solution = Parallel(n_jobs=NUM_OF_CORES)(delayed(apply_nodal_transformation)(i)
+        #                                                     for i in range(self.num_of_nodes))
+        #     merged_solution = np.asarray(merged_solution).transpose()
+        #     self.nodes = merged_solution[0]
+        #     self.deformed[0] = merged_solution[1]
+        #     self.deformed[1] = merged_solution[2]
+        #     self.deformed[2] = merged_solution[3]
+        # else:
+        for i in range(self.num_of_nodes):
+            self.nodes[i].apply_transformation()
+            self.deformed[0][i] = self.nodes[i].deformed[0]
+            self.deformed[1][i] = self.nodes[i].deformed[1]
+            self.deformed[2][i] = self.nodes[i].deformed[2]
 
 
 def test():

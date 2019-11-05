@@ -5,9 +5,9 @@ from matplotlib import animation
 from os.path import join
 import numpy as np
 
-from source.postprocess.skin_model.StructureModel import Structure
-from source.postprocess.skin_model.LineStructureModel import LineStructure
-from source.postprocess.skin_model.Mapper import Mapper
+from source.postprocess.skin_model.skin_components_model import Structure
+from source.postprocess.skin_model.line_structure_model import LineStructure
+from source.postprocess.skin_model.mapper import Mapper
 
 plt.style.use('classic')
 
