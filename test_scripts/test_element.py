@@ -46,7 +46,7 @@ def test_crbeam_element_update_incremental():
         print(msg)
 
     l = element._calculate_current_length()
-    l_sol = np.sqrt(0.8**2 + 0.6**2)
+    l_sol = np.sqrt(0.8 ** 2 + 0.6 ** 2)
 
     try:
         assert l - l_sol < TOL
@@ -85,9 +85,9 @@ def test_crbeam_element_update_incremental():
     r3 = element.Quaternion[3]
 
     T_tmp = np.array([
-            [r0 ** 2 + r1 ** 2 - r2 ** 2 - r3 ** 2, 2 * (r1 * r2 - r0 * r3), 2 * (r1 * r3 + r0 * r2)],
-            [2 * (r1 * r2 + r0 * r3), r0 ** 2 - r1 ** 2 + r2 ** 2 - r3 ** 2, 2 * (r2 * r3 - r0 * r1)],
-            [2 * (r3 * r1 - r0 * r2), 2 * (r3 * r2 + r0 * r1), r0 ** 2 - r1 ** 2 - r2 ** 2 + r3 ** 2],
+        [r0 ** 2 + r1 ** 2 - r2 ** 2 - r3 ** 2, 2 * (r1 * r2 - r0 * r3), 2 * (r1 * r3 + r0 * r2)],
+        [2 * (r1 * r2 + r0 * r3), r0 ** 2 - r1 ** 2 + r2 ** 2 - r3 ** 2, 2 * (r2 * r3 - r0 * r1)],
+        [2 * (r3 * r1 - r0 * r2), 2 * (r3 * r2 + r0 * r1), r0 ** 2 - r1 ** 2 - r2 ** 2 + r3 ** 2],
     ])
 
     nx = T_tmp[:, 0]
@@ -121,24 +121,24 @@ def test_crbeam_element_update_incremental():
     nz = T_sol[:, 2]
     # Eq.(4.60) Klaus, related to the local axis
     S_global = np.array([
-            [0., 0., 0., -nx[0], -2 * nz[0] / l, 2 * ny[0] / l],
-            [0., 0., 0., -nx[1], -2 * nz[1] / l, 2 * ny[1] / l],
-            [0., 0., 0., -nx[2], -2 * nz[2] / l, 2 * ny[2] / l],
-            [-nx[0], -ny[0], -nz[0], 0., ny[0], nz[0]],
-            [-nx[1], -ny[1], -nz[1], 0., ny[1], nz[1]],
-            [-nx[2], -ny[2], -nz[2], 0., ny[2], nz[2]],
-            [0., 0., 0., nx[0], 2 * nz[0] / l, -2 * ny[0] / l],
-            [0., 0., 0., nx[1], 2 * nz[1] / l, -2 * ny[1] / l],
-            [0., 0., 0., nx[2], 2 * nz[2] / l, -2 * ny[2] / l],
-            [nx[0], ny[0], nz[0], 0., ny[0], nz[0]],
-            [nx[1], ny[1], nz[1], 0., ny[1], nz[1]],
-            [nx[2], ny[2], nz[2], 0., ny[2], nz[2]],
+        [0., 0., 0., -nx[0], -2 * nz[0] / l, 2 * ny[0] / l],
+        [0., 0., 0., -nx[1], -2 * nz[1] / l, 2 * ny[1] / l],
+        [0., 0., 0., -nx[2], -2 * nz[2] / l, 2 * ny[2] / l],
+        [-nx[0], -ny[0], -nz[0], 0., ny[0], nz[0]],
+        [-nx[1], -ny[1], -nz[1], 0., ny[1], nz[1]],
+        [-nx[2], -ny[2], -nz[2], 0., ny[2], nz[2]],
+        [0., 0., 0., nx[0], 2 * nz[0] / l, -2 * ny[0] / l],
+        [0., 0., 0., nx[1], 2 * nz[1] / l, -2 * ny[1] / l],
+        [0., 0., 0., nx[2], 2 * nz[2] / l, -2 * ny[2] / l],
+        [nx[0], ny[0], nz[0], 0., ny[0], nz[0]],
+        [nx[1], ny[1], nz[1], 0., ny[1], nz[1]],
+        [nx[2], ny[2], nz[2], 0., ny[2], nz[2]],
     ])
     # Eq.(4.84) Klaus
     dv_sol = np.dot(S_global.T, dp)
     try:
         assert (abs(dv - dv_sol) < TOL).all()
-        print(dv- dv_sol)
+        print(dv - dv_sol)
     except AssertionError:
         msg = "##################################################################################\n"
         msg += "Mistake in deformation mode calculation\n"
@@ -165,7 +165,7 @@ def test_crbeam_element_update_total():
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
     dp_v = [0.0, 0.4, 0.0, 0.0, 0.0, 0.0,
-          0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     element.update_total(dp_v)
     K = element.get_element_stiffness_matrix()
