@@ -39,3 +39,4 @@ params = {
 
 def test_structure_model():
     beam = StraightBeam(params)
+    beam.apply_bc_on_elements()
