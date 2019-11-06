@@ -1,7 +1,6 @@
 import numpy as np
 import json
-from os.path import join, isdir
-from os import makedirs
+from os.path import join as os_join
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -200,26 +199,8 @@ class StaticAnalysis(AnalysisType):
 
         file_name = 'static_analysis' + '.dat'
 
-        writer_utilities.write_result(join(global_folder_path, file_name), file_header,
+        writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
-
-    def write_output_file(self):
-        """"
-        This function writes out the nodal dofs of the deformed state
-
-        """
-        file = open("beam.txt", "w")
-        dict = {}
-        dict["length"] = max(self.structure_model.nodal_coordinates["x0"])
-        dict["num_of_elements"] = len(
-            self.structure_model.nodal_coordinates["x0"])
-        for key, val in self.structure_model.nodal_coordinates.items():
-            dict[key] = val.tolist()
-
-        json_string = json.dumps(dict)
-
-        file.write(json_string)
-        file.close()
 
     def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         """

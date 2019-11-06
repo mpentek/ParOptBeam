@@ -1,8 +1,7 @@
 import numpy as np
 from scipy import linalg
 import json
-from os.path import join, isdir
-from os import makedirs
+from os.path import join as os_join
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -109,7 +108,7 @@ class EigenvalueAnalysis(AnalysisType):
             lines.append(
                 [str(idx+1), '{:.5f}'.format(self.frequency[idx]), '{:.5f}'.format(self.period[idx])])
 
-        writer_utilities.write_table(join(global_folder_path, file_name),
+        writer_utilities.write_table(os_join(global_folder_path, file_name),
                                      file_header,
                                      lines)
 
@@ -172,7 +171,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         file_name = 'eigenvalue_analysis_eigenmode_identification.dat'
 
-        writer_utilities.write_table(join(global_folder_path, file_name),
+        writer_utilities.write_table(os_join(global_folder_path, file_name),
                                      file_header,
                                      lines)
 
@@ -330,7 +329,7 @@ class EigenvalueAnalysis(AnalysisType):
         file_name = 'eigenvalue_analysis_selected_eigenmode_' + \
             str(selected_mode) + '.dat'
 
-        writer_utilities.write_result(join(global_folder_path, file_name), file_header,
+        writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def plot_selected_first_n_eigenmodes(self, pdf_report, display_plot, number_of_modes):
@@ -443,7 +442,7 @@ class EigenvalueAnalysis(AnalysisType):
                                          scaling)
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
-        skin_model_params["result_path"] = join(
+        skin_model_params["result_path"] = os_join(
             "output", self.structure_model.name)
         skin_model_params["eigenvalue_analysis"] = {}
         skin_model_params["eigenvalue_analysis"]["mode"] = str(mode)

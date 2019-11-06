@@ -1,7 +1,6 @@
 import numpy as np
 import json
-from os.path import join, isdir
-from os import makedirs
+from os.path import join as os_join
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -273,7 +272,7 @@ class DynamicAnalysis(AnalysisType):
         file_name = 'dynamic_analysis_result_' + \
                     selected_result + '_for_dof_' + str(dof) + '.dat'
 
-        writer_utilities.write_result_at_dof(join(global_folder_path, file_name),
+        writer_utilities.write_result_at_dof(os_join(global_folder_path, file_name),
                                              file_header,
                                              result_data,
                                              self.array_time)
@@ -365,7 +364,7 @@ class DynamicAnalysis(AnalysisType):
         file_name = 'dynamic_analysis_selected_time_' + \
                     str(selected_time) + 's.dat'
 
-        writer_utilities.write_result(join(global_folder_path, file_name), file_header,
+        writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def plot_selected_step(self, pdf_report, display_plots, selected_step):
@@ -454,7 +453,7 @@ class DynamicAnalysis(AnalysisType):
 
         file_name = 'dynamic_analysis_selected_step_' + str(idx_time) + '.dat'
 
-        writer_utilities.write_result(join(global_folder_path, file_name), file_header,
+        writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def animate_time_history(self):
@@ -507,7 +506,7 @@ class DynamicAnalysis(AnalysisType):
                 stop = self.solver.displacement.shape[0] + idx - step
                 self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                          1:step]
-        skin_model_params["result_path"] = join(
+        skin_model_params["result_path"] = os_join(
             "output", self.structure_model.name)
         skin_model_params["dynamic_analysis"] = {}
         skin_model_params["dynamic_analysis"]["time_step"] = self.parameters['settings']['time']['step']
