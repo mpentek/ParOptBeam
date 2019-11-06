@@ -24,6 +24,7 @@ class CRBeamElement(Element):
         super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
         self.evaluate_relative_importance_of_shear()
+        self.evaluate_torsional_inertia()
 
         # shear coefficients
         self.Psi_y = self._calculate_psi(self.Iy, self.Asz)
@@ -171,11 +172,11 @@ class CRBeamElement(Element):
         L2 = self.L * self.L
 
         Phiz = 0.0
-        Phiy = 1.0
+        Phiy = 0.0
 
-        if self.Asz != 0.0:
-            Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
         if self.Asy != 0.0:
+            Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
+        if self.Asz != 0.0:
             Phiy = (12.0 * self.E * self.Iy) / (L2 * self.G * self.Asz)
 
         # rotational inertia
@@ -184,13 +185,14 @@ class CRBeamElement(Element):
 
         CTy = (self.rho * self.A * self.L) / ((1 + Phiy) * (1 + Phiy))
         CTz = (self.rho * self.A * self.L) / ((1 + Phiz) * (1 + Phiz))
+
         CRy = (self.rho * IRy) / ((1 + Phiy) * (1 + Phiy) * self.L)
         CRz = (self.rho * IRz) / ((1 + Phiz) * (1 + Phiz) * self.L)
 
         # longitudinal forces + torsional moment
         M00 = (1.0 / 3.0) * self.A * self.rho * self.L
         M06 = M00 / 2.0
-        M33 = (self.It * self.L * self.rho) / 3.0
+        M33 = (self.Ip * self.L * self.rho) / 3.0
         M39 = M33 / 2.0
 
         MassMatrix[0, 0] = M00
@@ -201,7 +203,6 @@ class CRBeamElement(Element):
         MassMatrix[9, 9] = M33
 
         temp_bending_mass_matrix = self.build_single_mass_matrix(Phiz, CTz, CRz, self.L, +1)
-
         MassMatrix[1, 1] = temp_bending_mass_matrix[0, 0]
         MassMatrix[1, 5] = temp_bending_mass_matrix[0, 1]
         MassMatrix[1, 7] = temp_bending_mass_matrix[0, 2]
@@ -226,10 +227,9 @@ class CRBeamElement(Element):
         MassMatrix[8, 10] = temp_bending_mass_matrix[2, 3]
         MassMatrix[10, 10] = temp_bending_mass_matrix[3, 3]
 
-        for i in range(self.ElementSize):
-            for j in range(i):
+        for j in range(1, self.ElementSize):
+            for i in range(j):
                 MassMatrix[j, i] = MassMatrix[i, j]
-
         return MassMatrix
 
     def build_single_mass_matrix(self, Phi, CT, CR, L, dir):
