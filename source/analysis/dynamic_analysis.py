@@ -5,9 +5,6 @@ from os import makedirs
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
-from source.solving_strategies.strategies.linear_solver import LinearSolver
-from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
-from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
@@ -158,17 +155,20 @@ class DynamicAnalysis(AnalysisType):
 
         print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
+            from source.solving_strategies.strategies.linear_solver import LinearSolver
             self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
                                        [self.comp_m, self.comp_b, self.comp_k],
                                        initial_conditions, force,
                                        self.structure_model)
         elif self.parameters["settings"]["solver_type"] == "Picard":
+            from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
             self.solver = ResidualBasedPicardSolver(self.array_time, time_integration_scheme, self.dt,
                                                     [self.comp_m, self.comp_b,
                                                         self.comp_k],
                                                     initial_conditions, force,
                                                     self.structure_model)
         elif self.parameters["settings"]["solver_type"] == "NewtonRaphson":
+            from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
             self.solver = ResidualBasedNewtonRaphsonSolver(self.array_time, time_integration_scheme, self.dt,
                                                            [self.comp_m, self.comp_b,
                                                                self.comp_k],

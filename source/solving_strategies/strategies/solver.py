@@ -1,13 +1,5 @@
 import numpy as np
 
-#TODO: move specific import to the relate init_scheme
-from source.solving_strategies.schemes.generalized_alpha_scheme import GeneralizedAlphaScheme
-from source.solving_strategies.schemes.euler12_scheme import Euler12
-from source.solving_strategies.schemes.forward_euler1_scheme import ForwardEuler1
-from source.solving_strategies.schemes.backward_euler1_scheme import BackwardEuler1
-from source.solving_strategies.schemes.runge_kutta4_scheme import RungeKutta4
-from source.solving_strategies.schemes.bdf2_scheme import BDF2
-
 
 class Solver(object):
     def __init__(self,
@@ -55,19 +47,25 @@ class Solver(object):
 
     def _init_scheme(self, time_integration_scheme, comp_model, initial_conditions):
         if time_integration_scheme == "GenAlpha":
+            from source.solving_strategies.schemes.generalized_alpha_scheme import GeneralizedAlphaScheme
             self.scheme = GeneralizedAlphaScheme(
                 self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "Euler12":
+            from source.solving_strategies.schemes.euler12_scheme import Euler12
             self.scheme = Euler12(self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "ForwardEuler1":
+            from source.solving_strategies.schemes.forward_euler1_scheme import ForwardEuler1
             self.scheme = ForwardEuler1(
                 self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "BackwardEuler1":
+            from source.solving_strategies.schemes.backward_euler1_scheme import BackwardEuler1
             self.scheme = BackwardEuler1(
                 self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "RungeKutta4":
+            from source.solving_strategies.schemes.runge_kutta4_scheme import RungeKutta4
             self.scheme = RungeKutta4(self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "BDF2":
+            from source.solving_strategies.schemes.bdf2_scheme import BDF2
             self.scheme = BDF2(self.dt, comp_model, initial_conditions)
         else:
             err_msg = "The requested time integration scheme \"" + time_integration_scheme
