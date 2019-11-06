@@ -30,7 +30,7 @@ def test_crbeam_element_update_incremental():
 
     ke_mat_1 = element._get_element_stiffness_matrix_material()
 
-    dp = [0.2, 0.6, 0.0, 0.1, 0.0, 0.0,
+    dp = [0.2, 0.6, 0.0, 0.0, 0.0, 0.0,
           0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     element.update_incremental(dp)
     new_coords = element._get_current_nodal_position()
@@ -154,6 +154,12 @@ def test_crbeam_element_update_incremental():
     except AssertionError:
         print("Ke_const wrong")
 
+    K = element.get_element_stiffness_matrix()
+    f_test = np.dot(K, dp)
+    q = element.nodal_force_global
+    print(f_test)
+    print(q)
+
     np.set_printoptions(precision=1)
 
 
@@ -164,7 +170,7 @@ def test_crbeam_element_update_total():
     coords = np.array([[100., 0.0, 0.0], [200.0, 0.0, 0.0]])
     element = CRBeamElement(material_params, element_params, coords, 0, '3D')
 
-    dp_v = [0.0, 0.4, 0.0, 0.0, 0.0, 0.0,
+    dp_v = [0.1, 0.4, 0.1, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
     element.update_total(dp_v)
