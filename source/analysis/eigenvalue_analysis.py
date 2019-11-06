@@ -101,6 +101,7 @@ class EigenvalueAnalysis(AnalysisType):
                 considered_modes = len(self.structure_model.dofs_to_keep)
 
         file_header = '# Result of eigenvalue analysis\n'
+        file_header += '# Mode | Eigenfrequency [Hz] | Period [s]\n'
         file_name = 'eigenvalue_analysis_eigenmode_analysis.dat'
 
         lines = []
@@ -127,7 +128,7 @@ class EigenvalueAnalysis(AnalysisType):
                 [str(idx+1), '{:.5f}'.format(self.frequency[idx]), '{:.5f}'.format(self.period[idx])])
 
         plot_title = 'Result of eigenvalue analysis\n'
-        plot_title += 'Mode Eigenfrequency [Hz] Period [s]'
+        plot_title += 'Mode | Eigenfrequency [Hz] | Period [s]'
 
         row_labels = None
         column_labels = ['Mode', 'Eigenfrequency [Hz]', 'Period [s]']
@@ -148,16 +149,23 @@ class EigenvalueAnalysis(AnalysisType):
             type_counter = 0
             for mode_id in mode_ids:
                 m_id = list(mode_id.keys())[0]
-                # TODO use different datatype to avoid list(mode_id.keys())[0]
+                [eff_mass, rel_part] = mode_id[m_id]
 
+                # TODO use different datatype to avoid list(mode_id.keys())[0]
                 type_counter += 1
                 counter += 1
-                lines.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
-                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), mode])
+                lines.append([str(counter), 
+                              str(m_id), 
+                              str(type_counter), 
+                              '{:.3f}'.format(self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), 
+                              mode,
+                              '{:.3f}'.format(eff_mass),
+                              '{:.3f}'.format(rel_part)])
 
         file_header = '# Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
-        file_header += '# ConsideredModesCounter Mode TypeCounter Eigenfrequency [Hz] Type\n'
+        file_header += '# ConsideredModesCounter | Mode | TypeCounter | Eigenfrequency [Hz] | Type |' 
+        file_header += ' EffModalMass [kg] or [kg*m^2] | RelPart | EffModalMass/TotalMass\n'
 
         file_name = 'eigenvalue_analysis_eigenmode_identification.dat'
 
