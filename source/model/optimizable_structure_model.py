@@ -288,9 +288,12 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'longitudinal'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iy = list(e.Iy for e in self.model.elements)
@@ -349,10 +352,11 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'sway_y'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        # TODO use different datatype to avoid list(mode_id.keys())[0]
-        m_id = list(mode_ids[0].keys())[0]
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
@@ -414,10 +418,11 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'sway_z'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        # TODO use different datatype to avoid list(mode_id.keys())[0]
-        m_id = list(mode_ids[0].keys())[0]
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
@@ -480,8 +485,9 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'torsional'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        # TODO use different datatype to avoid list(mode_id.keys())[0]
-        m_id = list(mode_ids[0].keys())[0]
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2

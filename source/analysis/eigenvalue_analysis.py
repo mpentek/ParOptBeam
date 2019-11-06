@@ -145,26 +145,29 @@ class EigenvalueAnalysis(AnalysisType):
 
         lines = []
         counter = 0
-        for mode, mode_ids in self.structure_model.mode_identification_results.items():
+        for mode_type, type_results in self.structure_model.mode_identification_results.items():
             type_counter = 0
-            for mode_id in mode_ids:
-                m_id = list(mode_id.keys())[0]
-                [eff_mass, rel_part] = mode_id[m_id]
 
-                # TODO use different datatype to avoid list(mode_id.keys())[0]
+            # type_results is an ordered list
+            for t_res in type_results:
+                m_id = t_res['mode_id']
+                eff_mass = t_res['eff_modal_mass']
+                rel_part = t_res['rel_participation']
+
                 type_counter += 1
                 counter += 1
-                lines.append([str(counter), 
-                              str(m_id), 
-                              str(type_counter), 
-                              '{:.3f}'.format(self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), 
-                              mode,
+                lines.append([str(counter),
+                              str(m_id),
+                              str(type_counter),
+                              '{:.3f}'.format(
+                                  self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]),
+                              mode_type,
                               '{:.3f}'.format(eff_mass),
                               '{:.3f}'.format(rel_part)])
 
         file_header = '# Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
-        file_header += '# ConsideredModesCounter | Mode | TypeCounter | Eigenfrequency [Hz] | Type |' 
+        file_header += '# ConsideredModesCounter | Mode | TypeCounter | Eigenfrequency [Hz] | Type |'
         file_header += ' EffModalMass [kg] or [kg*m^2] | RelPart | EffModalMass/TotalMass\n'
 
         file_name = 'eigenvalue_analysis_eigenmode_identification.dat'
@@ -177,11 +180,15 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO check to avoid redundancy in EigenvaluAnalysis and StructureModel
         table_data = []
         counter = 0
-        for mode, mode_ids in self.structure_model.mode_identification_results.items():
+        for mode_type, type_results in self.structure_model.mode_identification_results.items():
             type_counter = 0
-            for mode_id in mode_ids:
-                m_id = list(mode_id.keys())[0]
-                [eff_mass, rel_part] = mode_id[m_id]
+
+            # type_results is an ordered list
+            for t_res in type_results:
+                m_id = t_res['mode_id']
+                eff_mass = t_res['eff_modal_mass']
+                rel_part = t_res['rel_participation']
+
                 type_counter += 1
                 counter += 1
                 table_data.append([str(counter),
@@ -189,7 +196,7 @@ class EigenvalueAnalysis(AnalysisType):
                                    str(type_counter),
                                    '{:.3f}'.format(
                                        self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]),
-                                   mode,
+                                   mode_type,
                                    '{:.3f}'.format(eff_mass),
                                    '{:.3f}'.format(rel_part)])
 
@@ -423,7 +430,7 @@ class EigenvalueAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = "Eigenmode: " + str(selected_mode)
+        plot_title = "Eigenmode: " + str(selected_mode+1)
         plot_title += "  Frequency: " + \
             '{0:.2f}'.format(self.frequency[selected_mode])
         plot_title += "  Period: " + \

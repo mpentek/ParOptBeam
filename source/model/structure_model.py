@@ -398,25 +398,33 @@ class StraightBeam(object):
 
                 # TODO: check if robust enough for modes where 2 DoFs are involved
                 if match_for_case_id:
+                    
                     if case_id in self.mode_identification_results:
+                        # using list - so that results are ordered
                         self.mode_identification_results[case_id].append({
-                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
+                            'mode_id' : (selected_mode + 1),
+                            # NOTE: max(...) syntax only valid for current way of identifivation and nullification
+                            'eff_modal_mass' : max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
                             })
                     else:
+                        # using list - so that results are ordered
                         self.mode_identification_results[case_id] = [{
-                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
+                            'mode_id' : (selected_mode + 1),
+                            # NOTE: max(...) syntax only valid for current way of identifivation and nullification
+                            'eff_modal_mass' : max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
                             }]
 
         if print_to_console:
             print('Result of decoupled eigenmode identification for the first ' +
                   str(considered_modes) + ' mode(s)')
 
-            for mode, mode_ids in self.mode_identification_results.items():
-                print('  Mode:', mode)
-                for mode_id in mode_ids:
-                    m_id = list(mode_id.keys())[0]
+            for mode_type, type_results in self.mode_identification_results.items():
+                print('  Mode type:', mode_type)
+                for t_res in type_results:
+                    m_id = t_res['mode_id']
+                    # will have: mode_id, eff_modal_mass, rel_participation
                     # TODO use different datatype to avoid list(mode_id.keys())[0]
                     print('    Eigenform ' + str(m_id) + ' with eigenfrequency ' + '{:.2f}'.format(
                         self.eig_freqs[self.eig_freqs_sorted_indices[m_id - 1]]) + ' Hz')
