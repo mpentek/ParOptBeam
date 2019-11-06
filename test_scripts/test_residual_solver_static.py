@@ -13,7 +13,6 @@ plt.rc('axes', prop_cycle=default_cycler)
 
 np.set_printoptions(suppress=False, precision=4)
 
-
 params = {
     "name": "CaarcBeamPrototypeOptimizable",
     "domain_size": "3D",
@@ -68,52 +67,20 @@ f_ext = beam.apply_bc_by_reduction(f_ext, 'column').T
 
 
 def test_newton_raphson_solver():
-
     solver = ResidualBasedNewtonRaphsonSolver(array_time, scheme, dt,
-                                       [beam.comp_m, beam.comp_b, beam.comp_k],
-                                       [u0, v0, a0], f_ext, beam)
+                                              [beam.comp_m, beam.comp_b, beam.comp_k],
+                                              [u0, v0, a0], f_ext, beam)
 
     solver.solve()
 
     reaction = solver.dynamic_reaction[:, 0]
-    print("\nreaction = ", reaction)
+    reaction_kratos = np.array([6.0974569e-09, -0.0000000e+00, -2.6529294e-05,
+                                -0.0000000e+00, -2.1223438e-05, -0.0000000e+00])
+    print("\nreaction        = ", reaction)
+    print("reaction_kratos = ", reaction_kratos)
 
     displacement = solver.scheme.get_displacement()
     displacement_kratos = np.array([1.0226219e-07, 0.0000000e+00, 2.7839541e-04,
-                                    0.0000000e+00, -3.4799422e-04, 0.0000000e+00 ])
+                                    0.0000000e+00, -3.4799422e-04, 0.0000000e+00])
     print("\ndisplacement        = ", displacement)
     print("displacement_kratos = ", displacement_kratos)
-
-    # new_displacement = solver.scheme.get_displacement()
-    # new_displacement = solver.structure_model.recuperate_bc_by_extension(new_displacement, 'column_vector')
-    # solver.update_total(new_displacement)
-    # r = solver.calculate_residual(solver.force[:, 0])
-    # print("ru = " + str(r))
-    #
-    # dp = solver.calculate_increment(r)
-    # dp = solver.structure_model.recuperate_bc_by_extension(dp, 'column_vector')
-    # print("\ndp =", dp)
-    #
-    # solver.update_incremental(dp)
-    #
-    # phi_s = solver.structure_model.elements[0]._calculate_symmetric_deformation_mode()
-    # print("\nPhi_s = ", phi_s)
-    # phi_s = solver.structure_model.elements[0].phi_s
-    # print("Phi_s + d_phi_s = ", phi_s)
-    # phi_s_kratos = np.array([0., 0., 0.])
-    # print("Phi_s_kratos = ", phi_s_kratos)
-    #
-    # phi_a = solver.structure_model.elements[0]._calculate_antisymmetric_deformation_mode()
-    # print("\nPhi_a = ", phi_a)
-    # phi_a = solver.structure_model.elements[0].phi_a
-    # print("Phi_a + d_phi_a = ", phi_a)
-    # phi_a_kratos = np.array([0, 0.000463992, 0])
-    # print("Phi_a_kratos = ", phi_a_kratos)
-    #
-    # v = solver.structure_model.elements[0].v
-    # print("\nv = ", v)
-    # v_kratos = np.array([0, 0, 0, 3.22933e-08, 0.000463992, 0])
-    # print("v_kratos = ", v_kratos)
-
-    # plt.plot(array_time, solver.displacement[1, :])
-    # plt.show()
