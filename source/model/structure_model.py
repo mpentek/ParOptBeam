@@ -33,6 +33,7 @@ from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
 from source.element.BernouliBeamElement import BernoulliBeamElement
 from source.element.CRBeamElement import CRBeamElement
 
+
 class StraightBeam(object):
     """
     A 2D/3D prismatic homogeneous isotropic Timoshenko beam element
@@ -71,6 +72,8 @@ class StraightBeam(object):
         # also check redundancy with eigenvalue analysis
 
         # validating and assign model parameters
+        self.bc_element_dofs = []
+        self.bc_dofs = []
         validate_and_assign_defaults(DEFAULT_SETTINGS, parameters)
 
         # TODO: add domain size check
@@ -256,9 +259,17 @@ class StraightBeam(object):
         # TODO: make BC handling cleaner and compact
         bc = '\"' + \
              self.parameters["boundary_conditions"] + '\"'
+
         if bc in AVAILABLE_BCS:
-            # NOTE: create a copy of the list - useful if some parametric study is done
-            self.bc_dofs = BC_DOFS[self.domain_size][bc][:]
+            self.bc_element_index = BC_ELEMENT[bc]
+
+            for i in self.bc_element_index:
+                if i == -1:
+                    bc_end = [-(x + 1) for x in BC_DOFS[self.domain_size][bc][i]]
+                    self.bc_dofs += bc_end
+                else:
+                    self.bc_dofs += BC_DOFS[self.domain_size][bc][i]
+                self.bc_element_dofs.append(BC_DOFS[self.domain_size][bc][i])
         else:
             err_msg = "The BC for input \"" + \
                       self.parameters["boundary_conditions"]
@@ -278,6 +289,10 @@ class StraightBeam(object):
 
         # only take bc's of interest
         self.dofs_to_keep = list(set(self.all_dofs_global) - set(bc_dofs_global))
+
+    def apply_bc_on_elements(self):
+        for i in self.bc_element_index:
+            self.elements[i].apply_boundary_condition(self.bc_element_dofs[i])
 
     def apply_point_values(self):
         # point stiffness and point masses at respective dof for the outrigger
