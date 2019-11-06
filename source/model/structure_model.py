@@ -1,10 +1,13 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import linalg
+from os.path import join as os_join
 
 from source.auxiliary.auxiliary_functionalities import evaluate_polynomial
-from source.auxiliary.global_definitions import *
+import source.auxiliary.global_definitions as GD
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+import source.postprocess.plotter_utilities as plotter_utilities
+import source.postprocess.writer_utilitites as writer_utilities
 
 
 class StraightBeam(object):
@@ -40,12 +43,20 @@ class StraightBeam(object):
         6. test unit how many elements it works, also specific cases with analystical solutions
     """
 
+    # using these as default or fallback settings
+    DEFAULT_SETTINGS = {
+        "name": "this_model_name",
+        "domain_size": "3D",
+        "system_parameters": {},
+        "boundary_conditions": "fixed-free",
+        "elastic_fixity_dofs": {}}
+
     def __init__(self, parameters):
         # TODO: add number of considered modes for output parameters upper level
         # also check redundancy with eigenvalue analysis
 
         # validating and assign model parameters
-        validate_and_assign_defaults(DEFAULT_SETTINGS, parameters)
+        validate_and_assign_defaults(StraightBeam.DEFAULT_SETTINGS, parameters)
 
         # TODO: add domain size check
         self.domain_size = parameters["domain_size"]
@@ -86,7 +97,6 @@ class StraightBeam(object):
         self.n_elements = self.parameters['n_el']
         self.n_nodes = self.n_elements + 1
         # placeholder for solutions
-        self.nodal_coordinates = {}
         self.lx_i = self.parameters['lx'] / self.parameters['n_el']
         self.nodal_coordinates = {}
         self.elements = []
@@ -97,22 +107,22 @@ class StraightBeam(object):
         self.point_mass = {'idxs': [], 'vals': []}
 
         # matrices
-        self.m = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                           self.n_nodes * DOFS_PER_NODE[self.domain_size]))
-        self.comp_m = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
-        self.k = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                           self.n_nodes * DOFS_PER_NODE[self.domain_size]))
-        self.comp_k = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
-        self.b = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                           self.n_nodes * DOFS_PER_NODE[self.domain_size]))
-        self.comp_b = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        self.m = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
+        self.comp_m = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
+        self.k = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
+        self.comp_k = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
+        self.b = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                           self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
+        self.comp_b = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
 
         # boundary conditions
         self.all_dofs_global = np.arange(
-            self.n_nodes * DOFS_PER_NODE[self.domain_size])
+            self.n_nodes * GD.DOFS_PER_NODE[self.domain_size])
 
         self.elastic_bc_dofs = {}
         self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
@@ -251,15 +261,15 @@ class StraightBeam(object):
         # TODO: make BC handling cleaner and compact
         bc = '\"' + \
              self.parameters["boundary_conditions"] + '\"'
-        if bc in AVAILABLE_BCS:
+        if bc in GD.AVAILABLE_BCS:
             # NOTE: create a copy of the list - useful if some parametric study is done
-            self.bc_dofs = BC_DOFS[self.domain_size][bc][:]
+            self.bc_dofs = GD.BC_DOFS[self.domain_size][bc][:]
         else:
             err_msg = "The BC for input \"" + \
                       self.parameters["boundary_conditions"]
             err_msg += "\" is not available \n"
             err_msg += "Choose one of: "
-            err_msg += ', '.join(AVAILABLE_BCS)
+            err_msg += ', '.join(GD.AVAILABLE_BCS)
             raise Exception(err_msg)
 
         self.apply_elastic_bcs()
@@ -282,9 +292,9 @@ class StraightBeam(object):
                 outtriger_id = int(self.parameters['lx'] / self.lx_i)
             else:
                 outtriger_id = int(values['bounds'][1] / self.lx_i)
-            id_val = outtriger_id * DOFS_PER_NODE[self.domain_size]
+            id_val = outtriger_id * GD.DOFS_PER_NODE[self.domain_size]
             # affects only diagonal entries and for translation al DOF and not rotational DOF
-            for i in range(int(np.ceil(DOFS_PER_NODE[self.domain_size] / 2))):
+            for i in range(int(np.ceil(GD.DOFS_PER_NODE[self.domain_size] / 2))):
                 self.point_stiffness['idxs'].append([id_val + i, id_val + i])
                 self.point_stiffness['vals'].append(values['c_k'])
                 self.point_mass['idxs'].append([id_val + i, id_val + i])
@@ -335,10 +345,10 @@ class StraightBeam(object):
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[i]
 
-            for idx, label in zip(list(range(DOFS_PER_NODE[self.domain_size])),
-                                  DOF_LABELS[self.domain_size]):
+            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
+                                  GD.DOF_LABELS[self.domain_size]):
                 start = idx
-                step = DOFS_PER_NODE[self.domain_size]
+                step = GD.DOFS_PER_NODE[self.domain_size]
                 stop = self.eigen_modes_raw.shape[0] + idx - step
                 decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
                                                                    1:step][:, selected_mode]
@@ -357,7 +367,7 @@ class StraightBeam(object):
                 # TODO: for now using element mass (as constant) and nodal dof value - make consistent
                 # IMPORTANT
                 if label in ['x', 'y', 'z', 'a']:
-                    if rel_contrib[label] > THRESHOLD:
+                    if rel_contrib[label] > GD.THRESHOLD:
                         eff_modal_numerator = 0.0
                         eff_modal_denominator = 0.0
                         total_mass = 0.0
@@ -415,11 +425,11 @@ class StraightBeam(object):
 
             selected_mode = self.eig_freqs_sorted_indices[i]
 
-            for case_id in MODE_CATEGORIZATION[self.domain_size]:
+            for case_id in GD.MODE_CATEGORIZATION[self.domain_size]:
                 match_for_case_id = False
 
-                for dof_contribution_id in MODE_CATEGORIZATION[self.domain_size][case_id]:
-                    if self.decomposed_eigenmodes['rel_contribution'][i][dof_contribution_id] > THRESHOLD:
+                for dof_contribution_id in GD.MODE_CATEGORIZATION[self.domain_size][case_id]:
+                    if self.decomposed_eigenmodes['rel_contribution'][i][dof_contribution_id] > GD.THRESHOLD:
                         match_for_case_id = True
 
                 # TODO: check if robust enough for modes where 2 DoFs are involved
@@ -487,36 +497,104 @@ class StraightBeam(object):
                 if val['bounds'][0] <= running_coord <= self.parameters['lx']:
                     return evaluate_polynomial(running_coord - val['bounds'][0], val[characteristic_identifier])
 
-    def plot_model_properties(self, pdf_report, display_plot, print_to_console=False):
+    def write_properties(self, global_folder_path):
+        lines = []
 
-        if print_to_console:
-            print('x: ', ['{:.2f}'.format(x)
-                          for x in self.parameters['x']], '\n')
-            print('ly: ', ['{:.2f}'.format(x)
-                           for x in self.parameters['ly']], '\n')
-            print('lz: ', ['{:.2f}'.format(x)
-                           for x in self.parameters['lz']], '\n')
+        for idx, elem in enumerate(self.elements):
 
-            fig = plt.figure(1)
-            plt.plot(self.parameters['x'], self.parameters['ly'],
-                     'r-', marker='*', label='ly')
-            plt.plot(self.parameters['x'], self.parameters['lz'],
-                     'g-', marker='^', label='lz')
-            plt.legend()
-            plt.grid()
+            lines.append([str(idx),
+                          '{:.3f}'.format(self.nodal_coordinates["x0"][idx]),
+                          '{:.3f}'.format(self.nodal_coordinates["x0"][idx+1]),
+                          '{:.3f}'.format(self.parameters['x_mid'][idx]),
+                          '{:.3f}'.format(self.parameters['ly'][idx]),
+                          '{:.3f}'.format(self.parameters['lz'][idx]),
+                          '{:.3f}'.format(elem.A),
+                          '{:.3f}'.format(elem.Asy),
+                          '{:.3f}'.format(elem.Asz),
+                          '{:.3f}'.format(elem.Iy),
+                          '{:.3f}'.format(elem.Iz),
+                          '{:.3f}'.format(elem.It),
+                          '{:.3f}'.format(elem.Ip),
+                          '{:.3f}'.format(elem.Py),
+                          '{:.3f}'.format(elem.Pz),
+                          '{:.3f}'.format(elem.A * elem.rho * elem.L)
+                          ])
 
-            if pdf_report is not None:
-                pdf_report.savefig()
-                plt.close(fig)
+        file_header = '# Properties of the structure model\n'
+        file_header += '# ElemNr |  x_start [m] | x_end [m] | x_mid [m] | '
+        file_header += 'Cross section ly [m] | Cross section lz [m] | '
+        file_header += 'Area [m^2] | Shear area_sy  [m^2] | Shear area_sz  [m^2] | '
+        file_header += 'Moment of inertia Iy [m^4] | Moment of inertia Iz [m^4] | '
+        file_header += 'Torsion constant It  [m^4] | Polar moment of inertia Ip [m^4] | '
+        file_header += 'Relative shear factor Py  [-] | Relative shear factor Pz  [-] | '
+        file_header += 'Mass m  [kg]\n'
 
-            for e in self.elements:
-                print('a: ', '{:.2f}'.format(e.A), '\n')
-                print('a_sy: ', '{:.2f}'.format(e.Asy), '\n')
-                print('a_sz: ', '{:.2f}'.format(e.Asz), '\n')
-                print('iy: ', '{:.2f}'.format(e.Iy), '\n')
-                print('iz: ', '{:.2f}'.format(e.Iz), '\n')
-                print('ip: ', '{:.2f}'.format(e.Ip), '\n')
-                print('it: ', '{:.2f}'.format(e.It), '\n')
+        file_name = 'structure_model_properties.dat'
+
+        writer_utilities.write_table(os_join(global_folder_path, file_name),
+                                     file_header,
+                                     lines)
+
+    def plot_properties(self, pdf_report, display_plot):
+
+        plot_title = []
+        struct_property_data = []
+        plot_legend = []
+        plot_style = []
+
+        #
+        plot_title.append("Cross section length over running coordinate x")
+        struct_property_data.append([{'x': self.nodal_coordinates["x0"], 'y': self.parameters['ly']},
+                                     {'x': self.nodal_coordinates["x0"], 'y': self.parameters['lz']}])
+        plot_legend.append(['ly [m]', 'lz[m]'])
+        plot_style.append(['-ko', '--ro'])
+
+        #
+        plot_title.append("Area(s) over running coordinate x")
+        struct_property_data.append([{'x': self.parameters['x_mid'], 'y': [elem.A for elem in self.elements]},
+                                     {'x': self.parameters['x_mid'], 'y': [
+                                         elem.Asy for elem in self.elements]},
+                                     {'x': self.parameters['x_mid'], 'y': [elem.Asz for elem in self.elements]}])
+        plot_legend.append(['A [m^2]', 'Asy [m^2]', 'Asz [m^2]'])
+        plot_style.append(['-ko', '--ro', '-.bo'])
+
+        #
+        plot_title.append("Moment(s) of inertia over running coordinate x")
+        struct_property_data.append([{'x': self.parameters['x_mid'], 'y': [elem.Iy for elem in self.elements]},
+                                     {'x': self.parameters['x_mid'], 'y': [elem.Iz for elem in self.elements]}])
+        plot_legend.append(['Iy [m^4]', 'Iz [m^4]'])
+        plot_style.append(['-ko', '--ro'])
+
+        #
+        plot_title.append("Torsional properties over running coordinate x")
+        struct_property_data.append([{'x': self.parameters['x_mid'], 'y': [elem.It for elem in self.elements]},
+                                     {'x': self.parameters['x_mid'], 'y': [elem.Ip for elem in self.elements]}])
+        plot_legend.append(['It [m^4]', 'Ip [m^4]'])
+        plot_style.append(['-ko', '--ro'])
+
+        #
+        plot_title.append(
+            "Relative importance of shear over running coordinate x")
+        struct_property_data.append([{'x': self.parameters['x_mid'], 'y': [elem.Py for elem in self.elements]},
+                                     {'x': self.parameters['x_mid'], 'y': [elem.Pz for elem in self.elements]}])
+        plot_legend.append(['Py [-]', 'Pz [-]'])
+        plot_style.append(['-ko', '--ro'])
+
+        #
+        plot_title.append("Mass over running coordinate x")
+        struct_property_data.append([{'x': self.parameters['x_mid'], 'y': [
+                                    elem.A * elem.rho * elem.L for elem in self.elements]}])
+        plot_legend.append(['m [kg]'])
+        plot_style.append(['-ko'])
+
+        for idx in range(len(plot_title)):
+
+            plotter_utilities.plot_properties(pdf_report,
+                                              display_plot,
+                                              plot_title[idx],
+                                              struct_property_data[idx],
+                                              plot_legend[idx],
+                                              plot_style[idx])
 
     def apply_bc_by_reduction(self, matrix, axis='both'):
         '''
@@ -606,36 +684,36 @@ class StraightBeam(object):
     # NOTE: not used for now
     def _assemble_el_into_glob(self, el_matrix):
         # global stiffness matrix initialization with zeros
-        glob_matrix = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        glob_matrix = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
 
         # fill global stiffness matrix entries
         for i in range(self.parameters['n_el']):
             glob_matrix[
-                DOFS_PER_NODE[self.domain_size] * i: DOFS_PER_NODE[self.domain_size] * i +
-                DOFS_PER_NODE[
-                    self.domain_size] * NODES_PER_LEVEL,
-                DOFS_PER_NODE[self.domain_size] * i: DOFS_PER_NODE[self.domain_size] * i +
-                DOFS_PER_NODE[
-                    self.domain_size] * NODES_PER_LEVEL] += el_matrix
+                GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL,
+                GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
         return glob_matrix
 
     def _get_mass(self):
 
         # global stiffness matrix initialization with zeros
-        glob_matrix = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        glob_matrix = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
 
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_mass_matrix()
             glob_matrix[
-                DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                DOFS_PER_NODE[
-                    self.domain_size] * NODES_PER_LEVEL,
-                DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                DOFS_PER_NODE[
-                    self.domain_size] * NODES_PER_LEVEL] += el_matrix
+                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL,
+                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
 
         for idx, val in zip(self.point_mass['idxs'], self.point_mass['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
@@ -644,18 +722,18 @@ class StraightBeam(object):
 
     def _get_stiffness(self):
         # global stiffness matrix initialization with zeros
-        glob_matrix = np.zeros((self.n_nodes * DOFS_PER_NODE[self.domain_size],
-                                self.n_nodes * DOFS_PER_NODE[self.domain_size]))
+        glob_matrix = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
+                                self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
 
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
             glob_matrix[
-                DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL,
-                DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                DOFS_PER_NODE[
-                    self.domain_size] * NODES_PER_LEVEL] += el_matrix
+                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
+                GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL,
+                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
 
         for idx, val in zip(self.point_stiffness['idxs'], self.point_stiffness['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val

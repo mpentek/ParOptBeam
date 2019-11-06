@@ -21,6 +21,7 @@ class AnalysisController(object):
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
         "global_output_folder": "some/path",
+        "model_properties": {},
         "report_options": {},
         "runs": [],
         "skin_model_parameters": {}}
@@ -111,8 +112,10 @@ class AnalysisController(object):
             analysis.solve()
 
     def postprocess(self):
-        self.model.plot_model_properties(
-            self.report_pdf, self.display_plots, self.skin_model_params)
+        if self.parameters['model_properties']['write']:
+            self.model.write_properties(self.global_output_folder)
+        if self.parameters['model_properties']['plot']:
+            self.model.plot_properties(self.report_pdf, self.display_plots)
 
         for analysis in self.analyses:
             analysis.postprocess(self.global_output_folder, self.report_pdf,

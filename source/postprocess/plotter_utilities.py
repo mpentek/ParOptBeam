@@ -64,6 +64,25 @@ plot_limits = {"x":[... , ...]
 '''
 
 
+def plot_properties(pdf_report, display_plot, plot_title, struct_property_data, plot_legend, plot_style):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.title(plot_title)
+
+    for idx in range(len(struct_property_data)):
+        ax.plot(struct_property_data[idx]['x'], struct_property_data[idx]
+                ['y'], plot_style[idx], label=plot_legend[idx])
+    ax.legend()
+
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
+
+    if display_plot:
+        plt.show()
+
+
 def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, n_data):
 
     # default parameter

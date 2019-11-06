@@ -55,6 +55,11 @@
                 "corresponding_eigenfrequencies": [0.20,0.23,0.40]}
         }},
     "analyses_parameters":{
+        "global_output_folder" : "some/path",
+        "model_properties": {
+            "write": true,
+            "plot":true
+        },
         "report_options": {
             "combine_plots_into_pdf" : true,
             "display_plots_on_screen" : false,

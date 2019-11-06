@@ -36,11 +36,3 @@ MODE_CATEGORIZATION = {
 NODES_PER_LEVEL = 2
 
 THRESHOLD = 1e-8
-
-# using these as default or fallback settings
-DEFAULT_SETTINGS = {
-    "name": "this_model_name",
-    "domain_size": "3D",
-    "system_parameters": {},
-    "boundary_conditions": "fixed-free",
-    "elastic_fixity_dofs": {}}
