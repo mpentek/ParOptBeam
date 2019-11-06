@@ -81,6 +81,6 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         return q
 
     def calculate_residual(self, f_ext):
-        q = self._compute_reaction
+        q = self._compute_reaction()
         r = f_ext - q
         return r
