@@ -136,7 +136,9 @@ class CRBeamElement(Element):
 
         # updating deformation mode vector
         delta_x = self.current_deformation[6:9] - self.current_deformation[0:3]
-        self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
+        # self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
+        self.v[3] = l - self.L
+
         self.v[0:3] = self.phi_s
         self.v[4:6] = self.phi_a[1:3]
 
@@ -565,7 +567,6 @@ class CRBeamElement(Element):
         return S
 
     def _calculate_local_nodal_forces(self):
-
         # element force t
         element_forces_t = self._calculate_element_forces()
 
@@ -584,8 +585,8 @@ class CRBeamElement(Element):
         self.phi_a = self._calculate_antisymmetric_deformation_mode()
 
         delta_x = self.current_deformation[6:9] - self.current_deformation[0:3]
-        self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
-        # self.v[3] = l - L
+        # self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
+        self.v[3] = l - L
 
         self.v[0:3] = self.phi_s
         self.v[4:6] = self.phi_a[1:3]
