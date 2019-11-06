@@ -13,7 +13,7 @@ from source.auxiliary.global_definitions import *
 
 # TODO: take these values as user input
 # stopping criteria
-TOL = 1.e-5
+TOL = 1e-8
 # maximum iteration
 MAX_IT = 10
 
@@ -50,7 +50,8 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         while abs(np.linalg.norm(r)) > TOL and nr_it < MAX_IT:
             nr_it += 1
             print("Nonlinear iteration: ", str(nr_it))
-            print("ru = {:.2e}".format(abs(np.linalg.norm(r))))
+            print("r = {:.2e}".format(abs(np.linalg.norm(r))))
+            # print("r = ", r)
             dp = self.calculate_increment(r)
             dp = self.structure_model.recuperate_bc_by_extension(dp, 'column_vector')
 
@@ -69,18 +70,11 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
         return dp
 
     def _compute_reaction(self):
-        q = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
-
-        for e in self.structure_model.elements:
-            start_index = DOFS_PER_NODE[e.domain_size] * e.index
-            end_index = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
-
-            q[start_index:end_index] += e.nodal_force_global
-
-        q = self.structure_model.apply_bc_by_reduction(q, 'column_vector')
-        return q
+        f_ext = self.force[:, self.step]
+        reaction = f_ext - self.get_internal_force_from_element()
+        return reaction
 
     def calculate_residual(self, f_ext):
-        q = self._compute_reaction()
+        q = self.get_internal_force_from_element()
         r = f_ext - q
         return r
