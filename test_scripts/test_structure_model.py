@@ -14,7 +14,7 @@ params = {
             "density": 7850.0,
             "youngs_modulus": 2069000000,
             "poisson_ratio": 0.29,
-            "damping_ratio": 0.05
+            "damping_ratio": 1
         },
         "geometry": {
             "length_x": 1.2,
@@ -39,4 +39,3 @@ params = {
 
 def test_structure_model():
     beam = StraightBeam(params)
-    beam.apply_bc_on_elements()
