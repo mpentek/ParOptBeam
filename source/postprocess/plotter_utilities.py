@@ -379,7 +379,7 @@ def plot_dynamic_result(pdf_report, display_plot, plot_title, result_data, array
              result_data,
              color=LINE_TYPE_SETUP["color"][1],
              linestyle=LINE_TYPE_SETUP["linestyle"][1],
-             marker=LINE_TYPE_SETUP["marker"][1],
+             marker= "None",#LINE_TYPE_SETUP["marker"][1],
              markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
              markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
              markersize=LINE_TYPE_SETUP["markersize"][1])
