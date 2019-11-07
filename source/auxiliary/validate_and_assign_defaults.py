@@ -1,16 +1,14 @@
-# ===============================================================================
 '''
-Project:Lecture - Structural Wind Engineering WS18-19 
-        Chair of Structural Analysis @ TUM - R. Wuchner, M. Pentek
+from: 
 
-        Kratos Multiphysics - current developments of the EmpireApplication
-        for multiphysics coupling
-        
-        https://github.com/KratosMultiphysics/Kratos
+    Kratos Multiphysics - current developments of the EmpireApplication
+    for multiphysics coupling
+
+    https://github.com/KratosMultiphysics/Kratos
 
 Last update: 16.11.2018
 '''
-# ===============================================================================
+
 import json
 
 

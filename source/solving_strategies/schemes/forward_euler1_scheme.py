@@ -42,8 +42,11 @@ class ForwardEuler1(TimeIntegrationScheme):
         LHS = self.M
 
         # calculates self.un0,vn0,an0
-        RHS  = -self.dt * np.dot(self.B, self.un1) + self.dt * np.dot(self.B,self.un2)
-        RHS += -self.dt ** 2 * np.dot (self.K, self.un2) + np.dot(self.M, (2 * self.un1 - self.un2))
+        RHS = -self.dt * np.dot(self.B, self.un1) + \
+            self.dt * np.dot(self.B, self.un2)
+        RHS += -self.dt ** 2 * \
+            np.dot(self.K, self.un2) + \
+            np.dot(self.M, (2 * self.un1 - self.un2))
         RHS += self.dt ** 2 * f1
         self.u1 = np.linalg.solve(LHS, RHS)
         self.v1 = self.predict_velocity(self.u1)

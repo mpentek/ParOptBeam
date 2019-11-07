@@ -1,26 +1,3 @@
-# ===============================================================================
-'''
-Project:Lecture - Structural Wind Engineering WS17-18
-        Chair of Structural Analysis @ TUM - A. Michalski, R. Wuchner, M. Pentek
-
-        Structure model base class and derived classes for related structures
-
-Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, catharina.czech@tum.de, peter.kupas@tum.de
-
-Note:   UPDATE: The script has been written using publicly available information and
-        data, use accordingly. It has been written and tested with Python 2.7.9.
-        Tested and works also with Python 3.4.3 (already see differences in print).
-        Module dependencies (-> line 61-74):
-            python
-            numpy
-            sympy
-            matplotlib.pyplot
-
-Created on:  22.11.2017
-Last update: 09.07.2018
-'''
-# ===============================================================================
-
 import numpy as np
 from scipy import linalg
 # TODO only use minimize, make dependency on minimize_scalar work with that instead
@@ -79,7 +56,7 @@ class OptimizableStraightBeam(object):
         "density_for_total_mass": 0.0,
         "youngs_modulus_for": {},
         "geometric_properties_for": {}
-                }
+    }
 
     def __init__(self, model, parameters):
 
@@ -90,7 +67,8 @@ class OptimizableStraightBeam(object):
             raise Exception(err_msg)
         self.model = model
 
-        validate_and_assign_defaults(OptimizableStraightBeam.DEFAULT_SETTINGS, parameters)
+        validate_and_assign_defaults(
+            OptimizableStraightBeam.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
         print('BEFORE OPTIMIZATION')
@@ -171,7 +149,7 @@ class OptimizableStraightBeam(object):
                 #     bending_shear_identifier = self.parameters["geometric_properties_for"]["partition_shear_bending"][0]
                 # except:
                 #     bending_shear_identifier = 0
-                # This is not being used currently. 
+                # This is not being used currently.
 
                 self.adjust_sway_y_stiffness_for_target_eigenfreq(
                     target_freq, target_mode, True)
@@ -214,7 +192,6 @@ class OptimizableStraightBeam(object):
             e.E = multiplier_fctr * initial_e
 
             # NOTE: do not forget to update G and further dependencies
-            e.G = e.E / 2 / (1 + e.nu)
             e.evaluate_relative_importance_of_shear()
 
         # re-evaluate
@@ -262,7 +239,7 @@ class OptimizableStraightBeam(object):
         initial_a = list(e.A for e in self.model.elements)
         # assuming a linear dependency of shear areas
         initial_a_sy = list(e.Asy for e in self.model.elements)
-        initial_a_sz = list (e.Asz for e in self.model.elements)
+        initial_a_sz = list(e.Asz for e in self.model.elements)
 
         # using partial to fix some parameters for the
         optimizable_function = partial(self.longitudinal_geometric_stiffness_objective_function,
@@ -299,7 +276,7 @@ class OptimizableStraightBeam(object):
             # NOTE: do not forget to update further dependencies
             e.evaluate_relative_importance_of_shear()
 
-        # NOTE: it seems to need total mass and in general difficult/insesitive to tuning...
+        # NOTE: it seems to need total mass and in general difficult/insensitive to tuning...
         # TODO:
         # self.adjust_density_for_target_total_mass(target_total_mass)
 
@@ -311,9 +288,12 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'longitudinal'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[mode_ids[0]-1]] - target_freq)**2 / target_freq**2
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_y_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_iy = list(e.Iy for e in self.model.elements)
@@ -323,17 +303,19 @@ class OptimizableStraightBeam(object):
         optimizable_function = partial(self.bending_y_geometric_stiffness_objective_function,
                                        target_freq,
                                        target_mode,
-                                       initial_iy, 
+                                       initial_iy,
                                        initial_a_sz)
         init_guess = (1.0, 1.0)
 
-        bnds_iy = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/8,8)
-        bnds_a_sz = (0.4,1.0)#(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
+        bnds_iy = (1/OptimizableStraightBeam.OPT_FCTR,
+                   OptimizableStraightBeam.OPT_FCTR)  # (1/8,8)
+        # (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
+        bnds_a_sz = (0.4, 1.0)
 
         minimization_result = minimize(optimizable_function,
-                                              init_guess,
-                                              method='L-BFGS-B',#'SLSQP',#
-                                              bounds=(bnds_iy,bnds_a_sz))
+                                       init_guess,
+                                       method='L-BFGS-B',  # 'SLSQP',#
+                                       bounds=(bnds_iy, bnds_a_sz))
 
         # returning only one value!
         opt_fctr = minimization_result.x
@@ -343,14 +325,14 @@ class OptimizableStraightBeam(object):
             print()
             print('OPTIMIZED iy: ', ', '.join(
                 [str(opt_fctr[0] * val) for val in initial_iy]))
-            print('INITIAL a_sz:', ', '.join([str(val) for val in initial_a_sz]))
+            print('INITIAL a_sz:', ', '.join(
+                [str(val) for val in initial_a_sz]))
             print()
             print('OPTIMIZED a_sz: ', ', '.join(
                 [str(opt_fctr[1] * val) for val in initial_a_sz]))
             print()
             print('FACTORS: ', ', '.join([str(val) for val in opt_fctr]))
             print()
-            
 
     def bending_y_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_iy, initial_a_sz, multiplier_fctr):
 
@@ -370,10 +352,11 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'sway_y'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        # TODO use different datatype to avoid list(mode_id.keys())[0]
-        m_id = list(mode_ids[0].keys())[0]
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_sway_z_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
@@ -385,19 +368,19 @@ class OptimizableStraightBeam(object):
         optimizable_function = partial(self.bending_z_geometric_stiffness_objective_function,
                                        target_freq,
                                        target_mode,
-                                       initial_iz, 
+                                       initial_iz,
                                        initial_a_sy)
         initi_guess = (1.0, 1.0)
 
-        bnds_iz = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/8,8)
-        bnds_a_sy = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
-
-
+        bnds_iz = (1/OptimizableStraightBeam.OPT_FCTR,
+                   OptimizableStraightBeam.OPT_FCTR)  # (1/8,8)
+        bnds_a_sy = (1/OptimizableStraightBeam.OPT_FCTR,
+                     OptimizableStraightBeam.OPT_FCTR)  # (1/15,15)
 
         minimization_result = minimize(optimizable_function,
-                                              initi_guess,
-                                              method='L-BFGS-B',
-                                              bounds=(bnds_iz,bnds_a_sy))
+                                       initi_guess,
+                                       method='L-BFGS-B',
+                                              bounds=(bnds_iz, bnds_a_sy))
 
         # returning only one value!
         opt_iz_fctr = minimization_result.x
@@ -408,7 +391,8 @@ class OptimizableStraightBeam(object):
             print('OPTIMIZED iz: ', ', '.join(
                 [str(opt_iz_fctr[0] * val) for val in initial_iz]))
             print()
-            print('INITIAL a_sy:', ', '.join([str(val) for val in initial_a_sy]))
+            print('INITIAL a_sy:', ', '.join(
+                [str(val) for val in initial_a_sy]))
             print()
             print('OPTIMIZED a_sy: ', ', '.join(
                 [str(opt_iz_fctr[1] * val) for val in initial_a_sy]))
@@ -434,10 +418,11 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'sway_z'
-        mode_ids = self.model.mode_identification_results[identifier]
-        
-        # TODO use different datatype to avoid list(mode_id.keys())[0]
-        m_id = list(mode_ids[0].keys())[0]
+
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
@@ -500,8 +485,9 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes()
 
         identifier = 'torsional'
-        mode_ids = self.model.mode_identification_results[identifier]
 
-        # TODO use different datatype to avoid list(mode_id.keys())[0]
-        m_id = list(mode_ids[0].keys())[0]
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2

@@ -1,12 +1,3 @@
-# ===============================================================================
-"""
-        Derived classes from Solver
-
-Created on:  15.10.2019
-Last update: 16.10.2019
-"""
-# ===============================================================================
-
 from source.solving_strategies.strategies.solver import Solver
 
 

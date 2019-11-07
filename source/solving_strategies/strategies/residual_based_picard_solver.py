@@ -1,16 +1,8 @@
-# ===============================================================================
-"""
-        Derived classes from ResidualBasedSolver
-
-Created on:  15.10.2019
-Last update: 16.10.2019
-"""
-# ===============================================================================
-import numpy as np
-
-from source.solving_strategies.strategies.residual_based_solver import ResidualBasedSolver
 from source.solving_strategies.schemes.forward_euler1_scheme import ForwardEuler1
 from source.solving_strategies.schemes.backward_euler1_scheme import BackwardEuler1
+from source.solving_strategies.strategies.residual_based_solver import ResidualBasedSolver
+import numpy as np
+
 
 # TODO: take these values as user input
 # stopping criteria

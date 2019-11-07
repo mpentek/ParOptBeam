@@ -1,13 +1,14 @@
 import numpy as np
 import json
-from os.path import join, isdir
-from os import makedirs
+from os.path import join as os_join
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
 import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+from source.auxiliary.other_utilities import get_adjusted_path_string
+import source.auxiliary.global_definitions as GD
 
 
 class StaticAnalysis(AnalysisType):
@@ -31,29 +32,50 @@ class StaticAnalysis(AnalysisType):
 
         super().__init__(structure_model, self.parameters["type"])
 
-        selected_time_step = 15000
-
-        # load parameters
-        '''
-        FOR NOW ONLY AVAILABLE for
-        1 elements - 2 nodes
-        2 elements - 3 nodes
-        3 elements - 4 nodes
-        6 elements - 7 nodes
-        12 elements - 13 nodes
-        24 elements - 25 nodes
-        '''
-        possible_n_el_cases = [1, 2, 3, 6, 12, 24]
-        if structure_model.parameters['n_el'] not in possible_n_el_cases:
-            err_msg = "The number of element input \"" + \
-                str(structure_model.parameters['n_el'])
-            err_msg += "\" is not allowed for Dynamic Analysis \n"
-            err_msg += "Choose one of: "
-            err_msg += ', '.join([str(x) for x in possible_n_el_cases])
-            raise Exception(err_msg)
         # TODO include some specifiers in the parameters, do not hard code
-        self.force = np.load(join(*['input', 'force', 'force_dynamic' + '_turb' + str(
-            structure_model.parameters['n_el']+1) + '.npy']))[:, selected_time_step]
+        if get_adjusted_path_string(self.parameters['input']['file_path']) == get_adjusted_path_string('some/path'):
+            err_msg = get_adjusted_path_string(
+                self.parameters['input']['file_path'])
+            err_msg += " is not a valid file!"
+            raise Exception(err_msg)
+        else:
+            print(get_adjusted_path_string(
+                self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
+            if self.parameters['input']['is_time_history_file']:
+                self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))[
+                    :, self.parameters['input']['selected_time_step']]
+            else:
+                self.force = np.load(get_adjusted_path_string(
+                    self.parameters['input']['file_path']))
+
+        # of nodes-dofs
+        n_dofs_model = structure_model.n_nodes * \
+            GD.DOFS_PER_NODE[structure_model.domain_size]
+        n_dofs_force = len(self.force)
+        if n_dofs_model != n_dofs_force:
+            err_msg = "The number of the degrees of freedom " + \
+                str(n_dofs_model) + " of the structural model\n"
+            err_msg += "does not match the degrees of freedom " + \
+                str(n_dofs_force) + " of the load time history\n"
+            err_msg += "specified in \"runs\" -> for \"type\":\"static_analysis\" -> \"input\" -> \"file_path\"!\n"
+            err_msg += "The structural model has:\n"
+            err_msg += "   " + \
+                str(structure_model.n_elements) + " number of elements\n"
+            err_msg += "   " + \
+                str(structure_model.n_nodes) + " number of nodes\n"
+            err_msg += "   " + str(n_dofs_model) + " number of dofs.\n"
+            err_msg += "The naming of the force time history should reflect the number of nodes\n"
+            err_msg += "using the convention \"<force_type>_force_<n_nodes>_nodes.npy\"\n"
+            digits_in_filename = [
+                s for s in self.parameters['input']['file_path'].split('_') if s.isdigit()]
+            if len(digits_in_filename) == 1:
+                err_msg += "where currently <n_nodes> = " + \
+                    digits_in_filename[0] + " (separated by underscores)!"
+            else:
+                err_msg += "but found multiple digits: " + \
+                    ', '.join(digits_in_filename) + \
+                    " (separated by underscores)!"
+            raise Exception(err_msg)
 
     def solve(self):
         print("Solving for ext_force in StaticAnalysis derived class \n")
@@ -96,10 +118,10 @@ class StaticAnalysis(AnalysisType):
 
         print("Plotting result in StaticAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.static_result.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
                                                                                1:step][:, 0]
@@ -134,7 +156,7 @@ class StaticAnalysis(AnalysisType):
                                       scaling,
                                       1)
 
-    def write_solve_result(self):
+    def write_solve_result(self, global_folder_path):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -145,10 +167,10 @@ class StaticAnalysis(AnalysisType):
 
         print("Plotting result in StaticAnalysis \n")
 
-        for idx, label in zip(list(range(StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              StraightBeam.DOF_LABELS[self.structure_model.domain_size]):
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
-            step = StraightBeam.DOFS_PER_NODE[self.structure_model.domain_size]
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
             stop = self.static_result.shape[0] + idx - step
             self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
                                                                                1:step][:, 0]
@@ -176,34 +198,11 @@ class StaticAnalysis(AnalysisType):
         file_header = "# Static Analysis"
 
         file_name = 'static_analysis' + '.dat'
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
-    def write_output_file(self):
-        """"
-        This function writes out the nodal dofs of the deformed state
-
-        """
-        file = open("beam.txt", "w")
-        dict = {}
-        dict["length"] = max(self.structure_model.nodal_coordinates["x0"])
-        dict["num_of_elements"] = len(
-            self.structure_model.nodal_coordinates["x0"])
-        for key, val in self.structure_model.nodal_coordinates.items():
-            dict[key] = val.tolist()
-
-        json_string = json.dumps(dict)
-
-        file.write(json_string)
-        file.close()
-
-    def postprocess(self, pdf_report, display_plot):
+    def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         """
         Postprocess something
         """
@@ -217,7 +216,7 @@ class StaticAnalysis(AnalysisType):
 
         for write_result in self.parameters['output']['write']:
             if write_result == 'deformation':
-                self.write_solve_result()
+                self.write_solve_result(global_folder_path)
             if write_result == 'forces':
                 pass
 

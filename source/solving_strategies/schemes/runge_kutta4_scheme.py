@@ -20,8 +20,10 @@ class RungeKutta4(TimeIntegrationScheme):
         self.InvM = np.linalg.inv(self.M)
 
         # force from a previous time step (initial force)
-        self.f0 = np.dot(self.M, self.a0) + np.dot(self.B, self.v0) + np.dot(self.K, self.u0)
-        self.f1 = np.dot(self.M, self.a1) + np.dot(self.B, self.v1) + np.dot(self.K, self.u1)
+        self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
+                                                   self.v0) + np.dot(self.K, self.u0)
+        self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
+                                                   self.v1) + np.dot(self.K, self.u1)
 
         self._print_time_integration_setup()
 
@@ -44,7 +46,9 @@ class RungeKutta4(TimeIntegrationScheme):
         f_mid = (f1 + self.f1) / 2.0
 
         self.k0 = self.dt * self.v1
-        self.l0 = self.dt * np.dot(self.InvM, (-np.dot(self.B, self.v1) - np.dot(self.K, self.u1) + self.f1))
+        self.l0 = self.dt * \
+            np.dot(self.InvM, (-np.dot(self.B, self.v1) -
+                               np.dot(self.K, self.u1) + self.f1))
 
         self.k1 = self.dt * (0.5*self.l0 + self.v1)
         self.l1 = self.dt * np.dot(self.InvM, (-np.dot(self.B, (0.5*self.l0 + self.v1))
@@ -72,5 +76,3 @@ class RungeKutta4(TimeIntegrationScheme):
         self.un1 = self.u1
         self.vn1 = self.v1
         self.an1 = self.a1
-
-

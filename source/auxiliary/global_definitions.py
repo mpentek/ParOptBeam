@@ -9,23 +9,13 @@ BC_DOFS = {
            '\"fixed-free\"': [0, 1, 2],
            '\"free-fixed\"': [-3, -2, -1]
            },
-    '3D': {'\"fixed-fixed\"': [[0, 1, 2, 3, 4, 5, -6], [0, 1, 2, 3, 4, 5]],
-           '\"pinned-pinned\"': [[0, 1, 2], [3, 4, 5]],
-           '\"fixed-pinned\"': [[0, 1, 2, 3, 4, 5], [3, 4, 5]],
-           '\"pinned-fixed\"': [[0, 1, 2], [0, 1, 2, 3, 4, 5]],
-           '\"fixed-free\"': [[0, 1, 2, 3, 4, 5]],
-           '\"free-fixed\"': [[0, 1, 2, 3, 4, 5]]
+    '3D': {'\"fixed-fixed\"': [0, 1, 2, 3, 4, 5, -6, -5, -4, -3, -2, -1],
+           '\"pinned-pinned\"': [0, 1, 2, -6, -5, -4],
+           '\"fixed-pinned\"': [0, 1, 2, 3, 4, 5, -6, -5, -4],
+           '\"pinned-fixed\"': [0, 1, 2, -6, -5, -4, -3, -2, -1],
+           '\"fixed-free\"': [0, 1, 2, 3, 4, 5],
+           '\"free-fixed\"': [-6, -5, -4, -3, -2, -1]
            }}
-
-BC_ELEMENT = {
-     '\"fixed-fixed\"': [0, -1],
-     '\"pinned-pinned\"': [0, -1],
-     '\"fixed-pinned\"': [0, -1],
-     '\"pinned-fixed\"': [0, -1],
-     '\"fixed-free\"': [0],
-     '\"free-fixed\"': [-1]
-    }
-
 
 DOFS_PER_NODE = {'2D': 3,
                  '3D': 6}
@@ -46,11 +36,3 @@ MODE_CATEGORIZATION = {
 NODES_PER_LEVEL = 2
 
 THRESHOLD = 1e-8
-
-# using these as default or fallback settings
-DEFAULT_SETTINGS = {
-    "name": "this_model_name",
-    "domain_size": "3D",
-    "system_parameters": {},
-    "boundary_conditions": "fixed-free",
-    "elastic_fixity_dofs": {}}

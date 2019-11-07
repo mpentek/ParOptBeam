@@ -46,10 +46,8 @@ class BDF2(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
-        # LHS needs to be updated in case of non-linear elements
-        LHS = self.bdf0 * self.B + self.K + self.bdf0 * self.bdf0 * self.M
-
-        RHS = - np.dot(self.B, self.bdf1 * self.un1) - np.dot(self.B, self.bdf2 * self.un2)
+        RHS = - np.dot(self.B, self.bdf1 * self.un1) - \
+            np.dot(self.B, self.bdf2 * self.un2)
         RHS += - 2 * self.bdf0 * self.bdf1 * np.dot(self.M, self.un1)
         RHS += - 2 * self.bdf0 * self.bdf2 * np.dot(self.M, self.un2)
         RHS += -     self.bdf1 * self.bdf1 * np.dot(self.M, self.un2)

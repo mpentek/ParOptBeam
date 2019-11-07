@@ -1,28 +1,3 @@
-# ===============================================================================
-'''
-Project:Lecture - Structural Wind Engineering WS17-18 
-        Chair of Structural Analysis @ TUM - A. Michalski, R. Wuchner, M. Pentek
-        
-        Time integration scheme base class and derived classes for specific implementations
-
-Author: mate.pentek@tum.de, anoop.kodakkal@tum.de, catharina.czech@tum.de, peter.kupas@tum.de
-
-      
-Note:   UPDATE: The script has been written using publicly available information and 
-        data, use accordingly. It has been written and tested with Python 2.7.9.
-        Tested and works also with Python 3.4.3 (already see differences in print).
-        Module dependencies (-> line 61-74): 
-            python
-            numpy
-            sympy
-            matplotlib.pyplot
-
-Created on:  22.11.2017
-Last update: 07.09.2019
-'''
-# ===============================================================================
-
-
 import numpy as np
 from math import ceil
 from matplotlib.lines import Line2D
@@ -87,6 +62,25 @@ plot_limits = {"x":[... , ...]
                "y":[... , ...]}
 # defined based upon geometry["deformed"]
 '''
+
+
+def plot_properties(pdf_report, display_plot, plot_title, struct_property_data, plot_legend, plot_style):
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plt.title(plot_title)
+
+    for idx in range(len(struct_property_data)):
+        ax.plot(struct_property_data[idx]['x'], struct_property_data[idx]
+                ['y'], plot_style[idx], label=plot_legend[idx])
+    ax.legend()
+
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
+
+    if display_plot:
+        plt.show()
 
 
 def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, n_data):
@@ -253,7 +247,8 @@ def animate_result(title, array_time, geometry, force, scaling):
     # TODO extend and use plot limits
 
     geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis],
-                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis],
+                            geometry["deformation"][1] * scaling["deformation"] +
+                            geometry["undeformed"][1][:, np.newaxis],
                             geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis]]
 
     xmin = np.min(geometry["deformed"][0])
@@ -343,8 +338,8 @@ def animate_result(title, array_time, geometry, force, scaling):
     # call the animator.  blit=True means only re-draw the parts that have
     # changed.
     # frames = number of columns in result
-    anim = animation.FuncAnimation(fig, animate, init_func=init,
-                                   frames=len(array_time[::step])-1, interval=20, blit=True)
+    animation.FuncAnimation(fig, animate, init_func=init,
+                            frames=len(array_time[::step])-1, interval=20, blit=True)
 
     plt.show()
 
@@ -409,11 +404,11 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
     plt.title(plot_title)
 
     # Add a table at the bottom of the axes
-    the_table = ax.table(cellText=table_data,
-                         rowLabels=row_labels,
-                         colLabels=column_labels,
-                         loc='center')
-    
+    ax.table(cellText=table_data,
+             rowLabels=row_labels,
+             colLabels=column_labels,
+             loc='center')
+
     fig.tight_layout()
 
     if pdf_report is not None:

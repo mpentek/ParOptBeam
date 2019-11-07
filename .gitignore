@@ -6,9 +6,27 @@
 *.avi
 *.mp4
 
-input/force/25_turb/
-input/force/25_no_turb/
+local
+
+# in INPUT only the forces for the 2 generic cases should be kept
+input/force
+
+!input/force/
+
+input/force/*
+!input/force/generic_building
+!input/force/generic_pylon
+
+input/parameters/caarc/
+
+# in OUTPUT only the results for the 2 generic cases should be kept
 output/
 
-local
+# !output/
+
+# output/*
+# !output/GenericBuilding
+# !output/GenericPylon
+
+run_caarc_parametric.py
 

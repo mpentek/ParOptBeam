@@ -1,8 +1,7 @@
 import numpy as np
 from scipy import linalg
 import json
-from os.path import join, isdir
-from os import makedirs
+from os.path import join as os_join
 
 from source.analysis.analysis_type import AnalysisType
 from source.model.structure_model import StraightBeam
@@ -91,7 +90,7 @@ class EigenvalueAnalysis(AnalysisType):
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
 
-    def write_eigenmode_summary(self, considered_modes=15):
+    def write_eigenmode_summary(self, global_folder_path, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
@@ -101,6 +100,7 @@ class EigenvalueAnalysis(AnalysisType):
                 considered_modes = len(self.structure_model.dofs_to_keep)
 
         file_header = '# Result of eigenvalue analysis\n'
+        file_header += '# Mode | Eigenfrequency [Hz] | Period [s]\n'
         file_name = 'eigenvalue_analysis_eigenmode_analysis.dat'
 
         lines = []
@@ -108,13 +108,7 @@ class EigenvalueAnalysis(AnalysisType):
             lines.append(
                 [str(idx+1), '{:.5f}'.format(self.frequency[idx]), '{:.5f}'.format(self.period[idx])])
 
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
-
-        writer_utilities.write_table(join(absolute_folder_path, file_name),
+        writer_utilities.write_table(os_join(global_folder_path, file_name),
                                      file_header,
                                      lines)
 
@@ -133,7 +127,7 @@ class EigenvalueAnalysis(AnalysisType):
                 [str(idx+1), '{:.5f}'.format(self.frequency[idx]), '{:.5f}'.format(self.period[idx])])
 
         plot_title = 'Result of eigenvalue analysis\n'
-        plot_title += 'Mode Eigenfrequency [Hz] Period [s]'
+        plot_title += 'Mode | Eigenfrequency [Hz] | Period [s]'
 
         row_labels = None
         column_labels = ['Mode', 'Eigenfrequency [Hz]', 'Period [s]']
@@ -145,34 +139,39 @@ class EigenvalueAnalysis(AnalysisType):
                                      row_labels,
                                      column_labels)
 
-    def write_eigenmode_identification(self):
+    def write_eigenmode_identification(self, global_folder_path):
         # TODO check to avoid redundancy in EigenvaluAnalysis and StructureModel
 
         lines = []
         counter = 0
-        for mode, mode_ids in self.structure_model.mode_identification_results.items():
+        for mode_type, type_results in self.structure_model.mode_identification_results.items():
             type_counter = 0
-            for mode_id in mode_ids:
-                m_id = list(mode_id.keys())[0]
-                # TODO use different datatype to avoid list(mode_id.keys())[0]
-                
+
+            # type_results is an ordered list
+            for t_res in type_results:
+                m_id = t_res['mode_id']
+                eff_mass = t_res['eff_modal_mass']
+                rel_part = t_res['rel_participation']
+
                 type_counter += 1
                 counter += 1
-                lines.append([str(counter), str(mode_id), str(type_counter), '{:.5f}'.format(
-                    self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), mode])
+                lines.append([str(counter),
+                              str(m_id),
+                              str(type_counter),
+                              '{:.3f}'.format(
+                                  self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]),
+                              mode_type,
+                              '{:.3f}'.format(eff_mass),
+                              '{:.3f}'.format(rel_part)])
 
         file_header = '# Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
-        file_header += '# ConsideredModesCounter Mode TypeCounter Eigenfrequency [Hz] Type\n'
+        file_header += '# ConsideredModesCounter | Mode | TypeCounter | Eigenfrequency [Hz] | Type |'
+        file_header += ' EffModalMass [kg] or [kg*m^2] | RelPart | EffModalMass/TotalMass\n'
 
         file_name = 'eigenvalue_analysis_eigenmode_identification.dat'
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
 
-        writer_utilities.write_table(join(absolute_folder_path, file_name),
+        writer_utilities.write_table(os_join(global_folder_path, file_name),
                                      file_header,
                                      lines)
 
@@ -180,18 +179,23 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO check to avoid redundancy in EigenvaluAnalysis and StructureModel
         table_data = []
         counter = 0
-        for mode, mode_ids in self.structure_model.mode_identification_results.items():
+        for mode_type, type_results in self.structure_model.mode_identification_results.items():
             type_counter = 0
-            for mode_id in mode_ids:
-                m_id = list(mode_id.keys())[0]
-                [eff_mass, rel_part] = mode_id[m_id]
+
+            # type_results is an ordered list
+            for t_res in type_results:
+                m_id = t_res['mode_id']
+                eff_mass = t_res['eff_modal_mass']
+                rel_part = t_res['rel_participation']
+
                 type_counter += 1
                 counter += 1
-                table_data.append([str(counter), 
-                                   str(m_id), 
-                                   str(type_counter), 
-                                   '{:.3f}'.format(self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]), 
-                                   mode,
+                table_data.append([str(counter),
+                                   str(m_id),
+                                   str(type_counter),
+                                   '{:.3f}'.format(
+                                       self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[m_id-1]]),
+                                   mode_type,
                                    '{:.3f}'.format(eff_mass),
                                    '{:.3f}'.format(rel_part)])
 
@@ -199,12 +203,12 @@ class EigenvalueAnalysis(AnalysisType):
             str(counter) + ' mode(s)\n'
 
         row_labels = None
-        column_labels = ['ConsideredModes', 
+        column_labels = ['ConsideredModes',
                          'Mode',
-                         'TypeCounter', 
-                         'Eigenfrequency\n [Hz]', 
-                         'Type', 
-                         'EffModalMass\n [kg] or [kg*m^2]', 
+                         'TypeCounter',
+                         'Eigenfrequency\n [Hz]',
+                         'Type',
+                         'EffModalMass\n [kg] or [kg*m^2]',
                          'RelPart\n EffModalMass/TotalMass']
 
         plotter_utilities.plot_table(pdf_report,
@@ -277,7 +281,7 @@ class EigenvalueAnalysis(AnalysisType):
                                       scaling,
                                       1)
 
-    def write_selected_eigenmode(self, selected_mode):
+    def write_selected_eigenmode(self, global_folder_path, selected_mode):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -324,13 +328,8 @@ class EigenvalueAnalysis(AnalysisType):
 
         file_name = 'eigenvalue_analysis_selected_eigenmode_' + \
             str(selected_mode) + '.dat'
-        absolute_folder_path = join(
-            "output", self.structure_model.name)
-        # make sure that the absolute path to the desired output folder exists
-        if not isdir(absolute_folder_path):
-            makedirs(absolute_folder_path)
 
-        writer_utilities.write_result(join(absolute_folder_path, file_name), file_header,
+        writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
     def plot_selected_first_n_eigenmodes(self, pdf_report, display_plot, number_of_modes):
@@ -430,7 +429,7 @@ class EigenvalueAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = "Eigenmode: " + str(selected_mode)
+        plot_title = "Eigenmode: " + str(selected_mode+1)
         plot_title += "  Frequency: " + \
             '{0:.2f}'.format(self.frequency[selected_mode])
         plot_title += "  Period: " + \
@@ -443,7 +442,8 @@ class EigenvalueAnalysis(AnalysisType):
                                          scaling)
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
-        skin_model_params["result_path"] = join("output", self.structure_model.name)
+        skin_model_params["result_path"] = os_join(
+            "output", self.structure_model.name)
         skin_model_params["eigenvalue_analysis"] = {}
         skin_model_params["eigenvalue_analysis"]["mode"] = str(mode)
         skin_model_params["eigenvalue_analysis"]["frequency"] = self.frequency[mode]
@@ -452,20 +452,20 @@ class EigenvalueAnalysis(AnalysisType):
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
 
-    def postprocess(self, pdf_report, display_plot, skin_model_params):
+    def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         """
         Postprocess something
         """
         print("Postprocessing in EigenvalueAnalysis derived class \n")
 
         if self.parameters['output']['eigenmode_summary']['write']:
-            self.write_eigenmode_summary()
+            self.write_eigenmode_summary(global_folder_path)
 
         if self.parameters['output']['eigenmode_summary']['plot']:
             self.plot_eigenmode_summary(pdf_report, display_plot)
 
         if self.parameters['output']['eigenmode_identification']['write']:
-            self.write_eigenmode_identification()
+            self.write_eigenmode_identification(global_folder_path)
 
         if self.parameters['output']['eigenmode_identification']['plot']:
             self.plot_eigenmode_identification(pdf_report, display_plot)
@@ -474,14 +474,15 @@ class EigenvalueAnalysis(AnalysisType):
             self.plot_selected_eigenmode(pdf_report, display_plot, mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
-            self.write_selected_eigenmode(mode)
+            self.write_selected_eigenmode(global_folder_path, mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
             self.animate_selected_eigenmode(mode)
 
         if skin_model_params is not None:
             for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
-                self.animate_skin_model_for_selected_eigenmode(mode, skin_model_params)
+                self.animate_skin_model_for_selected_eigenmode(
+                    mode, skin_model_params)
 
         # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)

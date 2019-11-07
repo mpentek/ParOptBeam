@@ -4,7 +4,8 @@ from matplotlib.backends.backend_pdf import PdfPages
 
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.global_definitions import *
+from source.auxiliary.other_utilities import get_adjusted_path_string
+from source.auxiliary import global_definitions as GD
 
 
 class AnalysisController(object):
@@ -19,6 +20,8 @@ class AnalysisController(object):
 
     # using these as default or fallback settings
     DEFAULT_SETTINGS = {
+        "global_output_folder": "some/path",
+        "model_properties": {},
         "report_options": {},
         "runs": [],
         "skin_model_parameters": {}}
@@ -37,16 +40,24 @@ class AnalysisController(object):
             AnalysisController.DEFAULT_SETTINGS, parameters)
         self.parameters = parameters
 
-        # TODO: some more robust checks and assigns
+        if get_adjusted_path_string(self.parameters['global_output_folder']) == get_adjusted_path_string("some/path"):
+            self.global_output_folder = join("output", self.model.name)
+        else:
+            self.global_output_folder = join(
+                "output", get_adjusted_path_string(self.parameters['global_output_folder']))
+
+        # make sure that the absolute path to the desired output folder exists
+        if not isdir(self.global_output_folder):
+            makedirs(self.global_output_folder)
+
+        print(self.global_output_folder +
+              ' set as absolute folder path in AnalysisController')
+
         if self.parameters['report_options']['combine_plots_into_pdf']:
             file_name = 'analyses_results_report.pdf'
-            absolute_folder_path = join("output", self.model.name)
-            # make sure that the absolute path to the desired output folder exists
-            if not isdir(absolute_folder_path):
-                makedirs(absolute_folder_path)
 
             self.report_pdf = PdfPages(
-                join(absolute_folder_path, file_name))
+                join(self.global_output_folder, file_name))
         else:
             self.report_pdf = None
 
@@ -61,7 +72,7 @@ class AnalysisController(object):
                                           "visualize_line_structure"],
                                       "beam_direction": self.parameters["skin_model_parameters"]["beam_direction"],
                                       "scaling_vector": self.parameters["skin_model_parameters"]["scaling_vector"],
-                                      "num_of_dofs_per_node": DOFS_PER_NODE[self.model.domain_size],
+                                      "num_of_dofs_per_node": GD.DOFS_PER_NODE[self.model.domain_size],
                                       "eigenmode_scaling_factor": self.parameters["skin_model_parameters"][
                                           "eigenmode_scaling_factor"],
                                       "dynamic_scaling_factor": self.parameters["skin_model_parameters"][
@@ -101,10 +112,14 @@ class AnalysisController(object):
             analysis.solve()
 
     def postprocess(self):
-        self.model.plot_model_properties(self.report_pdf, self.display_plots, self.skin_model_params)
+        if self.parameters['model_properties']['write']:
+            self.model.write_properties(self.global_output_folder)
+        if self.parameters['model_properties']['plot']:
+            self.model.plot_properties(self.report_pdf, self.display_plots)
 
         for analysis in self.analyses:
-            analysis.postprocess(self.report_pdf, self.display_plots, self.skin_model_params)
+            analysis.postprocess(self.global_output_folder, self.report_pdf,
+                                 self.display_plots, self.skin_model_params)
 
         try:
             self.report_pdf.close()
