@@ -9,6 +9,7 @@ from source.analysis.analysis_controller import AnalysisController
 # Model choice
 
 # NOTE: all currently available models
+
 available_models = [
     'ProjectParameters3DGenericBuilding.json',
     'ProjectParameters3DGenericPylon.json',
