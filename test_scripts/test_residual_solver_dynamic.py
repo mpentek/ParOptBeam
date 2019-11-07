@@ -6,7 +6,8 @@ from source.solving_strategies.strategies.residual_based_newton_raphson_solver i
 from source.model.structure_model import StraightBeam
 
 
-np.set_printoptions(suppress=False, precision=4)
+np.set_printoptions(suppress=False, precision=2, linewidth=140)
+
 
 params = {
     "name": "CaarcBeamPrototypeOptimizable",
@@ -20,7 +21,7 @@ params = {
             "density": 7850.0,
             "youngs_modulus": 2069000000,
             "poisson_ratio": 0.29,
-            "damping_ratio": 0.05
+            "damping_ratio": 0.
         },
         "geometry": {
             "length_x": 1.2,
@@ -46,6 +47,7 @@ dt = 0.1
 tend = 10.
 steps = int(tend / dt)
 array_time = np.linspace(0.0, tend, steps + 1)
+array_time_kratos = np.linspace(0.1, 10, 101)
 
 
 def test_newton_raphson_solver():
@@ -57,7 +59,7 @@ def test_newton_raphson_solver():
     v0 = np.zeros(6)
     a0 = np.zeros(6)
 
-    scheme = "BDF2"
+    scheme = "BackwardEuler1"
     beam = StraightBeam(params)
 
     f_ext = beam.apply_bc_by_reduction(f_ext, 'column').T
@@ -67,10 +69,13 @@ def test_newton_raphson_solver():
                                               [u0, v0, a0], f_ext, beam)
 
     solver.solve()
-    reference_file = "kratos_reference_results/displacement_z.txt"
+
+    reference_file = "kratos_reference_results/dynamic_displacement_z.txt"
     disp_z_soln = np.loadtxt(reference_file)[:, 1]
 
-    plt.plot(array_time, solver.displacement[2, :], c='b')
-    plt.plot(array_time, disp_z_soln, c='k')
+    plt.plot(array_time, solver.displacement[2, :], c='b', label='solver')
+    plt.plot(array_time_kratos, disp_z_soln, c='k', label='kratos reference')
+    plt.grid()
+    plt.legend()
     plt.show()
 
