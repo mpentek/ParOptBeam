@@ -349,7 +349,8 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
-        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [], 'rel_participation' : []}
+        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
+                                      'rel_participation': []}
 
         for i in range(considered_modes):
             decomposed_eigenmode = {}
@@ -388,19 +389,19 @@ class StraightBeam(object):
 
                         for i in range(self.n_elements):
                             storey_mass = vec_a[i] * \
-                                                self.parameters['rho'] * vec_lx[i]
+                                          self.parameters['rho'] * vec_lx[i]
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][i]**2 + self.parameters['ly'][i]**2)/12
+                                storey_mass *= (self.parameters['lz'][i] ** 2 + self.parameters['ly'][i] ** 2) / 12
 
                                 # TODO check as torsion 4-5-6 does not seem to be ok in the results
 
                             total_mass += storey_mass
                             eff_modal_numerator += storey_mass * decomposed_eigenmode[label][i]
-                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][i]**2
+                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][i] ** 2
 
-                        eff_modal_mass[label] = eff_modal_numerator**2 / eff_modal_denominator
-                        rel_participation[label] = eff_modal_mass[label] / total_mass     
+                        eff_modal_mass[label] = eff_modal_numerator ** 2 / eff_modal_denominator
+                        rel_participation[label] = eff_modal_mass[label] / total_mass
 
                     else:
                         eff_modal_mass[label] = 0.0
@@ -442,12 +443,12 @@ class StraightBeam(object):
                         self.mode_identification_results[case_id].append({
                             (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
                                                   max(self.decomposed_eigenmodes['rel_participation'][i].values())]
-                            })
+                        })
                     else:
                         self.mode_identification_results[case_id] = [{
                             (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
                                                   max(self.decomposed_eigenmodes['rel_participation'][i].values())]
-                            }]
+                        }]
 
         if print_to_console:
             print('Result of decoupled eigenmode identification for the first ' +
@@ -603,7 +604,7 @@ class StraightBeam(object):
         if cols != 1:
             extended_matrix = np.zeros((rows, cols))
         else:
-            extended_matrix = np.zeros((rows, ))
+            extended_matrix = np.zeros((rows,))
         # copy the needed element into the extended matrix
         extended_matrix[ixgrid] = matrix
 
@@ -635,13 +636,11 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_mass_matrix()
+            i_start = DOFS_PER_NODE[self.domain_size] * element.index
+            i_end = i_start + DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL
             glob_matrix[
-            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                                                             DOFS_PER_NODE[
-                                                                 self.domain_size] * NODES_PER_LEVEL,
-            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                                                             DOFS_PER_NODE[
-                                                                 self.domain_size] * NODES_PER_LEVEL] += el_matrix
+                i_start: i_end,
+                i_start: i_end] += el_matrix
 
         for idx, val in zip(self.point_mass['idxs'], self.point_mass['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
@@ -656,12 +655,12 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
+            i_start = DOFS_PER_NODE[self.domain_size] * element.index
+            i_end = i_start + DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL
+
             glob_matrix[
-            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                                                             DOFS_PER_NODE[self.domain_size] * NODES_PER_LEVEL,
-            DOFS_PER_NODE[self.domain_size] * element.index: DOFS_PER_NODE[self.domain_size] * element.index +
-                                                             DOFS_PER_NODE[
-                                                                 self.domain_size] * NODES_PER_LEVEL] += el_matrix
+                i_start: i_end,
+                i_start: i_end] += el_matrix
 
         for idx, val in zip(self.point_stiffness['idxs'], self.point_stiffness['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
@@ -683,13 +682,13 @@ class StraightBeam(object):
 
         self.rayleigh_coefficients = np.linalg.solve(0.5 *
                                                      np.array(
-                                     [[1 / self.eig_values[self.eig_freqs_sorted_indices[mode_i]],
-                                       self.eig_values[
-                                           self.eig_freqs_sorted_indices[mode_i]]],
-                                      [1 / self.eig_values[self.eig_freqs_sorted_indices[mode_j]],
-                                       self.eig_values[
-                                           self.eig_freqs_sorted_indices[
-                                               mode_j]]]]),
+                                                         [[1 / self.eig_values[self.eig_freqs_sorted_indices[mode_i]],
+                                                           self.eig_values[
+                                                               self.eig_freqs_sorted_indices[mode_i]]],
+                                                          [1 / self.eig_values[self.eig_freqs_sorted_indices[mode_j]],
+                                                           self.eig_values[
+                                                               self.eig_freqs_sorted_indices[
+                                                                   mode_j]]]]),
                                                      [zeta_i, zeta_j])
 
         # return back the whole matrix - without BCs applied
