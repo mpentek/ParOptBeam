@@ -13,7 +13,7 @@ from source.auxiliary.global_definitions import *
 
 # TODO: take these values as user input
 # stopping criteria
-TOL = 1e-8
+TOL = 1e-4
 # maximum iteration
 MAX_IT = 10
 
@@ -51,7 +51,6 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
             nr_it += 1
             print("Nonlinear iteration: ", str(nr_it))
             print("r = {:.2e}".format(abs(np.linalg.norm(r))))
-            # print("r = ", r)
             dp = self.calculate_increment(r)
             dp = self.structure_model.recuperate_bc_by_extension(dp, 'column_vector')
 
