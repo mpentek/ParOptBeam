@@ -4,12 +4,12 @@
         "parallel_type" : "OpenMP",
         "echo_level"    : 1,
         "start_time"    : 0.0,
-        "end_time"      : 1.0
+        "end_time"      : 10.0
     },
     "solver_settings"  : {
         "solver_type"                        : "Dynamic",
         "model_part_name"                    : "Structure",
-        "time_integration_scheme"            : "implicit",
+        "time_integration_method"            : "implicit",
         "scheme_type"                        : "bossak",      
         "domain_size"                        : 3,
         "echo_level"                         : 1,
@@ -64,7 +64,7 @@
             "Parameters"    : {
                 "model_part_name" : "Structure.PointLoad3D_neumann",
                 "variable_name"   : "POINT_LOAD",
-                "modulus"         : "100",
+                "modulus"         : "100*sin(t)",
                 "direction"       : [0.0,0.0,1],
                 "interval"        : [0.0,"End"]
             }
