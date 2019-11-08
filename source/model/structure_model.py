@@ -56,7 +56,9 @@ class StraightBeam(object):
         # also check redundancy with eigenvalue analysis
 
         # validating and assign model parameters
-        validate_and_assign_defaults(StraightBeam.DEFAULT_SETTINGS, parameters)
+        self.bc_element_dofs = []
+        self.bc_dofs = []
+        validate_and_assign_defaults(self.DEFAULT_SETTINGS, parameters)
 
         # TODO: add domain size check
         self.domain_size = parameters["domain_size"]
@@ -150,7 +152,7 @@ class StraightBeam(object):
             x, 'c_lz') for x in self.parameters['x']]
         # characteristics lengths
         self.charact_length = (
-            np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
+                                      np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         for i in range(self.n_elements):
             element_params = self.initialize_element_geometric_parameters(i)
@@ -170,7 +172,7 @@ class StraightBeam(object):
                                   coord, i, self.domain_size)
             else:
                 err_msg = "The requested element type \"" + \
-                    self.parameters["element_type"]
+                          self.parameters["element_type"]
                 err_msg += "\" is not available \n"
                 err_msg += "Choose one of: \"Bernoulli\", \"Timoshenko\", \"CRBeam\"\n"
                 raise Exception(err_msg)
@@ -312,6 +314,11 @@ class StraightBeam(object):
             print('density: ', self.parameters['rho'])
             print()
 
+    def update_stiffness_matrix(self):
+        k = self._get_stiffness()
+        comp_k = self.apply_bc_by_reduction(k)
+        return comp_k
+
     def calculate_global_matrices(self):
         # using computational values for m,b,k as this reduction is done otherwise many times
 
@@ -335,8 +342,8 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
-        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [
-        ], 'eff_modal_mass': [], 'rel_participation': []}
+        self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
+                                      'rel_participation': []}
 
         for i in range(considered_modes):
             decomposed_eigenmode = {}
@@ -351,12 +358,12 @@ class StraightBeam(object):
                 step = GD.DOFS_PER_NODE[self.domain_size]
                 stop = self.eigen_modes_raw.shape[0] + idx - step
                 decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
-                                                                   1:step][:, selected_mode]
+                                                                         1:step][:, selected_mode]
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
                     rel_contrib[label] = self.charact_length * \
-                        linalg.norm(decomposed_eigenmode[label])
+                                         linalg.norm(decomposed_eigenmode[label])
                 else:
                     # for translation dofs
                     rel_contrib[label] = linalg.norm(
@@ -377,22 +384,18 @@ class StraightBeam(object):
 
                         for i in range(self.n_elements):
                             storey_mass = vec_a[i] * \
-                                self.parameters['rho'] * vec_lx[i]
+                                          self.parameters['rho'] * vec_lx[i]
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][i]
-                                                ** 2 + self.parameters['ly'][i]**2)/12
+                                storey_mass *= (self.parameters['lz'][i] ** 2 + self.parameters['ly'][i] ** 2) / 12
 
                                 # TODO check as torsion 4-5-6 does not seem to be ok in the results
 
                             total_mass += storey_mass
-                            eff_modal_numerator += storey_mass * \
-                                decomposed_eigenmode[label][i]
-                            eff_modal_denominator += storey_mass * \
-                                decomposed_eigenmode[label][i]**2
+                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][i]
+                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][i] ** 2
 
-                        eff_modal_mass[label] = eff_modal_numerator**2 / \
-                            eff_modal_denominator
+                        eff_modal_mass[label] = eff_modal_numerator ** 2 / eff_modal_denominator
                         rel_participation[label] = eff_modal_mass[label] / total_mass
 
                     else:
@@ -438,18 +441,14 @@ class StraightBeam(object):
                     if case_id in self.mode_identification_results:
                         # using list - so that results are ordered
                         self.mode_identification_results[case_id].append({
-                            'mode_id': (selected_mode + 1),
-                            # NOTE: max(...) syntax only valid for current way of identifivation and nullification
-                            'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                            'rel_participation': max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
                         })
                     else:
                         # using list - so that results are ordered
                         self.mode_identification_results[case_id] = [{
-                            'mode_id': (selected_mode + 1),
-                            # NOTE: max(...) syntax only valid for current way of identifivation and nullification
-                            'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                            'rel_participation': max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
                         }]
 
         if print_to_console:
@@ -501,10 +500,9 @@ class StraightBeam(object):
         lines = []
 
         for idx, elem in enumerate(self.elements):
-
             lines.append([str(idx),
                           '{:.3f}'.format(self.nodal_coordinates["x0"][idx]),
-                          '{:.3f}'.format(self.nodal_coordinates["x0"][idx+1]),
+                          '{:.3f}'.format(self.nodal_coordinates["x0"][idx + 1]),
                           '{:.3f}'.format(self.parameters['x_mid'][idx]),
                           '{:.3f}'.format(self.parameters['ly'][idx]),
                           '{:.3f}'.format(self.parameters['lz'][idx]),
@@ -583,12 +581,11 @@ class StraightBeam(object):
         #
         plot_title.append("Mass over running coordinate x")
         struct_property_data.append([{'x': self.parameters['x_mid'], 'y': [
-                                    elem.A * elem.rho * elem.L for elem in self.elements]}])
+            elem.A * elem.rho * elem.L for elem in self.elements]}])
         plot_legend.append(['m [kg]'])
         plot_style.append(['-ko'])
 
         for idx in range(len(plot_title)):
-
             plotter_utilities.plot_properties(pdf_report,
                                               display_plot,
                                               plot_title[idx],
@@ -607,25 +604,19 @@ class StraightBeam(object):
         # NOTE: should be quite robust
         # TODO: test
         if axis == 'row':
-            rows = len(self.all_dofs_global)
-            cols = matrix.shape[1]
             # make a grid of indices on interest
             ixgrid = np.ix_(self.dofs_to_keep, np.arange(matrix.shape[1]))
         elif axis == 'column':
-            rows = matrix.shape[0]
-            cols = len(self.all_dofs_global)
             # make a grid of indices on interest
             ixgrid = np.ix_(np.arange(matrix.shape[0]), self.dofs_to_keep)
         elif axis == 'both':
-            rows = len(self.all_dofs_global)
-            cols = rows
             # make a grid of indices on interest
             ixgrid = np.ix_(self.dofs_to_keep, self.dofs_to_keep)
         elif axis == 'row_vector':
-            rows = len(self.all_dofs_global)
-            cols = 1
             ixgrid = np.ix_(self.dofs_to_keep, [0])
             matrix = matrix.reshape([len(matrix), 1])
+        elif axis == 'column_vector':
+            ixgrid = np.ix_(self.dofs_to_keep)
         else:
             err_msg = "The reduction mode with input \"" + axis
             err_msg += "\" for axis is not avaialbe \n"
@@ -669,13 +660,19 @@ class StraightBeam(object):
             cols = 1
             ixgrid = np.ix_(self.dofs_to_keep, [0])
             matrix = matrix.reshape([len(matrix), 1])
+        elif axis == 'column_vector':
+            rows = len(self.all_dofs_global)
+            cols = 1
+            ixgrid = np.ix_(self.dofs_to_keep)
         else:
             err_msg = "The extension mode with input \"" + axis
             err_msg += "\" for axis is not avaialbe \n"
             err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
             raise Exception(err_msg)
-
-        extended_matrix = np.zeros((rows, cols))
+        if cols != 1:
+            extended_matrix = np.zeros((rows, cols))
+        else:
+            extended_matrix = np.zeros((rows,))
         # copy the needed element into the extended matrix
         extended_matrix[ixgrid] = matrix
 
@@ -690,12 +687,12 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for i in range(self.parameters['n_el']):
             glob_matrix[
-                GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
-                GD.DOFS_PER_NODE[
-                    self.domain_size] * GD.NODES_PER_LEVEL,
-                GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
-                GD.DOFS_PER_NODE[
-                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
+            GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
+                                                    GD.DOFS_PER_NODE[
+                                                        self.domain_size] * GD.NODES_PER_LEVEL,
+            GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
+                                                    GD.DOFS_PER_NODE[
+                                                        self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
         return glob_matrix
 
     def _get_mass(self):
@@ -707,13 +704,12 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_mass_matrix()
+            i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
+            i_end = i_start + GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
             glob_matrix[
-                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
-                GD.DOFS_PER_NODE[
-                    self.domain_size] * GD.NODES_PER_LEVEL,
-                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
-                GD.DOFS_PER_NODE[
-                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
+                i_start: i_end,
+                i_start: i_end
+            ] += el_matrix
 
         for idx, val in zip(self.point_mass['idxs'], self.point_mass['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
@@ -728,12 +724,12 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
+            i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
+            i_end = i_start + GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
+
             glob_matrix[
-                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
-                GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL,
-                GD.DOFS_PER_NODE[self.domain_size] * element.index: GD.DOFS_PER_NODE[self.domain_size] * element.index +
-                GD.DOFS_PER_NODE[
-                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
+            i_start: i_end,
+            i_start: i_end] += el_matrix
 
         for idx, val in zip(self.point_stiffness['idxs'], self.point_stiffness['vals']):
             glob_matrix[idx[0], idx[1]] = glob_matrix[idx[0], idx[1]] + val
@@ -757,11 +753,11 @@ class StraightBeam(object):
                                                      np.array(
                                                          [[1 / self.eig_values[self.eig_freqs_sorted_indices[mode_i]],
                                                            self.eig_values[
-                                                             self.eig_freqs_sorted_indices[mode_i]]],
-                                                             [1 / self.eig_values[self.eig_freqs_sorted_indices[mode_j]],
-                                                              self.eig_values[
-                                                                 self.eig_freqs_sorted_indices[
-                                                                     mode_j]]]]),
+                                                               self.eig_freqs_sorted_indices[mode_i]]],
+                                                          [1 / self.eig_values[self.eig_freqs_sorted_indices[mode_j]],
+                                                           self.eig_values[
+                                                               self.eig_freqs_sorted_indices[
+                                                                   mode_j]]]]),
                                                      [zeta_i, zeta_j])
 
         # return back the whole matrix - without BCs applied

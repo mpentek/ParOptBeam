@@ -59,8 +59,6 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.v1 = self.v0
         self.a1 = self.a0
 
-        self.LHS = self.a1h * self.M + self.a2h * self.B + self.a3h * self.K
-
         # force from a previous time step (initial force)
         self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
                                                    self.v0) + np.dot(self.K, self.u0)
@@ -90,6 +88,8 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
+        # LHS needs to be updated in case of non-linear elements
+        LHS = self.a1h * self.M + self.a2h * self.B + self.a3h * self.K
 
         F = (1.0 - self.alphaF) * f1 + self.alphaF * self.f0
 
@@ -103,11 +103,11 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.f1 = f1
 
         # updates self.u1,v1,a1
-        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.u1 = np.linalg.solve(LHS, RHS)
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
-    def update_structure_time_step(self):
+    def update(self):
         # update displacement, velocity and acceleration
         self.un1 = self.u1
         self.vn1 = self.v1

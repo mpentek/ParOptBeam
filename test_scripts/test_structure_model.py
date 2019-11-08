@@ -1,56 +1,36 @@
 from source.model.structure_model import StraightBeam
 import numpy as np
 
+
 params = {
     "name": "CaarcBeamPrototypeOptimizable",
     "domain_size": "3D",
     "system_parameters": {
-        "element_type": "CRBeam",
+        "element_params": {
+            "type": "CRBeam",
+            "is_nonlinear": True
+        },
         "material": {
-            "density": 160.0,
-            "youngs_modulus": 2.861e8,
-            "poisson_ratio": 0.1,
-            "damping_ratio": 0.005
+            "density": 7850.0,
+            "youngs_modulus": 2069000000,
+            "poisson_ratio": 0.29,
+            "damping_ratio": 1
         },
         "geometry": {
-            "length_x": 180.0,
-            "number_of_elements": 3,
+            "length_x": 1.2,
+            "number_of_elements": 1,
             "defined_on_intervals": [{
-                "interval_bounds": [0.0, 60.0],
-                "length_y": [50.0],
-                "length_z": [35.0],
-                "area": [1750.0],
-                "shear_area_y": [1460.0],
-                "shear_area_z": [1460.0],
-                "moment_of_inertia_y": [178646.0],
-                "moment_of_inertia_z": [364583.0],
-                "torsional_moment_of_inertia": [420175.0],
+                "interval_bounds": [0.0, "End"],
+                "length_y": [1.0],
+                "length_z": [1.0],
+                "area": [0.0001],
+                "shear_area_y": [0.0],
+                "shear_area_z": [0.0],
+                "moment_of_inertia_y": [0.0001],
+                "moment_of_inertia_z": [0.0001],
+                "torsional_moment_of_inertia": [0.0001],
                 "outrigger_mass": [0.0],
-                "outrigger_stiffness": [0.0]},
-                {
-                    "interval_bounds": [60.0, 120.0],
-                    "length_y": [45.0],
-                    "length_z": [30.0],
-                    "area": [1350.0],
-                    "shear_area_y": [1125.0],
-                    "shear_area_z": [1125.0],
-                    "moment_of_inertia_y": [101250.0],
-                    "moment_of_inertia_z": [227812.5],
-                    "torsional_moment_of_inertia": [238140.0],
-                    "outrigger_mass": [0.0],
-                    "outrigger_stiffness": [0.0]},
-                {
-                    "interval_bounds": [120.0, "End"],
-                    "length_y": [40.0],
-                    "length_z": [25.0],
-                    "area": [1000.0],
-                    "shear_area_y": [833.0],
-                    "shear_area_z": [833.0],
-                    "moment_of_inertia_y": [52083.0],
-                    "moment_of_inertia_z": [133333.0],
-                    "torsional_moment_of_inertia": [122500.0],
-                    "outrigger_mass": [0.0],
-                    "outrigger_stiffness": [0.0]}]
+                "outrigger_stiffness": [0.0]}]
         }
     },
     "boundary_conditions": "fixed-free"
@@ -59,7 +39,3 @@ params = {
 
 def test_structure_model():
     beam = StraightBeam(params)
-
-
-if __name__ == '__main__':
-    test_structure_model()

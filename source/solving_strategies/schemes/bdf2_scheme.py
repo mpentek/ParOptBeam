@@ -21,21 +21,12 @@ class BDF2(TimeIntegrationScheme):
         self.bdf1 = -2. / self.dt
         self.bdf2 = 0.5 / self.dt
 
-        self.LHS = self.bdf0 * self.B + self.K + self.bdf0 * self.bdf0 * self.M
-
         # structure
         # initial displacement, velocity and acceleration
-        self.an4 = self.a0
-        self.vn4 = self.v0
         self.un4 = self.u0
-        self.an3 = self.a0
-        self.vn3 = self.v0
         self.un3 = self.u0
-        self.un3 = self.u0
-        self.an2 = self.a0
         self.vn2 = self.v0
         self.un2 = self.u0
-        self.an1 = self.a0
         self.vn1 = self.v0
         self.un1 = self.u0
 
@@ -64,11 +55,11 @@ class BDF2(TimeIntegrationScheme):
         RHS += -     self.bdf2 * self.bdf2 * np.dot(self.M, self.un4) + f1
 
         # calculates self.un0,vn0,an0
-        self.u1 = np.linalg.solve(self.LHS, RHS)
+        self.u1 = np.linalg.solve(LHS, RHS)
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 
-    def update_structure_time_step(self):
+    def update(self):
         # update self.un3 un2 un1 vn2 vn1
         self.un4 = self.un3
         self.un3 = self.un2

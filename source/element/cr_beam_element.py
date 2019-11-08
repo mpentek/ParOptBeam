@@ -1,4 +1,5 @@
 import numpy as np
+from pyquaternion import Quaternion
 import sys
 
 from source.element.beam_element import BeamElement
@@ -6,20 +7,11 @@ from source.element.beam_element import BeamElement
 EPSILON = sys.float_info.epsilon
 
 
-def rotate_vector(quaternion, vector):
-    b0 = 2.0 * (quaternion[1] * vector[2] - quaternion[2] * vector[1])
-    b1 = 2.0 * (quaternion[2] * vector[0] - quaternion[0] * vector[2])
-    b2 = 2.0 * (quaternion[0] * vector[1] - quaternion[1] * vector[0])
-
-    c0 = quaternion[1] * b2 - quaternion[2] * b1
-    c1 = quaternion[2] * b0 - quaternion[0] * b2
-    c2 = quaternion[0] * b1 - quaternion[1] * b0
-
-    vector[0] += b0 * quaternion[3] + c0
-    vector[1] += b1 * quaternion[3] + c1
-    vector[2] += b2 * quaternion[3] + c2
-
-    return vector
+def apply_transformation(transformation_matrix, M):
+    # transformation M = T * M * trans(T)
+    aux_matrix = np.matmul(transformation_matrix, M)
+    M_transformed = np.matmul(aux_matrix, transformation_matrix.T)
+    return M_transformed
 
 
 class CRBeamElement(BeamElement):
@@ -32,20 +24,46 @@ class CRBeamElement(BeamElement):
         super().__init__(material_params, element_params, nodal_coords, index, domain_size)
 
         self.evaluate_relative_importance_of_shear()
+        self.evaluate_torsional_inertia()
 
-        self.Iteration = 0
+        # shear coefficients
+        self.Psi_y = self._calculate_psi(self.Iy, self.Asz)
+        self.Psi_z = self._calculate_psi(self.Iz, self.Asy)
 
-        # transformation matrix
-        self.S = np.zeros([self.ElementSize, self.LocalSize])
+        # transformation matrix T = [nx0, ny0, nz0]
+        self.LocalReferenceRotationMatrix = self._calculate_initial_local_cs()
+        # transformation matrix T = [nx, ny, nz]
         self.LocalRotationMatrix = np.zeros([self.Dimension, self.Dimension])
-        self.Bisectrix = np.zeros(self.Dimension)
-        self.VectorDifferences = np.zeros(self.Dimension)
+        # transformation matrix
+        self.TransformationMatrix = np.zeros([self.ElementSize, self.ElementSize])
+
+        # deformation modes v = [phi_s_x, phi_s_y, phi_s_z, u phi_a_y, phi_a_z]
+        self.v = np.zeros(self.LocalSize)
+        # symmetric part of vector v
+        self.phi_s = np.zeros(self.Dimension)
+        # anti-symmetric part of vector v
+        self.phi_a = np.zeros(self.Dimension)
 
         # for calculating deformation
-        self._QuaternionVEC_A = np.zeros(self.Dimension)
-        self._QuaternionVEC_B = np.zeros(self.Dimension)
-        self._QuaternionSCA_A = 1.0
-        self._QuaternionSCA_B = 1.0
+        self.rA_vec = np.zeros(self.Dimension)
+        self.rB_vec = np.zeros(self.Dimension)
+        self.rA_sca = 1.0
+        self.rB_sca = 1.0
+
+        # initializing transformation matrix for iteration = 0
+        self._update_rotation_matrix_local()
+        self.TransformationMatrix = self._assemble_small_in_big_matrix(self.LocalReferenceRotationMatrix)
+
+        # initializing bisector and vector_difference for calculating phi_a and phi_s
+        self.Bisector = np.zeros(self.Dimension)
+        self.VectorDifferences = np.zeros(self.Dimension)
+
+        # incremental update
+        self.IncrementalDeformation = np.zeros(self.ElementSize)
+
+        # Storing constant matrices to avoid computation overload
+        self.Ke_mat = self._get_element_stiffness_matrix_material()
+        self.Kd_mat = self._calculate_deformation_stiffness_material()
 
         self._print_element_information()
 
@@ -66,17 +84,84 @@ class CRBeamElement(BeamElement):
         msg += "Iz: " + str(self.Iz) + "\n"
         print(msg)
 
+    def update_total(self, new_displacement):
+        self._assign_new_deformation(new_displacement)
+        # update local transformation matrix T
+        self._update_rotation_matrix_local()
+        # update local nodal force qe
+        self._calculate_local_nodal_forces()
+        # assemble T into global transformation matrix R
+        self._update_transformation_matrix()
+        # update global nodal force q
+        self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
+
+    def update_incremental(self, dp):
+        self._assign_new_deformation(self.current_deformation + dp)
+        self.IncrementalDeformation = np.array(dp)
+
+        self._update_rotation_matrix_local()
+
+        # Element extension:
+        delta_u = self.IncrementalDeformation[6:9] - self.IncrementalDeformation[0:3]
+        l = self._calculate_current_length()
+
+        # Symmetric and anti-symmetric rotation increments:
+        nx = self.LocalRotationMatrix[:, 0]
+        ny = self.LocalRotationMatrix[:, 1]
+        nz = self.LocalRotationMatrix[:, 2]
+
+        d_phi_A = self.IncrementalDeformation[3:6]
+        d_phi_B = self.IncrementalDeformation[9:12]
+
+        # updating incremental phi_s Eq. (5.125) Krenk
+        d_phi_s = np.dot(self.LocalRotationMatrix.T, d_phi_B - d_phi_A)
+
+        # updating incremental phi_a Eq. (5.126) Krenk
+        tmp = (d_phi_B + d_phi_A) - 2 * np.cross(nx, delta_u) / l
+        d_phi_a = np.dot(self.LocalRotationMatrix.T, tmp)
+
+        # updating phi_s and phi_a
+        self.phi_s += d_phi_s
+        self.phi_a += d_phi_a
+
+        # Rotate element basis around axis:
+        RotationMatrix = np.array([
+            [np.cos(d_phi_a[0]), -np.sin(d_phi_a[0])],
+            [np.sin(d_phi_a[0]), np.cos(d_phi_a[0])]
+        ])
+        n_yz = np.array([ny, nz]).T
+        n_yz_rotated = np.matmul(n_yz, RotationMatrix)
+
+        rotated_coordinate_system = np.array([nx, n_yz_rotated[:, 0], n_yz_rotated[:, 1]])
+        self.LocalRotationMatrix = self._rotate_basis_to_element_axis(rotated_coordinate_system)
+
+        # updating deformation mode vector
+        delta_x = self.current_deformation[6:9] - self.current_deformation[0:3]
+        # self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
+        self.v[3] = l - self.L
+
+        self.v[0:3] = self.phi_s
+        self.v[4:6] = self.phi_a[1:3]
+
+        Kd = self._calculate_deformation_stiffness()
+        t = np.dot(Kd, self.v)
+
+        # updating transformation matrix S
+        S = self._calculate_transformation_s()
+
+        # updating nodal element force
+        self.nodal_force_local = np.dot(S, t)
+
+        # update transformation matrix
+        self._update_transformation_matrix()
+
+        # update global nodal force
+        self.nodal_force_global = np.dot(self.TransformationMatrix, self.nodal_force_local)
+
     def get_element_mass_matrix(self):
         MassMatrix = self._get_consistent_mass_matrix()
-        rotation_matrix = np.zeros([self.ElementSize, self.ElementSize])
-        if self.Iteration == 0:
-            rotation_matrix = self._calculate_initial_local_cs()
-        else:
-            rotation_matrix = self._assemble_small_in_big_matrix(self.LocalRotationMatrix, rotation_matrix)
-
-        aux_maxtrix = np.matmul(rotation_matrix, MassMatrix)
-        MassMatrix = np.matmul(aux_maxtrix, np.transpose(rotation_matrix))
-        return MassMatrix
+        TransformedMassMatrix = apply_transformation(self.TransformationMatrix, MassMatrix)
+        return TransformedMassMatrix
 
     def _get_consistent_mass_matrix(self):
         """
@@ -85,8 +170,14 @@ class CRBeamElement(BeamElement):
         """
         MassMatrix = np.zeros([self.ElementSize, self.ElementSize])
         L2 = self.L * self.L
-        Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
-        Phiy = (12.0 * self.E * self.Iy) / (L2 * self.G * self.Asz)
+
+        Phiz = 0.0
+        Phiy = 0.0
+
+        if self.Asy != 0.0:
+            Phiz = (12.0 * self.E * self.Iz) / (L2 * self.G * self.Asy)
+        if self.Asz != 0.0:
+            Phiy = (12.0 * self.E * self.Iy) / (L2 * self.G * self.Asz)
 
         # rotational inertia
         IRy = self.Iy
@@ -94,13 +185,14 @@ class CRBeamElement(BeamElement):
 
         CTy = (self.rho * self.A * self.L) / ((1 + Phiy) * (1 + Phiy))
         CTz = (self.rho * self.A * self.L) / ((1 + Phiz) * (1 + Phiz))
+
         CRy = (self.rho * IRy) / ((1 + Phiy) * (1 + Phiy) * self.L)
         CRz = (self.rho * IRz) / ((1 + Phiz) * (1 + Phiz) * self.L)
 
         # longitudinal forces + torsional moment
         M00 = (1.0 / 3.0) * self.A * self.rho * self.L
         M06 = M00 / 2.0
-        M33 = (self.It * self.L * self.rho) / 3.0
+        M33 = (self.Ip * self.L * self.rho) / 3.0
         M39 = M33 / 2.0
 
         MassMatrix[0, 0] = M00
@@ -111,7 +203,6 @@ class CRBeamElement(BeamElement):
         MassMatrix[9, 9] = M33
 
         temp_bending_mass_matrix = self.build_single_mass_matrix(Phiz, CTz, CRz, self.L, +1)
-
         MassMatrix[1, 1] = temp_bending_mass_matrix[0, 0]
         MassMatrix[1, 5] = temp_bending_mass_matrix[0, 1]
         MassMatrix[1, 7] = temp_bending_mass_matrix[0, 2]
@@ -136,10 +227,9 @@ class CRBeamElement(BeamElement):
         MassMatrix[8, 10] = temp_bending_mass_matrix[2, 3]
         MassMatrix[10, 10] = temp_bending_mass_matrix[3, 3]
 
-        for i in range(self.ElementSize):
-            for j in range(i):
+        for j in range(1, self.ElementSize):
+            for i in range(j):
                 MassMatrix[j, i] = MassMatrix[i, j]
-
         return MassMatrix
 
     def build_single_mass_matrix(self, Phi, CT, CR, L, dir):
@@ -168,7 +258,7 @@ class CRBeamElement(BeamElement):
         temp_mass_matrix[3, 1] = temp_mass_matrix[1, 3]
         temp_mass_matrix[3, 2] = temp_mass_matrix[2, 3]
         temp_mass_matrix[3, 3] = ((1.0 / 105.0) + (1.0 / 60.0) * Phi + (1.0 / 120.0) * Phi2) * L2
-        
+
         temp_mass_matrix *= CT
         mass_matrix += temp_mass_matrix
         temp_mass_matrix = np.zeros([MatSize, MatSize])
@@ -189,59 +279,49 @@ class CRBeamElement(BeamElement):
         temp_mass_matrix[3, 1] = temp_mass_matrix[1, 3]
         temp_mass_matrix[3, 2] = temp_mass_matrix[2, 3]
         temp_mass_matrix[3, 3] = ((2.0 / 15.0) + (1.0 / 6.0) * Phi + (1.0 / 3.0) * Phi2) * L2
-        
+
         temp_mass_matrix *= CR
         mass_matrix += temp_mass_matrix
 
         return mass_matrix
 
     def get_element_stiffness_matrix(self):
-        if self.Iteration == 0:
-            TransformationMatrix = self._calculate_initial_local_cs()
-        else:
-            TransformationMatrix = self._calculate_transformation_matrix()
-
-        # calculate local nodal forces
-        self._calculate_local_nodal_forces()
-        # resizing the matrices + create memory for LHS
-        StiffnessMatrix = np.zeros([self.ElementSize, self.ElementSize])
+        # Initializing the with the geometric stiffness
+        Ke = self.Ke_mat
         # creating LHS
-        StiffnessMatrix += self._get_element_stiffness_matrix_material()
-        StiffnessMatrix += self._get_element_stiffness_matrix_geometry()
-        # transformation M = T * M * trans(T)
-        aux_matrix = np.matmul(TransformationMatrix, StiffnessMatrix)
-        StiffnessMatrix = np.matmul(aux_matrix, np.transpose(TransformationMatrix))
+        Ke += self._get_element_stiffness_matrix_geometry()
 
-        return StiffnessMatrix
+        TransformedStiffnessMatrix = apply_transformation(self.TransformationMatrix, Ke)
+        return TransformedStiffnessMatrix
 
     def _get_element_stiffness_matrix_material(self):
         """
             elastic part of the total stiffness matrix
         """
-        L = self._calculate_current_length()
+        L = self.L
 
         # shear coefficients
-        Psi_y = self._calculate_psi(self.Iy, self.Asz)
-        Psi_z = self._calculate_psi(self.Iz, self.Asy)
+        Psi_y = self.Psi_y
+        Psi_z = self.Psi_z
 
         ke_const = np.zeros([self.ElementSize, self.ElementSize])
 
-        self.L3 = L * L * L
-        self.L2 = L * L
+        L3 = L * L * L
+        L2 = L * L
 
         ke_const[0, 0] = self.E * self.A / L
         ke_const[6, 0] = -1.0 * ke_const[0, 0]
         ke_const[0, 6] = ke_const[6, 0]
         ke_const[6, 6] = ke_const[0, 0]
 
-        ke_const[1, 1] = 12.0 * self.E * self.Iz * Psi_z / self.L3
+        ke_const[1, 1] = 12.0 * self.E * self.Iz * Psi_z / L3
         ke_const[1, 7] = -1.0 * ke_const[1, 1]
-        ke_const[1, 5] = 6.0 * self.E * self.Iz * Psi_z / self.L2
+        ke_const[1, 5] = 6.0 * self.E * self.Iz * Psi_z / L2
         ke_const[1, 11] = ke_const[1, 5]
 
-        ke_const[2, 2] = 12.0 * self.E * self.Iy * Psi_y / self.L3
+        ke_const[2, 2] = 12.0 * self.E * self.Iy * Psi_y / L3
         ke_const[2, 8] = -1.0 * ke_const[2, 2]
-        ke_const[2, 4] = -6.0 * self.E * self.Iy * Psi_y / self.L2
+        ke_const[2, 4] = -6.0 * self.E * self.Iy * Psi_y / L2
         ke_const[2, 10] = ke_const[2, 4]
 
         ke_const[4, 2] = ke_const[2, 4]
@@ -285,194 +365,214 @@ class CRBeamElement(BeamElement):
             geometric part of the total stiffness matrix
         """
 
-        N = self.qe[6]
-        Mt = self.qe[9]
-        my_A = self.qe[4]
-        mz_A = self.qe[5]
-        my_B = self.qe[10]
-        mz_B = self.qe[11]
-
-        L = self._calculate_current_length()
-        Qy = -1.0 * (mz_A + mz_B) / L
-        Qz = (my_A + my_B) / L
-
-        kg_const = np.zeros([self.ElementSize, self.ElementSize])
-
-        kg_const[0, 1] = -Qy / L
-        kg_const[0, 2] = -Qz / L
-        kg_const[0, 7] = -1.0 * kg_const[0, 1]
-        kg_const[0, 8] = -1.0 * kg_const[0, 2]
-
-        kg_const[1, 0] = kg_const[0, 1]
-
-        kg_const[1, 1] = 1.2 * N / L
-
-        kg_const[1, 3] = my_A / L
-        kg_const[1, 4] = Mt / L
-
-        kg_const[1, 5] = N / 10.0
-
-        kg_const[1, 6] = kg_const[0, 7]
-        kg_const[1, 7] = -1.0 * kg_const[1, 1]
-        kg_const[1, 9] = my_B / L
-        kg_const[1, 10] = -1.0 * kg_const[1, 4]
-        kg_const[1, 11] = kg_const[1, 5]
-
-        kg_const[2, 0] = kg_const[0, 2]
-        kg_const[2, 2] = kg_const[1, 1]
-        kg_const[2, 3] = mz_A / L
-        kg_const[2, 4] = -1.0 * kg_const[1, 5]
-        kg_const[2, 5] = kg_const[1, 4]
-        kg_const[2, 6] = kg_const[0, 8]
-        kg_const[2, 8] = kg_const[1, 7]
-        kg_const[2, 9] = mz_B / L
-        kg_const[2, 10] = kg_const[2, 4]
-        kg_const[2, 11] = kg_const[1, 10]
-
-        for i in range(3):
-            kg_const[3, i] = kg_const[i, 3]
-
-        kg_const[3, 4] = (-mz_A / 3.0) + (mz_B / 6.0)
-        kg_const[3, 5] = (my_A / 3.0) - (my_B / 6.0)
-        kg_const[3, 7] = -my_A / L
-        kg_const[3, 8] = -mz_A / L
-        kg_const[3, 10] = L * Qy / 6.0
-        kg_const[3, 11] = L * Qz / 6.0
-
-        for i in range(4):
-            kg_const[4, i] = kg_const[i, 4]
-
-        kg_const[4, 4] = 2.0 * L * N / 15.0
-        kg_const[4, 7] = -Mt / L
-        kg_const[4, 8] = N / 10.0
-        kg_const[4, 9] = kg_const[3, 10]
-        kg_const[4, 10] = -L * N / 30.0
-        kg_const[4, 11] = Mt / 2.0
-
-        for i in range(5):
-            kg_const[5, i] = kg_const[i, 5]
-
-        kg_const[5, 5] = kg_const[4, 4]
-        kg_const[5, 7] = -N / 10.0
-        kg_const[5, 8] = -Mt / L
-        kg_const[5, 9] = kg_const[3, 11]
-        kg_const[5, 10] = -1.0 * kg_const[4, 11]
-        kg_const[5, 11] = kg_const[4, 10]
-
-        for i in range(6):
-            kg_const[6, i] = kg_const[i, 6]
-
-        kg_const[6, 7] = kg_const[0, 1]
-        kg_const[6, 8] = kg_const[0, 2]
-
-        for i in range(7):
-            kg_const[7, i] = kg_const[i, 7]
-
-        kg_const[7, 7] = kg_const[1, 1]
-        kg_const[7, 9] = -1.0 * kg_const[1, 9]
-        kg_const[7, 10] = kg_const[4, 1]
-        kg_const[7, 11] = kg_const[2, 4]
-
-        for i in range(8):
-            kg_const[8, i] = kg_const[i, 8]
-
-        kg_const[8, 8] = kg_const[1, 1]
-        kg_const[8, 9] = -1.0 * kg_const[2, 9]
-        kg_const[8, 10] = kg_const[1, 5]
-        kg_const[8, 11] = kg_const[1, 4]
-
-        for i in range(9):
-            kg_const[9, i] = kg_const[i, 9]
-
-        kg_const[9, 10] = (mz_A / 6.0) - (mz_B / 3.0)
-        kg_const[9, 11] = (-my_A / 6.0) + (my_B / 3.0)
-
-        for i in range(10):
-            kg_const[10, i] = kg_const[i, 10]
-
-        kg_const[10, 10] = kg_const[4, 4]
-
-        for i in range(11):
-            kg_const[11, i] = kg_const[i, 11]
-
-        kg_const[11, 11] = kg_const[4, 4]
-
-        return kg_const
-
-    def _calculate_deformation_stiffness(self):
-        L = self.L
-        Psi_y = self._calculate_psi(self.Iy, self.Asz)
-        Psi_z = self._calculate_psi(self.Iz, self.Asy)
-
-        Kd = np.zeros([self.LocalSize, self.LocalSize])
-
-        Kd[0, 0] = self.G * self.It / L
-        Kd[1, 1] = self.E * self.Iy / L
-        Kd[2, 2] = self.E * self.Iz / L
-        Kd[3, 3] = self.E * self.A / L
-        Kd[4, 4] = 3.0 * self.E * self.Iy * Psi_y / L
-        Kd[5, 5] = 3.0 * self.E * self.Iz * Psi_z / L
+        N = self.nodal_force_local[6]
+        Mt = self.nodal_force_local[9]
+        my_A = self.nodal_force_local[4]
+        mz_A = self.nodal_force_local[5]
+        my_B = self.nodal_force_local[10]
+        mz_B = self.nodal_force_local[11]
 
         l = self._calculate_current_length()
-        N = self.qe[6]
-        Qy = -1.0 * (self.qe[5] + self.qe[11]) / l
-        Qz = 1.0 * (self.qe[4] + self.qe[10]) / l
+        Qy = -1.0 * (mz_A + mz_B) / l
+        Qz = (my_A + my_B) / l
+
+        ke_geo = np.zeros([self.ElementSize, self.ElementSize])
+
+        ke_geo[0, 1] = -Qy / l
+        ke_geo[0, 2] = -Qz / l
+        ke_geo[0, 7] = -1.0 * ke_geo[0, 1]
+        ke_geo[0, 8] = -1.0 * ke_geo[0, 2]
+
+        ke_geo[1, 0] = ke_geo[0, 1]
+
+        ke_geo[1, 1] = 1.2 * N / l
+
+        ke_geo[1, 3] = my_A / l
+        ke_geo[1, 4] = Mt / l
+
+        ke_geo[1, 5] = N / 10.0
+
+        ke_geo[1, 6] = ke_geo[0, 7]
+        ke_geo[1, 7] = -1.0 * ke_geo[1, 1]
+        ke_geo[1, 9] = my_B / l
+        ke_geo[1, 10] = -1.0 * ke_geo[1, 4]
+        ke_geo[1, 11] = ke_geo[1, 5]
+
+        ke_geo[2, 0] = ke_geo[0, 2]
+        ke_geo[2, 2] = ke_geo[1, 1]
+        ke_geo[2, 3] = mz_A / l
+        ke_geo[2, 4] = -1.0 * ke_geo[1, 5]
+        ke_geo[2, 5] = ke_geo[1, 4]
+        ke_geo[2, 6] = ke_geo[0, 8]
+        ke_geo[2, 8] = ke_geo[1, 7]
+        ke_geo[2, 9] = mz_B / l
+        ke_geo[2, 10] = ke_geo[2, 4]
+        ke_geo[2, 11] = ke_geo[1, 10]
+
+        for i in range(3):
+            ke_geo[3, i] = ke_geo[i, 3]
+
+        ke_geo[3, 4] = (-mz_A / 3.0) + (mz_B / 6.0)
+        ke_geo[3, 5] = (my_A / 3.0) - (my_B / 6.0)
+        ke_geo[3, 7] = -my_A / l
+        ke_geo[3, 8] = -mz_A / l
+        ke_geo[3, 10] = l * Qy / 6.0
+        ke_geo[3, 11] = l * Qz / 6.0
+
+        for i in range(4):
+            ke_geo[4, i] = ke_geo[i, 4]
+
+        ke_geo[4, 4] = 2.0 * l * N / 15.0
+        ke_geo[4, 7] = -Mt / l
+        ke_geo[4, 8] = N / 10.0
+        ke_geo[4, 9] = ke_geo[3, 10]
+        ke_geo[4, 10] = -l * N / 30.0
+        ke_geo[4, 11] = Mt / 2.0
+
+        for i in range(5):
+            ke_geo[5, i] = ke_geo[i, 5]
+
+        ke_geo[5, 5] = ke_geo[4, 4]
+        ke_geo[5, 7] = -N / 10.0
+        ke_geo[5, 8] = -Mt / l
+        ke_geo[5, 9] = ke_geo[3, 11]
+        ke_geo[5, 10] = -1.0 * ke_geo[4, 11]
+        ke_geo[5, 11] = ke_geo[4, 10]
+
+        for i in range(6):
+            ke_geo[6, i] = ke_geo[i, 6]
+
+        ke_geo[6, 7] = ke_geo[0, 1]
+        ke_geo[6, 8] = ke_geo[0, 2]
+
+        for i in range(7):
+            ke_geo[7, i] = ke_geo[i, 7]
+
+        ke_geo[7, 7] = ke_geo[1, 1]
+        ke_geo[7, 9] = -1.0 * ke_geo[1, 9]
+        ke_geo[7, 10] = ke_geo[4, 1]
+        ke_geo[7, 11] = ke_geo[2, 4]
+
+        for i in range(8):
+            ke_geo[8, i] = ke_geo[i, 8]
+
+        ke_geo[8, 8] = ke_geo[1, 1]
+        ke_geo[8, 9] = -1.0 * ke_geo[2, 9]
+        ke_geo[8, 10] = ke_geo[1, 5]
+        ke_geo[8, 11] = ke_geo[1, 4]
+
+        for i in range(9):
+            ke_geo[9, i] = ke_geo[i, 9]
+
+        ke_geo[9, 10] = (mz_A / 6.0) - (mz_B / 3.0)
+        ke_geo[9, 11] = (-my_A / 6.0) + (my_B / 3.0)
+
+        for i in range(10):
+            ke_geo[10, i] = ke_geo[i, 10]
+
+        ke_geo[10, 10] = ke_geo[4, 4]
+
+        for i in range(11):
+            ke_geo[11, i] = ke_geo[i, 11]
+
+        ke_geo[11, 11] = ke_geo[4, 4]
+
+        return ke_geo
+
+    def _calculate_deformation_stiffness_material(self):
+        """
+        This function calculates the material part of the element stiffness w.r.t. deformation modes
+        :return: Kd
+        """
+        L = self.L
+
+        Psi_y = self.Psi_y
+        Psi_z = self.Psi_z
+
+        # Eq.(4.87) Klaus, material contribution of the deformation stiffness matrix
+        Kd_mat = np.array([
+            [self.G * self.It / L, 0., 0., 0., 0., 0.],
+            [0., self.E * self.Iy / L, 0., 0., 0., 0.],
+            [0., 0., self.E * self.Iz / L, 0., 0., 0.],
+            [0., 0., 0., self.E * self.A / L, 0., 0.],
+            [0., 0., 0., 0.,3.0 * self.E * self.Iy * Psi_y / L, 0.],
+            [0., 0., 0., 0., 0., 3.0 * self.E * self.Iz * Psi_z / L],
+        ])
+        return Kd_mat
+
+    def _calculate_deformation_stiffness(self):
+        """
+        This function calculates the element stiffness w.r.t. deformation modes
+        :return: Kd
+        """
+        Kd = self.Kd_mat
+
+        # Eq.(4.115) Klaus, geometric contribution of the deformation stiffness matrix
+        l = self._calculate_current_length()
+        N = self.nodal_force_local[6]
+        Qy = -1.0 * (self.nodal_force_local[5] + self.nodal_force_local[11]) / l
+        Qz = 1.0 * (self.nodal_force_local[4] + self.nodal_force_local[10]) / l
 
         N1 = l * N / 12.0
         N2 = l * N / 20.0
         Qy1 = -l * Qy / 6.0
         Qz1 = -l * Qz / 6.0
 
-        Kd[1, 1] += N1
-        Kd[2, 2] += N1
-        Kd[4, 4] += N2
-        Kd[5, 5] += N2
+        Kd_geo = np.array([
+            [0., Qy1, Qz1, 0., 0., 0.],
+            [Qy1, N1, 0., 0., 0., 0.],
+            [Qz1, 0., N1, 0., 0., 0.],
+            [0., 0., 0., 0., 0., 0.],
+            [0., 0., 0., 0., N2, 0.],
+            [0., 0., 0.,  0., 0., N2]
+        ])
 
-        Kd[0, 1] += Qy1
-        Kd[0, 2] += Qz1
-        Kd[1, 0] += Qy1
-        Kd[2, 0] += Qz1
+        Kd += Kd_geo
 
         return Kd
 
     def _calculate_psi(self, I, A_eff):
-        L = self._calculate_current_length()
-        phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
+        L = self.L
 
         # interpret input A_eff == 0 as shear stiff -> psi = 1.0
         if A_eff == 0.0:
             psi = 1.0
         else:
+            phi = (12.0 * self.E * I) / (L * L * self.G * A_eff)
             psi = 1.0 / (1.0 + phi)
         return psi
 
     def _calculate_transformation_s(self):
-        L = self._calculate_current_length()
+        """
+        Transformation Matrix: from Element Forces to Nodal Forces
+        Eq.(4.61) Klaus
+        """
+        l = self._calculate_current_length()
 
-        self.S[0, 3] = -1.0
-        self.S[1, 5] = 2.0 / L
-        self.S[2, 4] = -2.0 / L
-        self.S[3, 0] = -1.0
-        self.S[4, 1] = -1.0
-        self.S[4, 4] = 1.0
-        self.S[5, 2] = -1.0
-        self.S[5, 5] = 1.0
-        self.S[6, 3] = 1.0
-        self.S[7, 5] = -2.0 / L
-        self.S[8, 4] = 2.0 / L
-        self.S[9, 0] = 1.0
-        self.S[10, 1] = 1.0
-        self.S[10, 4] = 1.0
-        self.S[11, 2] = 1.0
-        self.S[11, 5] = 1.0
+        S = np.array([
+            [0., 0., 0., -1, 0., 0.],
+            [0., 0., 0., 0., 0., 2 / l],
+            [0., 0., 0., 0., -2 / l, 0.],
+            [-1., 0., 0., 0., 0., 0.],
+            [0., -1., 0., 0., 1., 0.],
+            [0., 0., -1., 0., 0., 1.],
+            [0., 0., 0., 1., 0., 0.],
+            [0., 0., 0., 0., 0., -2 / l],
+            [0., 0., 0., 0., 2 / l, 0.],
+            [1., 0., 0., 0., 0., 0.],
+            [0., 1., 0., 0., 1., 0.],
+            [0., 0., 1., 0., 0., 1.],
+        ])
+
+        return S
 
     def _calculate_local_nodal_forces(self):
         # element force t
         element_forces_t = self._calculate_element_forces()
 
         # updating transformation matrix S
-        self._calculate_transformation_s()
-        self.qe = np.dot(self.S, element_forces_t)
+        S = self._calculate_transformation_s()
+        self.nodal_force_local = np.dot(S, element_forces_t)
 
     def _calculate_element_forces(self):
         # reference length
@@ -480,153 +580,145 @@ class CRBeamElement(BeamElement):
         # current length
         l = self._calculate_current_length()
         # symmetric deformation mode
-        phi_s = np.zeros(self.Dimension)
+        self.phi_s = self._calculate_symmetric_deformation_mode()
         # asymmetric deformation mode
-        phi_a = np.zeros(self.Dimension)
-        rotated_nx0 = np.zeros(self.Dimension)
+        self.phi_a = self._calculate_antisymmetric_deformation_mode()
 
-        if self.Iteration != 0:
-            phi_s = np.dot((np.transpose(self.LocalRotationMatrix)), self.VectorDifferences)
-            phi_s *= 4.0
-            for i in range(0, self.Dimension):
-                rotated_nx0[i] = self.LocalRotationMatrix[i, 0]
-            temp_vector = np.cross(rotated_nx0, self.Bisectrix)
-            phi_a = np.dot((np.transpose(self.LocalRotationMatrix)), temp_vector)
-            phi_a *= 4.0
+        delta_x = self.current_deformation[6:9] - self.current_deformation[0:3]
+        # self.v[3] = np.dot(self.LocalRotationMatrix[:, 0], delta_x)
+        self.v[3] = l - L
 
-        deformation_modes_total_v = np.zeros(self.LocalSize)
-        deformation_modes_total_v[3] = l - L
-
-        for i in range(3):
-            deformation_modes_total_v[i] = phi_s[i]
-        for i in range(2):
-            deformation_modes_total_v[i + 4] = phi_a[i + 1]
+        self.v[0:3] = self.phi_s
+        self.v[4:6] = self.phi_a[1:3]
 
         Kd = self._calculate_deformation_stiffness()
-        element_forces_t = np.dot(Kd, deformation_modes_total_v)
+        element_forces_t = np.dot(Kd, self.v)
         return element_forces_t
 
+    def _calculate_symmetric_deformation_mode(self):
+        """
+            this function calculates symmetric part of vector v
+            reference: Eq. (4.53) Klaus
+        :return: phi_s
+        """
+        phi_s = 4.0 * np.dot(self.LocalRotationMatrix.T, self.VectorDifferences)
+        return phi_s
+
+    def _calculate_antisymmetric_deformation_mode(self):
+        """
+            this function calculates anti-symmetric part of v
+            reference: Eq. (4.54) Klaus
+        :return: phi_a
+        """
+        rotated_nx = self.LocalRotationMatrix[:, 0]
+        temp_vector = np.cross(rotated_nx, self.Bisector)
+        phi_a = 4.0 * np.dot(self.LocalRotationMatrix.T, temp_vector)
+        return phi_a
+
     def _update_rotation_matrix_local(self):
-        d_phi_a = np.zeros(self.Dimension)
-        d_phi_b = np.zeros(self.Dimension)
+        """
+        this function updates the local transformation matrix T = [nx, ny, nz]
+        Check reference in [p.134]:
+            Steen Krenk. Non-linear modeling and analysis of solids and structures.
+            Cambridge Univ. Press, 2009.
+        """
         increment_deformation = self._update_increment_deformation()
-        for i in range(0, self.Dimension):
-            d_phi_a[i] = increment_deformation[i + 3]
-            d_phi_b[i] = increment_deformation[i + 9]
+        d_phi_a = increment_deformation[3:6]
+        d_phi_b = increment_deformation[9:12]
 
         # calculating quaternions
-        drA_vec = 0.50 * d_phi_a
-        drB_vec = 0.50 * d_phi_b
-
-        drA_sca = 0.0
-        drB_sca = 0.0
-
-        for i in range(0, self.Dimension):
-            drA_sca += drA_vec[i] * drA_vec[i]
-            drB_sca += drB_vec[i] * drB_vec[i]
-
-        drA_sca = np.sqrt(1.0 - drA_sca)
-        drB_sca = np.sqrt(1.0 - drB_sca)
+        # Eq.(4.70) Klaus
+        drA_vec = 0.5 * d_phi_a
+        drB_vec = 0.5 * d_phi_b
+        # Eq.(4.70) Klaus
+        drA_sca = np.sqrt(1.0 - np.dot(drA_vec.T, drA_vec))
+        drB_sca = np.sqrt(1.0 - np.dot(drB_vec.T, drB_vec))
 
         # Node A
-        temp_vec = self._QuaternionVEC_A
-        temp_scalar = self._QuaternionSCA_A
-        self._QuaternionVEC_A = drA_sca * temp_scalar
-        for i in range(self.Dimension):
-            self._QuaternionSCA_A -= drA_vec[i] * temp_vec[i]
-
-        self._QuaternionVEC_A = drA_sca * temp_vec
-        self._QuaternionVEC_A += temp_scalar * drA_vec
-        self._QuaternionVEC_A += np.cross(drA_vec, temp_vec)
+        rA_sca = self.rA_sca
+        rA_vec = self.rA_vec
+        self.rA_sca = drA_sca * rA_sca - np.dot(drA_vec.T, rA_vec)
+        self.rA_vec = drA_sca * rA_vec + \
+                      rA_sca * drA_vec + \
+                      np.cross(drA_vec, rA_vec)
 
         # Node B
-        temp_vec = self._QuaternionVEC_B
-        temp_scalar = self._QuaternionSCA_B
-        self._QuaternionVEC_B = drB_sca * temp_scalar
-        for i in range(self.Dimension):
-            self._QuaternionSCA_B -= drB_vec[i] * temp_vec[i]
-
-        self._QuaternionVEC_B = drB_sca * temp_vec + temp_scalar * drB_vec + np.cross(drB_vec, temp_vec)
+        rB_sca = self.rB_sca
+        rB_vec = self.rB_vec
+        self.rB_sca = drB_sca * rB_sca - np.dot(drB_vec.T, rB_vec)
+        self.rB_vec = drB_sca * rB_vec + \
+                      rB_sca * drB_vec + \
+                      np.cross(drB_vec, rB_vec)
 
         # scalar part of difference quaternion
-        scalar_diff = (self._QuaternionSCA_A + self._QuaternionSCA_B) * (self._QuaternionSCA_A + self._QuaternionSCA_B)
-        temp_vec = self._QuaternionVEC_A + self._QuaternionVEC_B
-        scalar_diff += np.linalg.norm(temp_vec) * np.linalg.norm(temp_vec)
-        scalar_diff = 0.5 * np.sqrt(scalar_diff)
+        # Eq.(4.72) Klaus
+        s = 0.5 * np.sqrt(((self.rA_sca + self.rB_sca) ** 2 +
+                           np.linalg.norm(self.rA_vec + self.rB_vec) ** 2))
 
         # mean rotation quaternion
-        mean_rotation_scalar = (self._QuaternionSCA_A + self._QuaternionSCA_B) * 0.50 / scalar_diff
-        mean_rotation_vector = (self._QuaternionVEC_A + self._QuaternionVEC_B) * 0.50 / scalar_diff
+        # Eq.(4.74) Klaus
+        mean_rotation_scalar = (self.rA_sca + self.rB_sca) * 0.5 / s
+        # Eq.(4.75) Klaus
+        mean_rotation_vector = (self.rA_vec + self.rB_vec) * 0.5 / s
 
-        # vector part of difference quaternion
-        self.VectorDifferences = self._QuaternionSCA_A * self._QuaternionVEC_B
-        self.VectorDifferences -= self._QuaternionSCA_A * self._QuaternionVEC_A
-        self.VectorDifferences += np.cross(self._QuaternionVEC_A, self._QuaternionVEC_B)
+        # Eq.(4.73) Klaus
+        # vector part of difference quaternion, s_vec
+        self.VectorDifferences = self.rA_sca * self.rB_vec - self.rB_sca * self.rA_vec + \
+                                 np.cross(self.rA_vec, self.rB_vec)
+        self.VectorDifferences /= 2 * s
 
-        self.VectorDifferences = 0.5 * self.VectorDifferences / scalar_diff
         # rotate initial element basis
-        r0 = mean_rotation_scalar
-        r1 = mean_rotation_vector[0]
-        r2 = mean_rotation_vector[1]
-        r3 = mean_rotation_vector[2]
-        reference_transformation = self._calculate_initial_local_cs()
-        rotated_nx0 = np.zeros(self.Dimension)
-        rotated_ny0 = np.zeros(self.Dimension)
-        rotated_nz0 = np.zeros(self.Dimension)
+        self.Quaternion = Quaternion(w=mean_rotation_scalar,
+                                     x=mean_rotation_vector[0],
+                                     y=mean_rotation_vector[1],
+                                     z=mean_rotation_vector[2])
+        rotated_nx = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[0])
+        rotated_ny = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[1])
+        rotated_nz = self.Quaternion.rotate(self.LocalReferenceRotationMatrix[2])
 
-        for i in range(self.Dimension):
-            rotated_nx0[i] = reference_transformation[i, 0]
-            rotated_ny0[i] = reference_transformation[i, 1]
-            rotated_nz0[i] = reference_transformation[i, 2]
+        rotated_coordinate_system = np.array([rotated_nx, rotated_ny, rotated_nz])
 
-        quaternion = [r0, r1, r2, r3]
-        rotated_nx0 = rotate_vector(quaternion, rotated_nx0)
-        rotated_ny0 = rotate_vector(quaternion, rotated_ny0)
-        rotated_nz0 = rotate_vector(quaternion, rotated_nz0)
+        self.LocalRotationMatrix = self._rotate_basis_to_element_axis(rotated_coordinate_system)
 
-        rotated_coordinate_system = np.zeros([self.Dimension, self.Dimension])
-        for i in range(self.Dimension):
-            rotated_coordinate_system[i, 0] = rotated_nx0[i]
-            rotated_coordinate_system[i, 1] = rotated_ny0[i]
-            rotated_coordinate_system[i, 2] = rotated_nz0[i]
+    def _rotate_basis_to_element_axis(self, rotated_coordinate_system):
+        CurrentCoords = self._get_current_nodal_position()
+
+        nx = rotated_coordinate_system[0]
+        ny = rotated_coordinate_system[1]
+        nz = rotated_coordinate_system[2]
 
         # rotate basis to element axis + redefine R
-        delta_x = np.zeros(self.Dimension)
-        for i in range(self.Dimension):
-            delta_x[i] = self.CurrentCoords[self.Dimension + i] - self.CurrentCoords[i]
-        vector_norm = np.linalg.norm(delta_x)
+        delta_x = CurrentCoords[3:6] - CurrentCoords[0:3]
+        delta_x /= np.linalg.norm(delta_x)
 
-        if vector_norm > EPSILON:
-            delta_x /= vector_norm
+        # vector n of Eq. (4.78) Klaus
+        n = nx + delta_x
+        n /= np.linalg.norm(n)
 
-        self.Bisectrix = rotated_nx0 + delta_x
-        vector_norm = np.linalg.norm(self.Bisectrix)
-
-        if vector_norm > EPSILON:
-            self.Bisectrix /= vector_norm
-
-        n_xyz = np.zeros([self.Dimension, self.Dimension])
-
-        for i in range(0, self.Dimension):
-            n_xyz[i, 0] = -rotated_coordinate_system[i, 0]
-            n_xyz[i, 1] = rotated_coordinate_system[i, 1]
-            n_xyz[i, 2] = rotated_coordinate_system[i, 2]
-
-        Identity = np.identity(self.Dimension)
-        Identity -= 2.0 * np.outer(self.Bisectrix, self.Bisectrix)
-
-        self.LocalRotationMatrix = n_xyz
-        n_xyz = np.matmul(Identity, n_xyz)
+        # note that the vectors are stored column wise in matrix n_xyz, therefore transpose
+        #         ┌               ┐
+        #         |    |  |  |    |
+        # n_xyz = |   -nx ny nz   |
+        #         |    |  |  |    |
+        #         └               ┘
+        n_xyz = np.array([-nx, ny, nz]).T
+        tmp = np.outer(n, n.T)
+        tmp = (np.identity(self.Dimension) - 2 * tmp)
+        n_xyz = np.matmul(tmp, n_xyz)
+        self.Bisector = n
         return n_xyz
 
-    def _calculate_transformation_matrix(self):
-        AuxRotationMatrix = self._update_rotation_matrix_local()
-        RotationMatrix = np.zeros([self.ElementSize, self.ElementSize])
-        RotationMatrix = self._assemble_small_in_big_matrix(AuxRotationMatrix, RotationMatrix)
-        return RotationMatrix
+    def _update_transformation_matrix(self):
+        """
+        This function calculates the transformation matrix to globalize/localize vectors and/or matrices
+        """
+        # Building the rotation matrix for the local element matrix
+        self.TransformationMatrix = self._assemble_small_in_big_matrix(self.LocalRotationMatrix)
 
-    def _assemble_small_in_big_matrix(self, small_matrix, big_matrix):
+    def _assemble_small_in_big_matrix(self, small_matrix):
         numerical_limit = EPSILON
+        big_matrix = np.zeros([self.ElementSize, self.ElementSize])
+
         for k in range(0, self.ElementSize, self.Dimension):
             for i in range(self.Dimension):
                 for j in range(self.Dimension):
@@ -636,20 +728,12 @@ class CRBeamElement(BeamElement):
                         big_matrix[i + k, j + k] = small_matrix[i, j]
         return big_matrix
 
-    def _update_increment_deformation(self):
-        """
-         This function updates incremental deformation w.r.t. to current and previous deformations
-        """
-        increment_deformation = self.current_deformation - self.current_deformation
-        return increment_deformation
-
     def _calculate_initial_local_cs(self):
         direction_vector_x = np.zeros(self.Dimension)
 
         for i in range(self.Dimension):
             direction_vector_x[i] = (self.ReferenceCoords[i + self.Dimension] - self.ReferenceCoords[i])
 
-        temp_matrix = np.zeros([self.Dimension, self.Dimension])
         # no user defined local axis 2 input available
         theta_custom = 0.0
         global_z = np.zeros(self.Dimension)
@@ -691,25 +775,6 @@ class CRBeamElement(BeamElement):
             if vector_norm > EPSILON:
                 v3 /= vector_norm
 
-        for i in range(self.Dimension):
-            temp_matrix[i, 0] = direction_vector_x[i]
-            temp_matrix[i, 1] = v2[i]
-            temp_matrix[i, 2] = v3[i]
-
-        reference_transformation = np.zeros([self.ElementSize, self.ElementSize])
-        reference_transformation = self._assemble_small_in_big_matrix(temp_matrix, reference_transformation)
+        reference_transformation = np.array([direction_vector_x, v2, v3])
 
         return reference_transformation
-
-    def _calculate_current_length(self):
-        du = self.current_deformation[0] - self.current_deformation[1]
-        dv = self.current_deformation[2] - self.current_deformation[3]
-        dw = self.current_deformation[4] - self.current_deformation[5]
-
-        dx = self.ReferenceCoords[0] - self.ReferenceCoords[3]
-        dy = self.ReferenceCoords[1] - self.ReferenceCoords[4]
-        dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
-
-        length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
-        return length
-

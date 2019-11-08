@@ -92,10 +92,10 @@
         "runs": [{
                 "type" : "dynamic_analysis",
                 "settings": {
-                    "solver_type": "Picard",
+                    "solver_type": "NewtonRaphson",
                     "run_in_modal_coordinates": true,
                     "time":{
-                        "integration_scheme": "GenAlpha",
+                        "integration_scheme": "BDF2",
                         "start": 0.0,
                         "end": 600.0,
                         "step" : 0.01},

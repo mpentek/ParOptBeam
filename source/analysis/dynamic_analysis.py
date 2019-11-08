@@ -1,15 +1,14 @@
-import numpy as np
-import json
 from os.path import join as os_join
 
-from source.analysis.analysis_type import AnalysisType
-from source.model.structure_model import StraightBeam
-import source.postprocess.plotter_utilities as plotter_utilities
-import source.postprocess.writer_utilitites as writer_utilities
-import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
-from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.other_utilities import get_adjusted_path_string
+import numpy as np
+
 import source.auxiliary.global_definitions as GD
+import source.postprocess.plotter_utilities as plotter_utilities
+import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
+import source.postprocess.writer_utilitites as writer_utilities
+from source.analysis.analysis_type import AnalysisType
+from source.auxiliary.other_utilities import get_adjusted_path_string
+from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
 def transform_into_modal_coordinates(modal_transform_matrix, matrix):

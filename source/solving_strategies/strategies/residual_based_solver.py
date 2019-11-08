@@ -1,7 +1,15 @@
+# ===============================================================================
+"""
+        Derived classes from Solver
+
+Created on:  15.10.2019
+Last update: 16.10.2019
+"""
+# ===============================================================================
 import numpy as np
 
 from source.solving_strategies.strategies.solver import Solver
-from source.auxiliary.global_definitions import *
+import source.auxiliary.global_definitions as GD
 
 
 class ResidualBasedSolver(Solver):
@@ -21,22 +29,22 @@ class ResidualBasedSolver(Solver):
         pass
 
     def get_displacement_from_element(self):
-        u = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
+        u = np.zeros(self.structure_model.n_nodes * GD.DOFS_PER_NODE[self.structure_model.domain_size])
 
         for e in self.structure_model.elements:
-            i_start = DOFS_PER_NODE[e.domain_size] * e.index
-            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            i_start = GD.DOFS_PER_NODE[e.domain_size] * e.index
+            i_end = GD.DOFS_PER_NODE[e.domain_size] * e.index + GD.DOFS_PER_NODE[e.domain_size] * GD.NODES_PER_LEVEL
             u[i_start:i_end] += e.current_deformation
 
         u = self.structure_model.apply_bc_by_reduction(u, 'column_vector')
         return u
 
     def get_internal_force_from_element(self):
-        q = np.zeros(self.structure_model.n_nodes * DOFS_PER_NODE[self.structure_model.domain_size])
+        q = np.zeros(self.structure_model.n_nodes * GD.DOFS_PER_NODE[self.structure_model.domain_size])
 
         for e in self.structure_model.elements:
-            start_index = DOFS_PER_NODE[e.domain_size] * e.index
-            end_index = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            start_index = GD.DOFS_PER_NODE[e.domain_size] * e.index
+            end_index = GD.DOFS_PER_NODE[e.domain_size] * e.index + GD.DOFS_PER_NODE[e.domain_size] * GD.NODES_PER_LEVEL
 
             q[start_index:end_index] += e.nodal_force_global
 
@@ -46,8 +54,8 @@ class ResidualBasedSolver(Solver):
     def update_total(self, new_displacement):
         # updating displacement in the element
         for e in self.structure_model.elements:
-            i_start = DOFS_PER_NODE[e.domain_size] * e.index
-            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            i_start = GD.DOFS_PER_NODE[e.domain_size] * e.index
+            i_end = GD.DOFS_PER_NODE[e.domain_size] * e.index + GD.DOFS_PER_NODE[e.domain_size] * GD.NODES_PER_LEVEL
             new_displacement_e = new_displacement[i_start: i_end]
             e.update_total(new_displacement_e)
 

@@ -87,7 +87,7 @@ class Solver(object):
     def solve(self):
         pass
 
-    def _compute_reaction(self, u, v, a):
+    def _compute_reaction(self):
 
         # TODO: check if this still correct in modal coordinates
         # if self.transform_into_modal:
@@ -98,6 +98,9 @@ class Solver(object):
         #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'),
         #                    self.solver.displacement)
         # else:
+        u = self.displacement[:, self.step]
+        v = self.velocity[:, self.step]
+        a = self.acceleration[:, self.step]
         f1 = np.dot(self.M, a)
         f2 = np.dot(self.B, v)
         f3 = np.dot(self.K, u)

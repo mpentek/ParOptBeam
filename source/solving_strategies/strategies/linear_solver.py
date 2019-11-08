@@ -19,17 +19,16 @@ class LinearSolver(Solver):
         for i in range(0, len(self.array_time)):
             self.step = i
             current_time = self.array_time[i]
-            print("time: ", "{0:.2f}".format(current_time))
+            print("time: {0:.2f}".format(current_time))
             self.scheme.solve_single_step(self.force[:, i])
 
             # appending results to the list
             self.displacement[:, i] = self.scheme.get_displacement()
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
-            self.dynamic_reaction[:, i] = self._compute_reaction(
-                self.displacement[:, i],
-                self.velocity[:, i],
-                self.acceleration[:, i])
+            # TODO: only calculate reaction when user wants it
+            if self.structure_model is not None:
+                self.dynamic_reaction[:, i] = self._compute_reaction()
 
             # update results
-            self.scheme.update_structure_time_step()
+            self.scheme.update()

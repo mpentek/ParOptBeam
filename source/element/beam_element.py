@@ -37,16 +37,16 @@ class BeamElement(object):
         # element geometry
         # element geometry Node A, Node B
         self.ReferenceCoords = nodal_coords.reshape(self.LocalSize)
-        # element current nodal positions
-        self.CurrentCoords = self.ReferenceCoords
         # reference length of one element
         self.L = self._calculate_reference_length()
 
         # nonlinear elements needs the nodal forces and deformations for the geometric stiffness calculation
         if self.isNonlinear:
             # nodal forces
-            self.qe = np.zeros(self.ElementSize)
-            # [A_disp_x, B_disp_x, A_disp_y, B_disp_y, ... rot ..]
+            self.nodal_force_local = np.zeros(self.ElementSize)
+            self.nodal_force_global = np.zeros(self.ElementSize)
+
+            # [A_disp_x, A_disp_y, rot ..., B_disp_x, B_disp_y, ... rot ..]
             # placeholder for one time step deformation to calculate the increment
             self.current_deformation = np.zeros(self.ElementSize)
             self.previous_deformation = np.zeros(self.ElementSize)
@@ -60,11 +60,6 @@ class BeamElement(object):
             str(self.index) + "\n"
         print(msg)
 
-    def update_nodal_information(self, deformation, reaction):
-        self.previous_deformation = self.current_deformation
-        self.current_deformation = deformation
-        self.qe = reaction
-
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
         # assuming equivalency with circle
@@ -72,9 +67,14 @@ class BeamElement(object):
 
     def evaluate_relative_importance_of_shear(self):
         self.G = self.E / 2 / (1 + self.nu)
+        self.Py = 0.0
+        self.Pz = 0.0
+
         # relative importance of the shear deformation to the bending one
-        self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
-        self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
+        if self.Asy != 0.0:
+            self.Py = 12 * self.E * self.Iz / (self.G * self.Asy * self.L ** 2)
+        if self.Asz != 0.0:
+            self.Pz = 12 * self.E * self.Iy / (self.G * self.Asz * self.L ** 2)
 
     def get_element_stiffness_matrix(self):
         ke = self._get_element_stiffness_matrix_material()
@@ -99,3 +99,40 @@ class BeamElement(object):
         dz = self.ReferenceCoords[2] - self.ReferenceCoords[5]
         length = np.sqrt(dx * dx + dy * dy + dz * dz)
         return length
+
+    def _calculate_current_length(self):
+        du = self.current_deformation[6] - self.current_deformation[0]
+        dv = self.current_deformation[7] - self.current_deformation[1]
+        dw = self.current_deformation[8] - self.current_deformation[2]
+
+        dx = self.ReferenceCoords[3] - self.ReferenceCoords[0]
+        dy = self.ReferenceCoords[4] - self.ReferenceCoords[1]
+        dz = self.ReferenceCoords[5] - self.ReferenceCoords[2]
+
+        length = np.sqrt((du + dx) * (du + dx) + (dv + dy) * (dv + dy) + (dw + dz) * (dw + dz))
+        return length
+
+    def _get_current_nodal_position(self):
+        # element current nodal positions
+        CurrentCoords = np.zeros(self.LocalSize)
+
+        for i in range(self.NumberOfNodes):
+            k = i * self.Dimension
+            j = i * self.LocalSize
+            CurrentCoords[k] = self.ReferenceCoords[k] + self.current_deformation[j]
+            CurrentCoords[k + 1] = self.ReferenceCoords[k + 1] + self.current_deformation[j + 1]
+            CurrentCoords[k + 2] = self.ReferenceCoords[k + 2] + self.current_deformation[j + 2]
+
+        return CurrentCoords
+
+    def _assign_new_deformation(self, new_deformation):
+        new_deformation = np.array(new_deformation)
+        self.previous_deformation = self.current_deformation
+        self.current_deformation = new_deformation
+
+    def _update_increment_deformation(self):
+        """
+         This function updates incremental deformation w.r.t. to current and previous deformations
+        """
+        increment_deformation = self.current_deformation - self.previous_deformation
+        return increment_deformation
