@@ -438,18 +438,20 @@ class StraightBeam(object):
                 # TODO: check if robust enough for modes where 2 DoFs are involved
                 if match_for_case_id:
 
-                    if case_id in self.mode_identification_results:
-                        # using list - so that results are ordered
-                        self.mode_identification_results[case_id].append({
-                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
-                        })
-                    else:
-                        # using list - so that results are ordered
-                        self.mode_identification_results[case_id] = [{
-                            (selected_mode + 1): [max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                                                  max(self.decomposed_eigenmodes['rel_participation'][i].values())]
-                        }]
+                    if case_id in self.mode_identification_results: 
+                        # using list - so that results are ordered 
+                        self.mode_identification_results[case_id].append({ 
+                            'mode_id' : (selected_mode + 1),
+                            'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values()) 
+                        }) 
+                    else: 
+                        # using list - so that results are ordered 
+                        self.mode_identification_results[case_id] = [{                            
+                            'mode_id' : (selected_mode + 1),
+                            'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                        }] 
 
         if print_to_console:
             print('Result of decoupled eigenmode identification for the first ' +
@@ -669,6 +671,7 @@ class StraightBeam(object):
             err_msg += "\" for axis is not avaialbe \n"
             err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
             raise Exception(err_msg)
+        
         if cols != 1:
             extended_matrix = np.zeros((rows, cols))
         else:
