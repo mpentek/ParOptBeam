@@ -1,5 +1,3 @@
-from source.solving_strategies.schemes.forward_euler1_scheme import ForwardEuler1
-from source.solving_strategies.schemes.backward_euler1_scheme import BackwardEuler1
 from source.solving_strategies.strategies.residual_based_solver import ResidualBasedSolver
 import numpy as np
 
@@ -8,7 +6,7 @@ import numpy as np
 # stopping criteria
 TOL = 1.e-5
 # maximum iteration
-MAX_IT = 15
+MAX_IT = 10
 
 
 class ResidualBasedPicardSolver(ResidualBasedSolver):
@@ -16,6 +14,8 @@ class ResidualBasedPicardSolver(ResidualBasedSolver):
                  comp_model, initial_conditions, force, structure_model):
         super().__init__(array_time, time_integration_scheme, dt,
                          comp_model, initial_conditions, force, structure_model)
+
+        self.time_integration_scheme = time_integration_scheme
 
     def solve_single_step(self):
         # predict displacement at time step n with external force f_ext
@@ -44,11 +44,12 @@ class ResidualBasedPicardSolver(ResidualBasedSolver):
     def calculate_increment(self, ru):
         du = np.zeros(ru.shape)
 
-        if isinstance(self.scheme, ForwardEuler1):
+        # TODO increment for other schemes need to be tested and added
+        if self.time_integration_scheme == "ForwardEuler1":
             LHS = self.M
             RHS = ru * self.dt ** 2
             du = np.linalg.solve(LHS, RHS)
-        if isinstance(self.scheme, BackwardEuler1):
+        elif self.time_integration_scheme == "BackwardEuler1":
             LHS = (self.B * self.dt + self.K * self.dt ** 2 + self.M)
             RHS = ru * self.dt ** 2
             du = np.linalg.solve(LHS, RHS)
