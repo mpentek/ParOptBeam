@@ -1,18 +1,14 @@
-import numpy as np
-import json
 from os.path import join as os_join
 
-from source.analysis.analysis_type import AnalysisType
-from source.solving_strategies.strategies.linear_solver import LinearSolver
-from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
-from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
-from source.model.structure_model import StraightBeam
-import source.postprocess.plotter_utilities as plotter_utilities
-import source.postprocess.writer_utilitites as writer_utilities
-import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
-from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.other_utilities import get_adjusted_path_string
+import numpy as np
+
 import source.auxiliary.global_definitions as GD
+import source.postprocess.plotter_utilities as plotter_utilities
+import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
+import source.postprocess.writer_utilitites as writer_utilities
+from source.analysis.analysis_type import AnalysisType
+from source.auxiliary.other_utilities import get_adjusted_path_string
+from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
 def transform_into_modal_coordinates(modal_transform_matrix, matrix):
@@ -505,7 +501,7 @@ class DynamicAnalysis(AnalysisType):
             for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
                                   GD.DOF_LABELS[self.structure_model.domain_size]):
                 start = idx
-                step = DOFS_PER_NODE[self.structure_model.domain_size]
+                step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
                 stop = self.solver.displacement.shape[0] + idx - step
                 self.structure_model.nodal_coordinates[label] = self.solver.displacement[start:stop +
                                                                                          1:step]
