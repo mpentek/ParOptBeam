@@ -1,7 +1,7 @@
 import numpy as np
 
 from source.solving_strategies.strategies.rasidual_based_solver import ResidualBasedSolver
-from source.auxiliary.global_definitions import *
+import source.auxiliary.global_definitions as GD
 
 # TODO: take these values as user input
 # stopping criteria
@@ -19,8 +19,8 @@ class ResidualBasedNewtonRaphsonSolver(ResidualBasedSolver):
     def update_incremental(self, dp):
         # updating displacement in the element
         for e in self.structure_model.elements:
-            i_start = DOFS_PER_NODE[e.domain_size] * e.index
-            i_end = DOFS_PER_NODE[e.domain_size] * e.index + DOFS_PER_NODE[e.domain_size] * NODES_PER_LEVEL
+            i_start = GD.DOFS_PER_NODE[e.domain_size] * e.index
+            i_end = GD.DOFS_PER_NODE[e.domain_size] * e.index + GD.DOFS_PER_NODE[e.domain_size] * GD.NODES_PER_LEVEL
             dp_e = dp[i_start: i_end]
             e.update_incremental(dp_e)
 
