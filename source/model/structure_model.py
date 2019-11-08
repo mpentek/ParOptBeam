@@ -672,10 +672,10 @@ class StraightBeam(object):
             err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
             raise Exception(err_msg)
         
-        if cols != 1:
-            extended_matrix = np.zeros((rows, cols))
-        else:
-            extended_matrix = np.zeros((rows,))
+        #if cols != 1:
+        extended_matrix = np.zeros((rows, cols))
+        #else:
+        #    extended_matrix = np.zeros((rows,))
         # copy the needed element into the extended matrix
         extended_matrix[ixgrid] = matrix
 
