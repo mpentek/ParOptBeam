@@ -201,18 +201,52 @@ class OptimizableStraightBeam(object):
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
 
-    def adjust_density_for_target_total_mass(self, target_total_mass):
+    def adjust_density_for_target_total_mass(self, target_total_mass, print_to_console=False):
 
+        print('BEFORE TUNED DENSITY')
         # calculate to be sure to have most current
         self.model.calculate_total_mass(True)
 
-        corr_fctr = target_total_mass / self.model.parameters['m_tot']
+        initial_rho = self.model.parameters['rho']
 
-        self.model.parameters['rho'] *= corr_fctr
+        # using partial to fix some parameters for the
+        optimizable_function = partial(self.generic_material_density_objective_function,
+                                       target_total_mass,
+                                       initial_rho)
+
+        minimization_result = minimize_scalar(optimizable_function,
+                                              method='Bounded',
+                                              bounds=(1/5, 5))
+                                            #   bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+
+        # returning only one value!
+        opt_rho_fctr = minimization_result.x
+        self.model.parameters['rho'] = initial_rho * opt_rho_fctr
+
+        if print_to_console:
+            print('INITIAL rho:', initial_rho)
+            print('OPTIMIZED rho: ', opt_rho_fctr * initial_rho)
+            print()
 
         # re-calculate and print to console
         print('AFTER TUNED DENSITY')
         self.model.calculate_total_mass(True)
+        print()
+
+        # re-evaluate
+        self.model.calculate_global_matrices()
+
+    def generic_material_density_objective_function(self, target_total_mass, initial_rho, multiplier_fctr):
+
+        for e in self.model.elements:
+            e.rho = multiplier_fctr * initial_rho
+
+        # NOTE: do not forget to update G and further dependencies
+        self.model.calculate_total_mass(True)
+
+
+
+        return ((self.model.parameters['m_tot']-target_total_mass)**2)
 
     def adjust_e_modul_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_e = self.model.parameters['e']

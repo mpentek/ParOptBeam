@@ -12,7 +12,7 @@ from source.analysis.analysis_controller import AnalysisController
 
 available_models = [
     'ProjectParameters3DGenericBuilding.json',
-    'ProjectParameters3DGenericPylon.json',
+    #'ProjectParameters3DGenericPylon.json',
     ]
 
 for available_model in available_models:
@@ -36,6 +36,10 @@ for available_model in available_models:
 
     # ==============================================
     # Analysis wrapper
+
+    parameters['analyses_parameters']['runs'][0]['output']['selected_eigenmode']['animate_skin_model'] = []
+    parameters['analyses_parameters']['runs'].pop(2)
+    parameters['analyses_parameters']['runs'].pop(1)
 
     analyses_controller = AnalysisController(
         beam_model, parameters['analyses_parameters'])
