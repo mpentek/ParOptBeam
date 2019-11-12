@@ -206,7 +206,10 @@ class DynamicAnalysis(AnalysisType):
             Plots the time series of required quantitiy 
         """
         print('Plotting result for selected dof in dynamic analysis \n')
-        plot_title = selected_result.capitalize() + ' at DoF ' + str(dof)
+
+        coord_label = GD.DOF_LABELS[self.structure_model.domain_size][int(dof % GD.DOFS_PER_NODE[self.structure_model.domain_size])]
+
+        plot_title = selected_result.capitalize() + ' at DoF ' + str(dof) + " -> " + coord_label
         if selected_result == 'displacement':
             result_data = self.solver.displacement[dof, :]
         elif selected_result == 'velocity':
@@ -264,8 +267,10 @@ class DynamicAnalysis(AnalysisType):
             err_msg += "Choose one of: \"displacement\", \"velocity\", \"acceleration\", \"reaction\""
             raise Exception(err_msg)
 
+        coord_label = GD.DOF_LABELS[self.structure_model.domain_size][int(dof % GD.DOFS_PER_NODE[self.structure_model.domain_size])]
+
         file_header = "# Dynamic Analysis result " + selected_result + "\n"
-        file_header += "# for DoF " + str(dof) + " over time \n"
+        file_header += "# for DoF " + str(dof) + " -> " + coord_label + " over time \n"
         # TODO add DoF height coordinate into header
 
         file_name = 'dynamic_analysis_result_' + \

@@ -590,7 +590,7 @@ class StraightBeam(object):
         file_header += 'Moment of inertia Iy [m^4] | Moment of inertia Iz [m^4] | '
         file_header += 'Torsion constant It  [m^4] | Polar moment of inertia Ip [m^4] | '
         file_header += 'Relative shear factor Py  [-] | Relative shear factor Pz  [-] | '
-        file_header += 'Mass m  [kg]\n'
+        file_header += 'Mass m  [kg] - Total mass ' + '{:.3f}'.format(self.parameters['m_tot']) + ' [kg]\n'
 
         file_name = 'structure_model_properties.dat'
 
@@ -644,7 +644,7 @@ class StraightBeam(object):
         plot_style.append(['-ko', '--ro'])
 
         #
-        plot_title.append("Nodal mass over running coordinate x")
+        plot_title.append("Nodal mass over running coordinate x - Total mass " + '{:.3f}'.format(self.parameters['m_tot']) + " [kg]")
         struct_property_data.append([{'x': self.parameters['x'], 'y': self.parameters['m']}])
         plot_legend.append(['m [kg]'])
         plot_style.append(['-ko'])
