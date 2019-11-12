@@ -333,11 +333,18 @@ class StraightBeam(object):
                 # so an increment can be added
                 # For few element the target outrigger value will be too low
                 
-                # increment needed to reach target nodal mass
-                incr_fctr = existing_nodal_mass / values['m'] 
-                
-                # updating nodal mass
-                self.parameters['m'][geom_node_id] += (1-incr_fctr)*values['m'] 
+                if existing_nodal_mass < values['m']:
+                    # increment needed to reach target nodal mass
+                    incr_fctr = existing_nodal_mass / values['m'] 
+                    self.parameters['m'][geom_node_id] += (1-incr_fctr)*values['m'] 
+                else:
+                    msg = "Existing nodal mass value of " + str(existing_nodal_mass) + " [kg]\n"
+                    msg += "at location x= " + str(geom_location) + " [m] along the beam\n"
+                    msg += "larger than target outrigger of " + str (values['m']) + " [kg].\n"
+                    msg += "Not incrementing to target (as is it lower) but adding up to existing.\n"
+                    print(msg)
+
+                    self.parameters['m'][geom_node_id] += values['m'] 
 
                 global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
                 affected_dof_ids = {}
@@ -350,8 +357,12 @@ class StraightBeam(object):
 
                     # affects only diagonal entries for translation and rotation
                     # only global mass matrix entries
-                    self.point_mass[global_node_id + idx] = (1-incr_fctr)*target_dof_vals[label]
-                    # TODO check if global stiffness increment is needed
+                    if existing_nodal_mass < values['m']:
+                        # difference to target will be added
+                        self.point_mass[global_node_id + idx] = (1-incr_fctr)*target_dof_vals[label]
+                    else:
+                        # target will be added as is
+                        self.point_mass[global_node_id + idx] = target_dof_vals[label]
 
 
     def calculate_total_mass(self, print_to_console=False):

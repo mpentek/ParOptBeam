@@ -217,6 +217,7 @@ class OptimizableStraightBeam(object):
         minimization_result = minimize_scalar(optimizable_function,
                                               method='Bounded',
                                               bounds=(1/5, 5))
+                                              # TODO avoid hardcoding
                                             #   bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
