@@ -102,7 +102,7 @@
                         "plot_mode": [1,2,3], 
                         "write_mode": [1,2,3],
                         "animate_mode": [1],
-                        "animate_skin_model": "None"},
+                        "animate_skin_model": []},
                     "selected_eigenmode_range": {
                         "help": "maximum 4 modes per range at a time",
                         "considered_ranges": [[1,2]], 
