@@ -89,7 +89,7 @@ class AnalysisController(object):
                 pass
 
             elif analysis_param['type'] == 'dynamic_analysis':
-                from source.analysis.dynamic_analysis import DynamicAnalysis
+                from source.analysis.dynamic_analysis_modal import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(
                     self.model, analysis_param))
 
