@@ -114,6 +114,7 @@
                 "settings": {
                     "solver_type": "Linear",
                     "run_in_modal_coordinates": true,
+                    "number_of_modes_considered":6,
                     "time":{
                         "integration_scheme": "GenAlpha",
                         "start": 0.0,

@@ -11,8 +11,9 @@ from source.auxiliary.other_utilities import get_adjusted_path_string
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 
 
-def transform_into_modal_coordinates(modal_transform_matrix, matrix):
-    matrix_transformed = np.matmul(np.matmul(np.transpose(modal_transform_matrix), matrix), modal_transform_matrix)
+def transform_into_modal_coordinates(modal_transform_matrix, matrix, modes_considered ):
+    modal_transform_matrix_red = modal_transform_matrix[:,:modes_considered]
+    matrix_transformed = np.matmul(np.matmul(np.transpose(modal_transform_matrix_red), matrix), modal_transform_matrix_red)
     matrix_transformed = matrix_transformed.round(decimals=8) # rounded off 10 **-8 to zero 
     if np.count_nonzero(matrix_transformed - np.diag(np.diagonal(matrix_transformed))) == 0: 
         matrix_as_array = np.diagonal(matrix_transformed)
@@ -126,6 +127,11 @@ class DynamicAnalysis(AnalysisType):
         if 'run_in_modal_coordinates' in self.parameters['settings']:
             if self.parameters['settings']['run_in_modal_coordinates']:
                 self.transform_into_modal = True
+                self.num_of_modes_considered = self.parameters['settings']['number_of_modes_considered']
+                u0 = np.zeros(self.num_of_modes_considered)  # initial displacement
+                v0 = np.zeros(self.num_of_modes_considered)  # initial velocity
+                a0 = np.zeros(self.num_of_modes_considered)  # initial acceleration
+                initial_conditions = np.array([u0, v0, a0])
             else:
                 self.transform_into_modal = False
                 pass
@@ -143,11 +149,11 @@ class DynamicAnalysis(AnalysisType):
         # tranformation to the modal coordinates
         if self.transform_into_modal:
             self.comp_m = transform_into_modal_coordinates(
-                self.structure_model.eigen_modes_raw, self.comp_m)
+                self.structure_model.eigen_modes_raw, self.comp_m, self.num_of_modes_considered)
             self.comp_b = transform_into_modal_coordinates(
-                self.structure_model.eigen_modes_raw, self.comp_b)
+                self.structure_model.eigen_modes_raw, self.comp_b, self.num_of_modes_considered)
             self.comp_k = transform_into_modal_coordinates(
-                self.structure_model.eigen_modes_raw, self.comp_k)
+                self.structure_model.eigen_modes_raw, self.comp_k, self.num_of_modes_considered)
 
         if force.shape[1] != len(self.array_time):
             err_msg = "The time step for forces does not match the time step defined"
@@ -158,7 +164,7 @@ class DynamicAnalysis(AnalysisType):
 
         if self.transform_into_modal:
             force = np.dot(np.transpose(
-                self.structure_model.eigen_modes_raw), force)
+                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered]), force)
 
         print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
@@ -198,11 +204,11 @@ class DynamicAnalysis(AnalysisType):
         # transforming back to normal coordinates :
         if self.transform_into_modal:
             self.solver.displacement = np.matmul(
-                self.structure_model.eigen_modes_raw, self.solver.displacement)
+                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered], self.solver.displacement)
             self.solver.velocity = np.matmul(
-                self.structure_model.eigen_modes_raw, self.solver.velocity)
+                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered], self.solver.velocity)
             self.solver.acceleration = np.matmul(
-                self.structure_model.eigen_modes_raw, self.solver.acceleration)
+                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered], self.solver.acceleration)
 
         self.solver.displacement = self.structure_model.recuperate_bc_by_extension(
             self.solver.displacement)
