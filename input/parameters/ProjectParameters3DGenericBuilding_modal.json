@@ -121,11 +121,11 @@
                 "settings": {
                     "solver_type": "Linear",
                     "run_in_modal_coordinates": true,
-                    "number_of_modes_considered":6,
+                    "number_of_modes_considered":10,
                     "time":{
                         "integration_scheme": "GenAlpha",
                         "start": 0.0,
-                        "end": 600.0,
+                        "end": 600,
                         "step" : 0.02},
                     "intial_conditions": {
                         "displacement": "None",

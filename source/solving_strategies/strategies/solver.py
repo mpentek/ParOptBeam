@@ -94,6 +94,7 @@ class Solver(object):
     def _compute_reaction(self):
 
         # TODO: check if this still correct in modal coordinates
+        # AK : this doesnt considres the fixed dof 
         #if self.transform_into_modal:
         #    raise Exception('reaction computed wrongly')
         #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'),

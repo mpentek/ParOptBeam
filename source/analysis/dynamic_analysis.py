@@ -199,6 +199,14 @@ class DynamicAnalysis(AnalysisType):
             self.solver.velocity)
         self.solver.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.solver.acceleration)
+                
+
+        f1 = np.matmul(self.structure_model.m, self.solver.acceleration)
+        f2 = np.matmul(self.structure_model.b, self.solver.velocity)
+        f3 = np.matmul(self.structure_model.k, self.solver.displacement)
+        self.solver.dynamic_reaction = self.force - f1 - f2 - f3
+
+        # TODO : elastic support reaction computation 
 
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """

@@ -209,13 +209,18 @@ class DynamicAnalysis(AnalysisType):
                 self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered], self.solver.velocity)
             self.solver.acceleration = np.matmul(
                 self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered], self.solver.acceleration)
-
+        
         self.solver.displacement = self.structure_model.recuperate_bc_by_extension(
             self.solver.displacement)
         self.solver.velocity = self.structure_model.recuperate_bc_by_extension(
             self.solver.velocity)
         self.solver.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.solver.acceleration)
+        f1 = np.dot(self.structure_model.m, self.solver.acceleration)
+        f2 = np.dot(self.structure_model.b, self.solver.velocity)
+        f3 = np.dot(self.structure_model.k, self.solver.displacement)
+        self.solver.dynamic_reaction = self.force - f1 - f2 - f3
+        # TODO : elastic suppot reaction computation 
 
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
