@@ -94,8 +94,12 @@ class StraightBeam(object):
             })
             try: 
                 self.parameters["intervals"][idx]['m'] = val["outrigger_mass"]
+                self.parameters["intervals"][idx]['out_stif_y'] = val["outrigger_stiffness_ratio_y"]
+                self.parameters["intervals"][idx]['out_stif_z'] = val["outrigger_stiffness_ratio_z"]
             except:
                 self.parameters["intervals"][idx]['m'] = None
+                self.parameters["intervals"][idx]['out_stif_y'] = None
+                self.parameters["intervals"][idx]['out_stif_z'] = None
                 print('No outrigger mass for interval ' + str(idx))
 
         # define element type
@@ -143,6 +147,7 @@ class StraightBeam(object):
 
         # after initial setup
         self.calculate_global_matrices()
+        self.calculate_total_mass()
 
         self.mode_identification_results = {}
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': []}
@@ -316,15 +321,18 @@ class StraightBeam(object):
             if  values['m'] is not None:
                 if values['bounds'][1] == "End":
                     geom_location = self.parameters['lx']
+                    height_of_interval = geom_location
                 else:
                     geom_location = values['bounds'][1]
+                    height_of_interval = geom_location - values['bounds'][0]
 
-                #print('Outrigger at\n')
-                #print(' geometric location ', str(geom_location))
+                print('Outrigger at\n')
+                print(' geometric location ', str(geom_location))
 
                 geom_node_id = int(geom_location / self.lx_i)
-                #print(' geometric node id ', str(geom_node_id))
-            
+                print(' geometric node id ', str(geom_node_id))
+
+                # Point mass entries 
                 # existing nodal mass from area, length and density
                 existing_nodal_mass = self.parameters['m'][geom_node_id]
 
@@ -362,7 +370,28 @@ class StraightBeam(object):
                         self.point_mass[global_node_id + idx] = (1-incr_fctr)*target_dof_vals[label]
                     else:
                         # target will be added as is
+                        # Check : if this is correct ?? 
+                        # self.point_mass[global_node_id + idx] = 0 ???? 
                         self.point_mass[global_node_id + idx] = target_dof_vals[label]
+                # Point stiffness entries
+                
+                existing_nodal_mass = self.parameters['m'][geom_node_id]
+                outrigger_stiffness_ratio_y = values['out_stif_y']
+                outrigger_stiffness_ratio_z = values['out_stif_z']
+                
+                point_stiffness_rotation_y = self.parameters['e'] * values['c_iy'][0] / height_of_interval * outrigger_stiffness_ratio_y
+                point_stiffness_rotation_z = self.parameters['e'] * values['c_iz'][0] / height_of_interval * outrigger_stiffness_ratio_z
+                point_stiffness_torsion = 0.0 # no torsional stiffness by addition of an outrigger system 
+
+                global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
+                for idx, label in enumerate(GD.DOF_LABELS[self.domain_size]):
+                    if label == 'a': 
+                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_y # TODO : double check these corelations 
+                    elif label == 'b': 
+                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_z # TODO : double check these corelations 
+                    elif label == 'g': 
+                        self.point_stiffness[global_node_id + idx] = point_stiffness_torsion # TODO : double check these corelations 
+
 
 
     def calculate_total_mass(self, print_to_console=False):
@@ -387,7 +416,8 @@ class StraightBeam(object):
 
     def calculate_global_matrices(self):
         # using computational values for m,b,k as this reduction is done otherwise many times
-
+        # also update the outrigger contribution
+        self.update_outrigger_contribution()
         # mass matrix
         self.m = self._get_mass()
         self.comp_m = self.apply_bc_by_reduction(self.m)
@@ -766,7 +796,7 @@ class StraightBeam(object):
         glob_matrix = np.zeros((self.n_nodes * GD.DOFS_PER_NODE[self.domain_size],
                                 self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
 
-        # fill global stiffness matrix entries
+        # fill global mass matrix entries
         for element in self.elements:
             el_matrix = element.get_element_mass_matrix()
             i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index

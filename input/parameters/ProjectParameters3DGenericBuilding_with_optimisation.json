@@ -28,8 +28,8 @@
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
                     "outrigger_mass": 947000.0,
-                    "outrigger_stiffness_ratio_y": 5,
-                    "outrigger_stiffness_ratio_z": 5},
+                    "outrigger_stiffness_ratio_y": 1.0,
+                    "outrigger_stiffness_ratio_z": 1.0},
                     {
                     "interval_bounds" : [60.0, 120.0],
                     "length_y": [45.0],
@@ -41,8 +41,8 @@
                     "moment_of_inertia_z" : [227813.0],
                     "torsional_moment_of_inertia" : [329063.0],
                     "outrigger_mass": 846000.0,
-                    "outrigger_stiffness_ratio_y": 5,
-                    "outrigger_stiffness_ratio_z": 5},
+                    "outrigger_stiffness_ratio_y": 1.0,
+                    "outrigger_stiffness_ratio_z": 1.0},
                     {
                     "interval_bounds" : [120.0, "End"],
                     "length_y": [35.0],
@@ -54,8 +54,8 @@
                     "moment_of_inertia_z" : [89323.0],
                     "torsional_moment_of_inertia" : [134896.0],
                     "outrigger_mass": 846000.0,
-                    "outrigger_stiffness_ratio_y": 5,
-                    "outrigger_stiffness_ratio_z": 5}]
+                    "outrigger_stiffness_ratio_y": 1.0,
+                    "outrigger_stiffness_ratio_z": 1.0}]
             }
         },
         "boundary_conditions": "fixed-free"
@@ -71,7 +71,7 @@
                 "corresponding_eigenfrequencies": [0.23,0.20,0.40]}}
     },
     "analyses_parameters":{
-        "global_output_folder" : "GenericBuilding_modal",
+        "global_output_folder" : "some/path",
         "model_properties": {
             "write": true,
             "plot":true
@@ -109,7 +109,7 @@
                         "plot_mode": [1,2,3], 
                         "write_mode": [1,2,3],
                         "animate_mode": [1],
-                        "animate_skin_model": []},
+                        "animate_skin_model": [1]},
                     "selected_eigenmode_range": {
                         "help": "maximum 4 modes per range at a time",
                         "considered_ranges": [[1,2]], 
@@ -120,8 +120,7 @@
                 "type" : "dynamic_analysis",
                 "settings": {
                     "solver_type": "Linear",
-                    "run_in_modal_coordinates": true,
-                    "number_of_modes_considered":6,
+                    "run_in_modal_coordinates": false,
                     "time":{
                         "integration_scheme": "GenAlpha",
                         "start": 0.0,
@@ -144,7 +143,7 @@
                         "write_time": [450.15]
                     },
                     "animate_time_history" : true,
-                    "animate_skin_model_time_history": false,
+                    "animate_skin_model_time_history": true,
                     "skin_model_animation_parameters":{
                         "start_record": 160,
                         "end_record": 200,
