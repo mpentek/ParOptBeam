@@ -370,8 +370,8 @@ class StraightBeam(object):
                         self.point_mass[global_node_id + idx] = (1-incr_fctr)*target_dof_vals[label]
                     else:
                         # target will be added as is
-                        # Check : if this is correct ?? 
-                        # self.point_mass[global_node_id + idx] = 0 ???? 
+                        # AK : check
+                        # self.point_mass[global_node_id + idx] = 0
                         self.point_mass[global_node_id + idx] = target_dof_vals[label]
                 # Point stiffness entries
                 

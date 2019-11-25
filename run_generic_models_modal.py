@@ -11,7 +11,7 @@ from source.analysis.analysis_controller import AnalysisController
 # NOTE: all currently available models
 
 available_models = [
-    'ProjectParameters3DGenericBuilding_modal.json'
+    'ProjectParameters3DGenericBuildingModal.json'
     ]
 
 for available_model in available_models:
