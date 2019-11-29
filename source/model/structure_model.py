@@ -379,9 +379,9 @@ class StraightBeam(object):
                 existing_nodal_mass = self.parameters['m'][geom_node_id]
                 outrigger_stiffness_ratio_y = values['out_stif_y']
                 outrigger_stiffness_ratio_z = values['out_stif_z']
-                print(values['c_iy'])
-                print(values['c_iy'][0])
-                input('wait')
+                # print(values['c_iy'])
+                # print(values['c_iy'][0])
+                # input('wait')
                 point_stiffness_rotation_y = self.parameters['e'] * values['c_iy'][0] / height_of_interval * outrigger_stiffness_ratio_y
                 point_stiffness_rotation_z = self.parameters['e'] * values['c_iz'][0] / height_of_interval * outrigger_stiffness_ratio_z
                 point_stiffness_torsion = 0.0 # no torsional stiffness by addition of an outrigger system 
