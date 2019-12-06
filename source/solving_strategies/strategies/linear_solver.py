@@ -27,8 +27,9 @@ class LinearSolver(Solver):
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
             # TODO: only calculate reaction when user wants it
-            if self.structure_model is not None:
-                self.dynamic_reaction[:, i] = self._compute_reaction()
+            # if self.structure_model is not None:
+            #     self.dynamic_reaction[:, i] = self._compute_reaction()
+            # reaction computed in dynamic analysis 
 
             # update results
             self.scheme.update()

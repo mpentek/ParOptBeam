@@ -71,7 +71,8 @@ class ResidualBasedSolver(Solver):
             self.displacement[:, i] = self.scheme.get_displacement()
             self.velocity[:, i] = self.scheme.get_velocity()
             self.acceleration[:, i] = self.scheme.get_acceleration()
-            self.dynamic_reaction[:, i] = self._compute_reaction()
+            #self.dynamic_reaction[:, i] = self._compute_reaction()
+            # reaction computed in dynamic analysis 
 
             # update results
             self.scheme.update()
