@@ -61,7 +61,7 @@ class Euler12(TimeIntegrationScheme):
             self.u1 = RHS/LHS
 
         else:
-            raise Exception('Dimension of system parameters is GeneralizedAlphaScheme is wrong')
+            raise Exception('Dimension of system parameters is Euler12 is wrong')
 
         # updates self.v1,a1
         self.v1 = self.predict_velocity(self.u1)
