@@ -179,8 +179,6 @@ class DynamicAnalysis(AnalysisType):
 
         print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
-            if self.transform_into_modal: 
-                time_integration_scheme = time_integration_scheme + "Modal"
             from source.solving_strategies.strategies.linear_solver import LinearSolver
             self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
                                        [self.comp_m, self.comp_b, self.comp_k],

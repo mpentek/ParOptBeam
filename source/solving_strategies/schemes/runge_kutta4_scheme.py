@@ -41,6 +41,7 @@ class RungeKutta4(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
+        # TODO: needs check for system size, LHS, RHS formulation
 
         # calculates self.un0,vn0,an0
         f_mid = (f1 + self.f1) / 2.0

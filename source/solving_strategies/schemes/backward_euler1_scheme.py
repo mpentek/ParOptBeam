@@ -41,10 +41,26 @@ class BackwardEuler1(TimeIntegrationScheme):
         # LHS needs to be updated in case of non-linear elements
         LHS = self.M + self.B * self.dt + self.K * self.dt ** 2
 
-        # calculates self.un0,vn0,an0
-        RHS = self.dt * np.dot(self.B, self.un1) + 2 * np.dot(self.M, self.un1)
-        RHS += - np.dot(self.M, self.un2) + self.dt ** 2 * f1
-        self.u1 = np.linalg.solve(LHS, RHS)
+        if self.M.ndim == 2:
+            # system: in matrix form
+            RHS = self.dt * np.dot(self.B, self.un1) + 2 * np.dot(self.M, self.un1)
+            RHS += - np.dot(self.M, self.un2) + self.dt ** 2 * f1
+
+            # main solve
+            self.u1 = np.linalg.solve(LHS, RHS)
+
+        elif self.M.ndim == 1:
+            # system: in vector (from diagonal matrix) or scalar form
+            RHS = self.dt * self.B * self.un1 + 2 * self.M * self.un1
+            RHS += - self.M * self.un2 + self.dt ** 2 * f1
+
+            # main solve
+            self.u1 = RHS/LHS
+
+        else:
+            raise Exception('Dimension of system parameters is GeneralizedAlphaScheme is wrong')
+        
+        # updates self.v1,a1
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
 

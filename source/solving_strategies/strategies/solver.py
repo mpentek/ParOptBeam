@@ -50,10 +50,6 @@ class Solver(object):
             from source.solving_strategies.schemes.generalized_alpha_scheme import GeneralizedAlphaScheme
             self.scheme = GeneralizedAlphaScheme(
                 self.dt, comp_model, initial_conditions)
-        elif time_integration_scheme == "GenAlphaModal":
-            from source.solving_strategies.schemes.generalized_alpha_scheme_modal import GeneralizedAlphaSchemeModal
-            self.scheme = GeneralizedAlphaSchemeModal(
-                self.dt, comp_model, initial_conditions)
         elif time_integration_scheme == "Euler12":
             from source.solving_strategies.schemes.euler12_scheme import Euler12
             self.scheme = Euler12(self.dt, comp_model, initial_conditions)
