@@ -127,7 +127,18 @@ class DynamicAnalysis(AnalysisType):
         if 'run_in_modal_coordinates' in self.parameters['settings']:
             if self.parameters['settings']['run_in_modal_coordinates']:
                 self.transform_into_modal = True
-                self.num_of_modes_considered = self.parameters['settings']['number_of_modes_considered']
+                num_of_modes_specified = self.parameters['settings']['number_of_modes_considered']
+                min_number_of_modes = 1
+                max_number_of_modes = rows 
+                if num_of_modes_specified < min_number_of_modes:
+                    err_msg = "specified number of modes is less than minimum required"
+                    raise Exception(err_msg)
+                elif num_of_modes_specified > max_number_of_modes: 
+                    err_msg = "specified number of modes is more than maximum possible"
+                    raise Exception(err_msg)
+                else:
+                    self.num_of_modes_considered = num_of_modes_specified
+
                 u0 = np.zeros(self.num_of_modes_considered)  # initial displacement
                 v0 = np.zeros(self.num_of_modes_considered)  # initial velocity
                 a0 = np.zeros(self.num_of_modes_considered)  # initial acceleration
