@@ -232,6 +232,7 @@ class DynamicAnalysis(AnalysisType):
         # TODO : elastic support reaction computation 
 
         # computing the reactions
+        # TODO: check if dot or matmul are necessary like this
         if self.transform_into_modal:
             f1 = np.dot(self.structure_model.m, self.solver.acceleration)
             f2 = np.dot(self.structure_model.b, self.solver.velocity)
