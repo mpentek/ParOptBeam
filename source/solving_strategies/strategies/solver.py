@@ -87,38 +87,37 @@ class Solver(object):
     def solve(self):
         pass
 
-    def _compute_reaction(self):
+    # def _compute_reaction(self):
 
-        # TODO: check if this still correct in modal coordinates
-        # AK : this doesnt considres the fixed dof 
-        #if self.transform_into_modal:
-        #    raise Exception('reaction computed wrongly')
-        #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'),
-        #                    self.solver.acceleration)
-        #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'),
-        #                    self.solver.velocity)
-        #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'),
-        #                    self.solver.displacement)
-        # else:
-        u = self.displacement[:, self.step]
-        v = self.velocity[:, self.step]
-        a = self.acceleration[:, self.step]
-        f1 = np.dot(self.M, a)
-        f2 = np.dot(self.B, v)
-        f3 = np.dot(self.K, u)
-        dynamic_reaction = self.force[:, self.step] - f1 - f2 - f3
+    #     # TODO: check if this still correct in modal coordinates
+    #     # if self.transform_into_modal:
+    #     #     f1 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_m,axis='both'),
+    #     #                    self.solver.acceleration)
+    #     #     f2 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_b,axis='both'),
+    #     #                    self.solver.velocity)
+    #     #     f3 = np.matmul(self.structure_model.recuperate_bc_by_extension(self.comp_k,axis='both'),
+    #     #                    self.solver.displacement)
+    #     # else:
+    #     u = self.displacement[:, self.step]
+    #     v = self.velocity[:, self.step]
+    #     a = self.acceleration[:, self.step]
+    #     f1 = np.dot(self.M, a)
+    #     f2 = np.dot(self.B, v)
+    #     f3 = np.dot(self.K, u)
+    #     dynamic_reaction = self.force[:, self.step] - f1 - f2 - f3
 
-        # TODO: check if the treatment of elastic bc dofs is correct
-        # TODO: check if this still applies in modal coordinates
-        for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
-            # assuming a Rayleigh-model
-            damping_val = stiffness_val * \
-                self.structure_model.rayleigh_coefficients[1]
+    #     # TODO: check if the treatment of elastic bc dofs is correct
+    #     # TODO: check if this still applies in modal coordinates
+    #     for dof_id, stiffness_val in self.structure_model.elastic_bc_dofs.items():
+    #         # assuming a Rayleigh-model
+    #         damping_val = stiffness_val * \
+    #             self.structure_model.rayleigh_coefficients[1]
 
-            f1 = 0.0 * a[dof_id]
-            f2 = damping_val * v[dof_id]
-            f3 = stiffness_val * u[dof_id]
+    #         f1 = 0.0 * a[dof_id]
+    #         f2 = damping_val * v[dof_id]
+    #         f3 = stiffness_val * u[dof_id]
 
-            # overwrite the existing value with one solely from spring stiffness and damping
-            dynamic_reaction[dof_id] = f1 + f2 + f3
-        return dynamic_reaction
+    #         # overwrite the existing value with one solely from spring stiffness and damping
+    #         dynamic_reaction[dof_id] = f1 + f2 + f3
+    #     return dynamic_reaction
+    
