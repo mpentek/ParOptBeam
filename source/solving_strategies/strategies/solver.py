@@ -120,3 +120,4 @@ class Solver(object):
     #         # overwrite the existing value with one solely from spring stiffness and damping
     #         dynamic_reaction[dof_id] = f1 + f2 + f3
     #     return dynamic_reaction
+    
