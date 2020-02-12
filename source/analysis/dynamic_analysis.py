@@ -225,24 +225,11 @@ class DynamicAnalysis(AnalysisType):
         self.solver.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.solver.acceleration)
         # computing the reactions
-        f1 = np.matmul(self.structure_model.m, self.solver.acceleration)
-        f2 = np.matmul(self.structure_model.b, self.solver.velocity)
-        f3 = np.matmul(self.structure_model.k, self.solver.displacement)
+        f1 = np.dot(self.structure_model.m, self.solver.acceleration)
+        f2 = np.dot(self.structure_model.b, self.solver.velocity)
+        f3 = np.dot(self.structure_model.k, self.solver.displacement)
         self.solver.dynamic_reaction = self.force - f1 - f2 - f3
-        # TODO : elastic support reaction computation 
-
-        # computing the reactions
-        # TODO: check if dot or matmul are necessary like this
-        if self.transform_into_modal:
-            f1 = np.dot(self.structure_model.m, self.solver.acceleration)
-            f2 = np.dot(self.structure_model.b, self.solver.velocity)
-            f3 = np.dot(self.structure_model.k, self.solver.displacement)
-        else: 
-            f1 = np.matmul(self.structure_model.m, self.solver.acceleration)
-            f2 = np.matmul(self.structure_model.b, self.solver.velocity)
-            f3 = np.matmul(self.structure_model.k, self.solver.displacement)    
-        self.solver.dynamic_reaction = self.force - f1 - f2 - f3
-        # TODO : elastic support reaction computation 
+        #TODO : elastic support reaction computation 
 
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
         """
