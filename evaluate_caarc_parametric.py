@@ -217,6 +217,7 @@ for damping_ratio in ['0.000', '0.025']:
 
             working_folder = os_join(*['output',
                                        'Caarc',
+                                       'normal',
                                        parametric_run['output_folder_prefix'],
                                        damping_ratio.replace('.', '_'),
                                        parameters['model_parameters']['name']])
