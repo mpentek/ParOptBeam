@@ -28,7 +28,7 @@ output/
 # !output/GenericBuilding
 # !output/GenericPylon
 
-run_caarc_parametric.py
+run_caarc_parametric_normal.py
 run_caarc_parametric_modal.py
-
+evaluate_caarc_parametric_normal.py
 evaluate_caarc_parametric_modal.py
