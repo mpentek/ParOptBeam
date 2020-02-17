@@ -93,9 +93,9 @@ class StraightBeam(object):
                 'c_it': val["torsional_moment_of_inertia"]
             })
             try: 
-                self.parameters["intervals"][idx]['m'] = val["outrigger_mass"]
-                self.parameters["intervals"][idx]['out_stif_y'] = val["outrigger_stiffness_ratio_y"]
-                self.parameters["intervals"][idx]['out_stif_z'] = val["outrigger_stiffness_ratio_z"]
+                self.parameters["intervals"][idx]['m'] = val["outrigger"]["mass"]
+                self.parameters["intervals"][idx]['out_stif_y'] = val["outrigger"]["stiffness_ratio_y"]
+                self.parameters["intervals"][idx]['out_stif_z'] = val["outrigger"]["stiffness_ratio_z"]
             except:
                 self.parameters["intervals"][idx]['m'] = None
                 self.parameters["intervals"][idx]['out_stif_y'] = None
@@ -315,6 +315,7 @@ class StraightBeam(object):
             set(self.all_dofs_global) - set(bc_dofs_global))
 
     def update_outrigger_contribution(self):
+        print("################updating")
 
         # point stiffness and point masses at respective dof for the outrigger
         for values in self.parameters['intervals']:
@@ -378,19 +379,21 @@ class StraightBeam(object):
                 existing_nodal_mass = self.parameters['m'][geom_node_id]
                 outrigger_stiffness_ratio_y = values['out_stif_y']
                 outrigger_stiffness_ratio_z = values['out_stif_z']
-                
+                # print(values['c_iy'])
+                # print(values['c_iy'][0])
+                # input('wait')
                 point_stiffness_rotation_y = self.parameters['e'] * values['c_iy'][0] / height_of_interval * outrigger_stiffness_ratio_y
                 point_stiffness_rotation_z = self.parameters['e'] * values['c_iz'][0] / height_of_interval * outrigger_stiffness_ratio_z
                 point_stiffness_torsion = 0.0 # no torsional stiffness by addition of an outrigger system 
 
                 global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
                 for idx, label in enumerate(GD.DOF_LABELS[self.domain_size]):
-                    if label == 'a': 
-                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_y # TODO : double check these corelations 
-                    elif label == 'b': 
-                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_z # TODO : double check these corelations 
-                    elif label == 'g': 
-                        self.point_stiffness[global_node_id + idx] = point_stiffness_torsion # TODO : double check these corelations 
+                    if label == 'a':
+                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_y  
+                    elif label == 'b':
+                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_z  
+                    elif label == 'g':
+                        self.point_stiffness[global_node_id + idx] = point_stiffness_torsion  
 
 
 
