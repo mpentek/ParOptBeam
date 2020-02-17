@@ -315,7 +315,6 @@ class StraightBeam(object):
             set(self.all_dofs_global) - set(bc_dofs_global))
 
     def update_outrigger_contribution(self):
-        print("################updating")
 
         # point stiffness and point masses at respective dof for the outrigger
         for values in self.parameters['intervals']:
@@ -372,8 +371,8 @@ class StraightBeam(object):
                     else:
                         # target will be added as is
                         # AK : check
-                        # self.point_mass[global_node_id + idx] = 0
-                        self.point_mass[global_node_id + idx] = target_dof_vals[label]
+                        self.point_mass[global_node_id + idx] = 0
+                        # self.point_mass[global_node_id + idx] = target_dof_vals[label]
                 # Point stiffness entries
                 
                 existing_nodal_mass = self.parameters['m'][geom_node_id]
