@@ -62,6 +62,16 @@
         },
         "boundary_conditions": "fixed-free"
     },
+    "optimization_parameters": {
+        "adapt_for_target_values": {
+            "density_for_total_mass": 38880000.0,
+            "geometric_properties_for": {
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "partition_shear_bending": [-1, 1],
+                "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
+                "corresponding_mode_ids" : [1, 1, 1],
+                "corresponding_eigenfrequencies": [0.23,0.20,0.40]}}
+    },
     "analyses_parameters":{
         "global_output_folder" : "GenericBuilding_with_outtriger",
         "model_properties": {
