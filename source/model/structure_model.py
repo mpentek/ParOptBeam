@@ -206,6 +206,9 @@ class StraightBeam(object):
         Here only element and NO point mass contribution
         '''
         self.parameters['m'] = [0 for val in self.parameters['x']]
+        # point mass contribution are initalized 
+        self.parameters['point_m'] = [0 for val in self.parameters['x']]
+
         for idx in range(len(self.elements)):
             self.parameters['m'][idx] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L    
             self.parameters['m'][idx+1] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L    
@@ -344,7 +347,7 @@ class StraightBeam(object):
                 if existing_nodal_mass < values['m']:
                     # increment needed to reach target nodal mass
                     incr_fctr = existing_nodal_mass / values['m'] 
-                    self.parameters['m'][geom_node_id] += (1-incr_fctr)*values['m'] 
+                    self.parameters['point_m'][geom_node_id] += (1-incr_fctr)*values['m'] 
                 else:
                     msg = "Existing nodal mass value of " + str(existing_nodal_mass) + " [kg]\n"
                     msg += "at location x= " + str(geom_location) + " [m] along the beam\n"
@@ -352,7 +355,7 @@ class StraightBeam(object):
                     msg += "Not incrementing to target (as is it lower) but adding up to existing.\n"
                     print(msg)
 
-                    self.parameters['m'][geom_node_id] += 0 # values['m']  AK : check
+                    self.parameters['point_m'][geom_node_id] += 0 # values['m']  DONE : check
 
                 global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
                 affected_dof_ids = {}
@@ -375,7 +378,6 @@ class StraightBeam(object):
                         # self.point_mass[global_node_id + idx] = target_dof_vals[label]
                 # Point stiffness entries
                 
-                existing_nodal_mass = self.parameters['m'][geom_node_id]
                 outrigger_stiffness_ratio_y = values['out_stif_y']
                 outrigger_stiffness_ratio_z = values['out_stif_z']
 
@@ -398,11 +400,13 @@ class StraightBeam(object):
         # update influencing parameters
         self.update_equivalent_nodal_mass()
         self.update_outrigger_contribution()
-        
+        # adding the point mass entries to this 
+        print(self.parameters['m'])
         self.parameters['m_tot'] = 0.0
         for val in self.parameters['m']:
             self.parameters['m_tot'] += val
-        # TODO: Add outrigger masses to this entry
+        # Done: Add outrigger masses to this entry as the parameters['m '] is 
+        # already updated with the point masses in calculate_global matrices
         if print_to_console:
             print('CURRENT:')
             print('total mass ', self.parameters['m_tot'])
@@ -427,6 +431,11 @@ class StraightBeam(object):
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)
+        # updating the eleemnt mass contribution 
+        for idx in range(len(self.parameters['x'])):
+            self.parameters['m'][idx] += self.parameters['point_m'][idx] 
+
+
 
     def decompose_and_quantify_eigenmodes(self, considered_modes=15):
         # TODO remove code duplication: considered_modes
