@@ -134,6 +134,10 @@
                     },
                     "animate_time_history" : false,
                     "animate_skin_model_time_history": false,
+                    "kinetic_energy": {
+                        "write": true,
+                        "plot": true
+                    },
                     "skin_model_animation_parameters":{
                         "start_record": 160,
                         "end_record": 200,

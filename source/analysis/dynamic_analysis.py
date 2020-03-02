@@ -448,46 +448,48 @@ class DynamicAnalysis(AnalysisType):
                                       scaling,
                                       1)
 
-    def write_modal_kinetic_energy(self, global_folder_path, pdf_report, display_plots):
+    def output_kinetic_energy(self, global_folder_path, pdf_report, display_plots, settings):
         print("Calculate modal kinetic energy")
 
-        velocity = self.solver.velocity
-        # displacement = self.solver.displacement
+        vel = {}
 
-        step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
-        stop = velocity.shape[0]
-        dofs = int(stop/step)
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.solver.displacement.shape[0] + idx - step
+            vel[label] = self.solver.velocity[start:stop +1:step][:]
 
-        mass = np.zeros((stop,stop))
-        # set only longitudinal dofs
-        for i in range(0,dofs):
-            mass[i*step][i*step]=self.structure_model.parameters['m'][i]
-            mass[i*step+1][i*step+1]=self.structure_model.parameters['m'][i]
-            mass[i*step+2][i*step+2]=self.structure_model.parameters['m'][i]
+        # TODO: make robust for 2d and 3d, here hard coded for 3d
+        # here taking sqrt
+        vel_magn = np.power(np.power(vel['y'],2) + np.power(vel['z'],2), 0.5)
 
-        kin_energy = 0.5 * np.dot(mass,np.power(velocity,2)) * self.dt
-        # el_energy = 0.5 * np.dot(k, np.power(displacement,2)) * self.dt
+        # here power of previous sqrt
+        kin_energy = 0.5 * np.dot(self.structure_model.parameters['m'],np.power(vel_magn,2))
+
         sum_energy = kin_energy #+ el_energy
-        sum_over_dofs = np.sum(sum_energy,axis=0)
-        sum_over_time = np.sum(sum_over_dofs)
 
-        result_data = sum_over_dofs
+        # first here introducing dt (integral) 
+        # and division with total length of time to get a normed integral
+        # could be extended to possible 
+        sum_over_time = np.sum(np.multiply(sum_energy, self.dt/self.array_time[-1]))
 
-        file_header = "# Modal Kinetic Energy: Integral over time = " + str(sum_over_time) +" Js \n"
-        file_name = 'modal_kinetic_energy.dat'
-        writer_utilities.write_result_at_dof(os_join(global_folder_path, file_name),
-                                             file_header,
-                                             result_data,
-                                             self.array_time)
+        result_data = sum_energy
 
-        plot_title = "Modal Kinetic Energy"
-        plotter_utilities.plot_dynamic_result(pdf_report,
-                                              display_plots,
-                                              plot_title,
-                                              result_data,
-                                              self.array_time)
-
-
+        if settings["write"]:
+            file_header = "# Modal Kinetic Energy: Normed integral over time = " + str(sum_over_time) +" J \n"
+            file_name = 'kinetic_energy.dat'
+            writer_utilities.write_result_at_dof(os_join(global_folder_path, file_name),
+                                                file_header,
+                                                result_data,
+                                                self.array_time)
+        if settings["plot"]:
+            plot_title = "Modal Kinetic Energy: Normed integral over time = " + str(sum_over_time) +" J"
+            plotter_utilities.plot_dynamic_result(pdf_report,
+                                                display_plots,
+                                                plot_title,
+                                                result_data,
+                                                self.array_time)
 
     def write_selected_step(self, global_folder_path, selected_step):
         """
@@ -617,8 +619,8 @@ class DynamicAnalysis(AnalysisType):
         if self.parameters['output']['animate_time_history']:
             self.animate_time_history()
         
-        if self.parameters['output']['write_modal_kinetic_energy']:
-            self.write_modal_kinetic_energy(global_folder_path, pdf_report, display_plots)
+        if self.parameters['output']['kinetic_energy']:
+            self.output_kinetic_energy(global_folder_path, pdf_report, display_plots, self.parameters['output']['kinetic_energy'])
 
         if skin_model_params is not None:
             if self.parameters['output']['animate_skin_model_time_history']:
