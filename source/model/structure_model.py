@@ -154,11 +154,39 @@ class StraightBeam(object):
         self.identify_decoupled_eigenmodes()
 
     def initialize_elements(self):
+
+        ####
+        #
+        #
+        ####
+
         # running coordinate x - in the middle of each beam element
-        self.parameters['x'] = [x / self.n_elements * self.parameters['lx']
-                                for x in list(range(self.n_nodes))]
-        self.parameters['x_mid'] = [(x + 0.5) / self.n_elements * self.parameters['lx']
-                                    for x in list(range(self.n_elements))]
+
+        # old way with implicitly equal lengths
+
+        # self.parameters['x'] = [x / self.n_elements * self.parameters['lx']
+        #                         for x in list(range(self.n_nodes))]
+        # self.parameters['x_mid'] = [(x + 0.5) / self.n_elements * self.parameters['lx']
+        #                             for x in list(range(self.n_elements))]
+        
+        # new way with possible nonequal lengths
+
+        param_elem_length = [1.0] * (self.n_elements)
+        param_elem_length = [0.48, 0.52]
+        param_elem_length_sum = sum(param_elem_length)
+        param_elem_length_cumul = [0.0]
+        for idx, el_length in enumerate(param_elem_length):
+            param_elem_length_cumul.append(sum(param_elem_length[:idx+1]))
+        param_elem_length_cumul_norm = [x/param_elem_length_sum for x in param_elem_length_cumul]
+
+        self.parameters['x'] = [x * self.parameters['lx'] for x in param_elem_length_cumul_norm]
+        self.parameters['x_mid'] = [(a+b)/2 for a,b in zip(self.parameters['x'][:-1],self.parameters['x'][1:])]
+
+
+        ####
+        #
+        #
+        ####
 
         # geometric
         self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
@@ -166,8 +194,7 @@ class StraightBeam(object):
         self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
             x, 'c_lz') for x in self.parameters['x']]
         # characteristics lengths
-        self.charact_length = (
-                                      np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
+        self.charact_length = (np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         for i in range(self.n_elements):
             element_params = self.initialize_element_geometric_parameters(i)
