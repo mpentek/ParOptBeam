@@ -19,23 +19,23 @@
                 "number_of_elements": 2,
                 "defined_on_intervals": [{
                     "interval_bounds" : [0.0, 86.4],
-                    "length_y": [60.0],
-                    "length_z": [40.0],
-                    "area"    : [2000.0],
-                    "shear_area_y" : [1800.0],
-                    "shear_area_z" : [1800.0],
-                    "moment_of_inertia_y" : [196510.0],
-                    "moment_of_inertia_z" : [458260.0],
-                    "torsional_moment_of_inertia" : [691771.0]},                     {
+                    "length_y": [55.0],
+                    "length_z": [45.0],
+                    "area"    : [2475.0],
+                    "shear_area_y" : [2063.0],
+                    "shear_area_z" : [2063.0],
+                    "moment_of_inertia_y" : [417656.0],
+                    "moment_of_inertia_z" : [623906.0],
+                    "torsional_moment_of_inertia" : [450000.0]},                     {
                     "interval_bounds" : [86.4, "End"],
                     "length_y": [40.0],
-                    "length_z": [20.0],
-                    "area"    : [1000],
-                    "shear_area_y" : [900.0],
-                    "shear_area_z" : [900.0],
-                    "moment_of_inertia_y" : [101250.0],
-                    "moment_of_inertia_z" : [227813.0],
-                    "torsional_moment_of_inertia" : [329063.0]
+                    "length_z": [30.0],
+                    "area"    : [1500],
+                    "shear_area_y" : [1000.0],
+                    "shear_area_z" : [1000.0],
+                    "moment_of_inertia_y" : [90000.0],
+                    "moment_of_inertia_z" : [160000.0],
+                    "torsional_moment_of_inertia" : [250000.0]
                     }]
             }
         },
