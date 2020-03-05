@@ -75,7 +75,7 @@
                         "write" : true, 
                         "plot" : true},
                     "selected_eigenmode": {
-                        "plot_mode": [1,2,3], 
+                        "plot_mode": [1,2,3,4,5,6], 
                         "write_mode": [1,2,3],
                         "animate_mode": [1],
                         "animate_skin_model": []},
