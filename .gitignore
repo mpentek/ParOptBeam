@@ -36,6 +36,5 @@ evaluate_caarc_parametric_modal.py
 # simplified one element
 run_caarc_parametric_sone.py
 shape_function_interpolation_comparison.py
-
-# simplified one element
+# simplified two element
 run_caarc_parametric_stwo.py
