@@ -32,3 +32,4 @@ run_caarc_parametric_spatial.py
 run_caarc_parametric_modal.py
 evaluate_caarc_parametric_spatial.py
 evaluate_caarc_parametric_modal.py
+evaluate_caarc_parametric_sone.py
