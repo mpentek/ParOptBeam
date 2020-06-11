@@ -1,5 +1,5 @@
-from source.element.CRBeamElement import CRBeamElement
-from source.element.TimoshenkoBeamElement import TimoshenkoBeamElement
+from source.element.cr_beam_element import CRBeamElement
+from source.element.timoshenko_beam_element import TimoshenkoBeamElement
 
 import numpy as np
 
