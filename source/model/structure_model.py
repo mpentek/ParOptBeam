@@ -140,6 +140,8 @@ class StraightBeam(object):
         self.update_equivalent_nodal_mass()
         # might contribute to point_values
         self.update_outrigger_contribution()
+        # compute total mass 
+        self.calculate_total_mass()
 
         # after initial setup
         self.calculate_global_matrices()
