@@ -413,12 +413,12 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
 
-        for i in range(considered_modes):
+        for mode_idx in range(considered_modes):
             decomposed_eigenmode = {}
             rel_contrib = {}
             eff_modal_mass = {}
             rel_participation = {}
-            selected_mode = self.eig_freqs_sorted_indices[i]
+            selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
             for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
                                   GD.DOF_LABELS[self.domain_size]):
@@ -447,17 +447,17 @@ class StraightBeam(object):
                         eff_modal_denominator = 0.0
                         total_mass = 0.0
 
-                        for i in range(self.n_elements):
-                            storey_mass = self.parameters['m'][i+1]
+                        for el_idx in range(self.n_elements):
+                            storey_mass = self.parameters['m'][el_idx+1]
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][i] ** 2 + self.parameters['ly'][i] ** 2) / 12
+                                storey_mass *= (self.parameters['lz'][el_idx] ** 2 + self.parameters['ly'][el_idx] ** 2) / 12
 
                                 # TODO check as torsion 4-5-6 does not seem to be ok in the results
 
                             total_mass += storey_mass
-                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][i]
-                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][i] ** 2
+                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][el_idx]
+                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][el_idx] ** 2
 
                         eff_modal_mass[label] = eff_modal_numerator ** 2 / eff_modal_denominator
                         rel_participation[label] = eff_modal_mass[label] / total_mass

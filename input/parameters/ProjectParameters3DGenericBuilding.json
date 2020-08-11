@@ -51,7 +51,7 @@
                     "torsional_moment_of_inertia" : [134896.0]}]
             }
         },
-        "boundary_conditions": "fixed-free"
+        "boundary_conditions": "fixed-fixed"
     },
     "optimization_parameters": {
         "adapt_for_target_values": {
