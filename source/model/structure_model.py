@@ -19,22 +19,22 @@ class StraightBeam(object):
     Definition of axes:
         1. Longitudinal axis: x with rotation alpha around x
         2. Transversal axes:
-            y with rotation beta around y 
+            y with rotation beta around y
             z with rotation gamma around z
 
     Degrees of freedom DoFs
-        1. 2D: displacements x, y, rotation g(amma) around z 
+        1. 2D: displacements x, y, rotation g(amma) around z
             -> element DoFs for nodes i and j of one element
-                [0, 1, 2, 3, 4, 5, 6] = [x_i, y_i, g_i, 
+                [0, 1, 2, 3, 4, 5, 6] = [x_i, y_i, g_i,
                                         x_j, y_j, g_j]
 
-        2. 3D: displacements x, y, z, rotationS a(lpha), b(eta), g(amma) 
+        2. 3D: displacements x, y, z, rotationS a(lpha), b(eta), g(amma)
             -> element DoFs for nodes i and j of one element
                 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] = [x_i, y_i, z_i, a_i, b_i, g_i,
                                                         x_j, y_j, z_j, a_j, b_j, g_j]
 
     TODO:
-        1. add a parametrization to include artificial (and possibly also local) 
+        1. add a parametrization to include artificial (and possibly also local)
             incrementation of stiffness and mass (towards a shear beam and/or point mass/stiffness)
         2. add a parametrization for tunig to eigen frequencies and mode shapes
         3. add a parametrization to be able to specify zones with altering mass ditribution
@@ -92,7 +92,7 @@ class StraightBeam(object):
                 'c_iz': val["moment_of_inertia_z"],
                 'c_it': val["torsional_moment_of_inertia"]
             })
-            try: 
+            try:
                 self.parameters["intervals"][idx]['m'] = val["outrigger_mass"]
             except:
                 self.parameters["intervals"][idx]['m'] = None
@@ -133,14 +133,14 @@ class StraightBeam(object):
 
         self.elastic_bc_dofs = {}
         self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
-        
+
         # internally calls apply_elastic_bcs() which might contribute to point_values
         self.apply_bcs()
 
         self.update_equivalent_nodal_mass()
         # might contribute to point_values
         self.update_outrigger_contribution()
-        # compute total mass 
+        # compute total mass
         self.calculate_total_mass()
 
         # after initial setup
@@ -204,8 +204,8 @@ class StraightBeam(object):
         '''
         self.parameters['m'] = [0 for val in self.parameters['x']]
         for idx in range(len(self.elements)):
-            self.parameters['m'][idx] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L    
-            self.parameters['m'][idx+1] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L    
+            self.parameters['m'][idx] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L
+            self.parameters['m'][idx+1] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L
 
 
     def initialize_reference_coordinate(self):
@@ -326,7 +326,7 @@ class StraightBeam(object):
 
                 geom_node_id = int(geom_location / self.lx_i)
                 #print(' geometric node id ', str(geom_node_id))
-            
+
                 # existing nodal mass from area, length and density
                 existing_nodal_mass = self.parameters['m'][geom_node_id]
 
@@ -334,11 +334,11 @@ class StraightBeam(object):
                 # such that the outrigger as point mass is higher
                 # so an increment can be added
                 # For few element the target outrigger value will be too low
-                
+
                 if existing_nodal_mass < values['m']:
                     # increment needed to reach target nodal mass
-                    incr_fctr = existing_nodal_mass / values['m'] 
-                    self.parameters['m'][geom_node_id] += (1-incr_fctr)*values['m'] 
+                    incr_fctr = existing_nodal_mass / values['m']
+                    self.parameters['m'][geom_node_id] += (1-incr_fctr)*values['m']
                 else:
                     msg = "Existing nodal mass value of " + str(existing_nodal_mass) + " [kg]\n"
                     msg += "at location x= " + str(geom_location) + " [m] along the beam\n"
@@ -346,7 +346,7 @@ class StraightBeam(object):
                     msg += "Not incrementing to target (as is it lower) but adding up to existing.\n"
                     print(msg)
 
-                    self.parameters['m'][geom_node_id] += values['m'] 
+                    self.parameters['m'][geom_node_id] += values['m']
 
                 global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
                 affected_dof_ids = {}
@@ -371,7 +371,7 @@ class StraightBeam(object):
         # update influencing parameters
         self.update_equivalent_nodal_mass()
         self.update_outrigger_contribution()
-        
+
         self.parameters['m_tot'] = 0.0
         for val in self.parameters['m']:
             self.parameters['m_tot'] += val
@@ -413,12 +413,12 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
 
-        for i in range(considered_modes):
+        for mode_idx in range(considered_modes):
             decomposed_eigenmode = {}
             rel_contrib = {}
             eff_modal_mass = {}
             rel_participation = {}
-            selected_mode = self.eig_freqs_sorted_indices[i]
+            selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
             for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
                                   GD.DOF_LABELS[self.domain_size]):
@@ -447,17 +447,20 @@ class StraightBeam(object):
                         eff_modal_denominator = 0.0
                         total_mass = 0.0
 
-                        for i in range(self.n_elements):
-                            storey_mass = self.parameters['m'][i+1]
+                        for el_idx in range(self.n_elements-1):
+                            # equivalent mass at node taken as average of 2 elements below and above node
+                            storey_mass = (self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][i] ** 2 + self.parameters['ly'][i] ** 2) / 12
+                                storey_mass *= (self.parameters['lz'][el_idx] ** 2 + self.parameters['ly'][el_idx] ** 2) / 12
 
                                 # TODO check as torsion 4-5-6 does not seem to be ok in the results
 
                             total_mass += storey_mass
-                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][i]
-                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][i] ** 2
+
+                            # taking the modal dof value at the node misusing naming el_idx
+                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][el_idx]
+                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][el_idx] ** 2
 
                         eff_modal_mass[label] = eff_modal_numerator ** 2 / eff_modal_denominator
                         rel_participation[label] = eff_modal_mass[label] / total_mass
@@ -502,20 +505,20 @@ class StraightBeam(object):
                 # TODO: check if robust enough for modes where 2 DoFs are involved
                 if match_for_case_id:
 
-                    if case_id in self.mode_identification_results: 
-                        # using list - so that results are ordered 
-                        self.mode_identification_results[case_id].append({ 
-                            'mode_id' : (selected_mode + 1),
-                            'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values()) 
-                        }) 
-                    else: 
-                        # using list - so that results are ordered 
-                        self.mode_identification_results[case_id] = [{                            
+                    if case_id in self.mode_identification_results:
+                        # using list - so that results are ordered
+                        self.mode_identification_results[case_id].append({
                             'mode_id' : (selected_mode + 1),
                             'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
                             'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
-                        }] 
+                        })
+                    else:
+                        # using list - so that results are ordered
+                        self.mode_identification_results[case_id] = [{
+                            'mode_id' : (selected_mode + 1),
+                            'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                        }]
 
         if print_to_console:
             print('Result of decoupled eigenmode identification for the first ' +
@@ -693,7 +696,7 @@ class StraightBeam(object):
 
     def recuperate_bc_by_extension(self, matrix, axis='row'):
         '''
-        list of dofs to apply the effect of bc 
+        list of dofs to apply the effect of bc
         by extension
         use np.ix_ and ixgrid to extract relevant elements
         '''
@@ -740,7 +743,7 @@ class StraightBeam(object):
             err_msg += "\" for axis is not avaialbe \n"
             err_msg += "Choose one of: \"row\", \"column\", \"both\", \"row_vector\""
             raise Exception(err_msg)
-        
+
         extended_matrix[ixgrid] = matrix
 
         return extended_matrix
