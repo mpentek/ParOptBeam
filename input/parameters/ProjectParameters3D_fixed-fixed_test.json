@@ -1,6 +1,6 @@
 {
     "model_parameters": {
-        "name": "FixedFreeTest",
+        "name": "FixedFixedTest",
         "domain_size": "3D",
         "system_parameters": {
             "element_params": {
@@ -49,7 +49,7 @@
                     "torsional_moment_of_inertia" : [0.00007328]}]
             }
         },
-        "boundary_conditions": "fixed-free"
+        "boundary_conditions": "fixed-fixed"
     },
     "analyses_parameters":{
         "global_output_folder" : "some/path",
