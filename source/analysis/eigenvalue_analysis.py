@@ -241,6 +241,10 @@ class EigenvalueAnalysis(AnalysisType):
 
         print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
+        # nullify close to zero values
+        # TODO: add to multiple places
+        self.eigenform[abs(self.eigenform) < GD.THRESHOLD] = 0.0
+
         for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
                               GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
