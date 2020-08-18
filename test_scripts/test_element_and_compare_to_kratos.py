@@ -1,4 +1,4 @@
-from source.element.CRBeamElement import CRBeamElement
+from source.element.cr_beam_element import CRBeamElement
 
 import numpy as np
 
