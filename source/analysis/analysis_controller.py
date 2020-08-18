@@ -89,6 +89,11 @@ class AnalysisController(object):
                 pass
 
             elif analysis_param['type'] == 'dynamic_analysis':
+                # if analysis_param['settings']['run_in_modal_coordinates']:    
+                #     from source.analysis.dynamic_analysis import DynamicAnalysis
+                #     self.analyses.append(DynamicAnalysis(
+                #         self.model, analysis_param))
+                # else: 
                 from source.analysis.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(
                     self.model, analysis_param))

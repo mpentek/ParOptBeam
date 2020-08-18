@@ -1,0 +1,103 @@
+{
+    "model_parameters": {
+        "name": "FixedPinnedTest",
+        "domain_size": "3D",
+        "system_parameters": {
+            "element_params": {
+                "type": "Bernoulli",
+                "is_nonlinear": false
+            },
+            "material": {
+                "is_nonlinear": false,
+                "density": 7850.0,
+                "youngs_modulus": 2.10e11,
+                "poisson_ratio": 0.3,
+                "damping_ratio": 0.0
+            },
+            "geometry": {
+                "length_x": 12,
+                "number_of_elements": 3,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0, 4.0],
+                    "length_y": [0.20],
+                    "length_z": [0.40],
+                    "area"    : [0.08],
+                    "shear_area_y" : [0.0667],
+                    "shear_area_z" : [0.0667],
+                    "moment_of_inertia_y" : [0.0010667],
+                    "moment_of_inertia_z" : [0.0002667],
+                    "torsional_moment_of_inertia" : [0.00007328]},
+                    {
+                    "interval_bounds" : [4.0, 8.0],
+                    "length_y": [0.20],
+                    "length_z": [0.40],
+                    "area"    : [0.08],
+                    "shear_area_y" : [0.0667],
+                    "shear_area_z" : [0.0667],
+                    "moment_of_inertia_y" : [0.0010667],
+                    "moment_of_inertia_z" : [0.0002667],
+                    "torsional_moment_of_inertia" : [0.00007328]},
+                    {
+                    "interval_bounds" : [8.0, "End"],
+                    "length_y": [0.20],
+                    "length_z": [0.40],
+                    "area"    : [0.08],
+                    "shear_area_y" : [0.0667],
+                    "shear_area_z" : [0.0667],
+                    "moment_of_inertia_y" : [0.0010667],
+                    "moment_of_inertia_z" : [0.0002667],
+                    "torsional_moment_of_inertia" : [0.00007328]}]
+            }
+        },
+        "boundary_conditions": "fixed-pinned"
+    },
+    "analyses_parameters":{
+        "global_output_folder" : "some/path",
+        "model_properties": {
+            "write": true,
+            "plot":true
+        },
+        "report_options": {
+            "combine_plots_into_pdf" : true,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : false
+        },
+        "skin_model_parameters":{
+            "geometry": [ [0, -22.5, -15.0], [0, -22.5, 15], [0, 22.5, 15],
+                          [0, 22.5, -15]
+            ],
+            "contour_density": 1,
+            "record_animation": true,
+            "visualize_line_structure": true,
+            "beam_direction": "x",
+            "scaling_vector": [1.0, 1.0 , 1.0, 1.0, 1.0, 1.0, 1.0],
+            "eigenmode_scaling_factor" : 1e5,
+            "dynamic_scaling_factor" : 1e3
+        },
+        "runs": [{
+                "type": "eigenvalue_analysis",
+                "settings": {
+                    "normalization": "mass_normalized"},
+                "input":{},
+                "output":{
+                    "eigenmode_summary": {
+                        "write" : true, 
+                        "plot" : true},
+                    "eigenmode_identification": {
+                        "write" : true, 
+                        "plot" : true},
+                    "selected_eigenmode": {
+                        "plot_mode": [], 
+                        "write_mode": [],
+                        "animate_mode": [],
+                        "animate_skin_model": []},
+                    "selected_eigenmode_range": {
+                        "help": "maximum 4 modes per range at a time",
+                        "considered_ranges": [[1,2]], 
+                        "plot_range": [true, true], 
+                        "write_range": [true, false]}
+                    }
+            
+            }]
+    }
+}

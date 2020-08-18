@@ -27,8 +27,10 @@
                     "moment_of_inertia_y" : [196510.0],
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
-                    "outrigger_mass": 947000.0},
-                    {
+                    "outrigger" : {
+                        "mass": 947000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},                     {
                     "interval_bounds" : [60.0, 120.0],
                     "length_y": [45.0],
                     "length_z": [30.0],
@@ -38,7 +40,10 @@
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227813.0],
                     "torsional_moment_of_inertia" : [329063.0],
-                    "outrigger_mass": 846000.0},
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
                     {
                     "interval_bounds" : [120.0, "End"],
                     "length_y": [35.0],
@@ -48,7 +53,11 @@
                     "shear_area_z" : [729.0],
                     "moment_of_inertia_y" : [45573.0],
                     "moment_of_inertia_z" : [89323.0],
-                    "torsional_moment_of_inertia" : [134896.0]}]
+                    "torsional_moment_of_inertia" : [134896.0],
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}}]
             }
         },
         "boundary_conditions": "fixed-free"
@@ -64,7 +73,7 @@
                 "corresponding_eigenfrequencies": [0.23,0.20,0.40]}}
     },
     "analyses_parameters":{
-        "global_output_folder" : "some/path",
+        "global_output_folder" : "GenericBuilding",
         "model_properties": {
             "write": true,
             "plot":true
@@ -137,6 +146,10 @@
                     },
                     "animate_time_history" : true,
                     "animate_skin_model_time_history": true,
+                    "kinetic_energy": {
+                        "write": true,
+                        "plot": true
+                    },
                     "skin_model_animation_parameters":{
                         "start_record": 160,
                         "end_record": 200,
