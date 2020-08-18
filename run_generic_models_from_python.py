@@ -4,7 +4,7 @@ import json
 from source.model.structure_model import StraightBeam
 from source.analysis.analysis_controller import AnalysisController
 
-# inputs 
+# inputs
 parameters = {}
 
 parameters["model_parameters"] = {
@@ -25,7 +25,7 @@ parameters["model_parameters"]["system_parameters"]["material"] = {
                 "poisson_ratio": 0.1,
                 "damping_ratio": 0.0
             }
-            
+
 parameters["model_parameters"]["system_parameters"]["geometry"] = {
                 "length_x": 180,
                 "number_of_elements": 3,
@@ -39,7 +39,10 @@ parameters["model_parameters"]["system_parameters"]["geometry"] = {
                     "moment_of_inertia_y" : [196510.0],
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
-                    "outrigger_mass": 947000.0},
+                    "outrigger" : {
+                        "mass": 947000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
                     {
                     "interval_bounds" : [60.0, 120.0],
                     "length_y": [45.0],
@@ -50,7 +53,10 @@ parameters["model_parameters"]["system_parameters"]["geometry"] = {
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227813.0],
                     "torsional_moment_of_inertia" : [329063.0],
-                    "outrigger_mass": 846000.0},
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
                     {
                     "interval_bounds" : [120.0, "End"],
                     "length_y": [35.0],
@@ -60,7 +66,11 @@ parameters["model_parameters"]["system_parameters"]["geometry"] = {
                     "shear_area_z" : [729.0],
                     "moment_of_inertia_y" : [45573.0],
                     "moment_of_inertia_z" : [89323.0],
-                    "torsional_moment_of_inertia" : [134896.0]}]
+                    "torsional_moment_of_inertia" : [134896.0],
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}}]
             }
 
 
@@ -105,20 +115,20 @@ parameters["analyses_parameters"]["runs"] = [{
                 "input":{},
                 "output":{
                     "eigenmode_summary": {
-                        "write" : True, 
+                        "write" : True,
                         "plot" : True},
                     "eigenmode_identification": {
-                        "write" : True, 
+                        "write" : True,
                         "plot" : True},
                     "selected_eigenmode": {
-                        "plot_mode": [1,2,3], 
+                        "plot_mode": [1,2,3],
                         "write_mode": [1,2,3],
                         "animate_mode": [1],
                         "animate_skin_model": [1]},
                     "selected_eigenmode_range": {
                         "help": "maximum 4 modes per range at a time",
-                        "considered_ranges": [[1,2]], 
-                        "plot_range": [True, True], 
+                        "considered_ranges": [[1,2]],
+                        "plot_range": [True, True],
                         "write_range": [True, False]}
                     }
             }]
@@ -143,13 +153,17 @@ parameters["analyses_parameters"]["runs"].append(dict({"type" : "dynamic_analysi
                 },
                 "output":{
                     "selected_instance": {
-                        "plot_step": [1500, 2361], 
+                        "plot_step": [1500, 2361],
                         "write_step": [3276],
-                        "plot_time": [30.5, 315.25], 
+                        "plot_time": [30.5, 315.25],
                         "write_time": [450.15]
                     },
                     "animate_time_history" : True,
                     "animate_skin_model_time_history": True,
+                    "kinetic_energy": {
+                        "write": True,
+                        "plot": True
+                    },
                     "skin_model_animation_parameters":{
                         "start_record": 160,
                         "end_record": 200,
@@ -157,25 +171,25 @@ parameters["analyses_parameters"]["runs"].append(dict({"type" : "dynamic_analysi
                     },
                     "selected_dof": {
                         "dof_list": [1, 2, 0, 4, 5, 3,
-                                    -5, 
-                                    -4, 
-                                    -2, 
+                                    -5,
+                                    -4,
+                                    -2,
                                     -1],
                         "help": "result type can be a list containing: reaction, ext_force, displacement, velocity, acceleration",
                         "result_type": [["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"],
-                                        ["displacement", "velocity", "acceleration"], 
-                                        ["displacement", "velocity", "acceleration"], 
-                                        ["displacement", "velocity", "acceleration"], 
+                                        ["displacement", "velocity", "acceleration"],
+                                        ["displacement", "velocity", "acceleration"],
+                                        ["displacement", "velocity", "acceleration"],
                                         ["displacement", "velocity", "acceleration"]],
                         "plot_result": [[True], [True], [True], [True], [True], [True],
-                                        [True, True, True], 
-                                        [True, True, True], 
-                                        [True, False, True], 
+                                        [True, True, True],
+                                        [True, True, True],
+                                        [True, False, True],
                                         [True, False, True]],
                         "write_result": [[False],[False],[False],[True],[True],[True],
-                                            [True, False, True], 
-                                            [True, False, True], 
-                                            [True, False, True], 
+                                            [True, False, True],
+                                            [True, False, True],
+                                            [True, False, True],
                                             [True, False, True]]
                     }
                 }
@@ -183,13 +197,13 @@ parameters["analyses_parameters"]["runs"].append(dict({"type" : "dynamic_analysi
 
 parameters["analyses_parameters"]["runs"].append(dict({
                 "type" : "static_analysis",
-                "settings": {}, 
+                "settings": {},
                 "input":{
                     "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
                     "file_path": "input/force/generic_building/dynamic_force_4_nodes.npy",
                     "is_time_history_file" : True,
                     "selected_time_step" : 15000
-                }, 
+                },
                 "output":{
                     "plot": ["deformation", "forces"],
                     "write": ["deformation"]
