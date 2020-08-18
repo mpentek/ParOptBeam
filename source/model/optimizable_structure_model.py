@@ -186,21 +186,6 @@ class OptimizableStraightBeam(object):
         self.model.identify_decoupled_eigenmodes(print_to_console=True)
         print()
 
-    def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
-
-        for e in self.model.elements:
-            e.E = multiplier_fctr * initial_e
-
-            # NOTE: do not forget to update G and further dependencies
-            e.evaluate_relative_importance_of_shear()
-
-        # re-evaluate
-        self.model.calculate_global_matrices()
-
-        self.model.eigenvalue_solve()
-
-        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
-
     def adjust_density_for_target_total_mass(self, target_total_mass, print_to_console=False):
 
         print('BEFORE TUNED DENSITY')
@@ -269,6 +254,21 @@ class OptimizableStraightBeam(object):
             print('INITIAL e:', initial_e)
             print('OPTIMIZED e: ', opt_e_fctr * initial_e)
             print()
+    def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
+
+        for e in self.model.elements:
+            e.E = multiplier_fctr * initial_e
+
+            # NOTE: do not forget to update G and further dependencies
+            e.evaluate_relative_importance_of_shear()
+
+        # re-evaluate
+        self.model.calculate_global_matrices()
+
+        self.model.eigenvalue_solve()
+
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
+
 
     def adjust_longitudinal_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_a = list(e.A for e in self.model.elements)

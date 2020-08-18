@@ -46,6 +46,8 @@ class BDF2(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
+        # TODO: needs check for system size, LHS missing
+
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - \
             np.dot(self.B, self.bdf2 * self.un2)
         RHS += - 2 * self.bdf0 * self.bdf1 * np.dot(self.M, self.un1)
