@@ -449,30 +449,48 @@ class DynamicAnalysis(AnalysisType):
                                       1)
 
     def output_kinetic_energy(self, global_folder_path, pdf_report, display_plots, settings):
-        print("Calculate modal kinetic energy")
+        print("Calculate modal kinetic energy")       
+        
+        m = self.structure_model.m  # which mass matrix ? lumped masses ?
+        # k = self.structure_model.k  
+        vel = self.solver.velocity
+        # disp = self.solver.displacement
 
-        vel = {}
+        kin_energy = np.zeros(len(self.array_time))
+        # el_energy = np.zeros(len(self.array_time))
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
-            start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
-            stop = self.solver.displacement.shape[0] + idx - step
-            vel[label] = self.solver.velocity[start:stop +1:step][:]
+        for i in range(0,len(self.array_time)):
+            kin_energy[i] = 0.5 * np.dot(np.transpose(vel[:,i]),np.dot(m,vel[:,i]))
+            # el_energy[i] = 0.5 * np.dot(np.transpose(disp[:,i]),np.dot(k,disp[:,i]))
 
-        # TODO: make robust for 2d and 3d, here hard coded for 3d
-        # here taking sqrt
-        vel_magn = np.power(np.power(vel['y'],2) + np.power(vel['z'],2), 0.5)
-
-        # here power of previous sqrt
-        kin_energy = 0.5 * np.dot(self.structure_model.parameters['m'],np.power(vel_magn,2))
 
         sum_energy = kin_energy #+ el_energy
 
-        # first here introducing dt (integral) 
-        # and division with total length of time to get a normed integral
-        # could be extended to possible 
         sum_over_time = np.sum(np.multiply(sum_energy, self.dt/self.array_time[-1]))
+
+        ## EXPLIZIT WAY
+        # vel = {}
+
+        # for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+        #                       GD.DOF_LABELS[self.structure_model.domain_size]):
+        #     start = idx
+        #     step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+        #     stop = self.solver.displacement.shape[0] + idx - step
+        #     vel[label] = self.solver.velocity[start:stop +1:step][:]
+
+        # # TODO: make robust for 2d and 3d, here hard coded for 3d
+        # # here taking sqrt
+        # vel_magn = np.power(np.power(vel['y'],2) + np.power(vel['z'],2), 0.5)
+
+        # # here power of previous sqrt
+        # kin_energy = 0.5 * np.dot(self.structure_model.parameters['m'],np.power(vel_magn,2))
+
+        # sum_energy = kin_energy #+ el_energy
+
+        # # first here introducing dt (integral) 
+        # # and division with total length of time to get a normed integral
+        # # could be extended to possible 
+        # sum_over_time = np.sum(np.multiply(sum_energy, self.dt/self.array_time[-1]))
 
         result_data = sum_energy
 

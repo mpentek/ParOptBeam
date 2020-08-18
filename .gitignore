@@ -28,13 +28,24 @@ output/
 # !output/GenericBuilding
 # !output/GenericPylon
 
+# parametric runs
 run_caarc_parametric_spatial.py
 run_caarc_parametric_modal.py
+
+# evaluation of parametric runs
 evaluate_caarc_parametric_spatial.py
 evaluate_caarc_parametric_modal.py
+
+# improved model
 
 # simplified one element
 run_caarc_parametric_sone.py
 shape_function_interpolation_comparison.py
 # simplified two element
 run_caarc_parametric_stwo.py
+
+# evaluation of results for the draft
+evaluate_plot_caarc_base_scenario_kinematics.py
+evaluate_plot_caarc_parametric_modal_consolidated.py
+evaluate_plot_caarc_parametric_spatial_consolidated_with_sim_models.py
+evaluate_plot_caarc_parametric_spatial_consolidated.py
