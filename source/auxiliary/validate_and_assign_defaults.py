@@ -1,12 +1,6 @@
 '''
-from: 
-
-    Kratos Multiphysics - current developments of the EmpireApplication
-    for multiphysics coupling
-
-    https://github.com/KratosMultiphysics/Kratos
-
-Last update: 16.11.2018
+Copyright and license disclosure:
+a partial replica of https://github.com/KratosMultiphysics/Kratos/blob/master/applications/CoSimulationApplication/custom_data_structure/pyKratos/Parameters.py
 '''
 
 import json
