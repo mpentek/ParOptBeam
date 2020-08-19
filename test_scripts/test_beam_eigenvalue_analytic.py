@@ -24,7 +24,7 @@ parameters = {
                 "damping_ratio": 0.0
             },
             "geometry": {
-                "length_x": 12,
+                "length_x": 25,
                 "number_of_elements": 10,
                 "defined_on_intervals": [{
                     "interval_bounds" : [0.0,"End"],
@@ -111,13 +111,17 @@ for available_model in available_models:
 
     # ==============================================
     # test results against available analytical solutions
-    abs_tol = 1e-4
+    abs_tol = 1e-3
 
     name = parameters['model_parameters']['name']
     result = np.loadtxt(os_join(*['output',name,'eigenvalue_analysis_eigenmode_identification.dat']),
     dtype='i,f,S12', usecols=(2,3,4))  
     result_analytical = np.loadtxt(os_join(*['test_scripts','analytical_reference_results',name +'.txt']),
     dtype={'names': ('type_counter','frequency','type'),'formats':('i','f','S6')})
+
+    msg = "##################################################################################\n"
+    msg += name
+    print(msg)
     for i_res_an in range(len(result_analytical)):
         type_counter = result_analytical[i_res_an][0]
         frequency = result_analytical[i_res_an][1]
@@ -127,20 +131,16 @@ for available_model in available_models:
                 try:
                     delta = abs(result[i_res][1]-frequency)
                     assert delta <= abs_tol
-                    msg = "##################################################################################\n"
-                    msg += name
-                    msg += '\nTested Frequency:\n' + str(type_counter) + str(typ)
-                    msg += '\npassed'
+                    msg = '\nMode ' + str(type_counter) + ', Type: ' + str(typ,'utf-8') + ', passed'
                     print(msg)
 
                 except AssertionError:
-                    msg = "##################################################################################\n"
-                    msg += name
-                    msg += '\nTested Frequency:\n' + str(type_counter) + str(typ)
-                    msg += '\nFrequency is:\n' + str(result[i_res][1])
-                    msg += '\nShould be:\n' + str(frequency)
-                    msg += '\nDiffers by:\n' + str(delta)
+                    msg = '\nMode ' + str(type_counter) + ', Type: ' + str(typ,'utf-8')
+                    msg += '\nIs: ' + str(result[i_res][1])
+                    msg += ', Should be: ' + str(frequency)
+                    msg += ', Differs by: ' + str(delta)
                     print(msg)
-    
+    msg = "##################################################################################\n"
+    print(msg)
 
 
