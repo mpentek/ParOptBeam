@@ -425,6 +425,7 @@ class StraightBeam(object):
 
                 global_node_id = geom_node_id * \
                     GD.DOFS_PER_NODE[self.domain_size]
+
                 for idx, label in enumerate(GD.DOF_LABELS[self.domain_size]):
                     if label == 'a':
                         self.point_stiffness[global_node_id +
