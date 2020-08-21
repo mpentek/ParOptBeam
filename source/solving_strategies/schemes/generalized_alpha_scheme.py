@@ -60,11 +60,21 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         self.a1 = self.a0
 
         # force from a previous time step (initial force)
-        self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
-                                                   self.v0) + np.dot(self.K, self.u0)
-        self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
-                                                   self.v1) + np.dot(self.K, self.u1)
+        if self.M.ndim == 2:
+            print('System: in matrix form')
+            self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
+                                                    self.v0) + np.dot(self.K, self.u0)
+            self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
+                                                    self.v1) + np.dot(self.K, self.u1)
+        
+        elif self.M.ndim == 1:
+            print('System: in vector (from diagonal matrix) or scalar form')
+            self.f0 = self.M * self.a0 + self.B * self.v0 + self.K * self.u0
+            self.f1 = self.M * self.a1 + self.B * self.v1 + self.K * self.u1
 
+        else:
+            raise Exception('Dimension of system parameters is GeneralizedAlphaScheme is wrong')
+        
         self._print_time_integration_setup()
 
     def _print_time_integration_setup(self):
@@ -93,19 +103,35 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
 
         F = (1.0 - self.alphaF) * f1 + self.alphaF * self.f0
 
-        RHS = np.dot(self.M, (self.a1m * self.un1 +
-                              self.a2m * self.vn1 + self.a3m * self.an1))
-        RHS += np.dot(self.B, (self.a1b * self.un1 +
-                               self.a2b * self.v0 + self.a3b * self.an1))
-        RHS += np.dot(self.a1k * self.K, self.un1) + F
+        if self.M.ndim == 2:
+            # system: in matrix form
+            RHS = np.dot(self.M, (self.a1m * self.un1 +
+                                self.a2m * self.vn1 + self.a3m * self.an1))
+            RHS += np.dot(self.B, (self.a1b * self.un1 +
+                                self.a2b * self.v0 + self.a3b * self.an1))
+            RHS += np.dot(self.a1k * self.K, self.un1) + F
 
-        # update self.f1
-        self.f1 = f1
+            # main solve
+            self.u1 = np.linalg.solve(LHS, RHS)
 
-        # updates self.u1,v1,a1
-        self.u1 = np.linalg.solve(LHS, RHS)
+        elif self.M.ndim == 1:
+            # system: in vector (from diagonal matrix) or scalar form
+            RHS = self.M * (self.a1m * self.un1 +
+                                self.a2m * self.vn1 + self.a3m * self.an1)
+            RHS += self.B * (self.a1b * self.un1 +
+                                self.a2b * self.v0 + self.a3b * self.an1)
+            RHS += (self.a1k * self.K) * self.un1 + F
+
+            # main solve
+            self.u1 = RHS/LHS
+
+        else:
+            raise Exception('Dimension of system parameters is GeneralizedAlphaScheme is wrong')
+        
+        # updates self.v1,a1,f1
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)
+        self.f1 = f1
 
     def update(self):
         # update displacement, velocity and acceleration
