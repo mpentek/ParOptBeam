@@ -111,7 +111,7 @@ for available_model in available_models:
 
     # ==============================================
     # test results against available analytical solutions
-    abs_tol = 1e-3
+    abs_tol = 1e-1
 
     name = parameters['model_parameters']['name']
     result = np.loadtxt(os_join(*['output',name,'eigenvalue_analysis_eigenmode_identification.dat']),
