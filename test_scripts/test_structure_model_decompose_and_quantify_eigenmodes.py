@@ -254,5 +254,25 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         for label in ['x', 'y', 'z', 'a', 'b', 'g']:
             self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
 
+    @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    def test_modal_mass_values_nonsymmetric (self, mock_eigenvalue_solve):
+        mock_self = self.create_mock_self_for_modal_mass()
+        mock_self.parameters['m'] = [1000.0,2000.0,3000.0,4000.0]
+        mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
+        mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
+
+        matlab_reference_results = {
+            'a': 16222.8389836285,
+            'b': 0,
+            'g': 0,
+            'x': 4837.19588535178,
+            'y': 7500.00000000000,
+            'z': 7500}
+        
+        StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+        for label in ['x', 'y', 'z', 'a', 'b', 'g']:
+            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
+
+
 if __name__ == "__main__":
     unittest.main()   
