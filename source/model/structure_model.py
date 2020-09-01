@@ -472,6 +472,8 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
 
+        total_mass = self.parameters['m_tot']
+
         # loop over the first n=considered_modes eigenmodes
         for mode_idx in range(considered_modes):
             decomposed_eigenmode = {}
@@ -480,13 +482,16 @@ class StraightBeam(object):
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
+
             for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
                                   GD.DOF_LABELS[self.domain_size]):
                 start = idx
                 step = GD.DOFS_PER_NODE[self.domain_size]
                 stop = self.eigen_modes_raw.shape[0] + idx - step
-                decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
-                                                                         1:step][:, selected_mode]
+
+                decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw),))
+                decomposed_eigenmode[label][start:stop + 1:step] = self.eigen_modes_raw[start:stop + 1:step][:,selected_mode]
+
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
@@ -499,39 +504,17 @@ class StraightBeam(object):
 
                 # adding computation of modal mass
                 # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
-                # TODO: for now using element mass (as constant) and nodal dof value - make consistent
-                # IMPORTANT
-                if label in ['x', 'y', 'z', 'a']:
-                    if rel_contrib[label] > GD.THRESHOLD:
-                        eff_modal_numerator = 0.0
-                        eff_modal_denominator = 0.0
-                        total_mass = 0.0
 
-                        for el_idx in range(self.n_elements-1):
-                            # equivalent mass at node taken as average of 2 elements below and above node
-                            storey_mass = (self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
-                            if label == 'a':
-                                # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][el_idx] ** 2 + self.parameters['ly'][el_idx] ** 2) / 12
+                eff_modal_numerator = np.square(np.sum(np.matmul(self.comp_m,decomposed_eigenmode[label])))
+                eff_modal_denominator = np.sum(np.matmul(self.comp_m,np.square(decomposed_eigenmode[label])))
 
-                                # TODO check as torsion 4-5-6 does not seem to be ok in the results
+                eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
 
-                            total_mass += storey_mass
+                rel_participation[label] = eff_modal_mass[label] / total_mass
 
-                            # taking the modal dof value at the node misusing naming el_idx
-                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][el_idx]
-                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][el_idx] ** 2
-
-                        eff_modal_mass[label] = eff_modal_numerator ** 2 / eff_modal_denominator
-                        rel_participation[label] = eff_modal_mass[label] / total_mass
-
-                    else:
-                        eff_modal_mass[label] = 0.0
-                        rel_participation[label] = 0.0
-                else:
-                    # TODO for now for rotations
-                    eff_modal_mass[label] = 0.0
-                    rel_participation[label] = 0.0
+            for label in GD.DOF_LABELS[self.domain_size]:
+                # remove all zeros in each label 
+                decomposed_eigenmode[label] = decomposed_eigenmode[label][np.nonzero(decomposed_eigenmode[label])]
 
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
