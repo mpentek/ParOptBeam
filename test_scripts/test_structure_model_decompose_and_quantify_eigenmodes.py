@@ -43,6 +43,22 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
             0.0138232703000000,	0.00917897402000000])
         return mock_self
 
+    def create_mock_self_for_decomposing (self):
+        mock_self = mock.MagicMock()
+        mock_self.eig_freqs_sorted_indices = np.array([0])
+        mock_self.dofs_to_keep = np.array([0])
+        mock_self.domain_size = '3D'
+        mock_self.eigen_modes_raw = np.array([-1.25758545e-15,  1.82974843e-03,  9.67819983e-17, -5.39773877e-17,
+        3.26922287e-03,  3.27133067e-17, -1.25260404e-16, -6.40126011e-03,
+        1.13361142e-18, -2.30083611e-17,  1.08509315e-02, -2.88425786e-19,
+        1.84413615e-02,  1.05665743e-18,  5.89802514e-19])
+        mock_self.charact_length = 0.3
+        mock_self.n_elements = 3
+        mock_self.parameters['m'] = [2616.6666666666665, 5233.333333333333, 5233.333333333334, 2616.6666666666674]
+        mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
+        mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
+        return mock_self
+
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
     def test_contribution_0_a (self,mock_eigenvalue_solve,mock_zip):
@@ -273,6 +289,26 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         for label in ['x', 'y', 'z', 'a', 'b', 'g']:
             self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
 
+
+    @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    def test_decomposing_eigenmode (self, mock_eigenvalue_solve):
+        # pinned-fixed 3 Element System
+        # after reduction 15 DOF left which are not ordered a,b,g,x,y,z
+        # order is: a b g a b g x y z a b g x y z  
+
+        mock_self = self.create_mock_self_for_modal_mass()
+
+        reference_result = {
+            'a': 3.77686072870527e-16, 
+            'b': 0.00344384466429105, 
+            'g': 3.06484892574840e-17, 
+            'x': 0.0184413615000000, 
+            'y': 0.00640126011000000, 
+            'z': 1.27786613425473e-18}
+        
+        StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+        for label in ['x', 'y', 'z', 'a', 'b', 'g']:
+            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label],reference_result[label]),msg='mismatch in: '+str(reference_result[label]))
 
 if __name__ == "__main__":
     unittest.main()   
