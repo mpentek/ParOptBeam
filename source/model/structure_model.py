@@ -451,12 +451,6 @@ class StraightBeam(object):
         ----------
         considered_modes: int, optional
             Number of eigenmodes to be computed. default = 15
-
-
-        Raises
-        ----------
-        ZeroDivisionError: float division by zero
-            If only one element is beeing used total mass will be 0 as loop for storey masses won't be entered!
         '''
         
         # TODO remove code duplication: considered_modes
@@ -469,10 +463,14 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
+        self.create_list_of_labels()
+
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
 
         total_mass = self.parameters['m_tot']
+        msg = 'total_mass = ' + str(total_mass)
+        print(msg)
 
         # loop over the first n=considered_modes eigenmodes
         for mode_idx in range(considered_modes):
@@ -485,12 +483,21 @@ class StraightBeam(object):
 
             for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
                                   GD.DOF_LABELS[self.domain_size]):
-                start = idx
-                step = GD.DOFS_PER_NODE[self.domain_size]
-                stop = self.eigen_modes_raw.shape[0] + idx - step
+                # start = idx
+                # step = GD.DOFS_PER_NODE[self.domain_size]
+                # stop = self.eigen_modes_raw.shape[0] + idx - step
 
+                # decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw),))
+                # decomposed_eigenmode[label][start:stop + 1:step] = self.eigen_modes_raw[start:stop + 1:step][:,selected_mode]
+                
                 decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw),))
-                decomposed_eigenmode[label][start:stop + 1:step] = self.eigen_modes_raw[start:stop + 1:step][:,selected_mode]
+                for i_dof_label in range(len(self.list_of_labels)):
+                    if self.list_of_labels[i_dof_label] == label:
+                        decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[selected_mode][i_dof_label]
+                
+
+                # decomposed_eigenmode[label] = np.multiply(self.eigen_modes_raw[selected_mode], self.labels_to_keep==label)
+
 
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
@@ -512,7 +519,8 @@ class StraightBeam(object):
 
                 rel_participation[label] = eff_modal_mass[label] / total_mass
 
-            for label in GD.DOF_LABELS[self.domain_size]:
+            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
+                                  GD.DOF_LABELS[self.domain_size]):
                 # remove all zeros in each label 
                 decomposed_eigenmode[label] = decomposed_eigenmode[label][np.nonzero(decomposed_eigenmode[label])]
 
@@ -891,3 +899,11 @@ class StraightBeam(object):
 
         # return back the whole matrix - without BCs applied
         return self.rayleigh_coefficients[0] * self.m + self.rayleigh_coefficients[1] * self.k
+
+    def create_list_of_labels(self):
+        labels = ['a','b','g','x','y','z']
+        self.list_of_labels = [None]*len(self.dofs_to_keep)
+        for i_dof in range(len(self.dofs_to_keep)):
+            self.list_of_labels[i_dof] = labels[np.mod(self.dofs_to_keep[i_dof],6)]
+        
+    

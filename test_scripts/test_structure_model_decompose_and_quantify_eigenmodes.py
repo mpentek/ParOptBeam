@@ -144,12 +144,16 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         mock_self.domain_size = '3D'
         mock_self.eigen_modes_raw = np.ones([18,1])/(np.sqrt(3))
         # --> norm(decomposed_mode) == 1
-        mock_self.charact_length = 1
+        mock_self.charact_length = 0.3
         mock_self.n_elements = 3
-        mock_self.contribution_matlab_solution = np.array([
-            1.69482512506842e-19,	8.34473782500097e-20,
-        	0.00173211626700000,	4.87586113078838e-19,
-            0.0138232703000000,	0.00917897402000000])
+        # mock_self.contribution_matlab_solution = np.array([
+        #     1.69482512506842e-19,	8.34473782500097e-20,
+        # 	0.00173211626700000,	4.87586113078838e-19,
+        #     0.0138232703000000,	0.00917897402000000])
+        # mock_self.modal_mass = np.array([
+        #     9964.89957964205, 8258.59560706382,
+        #     3552.86518500000, 40.8331283039732,
+        #     4506.53708000000, -2767.21478000000])
         return mock_self
 
     @mock.patch('builtins.zip')
@@ -344,24 +348,21 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
     #     StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
     #     self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],participation))
 
-    # @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    # def test_modal_mass_values_symmetric (self, mock_eigenvalue_solve):
-    #     mock_self = self.create_mock_self_for_modal_mass()
-    #     mock_self.parameters['m'] = [1000.0,2000.0,2000.0,1000.0]
-    #     mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
-    #     mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
+    @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    def test_modal_mass_values (self, mock_eigenvalue_solve):
+        mock_self = self.create_mock_self_for_contribution()
 
-    #     matlab_reference_results = {
-    #         'a': 10815.2259890856,
-    #         'b': 0,
-    #         'g': 0,
-    #         'x': 3224.79725690119,
-    #         'y': 5000.00000000000,
-    #         'z': 5000}
+        matlab_reference_results = {
+            'a': 9964.89957964205,
+            'b': 8258.59560706382, 
+            'g': 3552.86518500000,
+            'x': 40.8331283039732,
+            'y': 4506.53708000000,
+            'z': -2767.21478000000}
         
-    #     StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-    #     for label in ['x', 'y', 'z', 'a', 'b', 'g']:
-    #         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
+        StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+        for label in ['x', 'y', 'z', 'a', 'b', 'g']:
+            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
 
 if __name__ == "__main__":
     unittest.main()   
