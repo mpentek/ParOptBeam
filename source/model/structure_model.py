@@ -469,8 +469,6 @@ class StraightBeam(object):
                                       'rel_participation': []}
 
         total_mass = self.parameters['m_tot']
-        msg = 'total_mass = ' + str(total_mass)
-        print(msg)
 
         # loop over the first n=considered_modes eigenmodes
         for mode_idx in range(considered_modes):
@@ -490,7 +488,7 @@ class StraightBeam(object):
                 # decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw),))
                 # decomposed_eigenmode[label][start:stop + 1:step] = self.eigen_modes_raw[start:stop + 1:step][:,selected_mode]
                 
-                decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw),))
+                decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw[mode_idx]),))
                 for i_dof_label in range(len(self.list_of_labels)):
                     if self.list_of_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[selected_mode][i_dof_label]

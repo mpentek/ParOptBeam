@@ -10,13 +10,14 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         mock_self = mock.MagicMock()
         mock_self.eig_freqs_sorted_indices = np.array([0])
         mock_self.dofs_to_keep = np.array([0])
+        mock_self.list_of_labels = ['a','b','g','x','y','z','a','b','g','x','y','z','a','b','g','x','y','z']
         mock_self.domain_size = '3D'
-        mock_self.eigen_modes_raw = np.array([
+        mock_self.eigen_modes_raw = np.array([[
         [-3.53420556e-19], [1.63043899e-19],  [8.50278725e-19],  [-4.77395127e-19],
         [-9.19617850e-19], [-2.30959794e-33], [-4.39066387e-19], [2.25363084e-19],
         [-5.55596213e-20], [9.83695305e-20],  [1.73710162e-34],  [3.33840178e-20],
         [-3.83894809e-20], [1.77468855e-35],  [5.77372089e-03],  [-1.25517271e-20],
-        [-1.38232703e-02], [-9.17897402e-03]])
+        [-1.38232703e-02], [-9.17897402e-03]]])
         mock_self.charact_length = 0.3
         mock_self.n_elements = 3
         mock_self.parameters['m'] = [2616.6666666666665, 5233.333333333333, 5233.333333333334, 2616.6666666666674]
@@ -156,71 +157,76 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         #     4506.53708000000, -2767.21478000000])
         return mock_self
 
+    @mock.patch('source.model.structure_model.StraightBeam.create_list_of_labels')
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_contribution_0_a (self,mock_eigenvalue_solve,mock_zip):
+    def test_contribution_0_a (self,mock_eigenvalue_solve,mock_zip,mock_list_of_labels):
         mock_self = self.create_mock_self_for_contribution()
         idx = 0
         label = 'a'
         mock_zip.return_value = [[idx,label]]
         StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
+        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[0][idx:(13+idx):6][:,0])})
         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label], mock_self.contribution_matlab_solution[idx]))
 
+    @mock.patch('source.model.structure_model.StraightBeam.create_list_of_labels')
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_contribution_1_b (self,mock_eigenvalue_solve,mock_zip):
+    def test_contribution_1_b (self,mock_eigenvalue_solve,mock_zip,mock_list_of_labels):
         mock_self = self.create_mock_self_for_contribution()
         idx = 1
         label = 'b'
         mock_zip.return_value = [[idx,label]]
         StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
+        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[0][idx:(13+idx):6][:,0])})
         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label], mock_self.contribution_matlab_solution[idx]))
-
+    
+    @mock.patch('source.model.structure_model.StraightBeam.create_list_of_labels')
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_contribution_2_g (self,mock_eigenvalue_solve,mock_zip):
+    def test_contribution_2_g (self,mock_eigenvalue_solve,mock_zip,mock_list_of_labels):
         mock_self = self.create_mock_self_for_contribution()
         idx = 2
         label = 'g'
         mock_zip.return_value = [[idx,label]]
         StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
+        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[0][idx:(13+idx):6][:,0])})
         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label], mock_self.contribution_matlab_solution[idx]))
 
-
+    @mock.patch('source.model.structure_model.StraightBeam.create_list_of_labels')  
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_contribution_3_x (self,mock_eigenvalue_solve,mock_zip):
+    def test_contribution_3_x (self,mock_eigenvalue_solve,mock_zip,mock_list_of_labels):
         mock_self = self.create_mock_self_for_contribution()
         idx = 3
         label = 'x'
         mock_zip.return_value = [[idx,label]]
         StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
+        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: linalg.norm(mock_self.eigen_modes_raw[0][idx:(13+idx):6][:,0])})
         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label], mock_self.contribution_matlab_solution[idx]))
    
+    @mock.patch('source.model.structure_model.StraightBeam.create_list_of_labels')
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_contribution_4_y (self,mock_eigenvalue_solve,mock_zip):
+    def test_contribution_4_y (self,mock_eigenvalue_solve,mock_zip,mock_list_of_labels):
         mock_self = self.create_mock_self_for_contribution()
         idx = 4
         label = 'y'
         mock_zip.return_value = [[idx,label]]
         StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
+        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: linalg.norm(mock_self.eigen_modes_raw[0][idx:(13+idx):6][:,0])})
         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label], mock_self.contribution_matlab_solution[idx]))
-          
+
+    @mock.patch('source.model.structure_model.StraightBeam.create_list_of_labels')      
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_contribution_5_z (self,mock_eigenvalue_solve,mock_zip):
+    def test_contribution_5_z (self,mock_eigenvalue_solve,mock_zip,mock_list_of_labels):
         mock_self = self.create_mock_self_for_contribution()
         idx = 5
         label = 'z'
         mock_zip.return_value = [[idx,label]]
         StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
+        self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: linalg.norm(mock_self.eigen_modes_raw[0][idx:(13+idx):6][:,0])})
         self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label], mock_self.contribution_matlab_solution[idx]))
 
     # @mock.patch('builtins.zip')
