@@ -478,17 +478,16 @@ class StraightBeam(object):
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
+            sum_denominator = 0
 
-            for label in GD.DOF_LABELS[self.domain_size]):
+
+            for label in GD.DOF_LABELS[self.domain_size]:
 
                 decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw[mode_idx]),))
                 for i_dof_label in range(len(self.dofs_to_keep_labels)):
                     if self.dofs_to_keep_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[selected_mode][i_dof_label]
                 
-
-                # decomposed_eigenmode[label] = np.multiply(self.eigen_modes_raw[selected_mode], self.labels_to_keep==label)
-
 
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
@@ -503,17 +502,27 @@ class StraightBeam(object):
                 # adding computation of modal mass
                 # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
 
-                
-                eff_modal_numerator = np.square(np.sum(np.matmul(self.comp_m,decomposed_eigenmode[label])))
-                # denominator = Y'*m*Y
-                eff_modal_denominator = np.matmul(np.transpose(decomposed_eigenmode[label]),np.matmul(self.comp_m,decomposed_eigenmode[label]))
+                if rel_contrib[label] > GD.THRESHOLD:
+                    eff_modal_numerator = np.square(np.sum(np.matmul(self.comp_m,decomposed_eigenmode[label])))
+                    # denominator = Y'*m*Y
+                    eff_modal_denominator = np.matmul(np.transpose(decomposed_eigenmode[label]),np.matmul(self.comp_m,decomposed_eigenmode[label]))
 
-                eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
+                    msg = 'Mode: ' + str(mode_idx) + ', Label: ' + str(label)
+                    msg += ', Numerator = ' + str(eff_modal_numerator)
+                    msg += ', Denominator = ' + str(eff_modal_denominator)
+                    print(msg)
 
-                rel_participation[label] = eff_modal_mass[label] / total_mass
+                    sum_denominator += eff_modal_denominator
 
-            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
-                                  GD.DOF_LABELS[self.domain_size]):
+
+                    eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
+
+                    rel_participation[label] = eff_modal_mass[label] / total_mass
+                else:
+                    eff_modal_mass[label] = 0
+                    rel_participation[label] = 0
+
+            for label in GD.DOF_LABELS[self.domain_size]:
                 # remove all zeros in each label 
                 decomposed_eigenmode[label] = decomposed_eigenmode[label][np.nonzero(decomposed_eigenmode[label])]
 
@@ -522,6 +531,9 @@ class StraightBeam(object):
             self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
             self.decomposed_eigenmodes['rel_participation'].append(
                 rel_participation)
+        
+            msg = 'Mode: ' + str(mode_idx) + ', Sum Denominator = ' + str(sum_denominator)
+            print(msg)
 
     def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
         '''  Identify and sort eigenmodes 
