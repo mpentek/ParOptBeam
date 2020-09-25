@@ -463,7 +463,7 @@ class StraightBeam(object):
 
         self.eigenvalue_solve()
 
-        self.create_list_of_labels()
+        self.create_dofs_to_keep_labels()
 
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
@@ -479,18 +479,11 @@ class StraightBeam(object):
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
 
-            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
-                                  GD.DOF_LABELS[self.domain_size]):
-                # start = idx
-                # step = GD.DOFS_PER_NODE[self.domain_size]
-                # stop = self.eigen_modes_raw.shape[0] + idx - step
+            for label in GD.DOF_LABELS[self.domain_size]):
 
-                # decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw),))
-                # decomposed_eigenmode[label][start:stop + 1:step] = self.eigen_modes_raw[start:stop + 1:step][:,selected_mode]
-                
                 decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw[mode_idx]),))
-                for i_dof_label in range(len(self.list_of_labels)):
-                    if self.list_of_labels[i_dof_label] == label:
+                for i_dof_label in range(len(self.dofs_to_keep_labels)):
+                    if self.dofs_to_keep_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[selected_mode][i_dof_label]
                 
 
@@ -510,8 +503,10 @@ class StraightBeam(object):
                 # adding computation of modal mass
                 # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
 
+                
                 eff_modal_numerator = np.square(np.sum(np.matmul(self.comp_m,decomposed_eigenmode[label])))
-                eff_modal_denominator = np.sum(np.matmul(self.comp_m,np.square(decomposed_eigenmode[label])))
+                # denominator = Y'*m*Y
+                eff_modal_denominator = np.matmul(np.transpose(decomposed_eigenmode[label]),np.matmul(self.comp_m,decomposed_eigenmode[label]))
 
                 eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
 
@@ -898,10 +893,14 @@ class StraightBeam(object):
         # return back the whole matrix - without BCs applied
         return self.rayleigh_coefficients[0] * self.m + self.rayleigh_coefficients[1] * self.k
 
-    def create_list_of_labels(self):
-        labels = ['a','b','g','x','y','z']
-        self.list_of_labels = [None]*len(self.dofs_to_keep)
-        for i_dof in range(len(self.dofs_to_keep)):
-            self.list_of_labels[i_dof] = labels[np.mod(self.dofs_to_keep[i_dof],6)]
+    def create_dofs_to_keep_labels(self):
+        labels = GD.DOF_LABELS[self.domain_size]
+        self.dofs_to_keep_labels = [None]*len(self.dofs_to_keep)
+        if self.domain_size == '2D':
+            for i_dof in range(len(self.dofs_to_keep)):
+                self.dofs_to_keep_labels[i_dof] = labels[np.mod(self.dofs_to_keep[i_dof],3)]
+        else:
+            for i_dof in range(len(self.dofs_to_keep)):
+                self.dofs_to_keep_labels[i_dof] = labels[np.mod(self.dofs_to_keep[i_dof],6)]
         
     
