@@ -1,0 +1,71 @@
+{
+    "model_parameters": {
+        "name": "TestParameters",
+        "domain_size": "3D",
+        "system_parameters": {
+            "element_params": {
+                "type": "Bernoulli",
+                "is_nonlinear": false
+            },
+            "material": {
+                "is_nonlinear": false,
+                "density": 7850.0,
+                "youngs_modulus": 2.10e11,
+                "poisson_ratio": 0.3,
+                "damping_ratio": 0.0
+            },
+            "geometry": {
+                "length_x": 25,
+                "number_of_elements": 3,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0,"End"],
+                    "length_y": [0.20],
+                    "length_z": [0.40],
+                    "area"    : [0.08],
+                    "shear_area_y" : [0.0667],
+                    "shear_area_z" : [0.0667],
+                    "moment_of_inertia_y" : [0.0010667],
+                    "moment_of_inertia_z" : [0.0002667],
+                    "torsional_moment_of_inertia" : [0.00007328]}]
+            }
+        },
+        "boundary_conditions": "fixed-free"
+    },
+    "analyses_parameters":{
+        "global_output_folder" : "some/path",
+        "model_properties": {
+            "write": false,
+            "plot": false
+        },
+        "report_options": {
+            "combine_plots_into_pdf" : false,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : false
+        },
+        "runs": [{
+                "type": "eigenvalue_analysis",
+                "settings": {
+                    "normalization": "mass_normalized"},
+                "input":{},
+                "output":{
+                    "eigenmode_summary": {
+                        "write" : false, 
+                        "plot" : false},
+                    "eigenmode_identification": {
+                        "write" : true, 
+                        "plot" : false},
+                    "selected_eigenmode": {
+                        "plot_mode": [], 
+                        "write_mode": [],
+                        "animate_mode": [],
+                        "animate_skin_model": []},
+                    "selected_eigenmode_range": {
+                        "help": "maximum 4 modes per range at a time",
+                        "considered_ranges": [[1,2]], 
+                        "plot_range": [false, false], 
+                        "write_range": [false, false]}
+                    }
+            
+            }]
+    }
+}
