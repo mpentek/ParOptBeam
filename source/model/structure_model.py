@@ -486,7 +486,7 @@ class StraightBeam(object):
                 decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw[mode_idx]),))
                 for i_dof_label in range(len(self.dofs_to_keep_labels)):
                     if self.dofs_to_keep_labels[i_dof_label] == label:
-                        decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[selected_mode][i_dof_label]
+                        decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
                 
 
                 if label in ['a', 'b', 'g']:
