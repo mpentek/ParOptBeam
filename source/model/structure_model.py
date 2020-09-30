@@ -483,7 +483,8 @@ class StraightBeam(object):
 
             for label in GD.DOF_LABELS[self.domain_size]:
 
-                decomposed_eigenmode[label] = np.zeros((len(self.eigen_modes_raw[mode_idx]),))
+                
+                decomposed_eigenmode[label] = np.zeros([len(self.eigen_modes_raw),])
                 for i_dof_label in range(len(self.dofs_to_keep_labels)):
                     if self.dofs_to_keep_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
@@ -503,17 +504,10 @@ class StraightBeam(object):
                 # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
 
                 if rel_contrib[label] > GD.THRESHOLD:
-                    eff_modal_numerator = np.square(np.sum(np.matmul(self.comp_m,decomposed_eigenmode[label])))
+                    # nominator = (Y'*m)*(m*Y)
+                    eff_modal_numerator = np.matmul(np.matmul(np.transpose(decomposed_eigenmode[label]),self.comp_m),np.matmul(self.comp_m,decomposed_eigenmode[label]))
                     # denominator = Y'*m*Y
                     eff_modal_denominator = np.matmul(np.transpose(decomposed_eigenmode[label]),np.matmul(self.comp_m,decomposed_eigenmode[label]))
-
-                    msg = 'Mode: ' + str(mode_idx) + ', Label: ' + str(label)
-                    msg += ', Numerator = ' + str(eff_modal_numerator)
-                    msg += ', Denominator = ' + str(eff_modal_denominator)
-                    print(msg)
-
-                    sum_denominator += eff_modal_denominator
-
 
                     eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
 
@@ -531,9 +525,6 @@ class StraightBeam(object):
             self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
             self.decomposed_eigenmodes['rel_participation'].append(
                 rel_participation)
-        
-            msg = 'Mode: ' + str(mode_idx) + ', Sum Denominator = ' + str(sum_denominator)
-            print(msg)
 
     def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
         '''  Identify and sort eigenmodes 
