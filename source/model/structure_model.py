@@ -445,7 +445,8 @@ class StraightBeam(object):
 
         Calls eigenvalue_solve() to get the eigenvalues and modes
         For each mode contributions of each DOF are computed. 
-        Therefore modal_masses are computed and compared with the total mass
+        Therefore modal_masses are computed and compared with the total mass. 
+        The computation of modal_masses follows Tom Irvine http://www.vibrationdata.com/tutorials2/beam.pdf (D-67)
 
         Parameters
         ----------
@@ -478,31 +479,25 @@ class StraightBeam(object):
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
-            sum_denominator = 0
-
-
+            # for each mode loop over every label
             for label in GD.DOF_LABELS[self.domain_size]:
 
-                
                 decomposed_eigenmode[label] = np.zeros([len(self.eigen_modes_raw),])
+                # find all DOF's that contribute to the current label and save the value to decomposed_eigenmode[label]
                 for i_dof_label in range(len(self.dofs_to_keep_labels)):
                     if self.dofs_to_keep_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
                 
-
+                # compute contribution
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
-                    rel_contrib[label] = self.charact_length * \
-                                         linalg.norm(decomposed_eigenmode[label])
+                    rel_contrib[label] = self.charact_length * linalg.norm(decomposed_eigenmode[label])
                 else:
                     # for translation dofs
-                    rel_contrib[label] = linalg.norm(
-                        decomposed_eigenmode[label])
+                    rel_contrib[label] = linalg.norm(decomposed_eigenmode[label])
 
-                # adding computation of modal mass
-                # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
-
+                # compute modal mass
                 if rel_contrib[label] > GD.THRESHOLD:
                     # nominator = (Y'*m)*(m*Y)
                     eff_modal_numerator = np.matmul(np.matmul(np.transpose(decomposed_eigenmode[label]),self.comp_m),np.matmul(self.comp_m,decomposed_eigenmode[label]))
@@ -510,16 +505,15 @@ class StraightBeam(object):
                     eff_modal_denominator = np.matmul(np.transpose(decomposed_eigenmode[label]),np.matmul(self.comp_m,decomposed_eigenmode[label]))
 
                     eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
-
                     rel_participation[label] = eff_modal_mass[label] / total_mass
                 else:
                     eff_modal_mass[label] = 0
                     rel_participation[label] = 0
 
-            for label in GD.DOF_LABELS[self.domain_size]:
-                # remove all zeros in each label 
+                # remove all zeros in each label before it is safed
                 decomposed_eigenmode[label] = decomposed_eigenmode[label][np.nonzero(decomposed_eigenmode[label])]
 
+            # append a dict containing the modes values/contribution/... corresponding to each label
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
             self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
