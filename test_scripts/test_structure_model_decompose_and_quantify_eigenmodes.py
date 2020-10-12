@@ -151,10 +151,10 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
     def test_decomposing_eigenmode (self, mock_eigenvalue_solve):
         # pinned-fixed 3 Element System
-        # after reduction 15 DOF left which are not ordered a,b,g,x,y,z
-        # order is: a b g a b g x y z a b g x y z  
+        # after reduction 15 DOF left which are not ordered x,y,z,a,b,g
+        # order is: a b g x y z a b g x y z a b g
 
-        mock_self = self.create_mock_self_for_modal_mass()
+        mock_self = self.create_mock_self_for_modal_mass()                                                                                                        
 
         reference_result = {
             'a': 3.77686072870527e-16, 
