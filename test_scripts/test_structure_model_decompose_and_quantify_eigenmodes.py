@@ -23,8 +23,12 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         print(mock_self.eigen_modes_raw)
         mock_self.charact_length = 0.3
         mock_self.n_elements = 3
-        mock_self.parameters['m'] = [2616.6666666666665, 5233.333333333333, 5233.333333333334, 2616.6666666666674]
-        mock_self.parameters['m-tot'] = sum(mock_self.parameters['m'])
+        mock_self.parameters = {
+            'lz': [0.4, 0.4, 0.4, 0.4],
+            'ly': [0.2, 0.2, 0.2, 0.2],
+            'm': [2616.6666666666665, 5233.333333333333, 5233.333333333334, 2616.6666666666674],
+        } 
+        mock_self.parameters['m_tot'] = sum(mock_self.parameters['m'])
         mock_self.comp_m = np.array([[ 3.48888889e+03,  0.00000000e+00,  0.00000000e+00,
          0.00000000e+00,  0.00000000e+00,  0.00000000e+00,
          8.72222222e+02,  0.00000000e+00,  0.00000000e+00,
@@ -133,8 +137,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
          0.00000000e+00,  0.00000000e+00, -2.59648103e+03,
          0.00000000e+00, -2.28460089e+03,  0.00000000e+00,
          0.00000000e+00,  0.00000000e+00,  3.46352551e+03]])
-        mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
-        mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
+
         mock_self.contribution_matlab_solution = np.array([
           5.64941708356140e-19, 2.78157927500032e-19,
           0.00577372089000000, 1.46275833923651e-19,
