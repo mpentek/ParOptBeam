@@ -479,6 +479,8 @@ class StraightBeam(object):
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
+            nullified_mode = np.zeros(len(self.eigen_modes_raw),)
+
             # for each mode loop over every label
             for label in GD.DOF_LABELS[self.domain_size]:
 
@@ -487,6 +489,8 @@ class StraightBeam(object):
                 for i_dof_label in range(len(self.dofs_to_keep_labels)):
                     if self.dofs_to_keep_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
+                        if self.dofs_to_keep_labels[i_dof_label] in ['x','y','z']:
+                            nullified_mode[i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
                 
                 # compute contribution
                 if label in ['a', 'b', 'g']:
@@ -503,6 +507,10 @@ class StraightBeam(object):
                     eff_modal_numerator = np.matmul(np.matmul(np.transpose(decomposed_eigenmode[label]),self.comp_m),np.matmul(self.comp_m,decomposed_eigenmode[label]))
                     # denominator = Y'*m*Y
                     eff_modal_denominator = np.matmul(np.transpose(decomposed_eigenmode[label]),np.matmul(self.comp_m,decomposed_eigenmode[label]))
+                    
+                    # # ignore rotational dofs
+                    # if label in ['a', 'b', 'g']:
+                    #     eff_modal_numerator = 0
 
                     eff_modal_mass[label] = eff_modal_numerator / eff_modal_denominator
                     rel_participation[label] = eff_modal_mass[label] / total_mass
@@ -519,6 +527,22 @@ class StraightBeam(object):
             self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
             self.decomposed_eigenmodes['rel_participation'].append(
                 rel_participation)
+
+            # check mass normalization
+            denominator = np.matmul(np.transpose(self.eigen_modes_raw[:,mode_idx]),np.matmul(self.comp_m,self.eigen_modes_raw[:,mode_idx]))       
+            msg = '--mode ' + str(mode_idx) + '------------ \n'
+            msg += 'denominator = ' + str(denominator)
+            print(msg)
+
+            # check modal mass
+            m_eff = np.matmul(np.matmul(np.transpose(self.eigen_modes_raw[:,mode_idx]),self.comp_m),np.matmul(self.comp_m,self.eigen_modes_raw[:,mode_idx]))/ denominator / total_mass
+            msg = 'modal mass eff = ' + str(m_eff) + '\n'
+            m_eff_nullified = np.matmul(np.matmul(np.transpose(nullified_mode),self.comp_m),np.matmul(self.comp_m,nullified_mode))/ denominator / total_mass
+            msg += 'modal mass eff (nullified) = ' + str(m_eff_nullified) + '\n'
+            print(msg)
+                
+                
+
 
     def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
         '''  Identify and sort eigenmodes 
@@ -574,6 +598,8 @@ class StraightBeam(object):
                             'mode_id' : (selected_mode + 1),
                             'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
                             'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                            # 'eff_modal_mass': sum(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
+                            # 'rel_participation' : sum(self.decomposed_eigenmodes['rel_participation'][i].values())
                         }]
 
         if print_to_console:
