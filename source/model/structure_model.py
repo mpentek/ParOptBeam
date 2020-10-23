@@ -479,7 +479,7 @@ class StraightBeam(object):
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
 
-            nullified_mode = np.zeros(len(self.eigen_modes_raw),)
+            # nullified_mode = np.zeros(len(self.eigen_modes_raw),)
 
             # for each mode loop over every label
             for label in GD.DOF_LABELS[self.domain_size]:
@@ -489,8 +489,8 @@ class StraightBeam(object):
                 for i_dof_label in range(len(self.dofs_to_keep_labels)):
                     if self.dofs_to_keep_labels[i_dof_label] == label:
                         decomposed_eigenmode[label][i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
-                        if self.dofs_to_keep_labels[i_dof_label] in ['x','y','z']:
-                            nullified_mode[i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
+                        # if self.dofs_to_keep_labels[i_dof_label] in ['x','y','z']:
+                        #     nullified_mode[i_dof_label]=self.eigen_modes_raw[i_dof_label][selected_mode]
                 
                 # compute contribution
                 if label in ['a', 'b', 'g']:
@@ -528,18 +528,18 @@ class StraightBeam(object):
             self.decomposed_eigenmodes['rel_participation'].append(
                 rel_participation)
 
-            # check mass normalization
-            denominator = np.matmul(np.transpose(self.eigen_modes_raw[:,mode_idx]),np.matmul(self.comp_m,self.eigen_modes_raw[:,mode_idx]))       
-            msg = '--mode ' + str(mode_idx) + '------------ \n'
-            msg += 'denominator = ' + str(denominator)
-            print(msg)
+            # # check mass normalization
+            # denominator = np.matmul(np.transpose(self.eigen_modes_raw[:,mode_idx]),np.matmul(self.comp_m,self.eigen_modes_raw[:,mode_idx]))       
+            # msg = '--mode ' + str(mode_idx) + '------------ \n'
+            # msg += 'denominator = ' + str(denominator)
+            # print(msg)
 
-            # check modal mass
-            m_eff = np.matmul(np.matmul(np.transpose(self.eigen_modes_raw[:,mode_idx]),self.comp_m),np.matmul(self.comp_m,self.eigen_modes_raw[:,mode_idx]))/ denominator / total_mass
-            msg = 'modal mass eff = ' + str(m_eff) + '\n'
-            m_eff_nullified = np.matmul(np.matmul(np.transpose(nullified_mode),self.comp_m),np.matmul(self.comp_m,nullified_mode))/ denominator / total_mass
-            msg += 'modal mass eff (nullified) = ' + str(m_eff_nullified) + '\n'
-            print(msg)
+            # # check modal mass
+            # m_eff = np.matmul(np.matmul(np.transpose(self.eigen_modes_raw[:,mode_idx]),self.comp_m),np.matmul(self.comp_m,self.eigen_modes_raw[:,mode_idx]))/ denominator / total_mass
+            # msg = 'modal mass eff = ' + str(m_eff) + '\n'
+            # m_eff_nullified = np.matmul(np.matmul(np.transpose(nullified_mode),self.comp_m),np.matmul(self.comp_m,nullified_mode))/ denominator / total_mass
+            # msg += 'modal mass eff (nullified) = ' + str(m_eff_nullified) + '\n'
+            # print(msg)
                 
                 
 
