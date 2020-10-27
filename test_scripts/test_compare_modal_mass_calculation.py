@@ -50,10 +50,18 @@ class test_compare_modal_mass_calculation(unittest.TestCase):
             for floor in range(5):
                 storey_mass = m
                 total_mass += storey_mass
-                eff_modal_numerator_sum += storey_mass * phi_n[floor][mode]
+                # numerator like this 100.0
+                #eff_modal_numerator_sum += (storey_mass * phi_n[floor][mode]) **2
+
+                eff_modal_numerator_sum += (storey_mass * phi_n[floor][mode])
                 eff_modal_denominator_sum += storey_mass * phi_n[floor][mode] ** 2
 
-            eff_modal_mass_sum[mode] = eff_modal_numerator_sum ** 2 / eff_modal_denominator_sum
+            # denominator always 1.0
+            
+            # numerator like this NOT 100.0
+            eff_modal_numerator_sum = eff_modal_numerator_sum **2
+            
+            eff_modal_mass_sum[mode] = eff_modal_numerator_sum / eff_modal_denominator_sum
             rel_participation_sum[mode] = eff_modal_mass_sum[mode] / total_mass
 
 
@@ -63,10 +71,21 @@ class test_compare_modal_mass_calculation(unittest.TestCase):
             eff_modal_denominator_multy = 0.
             eff_modal_mass_multy = np.zeros(5,)
 
-            eff_modal_numerator_multy = np.matmul(np.matmul(np.transpose(phi_n[:,mode]),comp_m),np.matmul(comp_m,phi_n[:,mode]))
+            # numerator like this 100.0
+            # V1
+            #eff_modal_numerator_multy = np.matmul(np.matmul(np.transpose(phi_n[:,mode]),comp_m),np.matmul(comp_m,phi_n[:,mode]))
+            # V2
+            #eff_modal_numerator_multy = np.matmul(np.transpose(np.matmul(comp_m,phi_n[:,mode])),np.matmul(comp_m,phi_n[:,mode]))
+
+            eff_modal_numerator_multy = (np.matmul(np.transpose(phi_n[:,mode]),np.matmul(comp_m,np.ones(5))))**2
+
             # denominator = Y'*m*Y
-            eff_modal_denominator_multy = np.matmul(np.transpose(phi_n[:,mode]),np.matmul(comp_m,phi_n[:,mode]))
-                            
+            # V1
+            #eff_modal_denominator_multy = np.matmul(np.transpose(phi_n[:,mode]),np.matmul(comp_m,phi_n[:,mode]))
+            # V2
+            eff_modal_denominator_multy = np.matmul(np.matmul(np.transpose(phi_n[:,mode]),comp_m),phi_n[:,mode])
+            # denominator always 1.0
+
             # # ignore rotational dofs
             # if label in ['a', 'b', 'g']:
             #     eff_modal_numerator = 0
@@ -83,10 +102,12 @@ class test_compare_modal_mass_calculation(unittest.TestCase):
             msg += '    Contribution = ' + str(Ln_analytic[mode])+ '\n'
             msg += 'Summed:\n'
             msg += '    Contribution = ' +  str(eff_modal_mass_sum[mode]) + '\n'
+            msg += '    Numerator = ' +str(eff_modal_numerator_sum) + '\n'
             msg += '    Denominator = ' +str(eff_modal_denominator_sum) + '\n'
             msg += '    rel. Participation = ' + str(rel_participation_sum[mode]) +'\n'
             msg += 'Multiplied:\n'
             msg += '    Contribution = ' + str(eff_modal_mass_multy[mode]) + '\n'
+            msg += '    Numerator = ' +str(eff_modal_numerator_multy) + '\n'
             msg += '    Denominator = ' +str(eff_modal_denominator_multy) + '\n'
             print(msg)
         
