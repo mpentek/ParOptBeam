@@ -1,0 +1,9 @@
+digraph "packages" {
+charset="utf-8"
+rankdir=BT
+"0" [label="element", shape="box"];
+"1" [label="element.beam_element", shape="box"];
+"2" [label="element.bernouli_beam_element", shape="box"];
+"3" [label="element.cr_beam_element", shape="box"];
+"4" [label="element.timoshenko_beam_element", shape="box"];
+}

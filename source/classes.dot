@@ -1,0 +1,8 @@
+digraph "classes" {
+charset="utf-8"
+rankdir=BT
+"0" [label="{BeamElement|A\lAsy\lAsz\lDimension : int\lE\lElementSize\lG\lIp\lIt\lIy\lIz\lL\lLocalSize\lNumberOfNodes : int\lPy : float\lPz : float\lReferenceCoords\lcurrent_deformation : ndarray\ldomain_size\lindex\lisNonlinear\lmaterial_params\lnodal_force_global : ndarray\lnodal_force_local : ndarray\lnu\lprevious_deformation : ndarray\lrho\l|evaluate_relative_importance_of_shear()\levaluate_torsional_inertia()\lget_element_mass_matrix()\lget_element_stiffness_matrix()\l}", shape="record"];
+"1" [label="{BernoulliBeamElement|G\lPy : float\lPz : float\l|evaluate_relative_importance_of_shear()\l}", shape="record"];
+"2" [label="{CRBeamElement|Bisector : ndarray\lIncrementalDeformation : ndarray\lKd_mat : ndarray\lKe_mat : ndarray\lLocalReferenceRotationMatrix : ndarray\lLocalRotationMatrix : ndarray\lPsi_y : float\lPsi_z : float\lQuaternion\lTransformationMatrix : ndarray\lVectorDifferences : ndarray\lnodal_force_global : ndarray\lnodal_force_local : ndarray\lphi_a : ndarray\lphi_s : ndarray\lrA_sca : float\lrA_vec : ndarray\lrB_sca : float\lrB_vec : ndarray\lv : ndarray\l|build_single_mass_matrix(Phi, CT, CR, L, dir)\lget_element_mass_matrix()\lget_element_stiffness_matrix()\lupdate_incremental(dp)\lupdate_total(new_displacement)\l}", shape="record"];
+"3" [label="{TimoshenkoBeamElement|\l|get_element_mass_matrix()\l}", shape="record"];
+}
