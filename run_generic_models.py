@@ -15,7 +15,9 @@ available_models = [
     'ProjectParameters3DGenericPylon.json',
     ]
 
-for available_model in available_models:
+unsymmetric_model = ['ProjectParameters3DGenericBuilding_unsymmetric.json']
+
+for available_model in unsymmetric_model:
 
     # ==============================================
     # Parameter read

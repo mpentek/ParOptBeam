@@ -224,6 +224,24 @@ class TimoshenkoBeamElement(BeamElement):
             k_a_12 = -1.0
             k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                      [k_a_12, k_a_11]])
+        
+        # bending - displacement along y, rotations around axis x due to exzenticity in z direchtion ez
+        k_ya = self.G * self.It / self.L 
+                
+        k_ya_11 =   self.ez**2 # add k_yg_11 in global
+        k_ya_12 = - self.ez
+        k_ya_13 = - self.ez**2
+        k_ya_14 = - self.ez
+        k_ya_22 = 1.0
+        k_ya_23 = self.ez
+        k_ya_24 = 1.0 
+        k_ya_33 = k_ya_11
+        k_ya_34 = k_ya_23
+        k_ya_44 = k_ya_22
+        k_el_ya = k_ya * np.array([[k_ya_11, k_ya_12, k_ya_13, k_ya_14],
+                                   [k_ya_12, k_ya_22, k_ya_23, k_ya_24],
+                                   [k_ya_13, k_ya_23, k_ya_33, k_ya_34],
+                                   [k_ya_14, k_ya_24, k_ya_34, k_ya_44]])
 
         # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
         beta_yg = self.Py
@@ -277,22 +295,22 @@ class TimoshenkoBeamElement(BeamElement):
         if self.domain_size == '3D':
             # assemble all components
             k_el = np.array([[k_el_x[0][0], 0., 0., 0., 0., 0., k_el_x[0][1], 0., 0., 0., 0., 0.],
-                             [0., k_el_yg[0][0], 0., 0., 0., k_el_yg[0][1], 0., k_el_yg[0][2], 0., 0., 0.,
-                              k_el_yg[0][3]],
+                             [0., k_el_yg[0][0]+k_el_ya[0][0], 0., k_el_ya[0][1], 0., k_el_yg[0][1], 0., 
+                              k_el_yg[0][2]+k_el_ya[0][2], 0., k_el_ya[0][3], 0., k_el_yg[0][3]],
                              [0., 0., k_el_zb[0][0], 0., k_el_zb[0][1], 0., 0., 0., k_el_zb[0][2], 0., k_el_zb[0][3],
                               0.],
-                             [0., 0., 0., k_el_a[0][0], 0., 0., 0., 0., 0., k_el_a[0][1], 0., 0.],
+                             [0., k_el_ya[1][0], 0., k_el_ya[1][1], 0., 0., 0., k_el_ya[1][2], 0., k_el_ya[1][3], 0., 0.],
                              [0., 0., k_el_zb[0][1], 0., k_el_zb[1][1], 0., 0., 0., k_el_zb[1][2], 0., k_el_zb[1][3],
                               0.],
                              [0., k_el_yg[0][1], 0., 0., 0., k_el_yg[1][1], 0., k_el_yg[1][2], 0., 0., 0.,
                               k_el_yg[1][3]],
 
                              [k_el_x[1][0], 0., 0., 0., 0., 0., k_el_x[1][1], 0., 0., 0., 0., 0.],
-                             [0., k_el_yg[0][2], 0., 0., 0., k_el_yg[1][2], 0., k_el_yg[2][2], 0., 0., 0.,
-                              k_el_yg[2][3]],
-                             [0., 0., k_el_zb[0][2], 0., k_el_zb[1][2], 0., 0., 0., k_el_zb[2][2], 0., k_el_zb[2][3],
+                             [0., k_el_yg[0][2]+k_el_ya[2][0], 0., k_el_ya[2][1], 0., k_el_yg[1][2], 0., 
+                              k_el_yg[2][2]+k_el_ya[2][2], 0., k_el_ya[2][3], 0., k_el_yg[2][3]],
+                             [0., 0., k_el_zb[0][2],  k_el_ya[0][0], k_el_zb[1][2], 0., 0., 0., k_el_zb[2][2],  k_el_ya[0][1], k_el_zb[2][3],
                               0.],
-                             [0., 0., 0., k_el_a[1][0], 0., 0., 0., 0., 0., k_el_a[1][1], 0., 0.],
+                             [0., k_el_ya[3][0], 0., k_el_ya[3][1], 0., 0., 0., k_el_ya[3][2],  0., k_el_ya[3][3], 0., 0.],
                              [0., 0., k_el_zb[0][3], 0., k_el_zb[1][3], 0., 0., 0., k_el_zb[2][3], 0., k_el_zb[3][3],
                               0.],
                              [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3], 0., k_el_yg[2][3], 0., 0., 0.,

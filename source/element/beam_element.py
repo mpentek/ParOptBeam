@@ -28,6 +28,10 @@ class BeamElement(object):
         # torsion constant J
         self.It = element_params['it']
 
+        # excentricities
+        self.ez = element_params['ez']
+        self.ey = element_params['ey']
+
         # element properties
         self.NumberOfNodes = 2
         self.Dimension = 3

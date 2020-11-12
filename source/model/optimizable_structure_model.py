@@ -254,6 +254,7 @@ class OptimizableStraightBeam(object):
             print('INITIAL e:', initial_e)
             print('OPTIMIZED e: ', opt_e_fctr * initial_e)
             print()
+
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
         for e in self.model.elements:
@@ -268,7 +269,6 @@ class OptimizableStraightBeam(object):
         self.model.eigenvalue_solve()
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[target_mode-1]] - target_freq)**2 / target_freq**2
-
 
     def adjust_longitudinal_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
         initial_a = list(e.A for e in self.model.elements)

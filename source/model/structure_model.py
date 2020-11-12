@@ -90,7 +90,7 @@ class StraightBeam(object):
                         ["geometry"]["number_of_elements"])
                 raise Exception(msg)
         except:
-            # by default equal lengths
+            # by default equal lengths 
             self.relative_length_ratios = [1.0] * self.parameters['n_el']
 
         # defined on intervals as piecewise continuous function on an interval starting from 0.0
@@ -105,7 +105,9 @@ class StraightBeam(object):
                 'c_a_sz': val["shear_area_z"],
                 'c_iy': val["moment_of_inertia_y"],
                 'c_iz': val["moment_of_inertia_z"],
-                'c_it': val["torsional_moment_of_inertia"]
+                'c_it': val["torsional_moment_of_inertia"],
+                'c_ez': val["excentricity_z"],
+                'c_ey': val["excentricity_y"]
             })
             try:
                 self.parameters["intervals"][idx]['m'] = val["outrigger"]["mass"]
@@ -179,21 +181,27 @@ class StraightBeam(object):
         param_elem_length_cumul_norm = [
             x/param_elem_length_sum for x in param_elem_length_cumul]
 
-        self.parameters['x'] = [x * self.parameters['lx']
+        self.parameters['x'] = [x * self.parameters['lx'] # total height of building 
                                 for x in param_elem_length_cumul_norm]
         self.parameters['x_mid'] = [
             (a+b)/2 for a, b in zip(self.parameters['x'][:-1], self.parameters['x'][1:])]
 
-        # geometric
+        # geometric --> outside loop over elements since it is assumed constant
         self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
             x, 'c_ly') for x in self.parameters['x']]
         self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
             x, 'c_lz') for x in self.parameters['x']]
+        # excentricities --> can be different at each element
+        # self.parameters['ez'] = [self.evaluate_characteristic_on_interval(
+        #     x, 'c_ez') for x in self.parameters['x']]
+        # self.parameters['ey'] = [self.evaluate_characteristic_on_interval(
+        #     x, 'c_ey') for x in self.parameters['x']]
         # characteristics lengths
         self.charact_length = (
             np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         for i in range(self.n_elements):
+            # ! n_elements != n_intervals
             element_params = self.initialize_element_geometric_parameters(i)
             coord = np.array([[self.parameters['x'][i], 0.0, 0.0],
                               [self.parameters['x'][i + 1], 0.0, 0.0]])
@@ -258,6 +266,7 @@ class StraightBeam(object):
 
     def initialize_element_geometric_parameters(self, i):
         element_params = {}
+        # for all elements in total
         # element properties
         x = self.parameters['x_mid'][i]
         # area
@@ -277,6 +286,9 @@ class StraightBeam(object):
         # torsion constant
         element_params['it'] = self.evaluate_characteristic_on_interval(
             x, 'c_it')
+
+        element_params['ez'] = self.evaluate_characteristic_on_interval(x, 'c_ez')
+        element_params['ey'] = self.evaluate_characteristic_on_interval(x, 'c_ey')
         return element_params
 
     def apply_elastic_bcs(self):
@@ -880,6 +892,10 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
+            print ('initial matrix')
+            print ('EA/l', element.A * element.E / element.L, '\n')
+            print ('GIt/l', element.G * element.It / element.L, '\n')
+            print (el_matrix)
             i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
             i_end = i_start + \
                 GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
