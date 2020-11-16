@@ -400,7 +400,7 @@ class EigenvalueAnalysis(AnalysisType):
         array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
             0, self.period[selected_mode], time_steps))  # AK: can this be called an array time ?
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])), # DOF label + local id (0,'x'), ...
                               GD.DOF_LABELS[self.structure_model.domain_size]):
             start = idx
             step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
