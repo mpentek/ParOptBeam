@@ -912,7 +912,7 @@ class StraightBeam(object):
     def _get_damping(self):
         """
         Calculate damping b based upon the Rayleigh assumption
-        using the first 2 eigemodes - here generically i and i
+        using the first 2 eigemodes - here generically i and j
         """
 
         mode_i = 0
