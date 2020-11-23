@@ -217,6 +217,7 @@ class TimoshenkoBeamElement(BeamElement):
                                  [k_x_12, k_x_11]])
 
         if self.domain_size == '3D':
+            # unncecessary if k_ya is used
             # torsion stiffness - around axis x - here marked as alpha - a
             k_a = self.G * \
                   self.It / self.L
@@ -225,23 +226,25 @@ class TimoshenkoBeamElement(BeamElement):
             k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                      [k_a_12, k_a_11]])
         
-        # bending - displacement along y, rotations around axis x due to exzenticity in z direchtion ez
-        k_ya = self.G * self.It / self.L 
-                
-        k_ya_11 =   self.ez**2 # add k_yg_11 in global
-        k_ya_12 = - self.ez
-        k_ya_13 = - self.ez**2
-        k_ya_14 = - self.ez
-        k_ya_22 = 1.0
-        k_ya_23 = self.ez
-        k_ya_24 = 1.0 
-        k_ya_33 = k_ya_11
-        k_ya_34 = k_ya_23
-        k_ya_44 = k_ya_22
-        k_el_ya = k_ya * np.array([[k_ya_11, k_ya_12, k_ya_13, k_ya_14],
-                                   [k_ya_12, k_ya_22, k_ya_23, k_ya_24],
-                                   [k_ya_13, k_ya_23, k_ya_33, k_ya_34],
-                                   [k_ya_14, k_ya_24, k_ya_34, k_ya_44]])
+        if self.domain_size == '3D':
+            # bending - displacement along y, rotations around axis x due to exzenticity in z direchtion ez
+            k_aa = self.G * self.It / self.L 
+            k_ya = self.YT / self.L
+                    
+            k_ya_11 = 0. # from k_el_yg
+            k_ya_12 = k_ya
+            k_ya_13 = - k_ya_11
+            k_ya_14 = - k_ya_12
+            k_ya_22 = k_aa
+            k_ya_23 = k_ya_14
+            k_ya_24 = - k_ya_22 
+            k_ya_33 = k_ya_11
+            k_ya_34 = k_ya_12
+            k_ya_44 = k_ya_22
+            k_el_ya = np.array([[k_ya_11, k_ya_12, k_ya_13, k_ya_14],
+                                [k_ya_12, k_ya_22, k_ya_23, k_ya_24],
+                                [k_ya_13, k_ya_23, k_ya_33, k_ya_34],
+                                [k_ya_14, k_ya_24, k_ya_34, k_ya_44]])
 
         # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
         beta_yg = self.Py
@@ -326,3 +329,18 @@ class TimoshenkoBeamElement(BeamElement):
                              [0., k_el_yg[0][3], k_el_yg[1][3], 0., k_el_yg[2][3], k_el_yg[3][3]]])
 
         return k_el
+
+    def _compute_stiffnes_matrix_material(self):
+        # Kinematic stuff
+        S = np.array([[1., 0., 0., 0., 0. ,0., -1 , 0., 0., 0., 0., 0.],
+                     [],
+                     [],
+                     [],
+                     [],
+                     [],
+                     [],
+                     [],
+                     [],
+                     [],
+                     [],
+                     []])       

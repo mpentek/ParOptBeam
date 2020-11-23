@@ -27,8 +27,8 @@
                     "moment_of_inertia_y" : [196510.0],
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
-                    "excentricity_z": [2.0], 
-                    "excentricity_y": [0.0],
+                    "coupled_torsion_displacmentY_stiffness": [1000.0], 
+                    "coupled_torsion_displacmentZ_stiffness": [0.0],
                     "outrigger" : 
                         {"mass": 947000.0,
                         "stiffness_ratio_y": 5,
@@ -43,8 +43,8 @@
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227813.0],
                     "torsional_moment_of_inertia" : [329063.0],
-                    "excentricity_z": [2.0], 
-                    "excentricity_y": [0.0],
+                    "coupled_torsion_displacmentY_stiffness": [1000.0], 
+                    "coupled_torsion_displacmentZ_stiffness": [0.0],
 
                     "outrigger" : {
                         "mass": 846000.0,
@@ -60,8 +60,8 @@
                     "moment_of_inertia_y" : [45573.0],
                     "moment_of_inertia_z" : [89323.0],
                     "torsional_moment_of_inertia" : [134896.0],
-                    "excentricity_z": [2.0], 
-                    "excentricity_y": [0.0],
+                    "coupled_torsion_displacmentY_stiffness": [1000.0], 
+                    "coupled_torsion_displacmentZ_stiffness": [0.0],
 
                     "outrigger" : {
                         "mass": 846000.0,
@@ -90,7 +90,7 @@
         "report_options": {
             "combine_plots_into_pdf" : true,
             "display_plots_on_screen" : false,
-            "use_skin_model" : true
+            "use_skin_model" : false
         },
         "skin_model_parameters":{
             "geometry": [ [0, -22.5, -15.0], [0, -22.5, 15], [0, 22.5, 15],
@@ -129,6 +129,7 @@
                     }
             },{
                 "type" : "dynamic_analysis",
+                "get_dynamic_result": false,
                 "settings": {
                     "solver_type": "Linear",
                     "run_in_modal_coordinates": false,
@@ -153,11 +154,11 @@
                         "plot_time": [30.5, 315.25],
                         "write_time": [450.15]
                     },
-                    "animate_time_history" : true,
-                    "animate_skin_model_time_history": true,
+                    "animate_time_history" : false,
+                    "animate_skin_model_time_history": false,
                     "kinetic_energy": {
-                        "write": true,
-                        "plot": true
+                        "write": false,
+                        "plot": false
                     },
                     "skin_model_animation_parameters":{
                         "start_record": 160,
@@ -190,6 +191,7 @@
                 }
             },{
                 "type" : "static_analysis",
+                "get_static_result": false,
                 "settings": {},
                 "input":{
                     "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",

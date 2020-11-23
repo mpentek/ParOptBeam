@@ -14,8 +14,9 @@ available_models = [
     'ProjectParameters3DGenericBuilding.json',
     'ProjectParameters3DGenericPylon.json',
     ]
-
-unsymmetric_model = ['ProjectParameters3DGenericBuilding_unsymmetric.json']
+symmetric_model = [available_models[0]]
+unsymmetric_model = [
+    'ProjectParameters3DGenericBuilding_unsymmetric.json']
 
 for available_model in unsymmetric_model:
 

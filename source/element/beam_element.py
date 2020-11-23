@@ -29,8 +29,8 @@ class BeamElement(object):
         self.It = element_params['it']
 
         # excentricities
-        self.ez = element_params['ez']
-        self.ey = element_params['ey']
+        self.YT = element_params['YT']
+        self.ZT = element_params['ZT']
 
         # element properties
         self.NumberOfNodes = 2

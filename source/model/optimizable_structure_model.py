@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.auxiliary.global_definitions import *
-
+from source.analysis.static_analysis import StaticAnalysis
 
 CUST_MAGNITUDE = 2
 
@@ -230,8 +230,6 @@ class OptimizableStraightBeam(object):
         # NOTE: do not forget to update G and further dependencies
         self.model.calculate_total_mass(True)
 
-
-
         return ((self.model.parameters['m_tot']-target_total_mass)**2)
 
     def adjust_e_modul_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
@@ -415,7 +413,7 @@ class OptimizableStraightBeam(object):
         minimization_result = minimize(optimizable_function,
                                        initi_guess,
                                        method='L-BFGS-B',
-                                              bounds=(bnds_iz, bnds_a_sy))
+                                       bounds=(bnds_iz, bnds_a_sy))
 
         # returning only one value!
         opt_iz_fctr = minimization_result.x
@@ -526,3 +524,34 @@ class OptimizableStraightBeam(object):
         m_id = mode_type_results[0]['mode_id']
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
+
+    def adjust_coupling_parameter_YT(self, target_disp):
+        initial_YT = list(e.YT for e in self.model.elements)
+
+        # using partial to fix some parameters for the
+        optimizable_function = partial(self.coupling_torsional_displacementY_objective_function,
+                                       target_disp,
+                                       initial_YT)
+        # --> now objective function is only depent on multiplier_fctr 
+
+        minimization_result = minimize_scalar(optimizable_function,
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, # 100 
+                                                       OptimizableStraightBeam.OPT_FCTR))
+
+        # returning only one value!
+        opt_YT_fctr = minimization_result.x
+
+    def coupling_torsional_displacementY_objective_function(self, target_disp, initial_YT, multiplier_fctr):
+        for e in self.model.elements:
+            e.YT = multiplier_fctr * initial_YT
+
+        # calculate updated stiffness matrix
+        self.model.calculate_global_matrices()
+
+        analysis_param = {} # Static analysis jsut assigns defaults
+        analysis = StaticAnalysis(self.model, analysis_param)
+        analysis.solve()
+
+        # static_result or displacment private variable??
+        return ((StaticAnalysis.static_result - target_disp)**2)

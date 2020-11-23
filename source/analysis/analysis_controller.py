@@ -94,11 +94,15 @@ class AnalysisController(object):
                 #     self.analyses.append(DynamicAnalysis(
                 #         self.model, analysis_param))
                 # else: 
+                if not analysis_param['get_dynamic_result']:
+                    break
                 from source.analysis.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(
                     self.model, analysis_param))
 
             elif analysis_param['type'] == 'static_analysis':
+                if not analysis_param['get_static_result']:
+                    break
                 from source.analysis.static_analysis import StaticAnalysis
                 self.analyses.append(StaticAnalysis(
                     self.model, analysis_param))

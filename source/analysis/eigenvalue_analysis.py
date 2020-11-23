@@ -53,7 +53,7 @@ class EigenvalueAnalysis(AnalysisType):
 
         eig_modes_norm = np.zeros((rows, columns))
 
-        gen_mass_raw = np.zeros(columns)
+        gen_mass_raw = np.zeros(columns) # 2D array since only diagonals are stored 
         gen_mass_norm = np.zeros(columns)
 
         print("Generalized mass should be identity")
@@ -63,8 +63,7 @@ class EigenvalueAnalysis(AnalysisType):
 
             unit_gen_mass_norm_fact = np.sqrt(gen_mass_raw[i])
 
-            eig_modes_norm[:, i] = self.structure_model.eigen_modes_raw[:,
-                                                                        i]/unit_gen_mass_norm_fact
+            eig_modes_norm[:, i] = self.structure_model.eigen_modes_raw[:,i]/unit_gen_mass_norm_fact
 
             gen_mass_norm[i] = np.matmul(np.matmul(np.transpose(eig_modes_norm[:, i]),
                                                    self.comp_m), eig_modes_norm[:, i])
@@ -82,13 +81,11 @@ class EigenvalueAnalysis(AnalysisType):
         self.period = np.zeros(self.structure_model.eig_pers.shape)
 
         for index in range(len(self.structure_model.eig_freqs)):
-            self.eigenform[:, index] = eig_modes_norm[:,
-                                                      self.structure_model.eig_freqs_sorted_indices[index]]
+            self.eigenform[:, index] = eig_modes_norm[:,self.structure_model.eig_freqs_sorted_indices[index]]
             self.frequency[index] = self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[index]]
             self.period[index] = self.structure_model.eig_pers[self.structure_model.eig_freqs_sorted_indices[index]]
 
-        self.eigenform = self.structure_model.recuperate_bc_by_extension(
-            self.eigenform)
+        self.eigenform = self.structure_model.recuperate_bc_by_extension(self.eigenform)
 
     def write_eigenmode_summary(self, global_folder_path, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
@@ -262,7 +259,8 @@ class EigenvalueAnalysis(AnalysisType):
                                    self.structure_model.nodal_coordinates["z0"]],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
                     "deformed": None}
 
         force = {"external": None,
@@ -284,6 +282,14 @@ class EigenvalueAnalysis(AnalysisType):
                                       force,
                                       scaling,
                                       1)
+
+        plotter_utilities.plot_result_2D(pdf_report,
+                                         True,
+                                         plot_title,
+                                         geometry,
+                                         force,
+                                         scaling)
+                                      
 
     def write_selected_eigenmode(self, global_folder_path, selected_mode):
         """
@@ -363,7 +369,8 @@ class EigenvalueAnalysis(AnalysisType):
                                    self.structure_model.nodal_coordinates["z0"]],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
                     "deformed": None}
 
         force = {"external": None,
@@ -476,6 +483,8 @@ class EigenvalueAnalysis(AnalysisType):
 
         for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
             self.plot_selected_eigenmode(pdf_report, display_plot, mode)
+        
+        self.plot_selected_eigenmode(pdf_report, display_plot, 8)
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
             self.write_selected_eigenmode(global_folder_path, mode)
@@ -486,7 +495,7 @@ class EigenvalueAnalysis(AnalysisType):
         if skin_model_params is not None:
             for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
                 self.animate_skin_model_for_selected_eigenmode(
-                    mode, skin_model_params)
+                    mode, skin_model_params, True)
 
         # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)

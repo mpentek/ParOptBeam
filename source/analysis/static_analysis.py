@@ -96,8 +96,7 @@ class StaticAnalysis(AnalysisType):
                              "g": np.zeros(0)}
 
         #self.force = self.structure_model.recuperate_bc_by_extension(self.force,'row_vector')
-        self.resisting_force = self.force - \
-            np.dot(self.structure_model.k, self.static_result)
+        self.resisting_force = self.force - np.dot(self.structure_model.k, self.static_result)
         ixgrid = np.ix_(self.structure_model.dofs_to_keep, [0])
         self.resisting_force[ixgrid] = 0
         self.reaction = {"x": np.zeros(0),
