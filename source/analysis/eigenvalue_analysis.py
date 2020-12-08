@@ -269,7 +269,7 @@ class EigenvalueAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = " Eigenmode: " + str(selected_mode+1)
+        plot_title = " hallo function Eigenmode: " + str(selected_mode+1)
         plot_title += "  Frequency: " + \
             '{0:.2f}'.format(self.frequency[selected_mode])
         plot_title += "  Period: " + \
@@ -284,12 +284,46 @@ class EigenvalueAnalysis(AnalysisType):
                                       1)
 
         plotter_utilities.plot_result_2D(pdf_report,
-                                         True,
+                                         display_plot,
                                          plot_title,
                                          geometry,
                                          force,
                                          scaling)
-                                      
+
+    def plot_selected_first_n_eigenmodes_2D(self, display_plot, number_of_modes):
+        
+        print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis 2D \n")
+
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
+                    "deformed": None}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        plot_titles = []
+        for selected_mode in range(number_of_modes):
+            plot_titles.append("Eigenmode " + str(selected_mode + 1) + "\n" + "  Frequency: " + str(np.round(
+                self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n")
+
+        plotter_utilities.plot_result_2D_multiple_modes(display_plot,
+                                                        plot_titles, 
+                                                        geometry, 
+                                                        scaling, 
+                                                        number_of_modes)
+
 
     def write_selected_eigenmode(self, global_folder_path, selected_mode):
         """
@@ -381,15 +415,15 @@ class EigenvalueAnalysis(AnalysisType):
 
         plot_title = " "
         for selected_mode in range(number_of_modes):
-            plot_title += "Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
+            plot_title += "N mode plotting Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
                 self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n"
         plotter_utilities.plot_result(pdf_report,
-                                      display_plot,
-                                      plot_title,
-                                      geometry,
-                                      force,
-                                      scaling,
-                                      number_of_modes)
+                                    True,
+                                    plot_title,
+                                    geometry,
+                                    force,
+                                    scaling,
+                                    number_of_modes)
 
     def animate_selected_eigenmode(self, selected_mode):
         """
@@ -481,10 +515,12 @@ class EigenvalueAnalysis(AnalysisType):
         if self.parameters['output']['eigenmode_identification']['plot']:
             self.plot_eigenmode_identification(pdf_report, display_plot)
 
-        for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
-            self.plot_selected_eigenmode(pdf_report, display_plot, mode)
+        # for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
+        #     self.plot_selected_eigenmode(pdf_report, False, mode)
         
-        self.plot_selected_eigenmode(pdf_report, display_plot, 8)
+        self.plot_selected_first_n_eigenmodes_2D(True, 3)
+
+        self.plot_selected_eigenmode(pdf_report, False, 8)
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
             self.write_selected_eigenmode(global_folder_path, mode)

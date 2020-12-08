@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
-from source.auxiliary.global_definitions import *
+import source.auxiliary.global_definitions as GD
 from source.analysis.static_analysis import StaticAnalysis
 
 CUST_MAGNITUDE = 2
@@ -102,7 +102,7 @@ class OptimizableStraightBeam(object):
 
             modes_to_consider = self.parameters["geometric_properties_for"]["consider_decomposed_modes"]
             modes_possible_to_consider = [
-                *MODE_CATEGORIZATION[self.model.domain_size].keys()]
+                *GD.MODE_CATEGORIZATION[self.model.domain_size].keys()]
             diff_list = np.setdiff1d(
                 modes_to_consider, modes_possible_to_consider)
             if len(diff_list) != 0:
@@ -153,6 +153,8 @@ class OptimizableStraightBeam(object):
 
                 self.adjust_sway_y_stiffness_for_target_eigenfreq(
                     target_freq, target_mode, True)
+                
+                #self.adjust_coupling_parameter_YT_target_freq_sway_y(target_freq, target_mode)
 
             if 'sway_z' in self.parameters["geometric_properties_for"]["consider_decomposed_modes"]:
                 print('SWAY_Z OPTIMIZATION')
@@ -525,7 +527,7 @@ class OptimizableStraightBeam(object):
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
-    def adjust_coupling_parameter_YT(self, target_disp):
+    def adjust_coupling_parameter_YT_target_displacement(self, target_disp):
         initial_YT = list(e.YT for e in self.model.elements)
 
         # using partial to fix some parameters for the
@@ -550,8 +552,55 @@ class OptimizableStraightBeam(object):
         self.model.calculate_global_matrices()
 
         analysis_param = {} # Static analysis jsut assigns defaults
-        analysis = StaticAnalysis(self.model, analysis_param)
-        analysis.solve()
+        static_analysis = StaticAnalysis(self.model, analysis_param)
+        static_analysis.solve()
+
+        tip_dof_x_direction = self.model.n_nodes *  GD.DOFS_PER_NODE[self.model.domain_size] - 5
+        tip_displacement = static_analysis.static_result[tip_dof_x_direction]
 
         # static_result or displacment private variable??
-        return ((StaticAnalysis.static_result - target_disp)**2)
+        return ((tip_displacement - target_disp)**2)
+
+    def adjust_coupling_parameter_YT_target_freq_sway_y(self, target_freq, target_mode, print_to_console = True):
+        initial_YT = list(e.YT for e in self.model.elements)
+
+        # using partial to fix some parameters for the
+        optimizable_function = partial(self.coupling_torsional_displacementY_objective_function_target_freq_sway_y,
+                                       target_freq,
+                                       target_mode,
+                                       initial_YT)
+        # --> now objective function is only depent on multiplier_fctr 
+
+        minimization_result = minimize_scalar(optimizable_function,
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, # 100 
+                                                       OptimizableStraightBeam.OPT_FCTR))
+
+        # returning only one value!
+        opt_fctr = minimization_result.x
+
+        if print_to_console:
+            print('optimized YT coupling factor to target frequency')
+            print('INITIAL YT:', ', '.join([str(val) for val in initial_YT]))
+            print('OPTIMIZED YT: ', ', '.join([str(opt_fctr * val) for val in initial_YT]))
+            print('FACTOR', round(opt_fctr, 4))
+            print()
+
+    def coupling_torsional_displacementY_objective_function_target_freq_sway_y(self, target_freq, target_mode, initial_YT, multiplier_fctr):
+        for e in self.model.elements:
+            e.YT = multiplier_fctr * initial_YT[e.index]
+
+        # re-evaluate
+        self.model.calculate_global_matrices()
+
+        self.model.eigenvalue_solve()
+
+        self.model.identify_decoupled_eigenmodes()
+
+        identifier = 'sway_y'
+
+        mode_type_results = self.model.mode_identification_results[identifier]
+        # mode_type_results is an ordered list
+        m_id = mode_type_results[0]['mode_id']
+
+        return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2

@@ -106,8 +106,8 @@ class StraightBeam(object):
                 'c_iy': val["moment_of_inertia_y"],
                 'c_iz': val["moment_of_inertia_z"],
                 'c_it': val["torsional_moment_of_inertia"],
-                'c_YT': val["coupled_torsion_displacmentY_stiffness"], 
-                'c_ZT': val["coupled_torsion_displacmentZ_stiffness"]
+                'c_ey': val["eccentricity_y"], 
+                'c_ez': val["eccentricity_z"]
             })
             try:
                 self.parameters["intervals"][idx]['m'] = val["outrigger"]["mass"]
@@ -171,7 +171,6 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': []}
         self.identify_decoupled_eigenmodes()
 
-        self.calculate_static_result()
 
     def initialize_elements(self):
 
@@ -278,8 +277,9 @@ class StraightBeam(object):
         element_params['it'] = self.evaluate_characteristic_on_interval(
             x, 'c_it')
 
-        element_params['YT'] = self.evaluate_characteristic_on_interval(x, 'c_YT')
-        element_params['ZT'] = self.evaluate_characteristic_on_interval(x, 'c_YZ')
+        # eccentricity 
+        element_params['ey'] = self.evaluate_characteristic_on_interval(x, 'c_ey')
+        element_params['ez'] = self.evaluate_characteristic_on_interval(x, 'c_ez')
         return element_params
 
     def apply_elastic_bcs(self):
@@ -345,7 +345,7 @@ class StraightBeam(object):
         self.dofs_to_keep = list(
             set(self.all_dofs_global) - set(bc_dofs_global))
 
-    def update_outrigger_contribution(self):
+    def update_outrigger_contribution(self, print_to_console = False):
 
         # point stiffness and point masses at respective dof for the outrigger
         for values in self.parameters['intervals']:
@@ -385,7 +385,8 @@ class StraightBeam(object):
                     msg += "larger than target outrigger of " + \
                         str(values['m']) + " [kg].\n"
                     msg += "Not incrementing to target (as is it lower) but adding up to existing.\n"
-                    print(msg)
+                    if print_to_console:
+                        print(msg)
 
                     # values['m']  DONE : check
                     self.parameters['point_m'][geom_node_id] += 0
@@ -880,6 +881,8 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
+            #print('this is the element stiffness matrix', el_matrix)
+            #print('this is the value at YT', el_matrix[1][3])
             i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
             i_end = i_start + \
                 GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL

@@ -1,5 +1,6 @@
 from math import ceil, log10
 
+
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
 
 CUST_MAGNITUDE = 4

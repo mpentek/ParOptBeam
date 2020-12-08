@@ -90,21 +90,23 @@ def plot_result_2D(pdf_report, display_plot, plot_title, geometry, force, scalin
     geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0], # x
                             geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1], # y
                             geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2], # z
-                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1]] # visualize twist a
+                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1]] # visualize twist a in 2D plane
 
-    plt.grid()
-    plt.title(plot_title)    # set title
-    deflections, def_min, def_max = [], [], []
-    for dof, deformation in enumerate(geometry['deformed'][1:]):
-        def_min.append(min(deformation))
-        def_max.append(max(deformation))
+      # set title
+    deflections, undeformed, min_deformation, max_deformation = [], [], [], []
+    for dof, deformation in enumerate(geometry['deformed'][1:]): # without axial deformation
+        min_deformation.append(min(deformation))
+        max_deformation.append(max(deformation))
         for value in deformation:
             if value != 0.0:
                 deflections.append(dof+1) # contains 1,2 or 3 if coupled motion multiple 
-                break
+                break 
 
-    # plot undeformed
-    ax.plot(geometry["undeformed"][1], # y
+    
+    # deformed
+    for i in range(1,4):
+        # plot undeformed
+        ax.plot(geometry["undeformed"][1], # y
             geometry["undeformed"][0], # x
             label='undeformed',
             color=LINE_TYPE_SETUP["color"][0],
@@ -113,38 +115,67 @@ def plot_result_2D(pdf_report, display_plot, plot_title, geometry, force, scalin
             markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
             markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
             markersize=LINE_TYPE_SETUP["markersize"][0])
-    
-    # deformed
-    for i, deflection in enumerate(deflections):
-        ax.plot(geometry["deformed"][deflection], # a
+        maximum_deformation = max(abs(geometry['deformed'][i]))
+        # if not np.any(geometry['deformed'][i]):
+        #     maximum_deformation = ' is 0'
+        ax.plot(geometry["deformed"][i], 
                 geometry["deformed"][0], # x
-                label= 'deformed_' + GD.DOF_LABELS['3D'][deflection],
+                label= 'deformation in ' + GD.DOF_LABELS['3D'][i] + ' |max|: ' + str(maximum_deformation),
                 color=LINE_TYPE_SETUP["color"][2+i],
                 linestyle=LINE_TYPE_SETUP["linestyle"][1],
                 marker=LINE_TYPE_SETUP["marker"][1],
                 markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
                 markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
                 markersize=LINE_TYPE_SETUP["markersize"][1]) 
-        
+
 
     ax.set_ylabel('height x - coord')
     ax.set_xlabel('deflection')
-    ax.set_xlim(min(def_min)-5e-5, max(def_max)+5e-5)
-    # if (n_data == 2):
-    #        ax.plot(geometry["deformed"][2], # y
-    #             geometry["deformed"][0], # x
-    #             label="deformed z",
-    #             color=LINE_TYPE_SETUP["color"][2],
-    #             linestyle=LINE_TYPE_SETUP["linestyle"][1],
-    #             marker=LINE_TYPE_SETUP["marker"][1],
-    #             markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
-    #             markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
-    #             markersize=LINE_TYPE_SETUP["markersize"][1]) 
+    ax.set_xlim(min(min_deformation)-5e-5, max(max_deformation)+5e-5)
 
+    plt.grid()
+    plt.title(plot_title)  
+    plt.legend()
     if display_plot:
-        plt.legend()
+        
         plt.show()
+        display_plot = False
     
+def plot_result_2D_multiple_modes(display_plot, plot_titles, geometry, scaling, number_of_modes):
+    fig, axes = plt.subplots(1, number_of_modes)
+
+    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis], # x
+                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis], # y
+                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis], # z
+                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis]] # visualize twist a in 2D plane
+
+    for i in range(number_of_modes):
+        # plot undeformed
+        for j in range(1,4): #plot first three dofs
+            axes[i].plot(geometry["undeformed"][1], # y
+                        geometry["undeformed"][0], # x
+                        label='undeformed',
+                        color=LINE_TYPE_SETUP["color"][0],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][0],
+                        marker=LINE_TYPE_SETUP["marker"][0],
+                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+                        markersize=LINE_TYPE_SETUP["markersize"][0])
+            maximum_deformation = max(abs(geometry['deformed'][j][:, i]))
+            axes[i].plot(geometry["deformed"][j][:, i], 
+                        geometry["deformed"][0][:, i], # x
+                        label= 'deformation in ' + GD.DOF_LABELS['3D'][i] + ' |max|: ' + str(maximum_deformation),
+                        color=LINE_TYPE_SETUP["color"][2+j],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1],
+                        marker=LINE_TYPE_SETUP["marker"][1],
+                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
+                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
+                        markersize=LINE_TYPE_SETUP["markersize"][1]) 
+            axes[i].set_title(plot_titles[i])
+    
+    if display_plot:
+        plt.show()
+        display_plot = False
 
 def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, n_data):
 
@@ -281,6 +312,7 @@ def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, 
 
     if display_plot:
         plt.show()
+        display_plot = False
 
 
 def animate_result(title, array_time, geometry, force, scaling):

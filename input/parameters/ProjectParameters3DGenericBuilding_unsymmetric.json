@@ -27,8 +27,8 @@
                     "moment_of_inertia_y" : [196510.0],
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
-                    "coupled_torsion_displacmentY_stiffness": [1000.0], 
-                    "coupled_torsion_displacmentZ_stiffness": [0.0],
+                    "eccentricity_y": [10.0], 
+                    "eccentricity_z": [10.0],
                     "outrigger" : 
                         {"mass": 947000.0,
                         "stiffness_ratio_y": 5,
@@ -43,8 +43,8 @@
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227813.0],
                     "torsional_moment_of_inertia" : [329063.0],
-                    "coupled_torsion_displacmentY_stiffness": [1000.0], 
-                    "coupled_torsion_displacmentZ_stiffness": [0.0],
+                    "eccentricity_y": [10.0], 
+                    "eccentricity_z": [10.0],
 
                     "outrigger" : {
                         "mass": 846000.0,
@@ -60,8 +60,8 @@
                     "moment_of_inertia_y" : [45573.0],
                     "moment_of_inertia_z" : [89323.0],
                     "torsional_moment_of_inertia" : [134896.0],
-                    "coupled_torsion_displacmentY_stiffness": [1000.0], 
-                    "coupled_torsion_displacmentZ_stiffness": [0.0],
+                    "eccentricity_y": [10.0], 
+                    "eccentricity_z": [10.0],
 
                     "outrigger" : {
                         "mass": 846000.0,

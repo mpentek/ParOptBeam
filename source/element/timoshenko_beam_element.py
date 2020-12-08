@@ -1,6 +1,8 @@
 import numpy as np
+import sys
 
 from source.element.beam_element import BeamElement
+import source.auxiliary.global_definitions as GD
 
 
 class TimoshenkoBeamElement(BeamElement):
@@ -217,7 +219,7 @@ class TimoshenkoBeamElement(BeamElement):
                                  [k_x_12, k_x_11]])
 
         if self.domain_size == '3D':
-            # unncecessary if k_ya is used
+            # obsolete if k_ya is used
             # torsion stiffness - around axis x - here marked as alpha - a
             k_a = self.G * \
                   self.It / self.L
@@ -226,25 +228,28 @@ class TimoshenkoBeamElement(BeamElement):
             k_el_a = k_a * np.array([[k_a_11, k_a_12],
                                      [k_a_12, k_a_11]])
         
-        if self.domain_size == '3D':
-            # bending - displacement along y, rotations around axis x due to exzenticity in z direchtion ez
-            k_aa = self.G * self.It / self.L 
-            k_ya = self.YT / self.L
+        # if only one coupling parameter in total not eccentricity
+
+        # if self.domain_size == '3D':
+        #     # bending - displacement along y, rotations around axis x due to exzenticity in z direchtion ez
+        #     k_aa = self.G * self.It / self.L 
+        #     k_ya = self.YT 
                     
-            k_ya_11 = 0. # from k_el_yg
-            k_ya_12 = k_ya
-            k_ya_13 = - k_ya_11
-            k_ya_14 = - k_ya_12
-            k_ya_22 = k_aa
-            k_ya_23 = k_ya_14
-            k_ya_24 = - k_ya_22 
-            k_ya_33 = k_ya_11
-            k_ya_34 = k_ya_12
-            k_ya_44 = k_ya_22
-            k_el_ya = np.array([[k_ya_11, k_ya_12, k_ya_13, k_ya_14],
-                                [k_ya_12, k_ya_22, k_ya_23, k_ya_24],
-                                [k_ya_13, k_ya_23, k_ya_33, k_ya_34],
-                                [k_ya_14, k_ya_24, k_ya_34, k_ya_44]])
+        #     k_ya_11 = 0. # from k_el_yg
+        #     k_ya_12 = k_ya
+        #     k_ya_13 = - k_ya_11
+        #     k_ya_14 = - k_ya_12
+        #     k_ya_22 = k_aa
+        #     k_ya_23 = k_ya_14
+        #     k_ya_24 = - k_ya_22 
+        #     k_ya_33 = k_ya_11
+        #     k_ya_34 = k_ya_12
+        #     k_ya_44 = k_ya_22
+        #     k_el_ya = np.array([[k_ya_11, k_ya_12, k_ya_13, k_ya_14],
+        #                         [k_ya_12, k_ya_22, k_ya_23, k_ya_24],
+        #                         [k_ya_13, k_ya_23, k_ya_33, k_ya_34],
+        #                         [k_ya_14, k_ya_24, k_ya_34, k_ya_44]])
+        
 
         # bending - displacement along axis y, rotations around axis z - here marked as gamma - g
         beta_yg = self.Py
@@ -298,26 +303,18 @@ class TimoshenkoBeamElement(BeamElement):
         if self.domain_size == '3D':
             # assemble all components
             k_el = np.array([[k_el_x[0][0], 0., 0., 0., 0., 0., k_el_x[0][1], 0., 0., 0., 0., 0.],
-                             [0., k_el_yg[0][0]+k_el_ya[0][0], 0., k_el_ya[0][1], 0., k_el_yg[0][1], 0., 
-                              k_el_yg[0][2]+k_el_ya[0][2], 0., k_el_ya[0][3], 0., k_el_yg[0][3]],
-                             [0., 0., k_el_zb[0][0], 0., k_el_zb[0][1], 0., 0., 0., k_el_zb[0][2], 0., k_el_zb[0][3],
-                              0.],
-                             [0., k_el_ya[1][0], 0., k_el_ya[1][1], 0., 0., 0., k_el_ya[1][2], 0., k_el_ya[1][3], 0., 0.],
-                             [0., 0., k_el_zb[0][1], 0., k_el_zb[1][1], 0., 0., 0., k_el_zb[1][2], 0., k_el_zb[1][3],
-                              0.],
-                             [0., k_el_yg[0][1], 0., 0., 0., k_el_yg[1][1], 0., k_el_yg[1][2], 0., 0., 0.,
-                              k_el_yg[1][3]],
+                             [0., k_el_yg[0][0], 0., 0., 0., k_el_yg[0][1], 0., k_el_yg[0][2], 0., 0., 0., k_el_yg[0][3]],
+                             [0., 0., k_el_zb[0][0], 0., k_el_zb[0][1], 0., 0., 0., k_el_zb[0][2], 0., k_el_zb[0][3],0.],
+                             [0., 0., 0., k_el_a[0][0], 0., 0., 0., 0., 0., k_el_a[0][1], 0., 0.],
+                             [0., 0., k_el_zb[0][1], 0., k_el_zb[1][1], 0., 0., 0., k_el_zb[1][2], 0., k_el_zb[1][3],0.],
+                             [0., k_el_yg[0][1], 0., 0., 0., k_el_yg[1][1], 0., k_el_yg[1][2], 0., 0., 0.,k_el_yg[1][3]],
 
                              [k_el_x[1][0], 0., 0., 0., 0., 0., k_el_x[1][1], 0., 0., 0., 0., 0.],
-                             [0., k_el_yg[0][2]+k_el_ya[2][0], 0., k_el_ya[2][1], 0., k_el_yg[1][2], 0., 
-                              k_el_yg[2][2]+k_el_ya[2][2], 0., k_el_ya[2][3], 0., k_el_yg[2][3]],
-                             [0., 0., k_el_zb[0][2],  k_el_ya[0][0], k_el_zb[1][2], 0., 0., 0., k_el_zb[2][2],  k_el_ya[0][1], k_el_zb[2][3],
-                              0.],
-                             [0., k_el_ya[3][0], 0., k_el_ya[3][1], 0., 0., 0., k_el_ya[3][2],  0., k_el_ya[3][3], 0., 0.],
-                             [0., 0., k_el_zb[0][3], 0., k_el_zb[1][3], 0., 0., 0., k_el_zb[2][3], 0., k_el_zb[3][3],
-                              0.],
-                             [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3], 0., k_el_yg[2][3], 0., 0., 0.,
-                              k_el_yg[3][3]]])
+                             [0., k_el_yg[0][2], 0., 0., 0., k_el_yg[1][2], 0., k_el_yg[2][2], 0., 0., 0., k_el_yg[2][3]],
+                             [0., 0., k_el_zb[0][2],  0., k_el_zb[1][2], 0., 0., 0., k_el_zb[2][2], 0., k_el_zb[2][3],0.],
+                             [0., k_el_a[1][0], 0., 0., 0., 0., 0., 0.,  0., k_el_a[1][1], 0., 0.],
+                             [0., 0., k_el_zb[0][3], 0., k_el_zb[1][3], 0., 0., 0., k_el_zb[2][3], 0., k_el_zb[3][3],0.],
+                             [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3], 0., k_el_yg[2][3], 0., 0., 0.,k_el_yg[3][3]]])
 
         elif self.domain_size == '2D':
             k_el = np.array([[k_el_x[0][0], 0., 0., k_el_x[0][1], 0., 0.],
@@ -327,7 +324,19 @@ class TimoshenkoBeamElement(BeamElement):
                              [k_el_x[1][0], 0., 0., k_el_x[1][1], 0., 0.],
                              [0., k_el_yg[0][2], k_el_yg[1][2], 0., k_el_yg[2][2], k_el_yg[2][3]],
                              [0., k_el_yg[0][3], k_el_yg[1][3], 0., k_el_yg[2][3], k_el_yg[3][3]]])
+        
+        # the eccentricity is indroduced at the end by using a transformation matrix
+        # T_t * K * T --> transfer stiffnes matrix from shear center to geometric center
+        # print ('k_el before transform: ')
+        # print (k_el)
+        # print()
+        # print (self.T)
+        k_el = np.matmul(np.matmul(np.transpose(self.T), k_el), self.T)
 
+        # print ('here the element matrix: \n', k_el)
+        np.savetxt("k_el.csv", k_el, delimiter= ' ')
+
+        #self.stop_run()
         return k_el
 
     def _compute_stiffnes_matrix_material(self):
@@ -343,4 +352,10 @@ class TimoshenkoBeamElement(BeamElement):
                      [],
                      [],
                      [],
-                     []])       
+                     []])    
+
+    def stop_run(self):
+        stop = input('Want to continue? (y/n) ')
+        if stop == 'n':
+            sys.exit()
+        
