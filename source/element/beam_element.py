@@ -44,7 +44,9 @@ class BeamElement(object):
         # reference length of one element
         self.L = self._calculate_reference_length()
 
+        # for including excentricity
         self.T = self._get_transformation_matrix()
+        
         # nonlinear elements needs the nodal forces and deformations for the geometric stiffness calculation
         if self.isNonlinear:
             # nodal forces
@@ -143,7 +145,9 @@ class BeamElement(object):
         return increment_deformation
 
     def _get_transformation_matrix(self):
-        # transform the elem matrix from the shear center to the coordinate center (geometric center)
+        ''' 
+        transform the elem matrix from the shear center to the coordinate center (geometric center)
+        '''
         ey = self.ey
         ez = self.ez   
         # eigentlich auch noch ez, ey aus stockwerk oben drüber --> node 2

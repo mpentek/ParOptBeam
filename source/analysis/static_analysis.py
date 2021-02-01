@@ -9,6 +9,7 @@ import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.auxiliary.other_utilities import get_adjusted_path_string
 import source.auxiliary.global_definitions as GD
+from input.force.generic_building.generate_force_file_from_python import generate_static_force_file
 
 
 class StaticAnalysis(AnalysisType):
@@ -31,7 +32,8 @@ class StaticAnalysis(AnalysisType):
         self.parameters = parameters
 
         super().__init__(structure_model, self.parameters["type"])
-
+        
+        # if a static analysis is included and the number of nodes does not match the force file
         # TODO include some specifiers in the parameters, do not hard code
         if get_adjusted_path_string(self.parameters['input']['file_path']) == get_adjusted_path_string('some/path'):
             err_msg = get_adjusted_path_string(
@@ -39,16 +41,19 @@ class StaticAnalysis(AnalysisType):
             err_msg += " is not a valid file!"
             raise Exception(err_msg)
         else:
-            print(get_adjusted_path_string(
-                self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
+            #print(get_adjusted_path_string(
+            #   self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
             if self.parameters['input']['is_time_history_file']:
                 self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))[
                     :, self.parameters['input']['selected_time_step']]
             else:
                 self.force = np.load(get_adjusted_path_string(
                     self.parameters['input']['file_path']))
+                                                         
+
 
         # of nodes-dofs
+        
         n_dofs_model = structure_model.n_nodes * \
             GD.DOFS_PER_NODE[structure_model.domain_size]
         n_dofs_force = len(self.force)
@@ -78,13 +83,13 @@ class StaticAnalysis(AnalysisType):
             raise Exception(err_msg)
 
     def solve(self):
-        print("Solving for ext_force in StaticAnalysis derived class \n")
+        #print("Solving for ext_force in StaticAnalysis derived class \n")
         # self.force = ext_force
         force = self.structure_model.apply_bc_by_reduction(
             self.force, 'row_vector')
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        print(k)
+        #print(k)
         self.static_result = np.linalg.solve(k, force)
         self.static_result = self.structure_model.recuperate_bc_by_extension(
             self.static_result, 'row_vector')
@@ -132,7 +137,8 @@ class StaticAnalysis(AnalysisType):
                                    self.structure_model.nodal_coordinates["z0"]],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
                     "deformed": None}
 
         force = {"external": [self.force_action["x"],
@@ -154,6 +160,56 @@ class StaticAnalysis(AnalysisType):
                                       force,
                                       scaling,
                                       1)
+
+
+    def plot_solve_result_2D(self, pdf_report, display_plot):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.displacmenet
+            self.force
+            self.reaction_force
+        """
+
+        print("Plotting 2D result in StaticAnalysis \n")
+
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                               1:step][:, 0]
+            self.force_action[label] = self.force[start:stop + 1:step]
+            self.reaction[label] = self.resisting_force[start:stop + 1:step][:, 0]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
+                    "deformed": None}
+
+        force = {"external": [self.force_action["x"],
+                              self.force_action["y"],
+                              self.force_action["z"]],
+                 "reaction": [self.reaction["x"],
+                              self.reaction["y"],
+                              self.reaction["z"]]}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        plot_title = "Static Analysis : "
+
+        plotter_utilities.plot_result_2D(pdf_report,
+                                         display_plot,
+                                         plot_title,
+                                         geometry,
+                                         force,
+                                         scaling)
 
     def write_solve_result(self, global_folder_path):
         """
@@ -206,10 +262,14 @@ class StaticAnalysis(AnalysisType):
         Postprocess something
         """
         print("Postprocessing in StaticAnalysis derived class \n")
+        #print("in postprocess static analysis derived class switched display plot to TRUE \n")
 
         for plot_result in self.parameters['output']['plot']:
             if plot_result == 'deformation':
-                self.plot_solve_result(pdf_report, display_plot)
+                #display_plot = True
+                #self.plot_solve_result(pdf_report, display_plot)
+                #display_plot = True
+                self.plot_solve_result_2D(pdf_report, display_plot)
             if plot_result == 'forces':
                 pass
 

@@ -3,10 +3,14 @@ from math import ceil
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from matplotlib import animation
+from matplotlib.ticker import FormatStrFormatter
+from os.path import join as os_join
 
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from source.auxiliary import global_definitions as GD
+from source.auxiliary.other_utilities import get_signed_maximum
+from source.auxiliary.auxiliary_functionalities import get_fitted_array
 
 
 '''
@@ -42,6 +46,8 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markersize":     [4,      4,    4,      4,    4,    4]}
+
+LEGEND_SETUP = {"fontsize": [16, 14, 12, 10, 8]}
 
 '''
 geometry = {"undeformed":...,
@@ -102,25 +108,28 @@ def plot_result_2D(pdf_report, display_plot, plot_title, geometry, force, scalin
                 deflections.append(dof+1) # contains 1,2 or 3 if coupled motion multiple 
                 break 
 
-    
+    # plot undeformed
+    ax.plot(geometry["undeformed"][1], # y
+        geometry["undeformed"][0], # x
+        label='undeformed',
+        color=LINE_TYPE_SETUP["color"][0],
+        linestyle=LINE_TYPE_SETUP["linestyle"][0],
+        marker=LINE_TYPE_SETUP["marker"][0],
+        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+        markersize=LINE_TYPE_SETUP["markersize"][0])
     # deformed
     for i in range(1,4):
-        # plot undeformed
-        ax.plot(geometry["undeformed"][1], # y
-            geometry["undeformed"][0], # x
-            label='undeformed',
-            color=LINE_TYPE_SETUP["color"][0],
-            linestyle=LINE_TYPE_SETUP["linestyle"][0],
-            marker=LINE_TYPE_SETUP["marker"][0],
-            markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
-            markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
-            markersize=LINE_TYPE_SETUP["markersize"][0])
         maximum_deformation = max(abs(geometry['deformed'][i]))
+        minimum_deformation = min(geometry['deformed'][i])
         # if not np.any(geometry['deformed'][i]):
         #     maximum_deformation = ' is 0'
+        label_dof = GD.DOF_LABELS['3D'][i]
+        if label_dof == 'a':
+                label_dof = '\u03B1'
         ax.plot(geometry["deformed"][i], 
                 geometry["deformed"][0], # x
-                label= 'deformation in ' + GD.DOF_LABELS['3D'][i] + ' |max|: ' + str(maximum_deformation),
+                label= 'deformation in ' + label_dof + ' |max|: ' +  '{0:.2e}'.format(maximum_deformation),
                 color=LINE_TYPE_SETUP["color"][2+i],
                 linestyle=LINE_TYPE_SETUP["linestyle"][1],
                 marker=LINE_TYPE_SETUP["marker"][1],
@@ -131,13 +140,14 @@ def plot_result_2D(pdf_report, display_plot, plot_title, geometry, force, scalin
 
     ax.set_ylabel('height x - coord')
     ax.set_xlabel('deflection')
-    ax.set_xlim(min(min_deformation)-5e-5, max(max_deformation)+5e-5)
+    offset =  max(max_deformation)/50
+    ax.set_xlim(min(min_deformation)-offset, max(max_deformation)+offset)
 
+    ax.legend(loc = 'lower right')
     plt.grid()
     plt.title(plot_title)  
     plt.legend()
     if display_plot:
-        
         plt.show()
         display_plot = False
     
@@ -151,20 +161,30 @@ def plot_result_2D_multiple_modes(display_plot, plot_titles, geometry, scaling, 
 
     for i in range(number_of_modes):
         # plot undeformed
+        axes[i].plot(geometry["undeformed"][1], # y
+                    geometry["undeformed"][0], # x
+                    label='undeformed',
+                    color=LINE_TYPE_SETUP["color"][0],
+                    linestyle=LINE_TYPE_SETUP["linestyle"][0],
+                    marker=LINE_TYPE_SETUP["marker"][0],
+                    markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+                    markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+                    markersize=LINE_TYPE_SETUP["markersize"][0])
+        max_deformations, min_deformations = [], []
         for j in range(1,4): #plot first three dofs
-            axes[i].plot(geometry["undeformed"][1], # y
-                        geometry["undeformed"][0], # x
-                        label='undeformed',
-                        color=LINE_TYPE_SETUP["color"][0],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][0],
-                        marker=LINE_TYPE_SETUP["marker"][0],
-                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
-                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
-                        markersize=LINE_TYPE_SETUP["markersize"][0])
-            maximum_deformation = max(abs(geometry['deformed'][j][:, i]))
+            max_deformations.append(max(geometry['deformed'][j][:, i]))
+            min_deformations.append(min(geometry['deformed'][j][:, i]))
+            absolute_maximum = max(abs(geometry['deformed'][j][:, i]))
+
+            print ('mode ', j, 'direction ', GD.DOF_LABELS['3D'][j], geometry["deformed"][j][:, i])
+
+            label_dof = GD.DOF_LABELS['3D'][j]
+            if label_dof == 'a':
+                label_dof = '\u03B1'
+
             axes[i].plot(geometry["deformed"][j][:, i], 
                         geometry["deformed"][0][:, i], # x
-                        label= 'deformation in ' + GD.DOF_LABELS['3D'][i] + ' |max|: ' + str(maximum_deformation),
+                        label= label_dof + ' |max|: ' +  '{0:.2e}'.format(absolute_maximum),
                         color=LINE_TYPE_SETUP["color"][2+j],
                         linestyle=LINE_TYPE_SETUP["linestyle"][1],
                         marker=LINE_TYPE_SETUP["marker"][1],
@@ -172,7 +192,12 @@ def plot_result_2D_multiple_modes(display_plot, plot_titles, geometry, scaling, 
                         markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
                         markersize=LINE_TYPE_SETUP["markersize"][1]) 
             axes[i].set_title(plot_titles[i])
-    
+        print('')
+        axes[i].set_xlim(min(min_deformations)-5e-5, max(max_deformations)+5e-5)
+        axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+        axes[i].legend(loc = 'lower right', fontsize = LEGEND_SETUP['fontsize'][3])
+        axes[i].grid()
+
     if display_plot:
         plt.show()
         display_plot = False
@@ -314,6 +339,279 @@ def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, 
         plt.show()
         display_plot = False
 
+def plot_CAARC_ParOpt_eigenmodes_normed(CAARC_eigenmodes, geometry, plot_titles, scaling, display_plot, max_normed, dof_ids = [1,2,3],  number_of_modes = 3):
+    fig, axes = plt.subplots(1, number_of_modes)
+
+    suptitle = 'eigenmodes of CAARC and ParOpt'
+    if max_normed:
+        suptitle += ' maximum normed'
+    fig.suptitle(suptitle, fontsize = 16)
+
+    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis], # x
+                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis], # y
+                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis], # z
+                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis]] # visualize twist a in 2D plane
+
+    for i in range(number_of_modes):
+        # plot undeformed
+        mode_id = i+1
+        axes[i].plot(geometry["undeformed"][1], # y
+                    geometry["undeformed"][0], # x
+                    label='undeformed',
+                    color=LINE_TYPE_SETUP["color"][0],
+                    linestyle=LINE_TYPE_SETUP["linestyle"][0],
+                    marker=LINE_TYPE_SETUP["marker"][0],
+                    markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+                    markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+                    markersize=LINE_TYPE_SETUP["markersize"][0])
+
+        max_deformations, min_deformations = [], []
+        for j in range(dof_ids[0],dof_ids[-1]+1): #plot first three dofs
+            label_dof = GD.DOF_LABELS['3D'][j]
+            if label_dof == 'a':
+                label_dof = '\u03B1'
+            # # CAARC PART # #
+
+            max_deformations.append(max(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]))
+            min_deformations.append(min(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]))
+           
+        
+            signed_maximum = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]])
+            y_caarc = CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]
+            if max_normed:
+                y_caarc /= signed_maximum
+
+            axes[i].plot(y_caarc, 
+                        CAARC_eigenmodes['storey_level'], # x
+                        label= label_dof + '_caarc' + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
+                        color=LINE_TYPE_SETUP["color"][2+j],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
+
+            # # PAROPT PART # # 
+
+            max_deformations.append(max(geometry['deformed'][j][:, i]))
+            min_deformations.append(min(geometry['deformed'][j][:, i]))
+
+            signed_maximum = get_signed_maximum(geometry['deformed'][j][:, i])
+
+            y_paropt = geometry["deformed"][j][:, i]
+            if max_normed:
+                y_paropt /= signed_maximum
+            
+            axes[i].plot(y_paropt, 
+                        geometry["deformed"][0][:, i], # x
+                        label= label_dof + '_parOpt' + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
+                        color=LINE_TYPE_SETUP["color"][2+j],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1],
+                        marker=LINE_TYPE_SETUP["marker"][1],
+                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
+                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
+                        markersize=LINE_TYPE_SETUP["markersize"][1]) 
+            
+            # set title
+            axes[i].set_title(plot_titles[i])
+
+        #axes[i].set_xlim(min(min_deformations)+min(min_deformations)/2, max(max_deformations)+max(max_deformations)/2)
+        axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+        axes[i].legend(loc = 'upper left', fontsize = LEGEND_SETUP['fontsize'][3])
+        axes[i].grid()
+    
+    
+    print()
+    if display_plot:
+        plt.show()    
+    
+def plot_CAARC_ParOpt_eigenmodes_y_alpha(CAARC_eigenmodes, geometry, plot_titles, scaling, display_plot, use_fitted_CAARC , max_normed, dof_ids = [1,2,3], number_of_modes = 3):
+    y_a_fitted = False
+    fig, axes = plt.subplots(1, number_of_modes)
+    suptitle = 'eigenmodes - y/\u03B1'
+    if max_normed:
+        suptitle += ' max normed'
+    if use_fitted_CAARC:
+        suptitle += ' - y & \u03B1 fitted'
+    if y_a_fitted:
+        suptitle += ' - y/\u03B1 fitted'
+    fig.suptitle(suptitle, fontsize = LEGEND_SETUP["fontsize"][0])
+
+    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis], # x
+                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis], # y
+                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis], # z
+                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis]] # visualize twist a in 2D plane
+
+    for i in range(number_of_modes):
+        # plot undeformed
+        mode_id = i+1
+        axes[i].plot(geometry["undeformed"][1], # y
+                    geometry["undeformed"][0], # x
+                    label='undeformed',
+                    color=LINE_TYPE_SETUP["color"][0],
+                    linestyle=LINE_TYPE_SETUP["linestyle"][0],
+                    marker=LINE_TYPE_SETUP["marker"][0],
+                    markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
+                    markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
+                    markersize=LINE_TYPE_SETUP["markersize"][0])
+
+        max_deformations, min_deformations = [], []
+        for j in range(dof_ids[0], dof_ids[1]):#,dof_ids[-1]+1): #plot first three dofs
+            label_dof = GD.DOF_LABELS['3D'][j]
+            if label_dof == 'a':
+                label_dof = '\u03B1'
+            # # CAARC PART # #
+            
+            signed_maximum = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]])
+            y = CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]
+            if max_normed:
+                y /= signed_maximum
+
+            max_deformations.append(max(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]/signed_maximum))
+            min_deformations.append(min(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]/signed_maximum))
+
+            signed_maximum_a = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][3]])
+            alpha= CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][3]]
+            if max_normed:
+                alpha /= signed_maximum_a
+
+            y_a_caarc = np.zeros(len(alpha))
+            for v, val in enumerate(y):
+                if alpha[v] != 0.0:
+                    y_a_caarc[v] += val/alpha[v]
+            
+            if y_a_fitted:
+                y_a_caarc = get_fitted_array(CAARC_eigenmodes['storey_level'], y_a_caarc, 3) 
+        
+            axes[i].plot(y_a_caarc, 
+                        CAARC_eigenmodes['storey_level'], # x
+                        label= label_dof + '/\u03B1_caarc',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
+                        color=LINE_TYPE_SETUP["color"][j],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
+            
+            axes[i].plot(y, 
+                        CAARC_eigenmodes['storey_level'], # x
+                        label=  'y_caarc',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
+                        color=LINE_TYPE_SETUP["color"][j+2],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
+            
+            axes[i].plot(alpha, 
+                        CAARC_eigenmodes['storey_level'], # x
+                        label= '\u03B1_caarc',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
+                        color=LINE_TYPE_SETUP["color"][j+3],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
+
+            # # PAROPT PART # # 
+            
+            
+            max_deformations.append(max(geometry['deformed'][j][:, i]/signed_maximum))
+            min_deformations.append(min(geometry['deformed'][j][:, i]/signed_maximum))
+            signed_maximum = get_signed_maximum(geometry['deformed'][j][:, i])
+            y = geometry["deformed"][j][:, i]
+            if max_normed:
+                y /= signed_maximum
+
+            signed_maximum_a = get_signed_maximum(geometry['deformed'][3][:, i])
+            alpha = geometry['deformed'][3][:, i]
+            if max_normed:
+                alpha /= signed_maximum_a
+
+            y_a_paropt = np.zeros(len(alpha))
+            for v, val in enumerate(y):
+                if alpha[v] != 0.0:
+                    y_a_paropt[v] += val/alpha[v]
+
+            axes[i].plot(y_a_paropt, 
+                        geometry["deformed"][0][:, i], # x
+                        label= label_dof + '/\u03B1_parOpt',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
+                        color=LINE_TYPE_SETUP["color"][j+1],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][1],
+                        marker=LINE_TYPE_SETUP["marker"][1],
+                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
+                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
+                        markersize=LINE_TYPE_SETUP["markersize"][1]) 
+            
+            #difference = y_a_caarc - y_a_paropt
+
+            # set title
+            axes[i].set_title(plot_titles[i])
+
+        #print('')
+        #axes[i].set_xlim(min(min_deformations)+min(min_deformations)/2, max(max_deformations)+max(max_deformations)/2)
+        axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+        axes[i].legend(loc = 'upper left', fontsize = LEGEND_SETUP['fontsize'][3])
+        axes[i].grid()
+    print()
+    if display_plot:
+        plt.show()
+
+def plot_CAARC_eigenmodes(CAARC_eigenmodes, display_plot, max_normed, suptitle = 'CAARC',number_of_modes = 3):
+        fig, axes = plt.subplots(1, number_of_modes)
+
+        fig.suptitle(suptitle)
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        frequencies_CAARC = [0.231,0.429,0.536]
+
+        plot_titles = []
+        for selected_mode in range(number_of_modes):
+            plot_titles.append("Eigenmode " + str(selected_mode + 1) + "\n" + "  Frequency: " + str(np.round(
+                frequencies_CAARC[selected_mode], 2)) + "  Period: " + str(np.round(
+                1/frequencies_CAARC[selected_mode], 2)) + "\n")
+
+        for i in range(number_of_modes):
+            # plot undeformed
+            axes[i].axvline(0.0, CAARC_eigenmodes['storey_level'][0], CAARC_eigenmodes['storey_level'][-1], # y
+                        #CAARC_eigenmodes['storey_level'], # x
+                        label='undeformed',
+                        color=LINE_TYPE_SETUP["color"][0],
+                        linestyle=LINE_TYPE_SETUP["linestyle"][0])
+            max_deformations, min_deformations = [], []
+            for j, sway in enumerate(['y', 'z', 'a']): #plot first three dofs
+                label_dof = GD.DOF_LABELS['3D'][j+1]
+                if label_dof == 'a':
+                    label_dof = '\u03B1'
+                max_deformations.append(max(CAARC_eigenmodes['shape'][mode_id][sway]))
+                min_deformations.append(min(CAARC_eigenmodes['shape'][mode_id][sway]))
+                absolute_maximum = max(abs(CAARC_eigenmodes['shape'][mode_id][sway]))
+                if max_normed:
+                    signed_maximum = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][sway])
+                    y = CAARC_eigenmodes['shape'][mode_id][sway]/signed_maximum
+                else:
+                    y = CAARC_eigenmodes['shape'][mode_id][sway]
+
+                axes[i].plot(y, 
+                            CAARC_eigenmodes['storey_level'], # x
+                            label= label_dof + ' |max|: ' +  '{0:.2e}'.format(absolute_maximum),
+                            color=LINE_TYPE_SETUP["color"][2+j],
+                            linestyle=LINE_TYPE_SETUP["linestyle"][1]) 
+                axes[i].set_title(plot_titles[i])
+
+            #axes[i].set_xlim(min(min_deformations)+min(min_deformations)/2, max(max_deformations)+max(max_deformations)/2)
+            #axes[i].set_ylim(0.0, CAARC_eigenmodes['storey_level'][-1]+10.0)
+            axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+            axes[i].legend(loc = 'upper left', fontsize = LEGEND_SETUP['fontsize'][3])
+            axes[i].grid()
+
+        if display_plot:
+            plt.show()
+
+def plot_optimizable_function(optimizable_function, label, x = np.arange(0.01,10,0.1)):
+        # x = np.arange(0.01,10,0.1)
+        #x = np.logspace(-1.5,1,100)
+        y= []
+        for i in x:
+            y.append(optimizable_function(i))
+            #print(optimizable_function(x[i]))
+        np.asarray(y)
+        fig, ax1 = plt.subplots()
+        ax1.set_title(label + ' objective function')
+        ax1.set_xlabel('multiplier factors')
+        ax1.set_ylabel('obtimizable function: norm(target - current ' + label + ')')
+
+        ## plot simulation values
+        ax1.plot(x, y)
+        #plt.vlines(opt_fctr, 0, 0.2, label = str(opt_fctr))
+        #plt.legend()
+        plt.grid()
+        plt.show()
 
 def animate_result(title, array_time, geometry, force, scaling):
 
@@ -474,7 +772,7 @@ def plot_dynamic_result(pdf_report, display_plot, plot_title, result_data, array
              markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
              markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
              markersize=LINE_TYPE_SETUP["markersize"][1])
-    ax.legend()
+    #ax.legend()
 
     if pdf_report is not None:
         pdf_report.savefig()

@@ -312,7 +312,7 @@ class TimoshenkoBeamElement(BeamElement):
                              [k_el_x[1][0], 0., 0., 0., 0., 0., k_el_x[1][1], 0., 0., 0., 0., 0.],
                              [0., k_el_yg[0][2], 0., 0., 0., k_el_yg[1][2], 0., k_el_yg[2][2], 0., 0., 0., k_el_yg[2][3]],
                              [0., 0., k_el_zb[0][2],  0., k_el_zb[1][2], 0., 0., 0., k_el_zb[2][2], 0., k_el_zb[2][3],0.],
-                             [0., k_el_a[1][0], 0., 0., 0., 0., 0., 0.,  0., k_el_a[1][1], 0., 0.],
+                             [0., 0., 0., k_el_a[1][0], 0., 0., 0., 0.,  0., k_el_a[1][1], 0., 0.],
                              [0., 0., k_el_zb[0][3], 0., k_el_zb[1][3], 0., 0., 0., k_el_zb[2][3], 0., k_el_zb[3][3],0.],
                              [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3], 0., k_el_yg[2][3], 0., 0., 0.,k_el_yg[3][3]]])
 
@@ -328,13 +328,31 @@ class TimoshenkoBeamElement(BeamElement):
         # the eccentricity is indroduced at the end by using a transformation matrix
         # T_t * K * T --> transfer stiffnes matrix from shear center to geometric center
         # print ('k_el before transform: ')
-        # print (k_el)
+        # print (k_el[3])
         # print()
         # print (self.T)
         k_el = np.matmul(np.matmul(np.transpose(self.T), k_el), self.T)
+        # print ('k_el after transform \n')
+        # print ('Git/L \n')
+        # print (k_a)
+        # print ('')
+        # print (k_el[3])
+        # print ('')
+
+        # manually reset K_aa to pure K_aa again without excentricity
+        # k_el[3][3] = k_el_a[0][0]
+        # k_el[3][3 + GD.DOFS_PER_NODE[self.domain_size]] = k_el_a[0][1]
+        # k_el[3 + GD.DOFS_PER_NODE[self.domain_size]][3] = k_el_a[1][0]
+        # k_el[3 + GD.DOFS_PER_NODE[self.domain_size]][3 +GD.DOFS_PER_NODE[self.domain_size]] = k_el_a[1][1]
+        # print ('k_el after correction \n')
+        # print ('Git/L \n')
+        # print (k_a)
+        # print ('')
+        # print (k_el[3])
+        # print ('')
 
         # print ('here the element matrix: \n', k_el)
-        np.savetxt("k_el.csv", k_el, delimiter= ' ')
+        # np.savetxt("k_el.csv", k_el, delimiter= ' ')
 
         #self.stop_run()
         return k_el

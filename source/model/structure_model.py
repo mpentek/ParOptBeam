@@ -171,6 +171,9 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': []}
         self.identify_decoupled_eigenmodes()
 
+        # CAARC eigenmodes for better acces here
+        self.CAARC_eigenmodes = None
+
 
     def initialize_elements(self):
 
@@ -280,6 +283,7 @@ class StraightBeam(object):
         # eccentricity 
         element_params['ey'] = self.evaluate_characteristic_on_interval(x, 'c_ey')
         element_params['ez'] = self.evaluate_characteristic_on_interval(x, 'c_ez')
+        
         return element_params
 
     def apply_elastic_bcs(self):
@@ -446,7 +450,7 @@ class StraightBeam(object):
         self.update_equivalent_nodal_mass()
         self.update_outrigger_contribution()
         # adding the point mass entries to this
-        print(self.parameters['m'])
+        # print(self.parameters['m'])
         self.parameters['m_tot'] = 0.0
         for val in self.parameters['m']:
             self.parameters['m_tot'] += val
@@ -472,7 +476,9 @@ class StraightBeam(object):
         self.comp_m = self.apply_bc_by_reduction(self.m)
         # stiffness matrix
         self.k = self._get_stiffness()
+        np.savetxt('k_glob.csv', self.k)
         self.comp_k = self.apply_bc_by_reduction(self.k)
+        np.savetxt('k_comp.csv', self.comp_k)
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)

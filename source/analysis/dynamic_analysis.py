@@ -236,7 +236,7 @@ class DynamicAnalysis(AnalysisType):
         Pass to plot function:
             Plots the time series of required quantitiy 
         """
-        print('Plotting result for selected dof in dynamic analysis \n')
+        #print('Plotting result for selected dof in dynamic analysis \n')
 
         coord_label = GD.DOF_LABELS[self.structure_model.domain_size][int(dof % GD.DOFS_PER_NODE[self.structure_model.domain_size])]
 
@@ -274,7 +274,7 @@ class DynamicAnalysis(AnalysisType):
         Pass to plot function:
             Plots the time series of required quantitiy 
         """
-        print('Writing result for selected dof in DynamicAnalysis \n')
+        #print('Writing result for selected dof in DynamicAnalysis \n')
 
         if selected_result == 'displacement':
             result_data = self.solver.displacement[dof, :]
@@ -320,7 +320,7 @@ class DynamicAnalysis(AnalysisType):
 
         """
 
-        print("Plotting result for a selected time step in DynamicAnalysis \n")
+        #print("Plotting result for a selected time step in DynamicAnalysis \n")
 
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
@@ -366,7 +366,7 @@ class DynamicAnalysis(AnalysisType):
 
         """
 
-        print("Plotting result for a selected time step in DynamicAnalysis \n")
+        # print("Writing result for a selected time step in DynamicAnalysis \n")
 
         # find closet time step
         idx_time = np.where(self.array_time >= selected_time)[0][0]
@@ -410,7 +410,7 @@ class DynamicAnalysis(AnalysisType):
 
         """
 
-        print("Plotting result for a selected step in DynamicAnalysis \n")
+        # print("Plotting result for a selected step in DynamicAnalysis \n")
 
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step
@@ -449,7 +449,7 @@ class DynamicAnalysis(AnalysisType):
                                       1)
 
     def output_kinetic_energy(self, global_folder_path, pdf_report, display_plots, settings):
-        print("Calculate modal kinetic energy")       
+        #print("Calculate modal kinetic energy")       
         
         m = self.structure_model.m  # which mass matrix ? lumped masses ?
         # k = self.structure_model.k  
@@ -517,7 +517,7 @@ class DynamicAnalysis(AnalysisType):
 
         """
 
-        print("Plotting result for a selected step in DynamicAnalysis \n")
+        # print("Writing result for a selected step in DynamicAnalysis \n")
 
         # TODO refactor so that plot_selected_time calls plot_selected_step
         idx_time = selected_step

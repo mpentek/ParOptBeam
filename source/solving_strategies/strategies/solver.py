@@ -77,13 +77,16 @@ class Solver(object):
     def _print_solver_info(self):
         pass
 
-    def _print_structural_setup(self):
-        print("Printing structural setup in the solver base class:")
-        print("mass: ", self.M)
-        print("damping: ", self.B)
-        print("stiffness: ", self.K)
-        print(" ")
-
+    def _print_structural_setup(self, print_to_console = False):
+        if print_to_console:
+            print("Printing structural setup in the solver base class:")
+            print("mass: ", self.M)
+            print("damping: ", self.B)
+            print("stiffness: ", self.K)
+            print(" ")
+        else:
+            print ("printing of structural setup in solver base class was suppressed\n")
+            
     def solve(self):
         pass
 
