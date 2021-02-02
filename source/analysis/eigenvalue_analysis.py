@@ -10,6 +10,7 @@ import source.postprocess.plotter_utilities as plotter_utilities
 import source.postprocess.writer_utilitites as writer_utilities
 import source.postprocess.visualize_skin_model_utilities as visualize_skin_model_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
+import source.auxiliary.CAARC_utilities as caarc
 
 
 class EigenvalueAnalysis(AnalysisType):
@@ -40,7 +41,12 @@ class EigenvalueAnalysis(AnalysisType):
         self.frequency = None
         self.period = None
 
+        # for interval in range(3):
+        #     self.structure_model.parameters['intervals'][interval]['c_it'][0] = 1.0
+
         self.comp_m = np.copy(self.structure_model.comp_m)
+
+        self.plot_CAARC_eigenmode_comparisons = True
 
     def solve(self, check_matrix=False):
 
@@ -49,25 +55,24 @@ class EigenvalueAnalysis(AnalysisType):
         # http://www.colorado.edu/engineering/CAS/courses.d/Structures.d/IAST.Lect19.d/IAST.Lect19.Slides.pdf
         # normalize - unit generalized mass - slide 23
 
-        [rows, columns] = self.structure_model.eigen_modes_raw.shape
+        [rows, columns] = self.structure_model.eigen_modes_raw.shape 
 
-        eig_modes_norm = np.zeros((rows, columns))
+        eig_modes_norm = np.zeros((rows, columns)) # create dummy for the normalized eigenvector matrix
 
-        gen_mass_raw = np.zeros(columns)
+        gen_mass_raw = np.zeros(columns) # 2D array since only diagonals are stored 
         gen_mass_norm = np.zeros(columns)
 
-        print("Generalized mass should be identity")
-        for i in range(len(self.structure_model.eig_values_raw)):
-            gen_mass_raw[i] = np.matmul(np.matmul(np.transpose(self.structure_model.eigen_modes_raw[:, i]),
-                                                  self.comp_m), self.structure_model.eigen_modes_raw[:, i])
+        #print("Generalized mass should be identity")
+        for i in range(len(self.structure_model.eig_values_raw)): # iterating over all eigenvalus lambda
+            gen_mass_raw[i] = np.matmul(np.matmul(np.transpose(self.structure_model.eigen_modes_raw[:, i]), self.comp_m), 
+                                                               self.structure_model.eigen_modes_raw[:, i])
 
-            unit_gen_mass_norm_fact = np.sqrt(gen_mass_raw[i])
+            unit_gen_mass_norm_fact = np.sqrt(gen_mass_raw[i]) 
 
-            eig_modes_norm[:, i] = self.structure_model.eigen_modes_raw[:,
-                                                                        i]/unit_gen_mass_norm_fact
+            eig_modes_norm[:, i] = self.structure_model.eigen_modes_raw[:,i]/unit_gen_mass_norm_fact
 
-            gen_mass_norm[i] = np.matmul(np.matmul(np.transpose(eig_modes_norm[:, i]),
-                                                   self.comp_m), eig_modes_norm[:, i])
+            gen_mass_norm[i] = np.matmul(np.matmul(np.transpose(eig_modes_norm[:, i]), self.comp_m), 
+                                                                eig_modes_norm[:, i])
             # print("norm ", i, ": ",gen_mass_norm[i])
 
         if check_matrix:
@@ -82,14 +87,14 @@ class EigenvalueAnalysis(AnalysisType):
         self.period = np.zeros(self.structure_model.eig_pers.shape)
 
         for index in range(len(self.structure_model.eig_freqs)):
-            self.eigenform[:, index] = eig_modes_norm[:,
-                                                      self.structure_model.eig_freqs_sorted_indices[index]]
+            self.eigenform[:, index] = eig_modes_norm[:,self.structure_model.eig_freqs_sorted_indices[index]] # sort the eigenmodes according to their id 
             self.frequency[index] = self.structure_model.eig_freqs[self.structure_model.eig_freqs_sorted_indices[index]]
             self.period[index] = self.structure_model.eig_pers[self.structure_model.eig_freqs_sorted_indices[index]]
 
-        self.eigenform = self.structure_model.recuperate_bc_by_extension(
-            self.eigenform)
+        self.eigenform = self.structure_model.recuperate_bc_by_extension(self.eigenform)
 
+
+# # EXISTING FUNCTIONS
     def write_eigenmode_summary(self, global_folder_path, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
         # TODO remove code duplication: considered_modes
@@ -239,7 +244,7 @@ class EigenvalueAnalysis(AnalysisType):
         """
         selected_mode = selected_mode - 1
 
-        print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
+        #print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
 
         # nullify close to zero values
         # TODO: add to multiple places
@@ -262,7 +267,8 @@ class EigenvalueAnalysis(AnalysisType):
                                    self.structure_model.nodal_coordinates["z0"]],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
                     "deformed": None}
 
         force = {"external": None,
@@ -271,7 +277,7 @@ class EigenvalueAnalysis(AnalysisType):
         scaling = {"deformation": 1,
                    "force": 1}
 
-        plot_title = " Eigenmode: " + str(selected_mode+1)
+        plot_title = "Eigenmode: " + str(selected_mode+1)
         plot_title += "  Frequency: " + \
             '{0:.2f}'.format(self.frequency[selected_mode])
         plot_title += "  Period: " + \
@@ -285,6 +291,65 @@ class EigenvalueAnalysis(AnalysisType):
                                       scaling,
                                       1)
 
+        plotter_utilities.plot_result_2D(pdf_report,
+                                         display_plot,
+                                         plot_title,
+                                         geometry,
+                                         force,
+                                         scaling)
+
+    def plot_selected_first_n_eigenmodes(self, pdf_report, display_plot, number_of_modes): 
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.eigenform -> as displacement  
+            self.frequency -> in legend
+            self.period -> in legend
+        """
+
+        print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
+
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
+
+        # NOTE: this should be the correct way
+        # TODO: add some generic way to be able to subtract some non-zero origin point
+        # TODO: check if an origin point shift or extension still needed
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
+                    "deformed": None}
+
+        
+
+        force = {"external": None,
+                 "base_reaction": None}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        plot_title = " "
+        for selected_mode in range(number_of_modes):
+            plot_title += "N mode plotting Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
+                self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n"
+
+        plotter_utilities.plot_result(pdf_report,
+                                    display_plot,
+                                    plot_title,
+                                    geometry,
+                                    force,
+                                    scaling,
+                                    number_of_modes)
+
     def write_selected_eigenmode(self, global_folder_path, selected_mode):
         """
         Pass to plot function:
@@ -296,7 +361,7 @@ class EigenvalueAnalysis(AnalysisType):
         """
         selected_mode = selected_mode - 1
 
-        print("Plotting result for a selected eigenmode in EigenvalueAnalysis \n")
+        # print("Writing result for a selected eigenmode in EigenvalueAnalysis \n")
 
         for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
                               GD.DOF_LABELS[self.structure_model.domain_size]):
@@ -336,55 +401,7 @@ class EigenvalueAnalysis(AnalysisType):
         writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
-    def plot_selected_first_n_eigenmodes(self, pdf_report, display_plot, number_of_modes):
-        """
-        Pass to plot function:
-            from structure model undeformed geometry
-            self.eigenform -> as displacement  
-            self.frequency -> in legend
-            self.period -> in legend
-        """
-
-        print("Plotting result for selected first n eigenmodes in EigenvalueAnalysis \n")
-
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
-            start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
-            stop = self.eigenform.shape[0] + idx - step
-            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
-
-        # NOTE: this should be the correct way
-        # TODO: add some generic way to be able to subtract some non-zero origin point
-        # TODO: check if an origin point shift or extension still needed
-
-        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                                   self.structure_model.nodal_coordinates["y0"],
-                                   self.structure_model.nodal_coordinates["z0"]],
-                    "deformation": [self.structure_model.nodal_coordinates["x"],
-                                    self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
-                    "deformed": None}
-
-        force = {"external": None,
-                 "base_reaction": None}
-
-        scaling = {"deformation": 1,
-                   "force": 1}
-
-        plot_title = " "
-        for selected_mode in range(number_of_modes):
-            plot_title += "Eigenmode " + str(selected_mode + 1) + "  Frequency: " + str(np.round(
-                self.frequency[selected_mode], 3)) + "  Period: " + str(np.round(self.period[selected_mode], 3)) + "\n"
-        plotter_utilities.plot_result(pdf_report,
-                                      display_plot,
-                                      plot_title,
-                                      geometry,
-                                      force,
-                                      scaling,
-                                      number_of_modes)
-
-    def animate_selected_eigenmode(self, selected_mode):
+    def animate_selected_eigenmode(self, selected_mode, display_plot):
         """
         Pass to plot function:
             from structure model undeformed geometry
@@ -392,58 +409,59 @@ class EigenvalueAnalysis(AnalysisType):
             self.frequency -> in legend
             self.period -> in legend  
         """
-        selected_mode = selected_mode - 1
+        if display_plot:
+            selected_mode = selected_mode - 1
 
-        print("Animating eigenmode in EigenvalueAnalysis \n")
+            print("Animating eigenmode in EigenvalueAnalysis \n")
 
-        time_steps = 100
-        array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
-            0, self.period[selected_mode], time_steps))  # AK: can this be called an array time ?
+            time_steps = 100
+            array_time = np.sin(2 * np.pi * self.frequency[selected_mode] * np.linspace(
+                0, self.period[selected_mode], time_steps))  # AK: can this be called an array time ?
 
-        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
-                              GD.DOF_LABELS[self.structure_model.domain_size]):
-            start = idx
-            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
-            stop = self.eigenform.shape[0] + idx - step
-            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
-                                                                           1:step][:, selected_mode][:, np.newaxis] * array_time
+            for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])), # DOF label + local id (0,'x'), ...
+                                GD.DOF_LABELS[self.structure_model.domain_size]):
+                start = idx
+                step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+                stop = self.eigenform.shape[0] + idx - step
+                self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop +
+                                                                            1:step][:, selected_mode][:, np.newaxis] * array_time
 
-        # for remaining dofs - case of 2D - create placeholders in correct format
-        remaining_labels = list(set(GD.DOF_LABELS['3D'])-set(
-            GD.DOF_LABELS[self.structure_model.domain_size]))
-        for label in remaining_labels:
-            self.structure_model.nodal_coordinates[label] = np.zeros(
-                (self.structure_model.n_nodes, len(array_time)))
+            # for remaining dofs - case of 2D - create placeholders in correct format
+            remaining_labels = list(set(GD.DOF_LABELS['3D'])-set(
+                GD.DOF_LABELS[self.structure_model.domain_size]))
+            for label in remaining_labels:
+                self.structure_model.nodal_coordinates[label] = np.zeros(
+                    (self.structure_model.n_nodes, len(array_time)))
 
-        # NOTE: this should be the correct way
-        # TODO: add some generic way to be able to subtract some non-zero origin point
-        # TODO: check if an origin point shift or extension still needed
+            # NOTE: this should be the correct way
+            # TODO: add some generic way to be able to subtract some non-zero origin point
+            # TODO: check if an origin point shift or extension still needed
 
-        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                                   self.structure_model.nodal_coordinates["y0"],
-                                   self.structure_model.nodal_coordinates["z0"]],
-                    "deformation": [self.structure_model.nodal_coordinates["x"],
-                                    self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
-                    "deformed": None}
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                        "deformation": [self.structure_model.nodal_coordinates["x"],
+                                        self.structure_model.nodal_coordinates["y"],
+                                        self.structure_model.nodal_coordinates["z"]],
+                        "deformed": None}
 
-        force = {"external": None,
-                 "base_reaction": None}
+            force = {"external": None,
+                    "base_reaction": None}
 
-        scaling = {"deformation": 1,
-                   "force": 1}
+            scaling = {"deformation": 1,
+                    "force": 1}
 
-        plot_title = "Eigenmode: " + str(selected_mode+1)
-        plot_title += "  Frequency: " + \
-            '{0:.2f}'.format(self.frequency[selected_mode])
-        plot_title += "  Period: " + \
-            '{0:.2f}'.format(self.period[selected_mode])
+            plot_title = "Eigenmode: " + str(selected_mode+1)
+            plot_title += "  Frequency: " + \
+                '{0:.2f}'.format(self.frequency[selected_mode])
+            plot_title += "  Period: " + \
+                '{0:.2f}'.format(self.period[selected_mode])
 
-        plotter_utilities.animate_result(plot_title,
-                                         array_time,
-                                         geometry,
-                                         force,
-                                         scaling)
+            plotter_utilities.animate_result(plot_title,
+                                            array_time,
+                                            geometry,
+                                            force,
+                                            scaling)
 
     def animate_skin_model_for_selected_eigenmode(self, mode, skin_model_params):
         skin_model_params["result_path"] = os_join(
@@ -455,6 +473,81 @@ class EigenvalueAnalysis(AnalysisType):
         skin_model_params["dofs_input"] = self.get_output_for_visualiser()
 
         visualize_skin_model_utilities.visualize_skin_model(skin_model_params)
+
+# # MAINLY USED PLOTTING FOR EIGENMODE COMPARISONS CAARC - PAROPT
+
+    def plot_selected_first_n_eigenmodes_2D(self, display_plot, number_of_modes, integrate_CAARC = True, alpha_normed = True, use_fitted_CAARC = True):
+        
+        screen_msg = "Plotting selected first n eigenmodes in EigenvalueAnalysis 2D -"
+
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.eigenform.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.eigenform[start:stop+1:step]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
+                    "deformed": None}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        plot_titles = []
+        for selected_mode in range(number_of_modes):
+            plot_titles.append("Eigenmode " + str(selected_mode + 1) + "\n" + "  Frequency: " + str(np.round(
+                self.frequency[selected_mode], 2)) + "  Period: " + str(np.round(self.period[selected_mode], 2)) + "\n")
+
+        plot_CAARC_only = False
+
+        # DECIED IF THE CAARC DATA IS FITTED TO A POLYNOMIAL or not
+        if use_fitted_CAARC:
+            CAARC_eigenmodes = caarc.get_CAARC_eigenform_polyfit(self.structure_model.CAARC_eigenmodes, 
+                                                                    evaluate_at=None,
+                                                                    degree=10)
+            screen_msg += ' CAARC fitted -'
+        else:
+            CAARC_eigenmodes = self.structure_model.CAARC_eigenmodes
+        
+        # # CALL OF THE PLOT FUNCTIONS FROM THE UTILITIES
+
+        if plot_CAARC_only:
+            plotter_utilities.plot_CAARC_eigenmodes(CAARC_eigenmodes,
+                                                    display_plot = True , 
+                                                    max_normed= False)
+
+        if integrate_CAARC:
+            print(screen_msg + ' CAARC integrated')
+            plotter_utilities.plot_CAARC_ParOpt_eigenmodes_normed(CAARC_eigenmodes,
+                                                                    geometry,
+                                                                    plot_titles,
+                                                                    scaling,
+                                                                    display_plot,
+                                                                    max_normed = False)
+        if alpha_normed:
+            print(screen_msg + ' y/alpha factor')
+            plotter_utilities.plot_CAARC_ParOpt_eigenmodes_y_alpha(CAARC_eigenmodes,
+                                                                    geometry,
+                                                                    plot_titles,
+                                                                    scaling,
+                                                                    display_plot,
+                                                                    use_fitted_CAARC,
+                                                                    max_normed= True)   
+        else:
+            print(screen_msg)
+            plotter_utilities.plot_result_2D_multiple_modes(display_plot,
+                                                        plot_titles, 
+                                                        geometry, 
+                                                        scaling, 
+                                                        number_of_modes)
+
+# # CALL OF PLOT FUNCTIONS 
 
     def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         """
@@ -474,19 +567,24 @@ class EigenvalueAnalysis(AnalysisType):
         if self.parameters['output']['eigenmode_identification']['plot']:
             self.plot_eigenmode_identification(pdf_report, display_plot)
 
-        for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
-            self.plot_selected_eigenmode(pdf_report, display_plot, mode)
+        # for mode in self.parameters['output']['selected_eigenmode']['plot_mode']:
+        #     self.plot_selected_eigenmode(pdf_report, False, mode)
+        if self.plot_CAARC_eigenmode_comparisons:
+            print ('Plotting Eingenform comparisons in Eigenvalue_Analysis \n')
+            self.plot_selected_first_n_eigenmodes_2D(True, 3)
+
+        #self.plot_selected_eigenmode(pdf_report, False, 8)
 
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
             self.write_selected_eigenmode(global_folder_path, mode)
 
         for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
-            self.animate_selected_eigenmode(mode)
+            self.animate_selected_eigenmode(mode, display_plot)
 
         if skin_model_params is not None:
             for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:
                 self.animate_skin_model_for_selected_eigenmode(
-                    mode, skin_model_params)
+                    mode, skin_model_params, True)
 
         # TODO to adapt and refactor
         # eigenvalue_analysis.plot_selected_first_n_eigenmodes(4)

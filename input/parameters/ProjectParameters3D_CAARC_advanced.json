@@ -1,0 +1,144 @@
+{
+    "model_parameters": {
+        "name": "CAARC_Advanced",
+        "domain_size": "3D",
+        "system_parameters": {
+            "element_params": {
+                "type": "Timoshenko",
+                "is_nonlinear": false
+            },
+            "material": {
+                "is_nonlinear": false,
+                "density": 160.0,
+                "youngs_modulus": 2.861e8,
+                "poisson_ratio": 0.1,
+                "damping_ratio": 0.0
+            },
+            "geometry": {
+                "length_x": 240,
+                "number_of_elements": 3,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0, 88.0],
+                    "length_y": [24.0],
+                    "length_z": [72.0],
+                    "area"    : [1728.0],
+                    "shear_area_y" : [1440.0],
+                    "shear_area_z" : [1440.0],
+                    "moment_of_inertia_y" : [746496.0],
+                    "moment_of_inertia_z" : [82944.0],
+                    "torsional_moment_of_inertia" : [1575936],
+                    "eccentricity_y": [0.0], 
+                    "eccentricity_z": [2.2],
+                    "outrigger" : 
+                        {"mass": 947000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
+                    {
+                    "interval_bounds" : [88.0, 164.0],
+                    "length_y": [24.0],
+                    "length_z": [72.0],
+                    "area"    : [1728.0],
+                    "shear_area_y" : [1440.0],
+                    "shear_area_z" : [1440.0],
+                    "moment_of_inertia_y" : [746496.0],
+                    "moment_of_inertia_z" : [82944.0],
+                    "torsional_moment_of_inertia" : [1575936],
+                    "eccentricity_y": [0.0], 
+                    "eccentricity_z": [1.5],
+
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
+                    {
+                    "interval_bounds" : [164.0, "End"],
+                    "length_y": [24.0],
+                    "length_z": [72.0],
+                    "area"    : [1728.0],
+                    "shear_area_y" : [1440.0],
+                    "shear_area_z" : [1440.0],
+                    "moment_of_inertia_y" : [746496.0],
+                    "moment_of_inertia_z" : [82944.0],
+                    "torsional_moment_of_inertia" : [1575936.0],
+                    "eccentricity_y": [0.0], 
+                    "eccentricity_z": [0.6],
+
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}}]
+            }
+        },
+        "boundary_conditions": "fixed-free"
+    },
+    "optimization_parameters": {
+        "adapt_for_target_values": {
+            "density_for_total_mass": 7386000.0,
+            "geometric_properties_for": { 
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "partition_shear_bending": [-1, 1],
+                "consider_decomposed_modes": ["sway_y","sway_z", "torsional"],
+                "corresponding_mode_ids" : [2, 1, 3],
+                "corresponding_eigenfrequencies": [0.429,0.231,0.536]}}
+    },
+    "analyses_parameters":{
+        "global_output_folder" : "CAARC_Advanced",
+        "model_properties": {
+            "write": false,
+            "plot":false
+        },
+        "report_options": {
+            "combine_plots_into_pdf" : false,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : false
+        },
+        "skin_model_parameters":{
+            "geometry": [ [0, -22.5, -15.0], [0, -22.5, 15], [0, 22.5, 15],
+                          [0, 22.5, -15]
+            ],
+            "contour_density": 1,
+            "record_animation": true,
+            "visualize_line_structure": true,
+            "beam_direction": "x",
+            "scaling_vector": [1.0, 1.0 , 1.0, 1.0, 1.0, 1.0, 1.0],
+            "eigenmode_scaling_factor" : 1e5,
+            "dynamic_scaling_factor" : 1e3
+        },
+        "runs": [{
+                "type": "eigenvalue_analysis",
+                "settings": {
+                    "normalization": "mass_normalized"},
+                "input":{},
+                "output":{
+                    "eigenmode_summary": {
+                        "write" : false,
+                        "plot" : false},
+                    "eigenmode_identification": {
+                        "write" : false,
+                        "plot" : false},
+                    "selected_eigenmode": {
+                        "plot_mode": [1,2,3],
+                        "write_mode": [1,2,3],
+                        "animate_mode": [1],
+                        "animate_skin_model": [1]},
+                    "selected_eigenmode_range": {
+                        "help": "maximum 4 modes per range at a time",
+                        "considered_ranges": [[1,2]],
+                        "plot_range": [false, false],
+                        "write_range": [false, false]}
+                    }
+            },{
+                "type" : "static_analysis",
+                "settings": {},
+                "input":{
+                    "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
+                    "file_path": "input/force/generic_building/static_force_4_nodes_at_4_in_y.npy",
+                    "is_time_history_file" : false,
+                    "selected_time_step" : 15000
+                },
+                "output":{
+                    "plot": ["deformation", "forces"],
+                    "write": ["deformation"]
+                }
+            }]}
+}

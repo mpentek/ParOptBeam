@@ -6,6 +6,7 @@ from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.auxiliary.other_utilities import get_adjusted_path_string
 from source.auxiliary import global_definitions as GD
+from source.auxiliary.auxiliary_functionalities import stop_run
 
 
 class AnalysisController(object):
@@ -93,7 +94,7 @@ class AnalysisController(object):
                 #     from source.analysis.dynamic_analysis import DynamicAnalysis
                 #     self.analyses.append(DynamicAnalysis(
                 #         self.model, analysis_param))
-                # else: 
+                # else:
                 from source.analysis.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(
                     self.model, analysis_param))

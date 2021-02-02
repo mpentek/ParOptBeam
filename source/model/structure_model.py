@@ -90,7 +90,7 @@ class StraightBeam(object):
                         ["geometry"]["number_of_elements"])
                 raise Exception(msg)
         except:
-            # by default equal lengths
+            # by default equal lengths 
             self.relative_length_ratios = [1.0] * self.parameters['n_el']
 
         # defined on intervals as piecewise continuous function on an interval starting from 0.0
@@ -105,7 +105,9 @@ class StraightBeam(object):
                 'c_a_sz': val["shear_area_z"],
                 'c_iy': val["moment_of_inertia_y"],
                 'c_iz': val["moment_of_inertia_z"],
-                'c_it': val["torsional_moment_of_inertia"]
+                'c_it': val["torsional_moment_of_inertia"],
+                'c_ey': val["eccentricity_y"], 
+                'c_ez': val["eccentricity_z"]
             })
             try:
                 self.parameters["intervals"][idx]['m'] = val["outrigger"]["mass"]
@@ -147,8 +149,7 @@ class StraightBeam(object):
                                 self.n_nodes * GD.DOFS_PER_NODE[self.domain_size]))
 
         # boundary conditions
-        self.all_dofs_global = np.arange(
-            self.n_nodes * GD.DOFS_PER_NODE[self.domain_size])
+        self.all_dofs_global = np.arange(self.n_nodes * GD.DOFS_PER_NODE[self.domain_size])
 
         self.elastic_bc_dofs = {}
         self.parameters["boundary_conditions"] = parameters["boundary_conditions"]
@@ -170,6 +171,10 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': []}
         self.identify_decoupled_eigenmodes()
 
+        # CAARC eigenmodes for better acces here
+        self.CAARC_eigenmodes = None
+
+
     def initialize_elements(self):
 
         param_elem_length_sum = sum(self.relative_length_ratios)
@@ -179,21 +184,23 @@ class StraightBeam(object):
         param_elem_length_cumul_norm = [
             x/param_elem_length_sum for x in param_elem_length_cumul]
 
-        self.parameters['x'] = [x * self.parameters['lx']
+        self.parameters['x'] = [x * self.parameters['lx'] # total height of building 
                                 for x in param_elem_length_cumul_norm]
         self.parameters['x_mid'] = [
             (a+b)/2 for a, b in zip(self.parameters['x'][:-1], self.parameters['x'][1:])]
 
-        # geometric
+        # geometric --> outside loop over elements since it is assumed constant
         self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
             x, 'c_ly') for x in self.parameters['x']]
         self.parameters['lz'] = [self.evaluate_characteristic_on_interval(
             x, 'c_lz') for x in self.parameters['x']]
+      
         # characteristics lengths
         self.charact_length = (
             np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         for i in range(self.n_elements):
+            # ! n_elements != n_intervals
             element_params = self.initialize_element_geometric_parameters(i)
             coord = np.array([[self.parameters['x'][i], 0.0, 0.0],
                               [self.parameters['x'][i + 1], 0.0, 0.0]])
@@ -240,24 +247,19 @@ class StraightBeam(object):
                 self.elements[idx].rho * self.elements[idx].L
 
     def initialize_reference_coordinate(self):
-        self.nodal_coordinates["x0"] = list(
-            e.ReferenceCoords[0] for e in self.elements)
-        self.nodal_coordinates["x0"].append(
-            self.elements[-1].ReferenceCoords[3])
+        self.nodal_coordinates["x0"] = list(e.ReferenceCoords[0] for e in self.elements)
+        self.nodal_coordinates["x0"].append(self.elements[-1].ReferenceCoords[3])
         self.nodal_coordinates["x0"] = np.asarray(self.nodal_coordinates["x0"])
-        self.nodal_coordinates["y0"] = list(
-            e.ReferenceCoords[2] for e in self.elements)
-        self.nodal_coordinates["y0"].append(
-            self.elements[-1].ReferenceCoords[4])
+        self.nodal_coordinates["y0"] = list(e.ReferenceCoords[2] for e in self.elements)
+        self.nodal_coordinates["y0"].append(self.elements[-1].ReferenceCoords[4])
         self.nodal_coordinates["y0"] = np.asarray(self.nodal_coordinates["y0"])
-        self.nodal_coordinates["z0"] = list(
-            e.ReferenceCoords[4] for e in self.elements)
-        self.nodal_coordinates["z0"].append(
-            self.elements[-1].ReferenceCoords[5])
+        self.nodal_coordinates["z0"] = list(e.ReferenceCoords[4] for e in self.elements)
+        self.nodal_coordinates["z0"].append(self.elements[-1].ReferenceCoords[5])
         self.nodal_coordinates["z0"] = np.asarray(self.nodal_coordinates["z0"])
 
     def initialize_element_geometric_parameters(self, i):
         element_params = {}
+        # for all elements in total
         # element properties
         x = self.parameters['x_mid'][i]
         # area
@@ -277,6 +279,11 @@ class StraightBeam(object):
         # torsion constant
         element_params['it'] = self.evaluate_characteristic_on_interval(
             x, 'c_it')
+
+        # eccentricity 
+        element_params['ey'] = self.evaluate_characteristic_on_interval(x, 'c_ey')
+        element_params['ez'] = self.evaluate_characteristic_on_interval(x, 'c_ez')
+        
         return element_params
 
     def apply_elastic_bcs(self):
@@ -342,7 +349,7 @@ class StraightBeam(object):
         self.dofs_to_keep = list(
             set(self.all_dofs_global) - set(bc_dofs_global))
 
-    def update_outrigger_contribution(self):
+    def update_outrigger_contribution(self, print_to_console = False):
 
         # point stiffness and point masses at respective dof for the outrigger
         for values in self.parameters['intervals']:
@@ -354,11 +361,11 @@ class StraightBeam(object):
                     geom_location = values['bounds'][1]
                     height_of_interval = geom_location - values['bounds'][0]
 
-                print('Outrigger at\n')
-                print(' geometric location ', str(geom_location))
+                # print('Outrigger at\n')
+                # print(' geometric location ', str(geom_location))
 
                 geom_node_id = int(geom_location / self.lx_i)
-                print(' geometric node id ', str(geom_node_id))
+                # print(' geometric node id ', str(geom_node_id))
 
                 # Point mass entries
                 # existing nodal mass from area, length and density
@@ -382,7 +389,8 @@ class StraightBeam(object):
                     msg += "larger than target outrigger of " + \
                         str(values['m']) + " [kg].\n"
                     msg += "Not incrementing to target (as is it lower) but adding up to existing.\n"
-                    print(msg)
+                    if print_to_console:
+                        print(msg)
 
                     # values['m']  DONE : check
                     self.parameters['point_m'][geom_node_id] += 0
@@ -442,7 +450,7 @@ class StraightBeam(object):
         self.update_equivalent_nodal_mass()
         self.update_outrigger_contribution()
         # adding the point mass entries to this
-        print(self.parameters['m'])
+        # print(self.parameters['m'])
         self.parameters['m_tot'] = 0.0
         for val in self.parameters['m']:
             self.parameters['m_tot'] += val
@@ -468,7 +476,9 @@ class StraightBeam(object):
         self.comp_m = self.apply_bc_by_reduction(self.m)
         # stiffness matrix
         self.k = self._get_stiffness()
+        np.savetxt('k_glob.csv', self.k)
         self.comp_k = self.apply_bc_by_reduction(self.k)
+        np.savetxt('k_comp.csv', self.comp_k)
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)
@@ -501,8 +511,7 @@ class StraightBeam(object):
                 start = idx
                 step = GD.DOFS_PER_NODE[self.domain_size]
                 stop = self.eigen_modes_raw.shape[0] + idx - step
-                decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
-                                                                   1:step][:, selected_mode]
+                decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop + 1:step][:, selected_mode]
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
@@ -557,8 +566,7 @@ class StraightBeam(object):
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
             self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
-            self.decomposed_eigenmodes['rel_participation'].append(
-                rel_participation)
+            self.decomposed_eigenmodes['rel_participation'].append(rel_participation)
 
     def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
         # TODO remove code duplication: considered_modes
@@ -617,8 +625,7 @@ class StraightBeam(object):
     def eigenvalue_solve(self):
         # raw results
         # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
-        self.eig_values_raw, self.eigen_modes_raw = linalg.eigh(
-            self.comp_k, self.comp_m)
+        self.eig_values_raw, self.eigen_modes_raw = linalg.eigh(self.comp_k, self.comp_m)
         # rad/s
         self.eig_values = np.sqrt(np.real(self.eig_values_raw))
         self.eig_freqs = self.eig_values / 2. / np.pi
@@ -880,6 +887,8 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
+            #print('this is the element stiffness matrix', el_matrix)
+            #print('this is the value at YT', el_matrix[1][3])
             i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
             i_end = i_start + \
                 GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
@@ -896,7 +905,7 @@ class StraightBeam(object):
     def _get_damping(self):
         """
         Calculate damping b based upon the Rayleigh assumption
-        using the first 2 eigemodes - here generically i and i
+        using the first 2 eigemodes - here generically i and j
         """
 
         mode_i = 0

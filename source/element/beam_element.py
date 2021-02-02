@@ -1,5 +1,5 @@
 import numpy as np
-
+import source.auxiliary.global_definitions as GD
 
 class BeamElement(object):
     def __init__(self, material_params, element_params, nodal_coords, index, domain_size):
@@ -28,6 +28,10 @@ class BeamElement(object):
         # torsion constant J
         self.It = element_params['it']
 
+        # trosional coupling parameters
+        self.ey = element_params['ey']
+        self.ez = element_params['ez']
+
         # element properties
         self.NumberOfNodes = 2
         self.Dimension = 3
@@ -40,6 +44,9 @@ class BeamElement(object):
         # reference length of one element
         self.L = self._calculate_reference_length()
 
+        # for including excentricity
+        self.T = self._get_transformation_matrix()
+        
         # nonlinear elements needs the nodal forces and deformations for the geometric stiffness calculation
         if self.isNonlinear:
             # nodal forces
@@ -136,3 +143,28 @@ class BeamElement(object):
         """
         increment_deformation = self.current_deformation - self.previous_deformation
         return increment_deformation
+
+    def _get_transformation_matrix(self):
+        ''' 
+        transform the elem matrix from the shear center to the coordinate center (geometric center)
+        '''
+        ey = self.ey
+        ez = self.ez   
+        # eigentlich auch noch ez, ey aus stockwerk oben drüber --> node 2
+        T = np.identity(GD.DOFS_PER_NODE[self.domain_size]*2)
+        T_transform_part_node1 =  np.array([[1., 0., ez],
+                                            [0., 1., -ey],
+                                            [0., 0., 1.]])
+        T_transform_part_node2 =  np.array([[1., 0., ez],
+                                            [0., 1., -ey],
+                                            [0., 0., 1.]])
+        
+        start = GD.DOF_LABELS[self.domain_size].index('y')
+        end = GD.DOF_LABELS[self.domain_size].index('a')+1
+        T[start:end, start:end] = T_transform_part_node1
+
+        start = GD.DOFS_PER_NODE[self.domain_size] + GD.DOF_LABELS[self.domain_size].index('y')
+        end = GD.DOFS_PER_NODE[self.domain_size] + GD.DOF_LABELS[self.domain_size].index('a')+1
+        T[start:end, start:end] = T_transform_part_node2
+                                    
+        return T
