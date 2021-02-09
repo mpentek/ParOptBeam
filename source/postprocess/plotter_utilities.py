@@ -11,6 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from source.auxiliary import global_definitions as GD
 from source.auxiliary.other_utilities import get_signed_maximum
 from source.auxiliary.auxiliary_functionalities import get_fitted_array
+from source.auxiliary.auxiliary_functionalities import cm2inch
 
 
 '''
@@ -48,6 +49,65 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "markersize":     [4,      4,    4,      4,    4,    4]}
 
 LEGEND_SETUP = {"fontsize": [16, 14, 12, 10, 8]}
+
+width = cm2inch(5)
+height = cm2inch(3)
+parameters = {'text.usetex': False,
+
+          'font.size': 10,
+
+          'font.family': 'sans-serif',
+
+          'text.latex.unicode': False,
+
+          'figure.titlesize': 10,
+
+          'figure.figsize': (width, height),
+
+          'figure.dpi': 300,
+
+          'axes.titlesize': 10,
+
+          'axes.labelsize': 10,
+
+          'axes.grid': 'True',
+
+          'axes.grid.which': 'both',
+
+          'axes.xmargin': 0.05,
+
+          'axes.ymargin': 0.05,
+
+          'lines.linewidth': 0.5,
+
+          'lines.linestyle': '--',
+
+          'lines.markersize': 3,
+
+          'xtick.labelsize': 10,
+
+          'ytick.labelsize': 10,
+
+          'ytick.minor.visible': 'true',
+
+          'xtick.minor.visible': 'true',
+
+          'grid.linestyle': '-',
+
+          'grid.linewidth': 0.5,
+
+          'grid.alpha': 0.3,
+
+          'legend.fontsize': 10,
+
+          'savefig.dpi': 300,
+
+          'savefig.format': 'pdf',
+
+          'savefig.bbox': 'tight'
+
+          }
+
 
 '''
 geometry = {"undeformed":...,
@@ -564,6 +624,7 @@ def plot_CAARC_eigenmodes(CAARC_eigenmodes, display_plot, max_normed, suptitle =
                         color=LINE_TYPE_SETUP["color"][0],
                         linestyle=LINE_TYPE_SETUP["linestyle"][0])
             max_deformations, min_deformations = [], []
+            mode_id = i +1
             for j, sway in enumerate(['y', 'z', 'a']): #plot first three dofs
                 label_dof = GD.DOF_LABELS['3D'][j+1]
                 if label_dof == 'a':
@@ -805,4 +866,74 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
         plt.close(fig)
 
     if display_plot:
+        plt.show()
+
+
+# ===============================
+# ============ ESWL =============
+# ===============================
+
+def plot_load_components(eswl_total, nodal_coordinates ,load_components, response_label):
+    '''
+    gets the eswl dictionary and the structure nodal coordiantes dictionary 
+    '''
+    fig, ax = plt.subplots()
+
+    for component in load_components:
+        eswl = eswl_total[response_label][component]
+        ax.plot(eswl, nodal_coordinates['x0'], label = 'F'+component)
+
+    ax.plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
+                label = 'structure', 
+                marker = 'o', 
+                color = 'grey', 
+                linestyle = '--')
+    ax.xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
+    ax.set_xlabel('load [?]')
+    ax.set_ylabel('height [m]')
+
+    plt.title('ESWL for ' + response_label)
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+def plot_load_time_histories(load_signals, nodal_coordinates, load_components = ['y','z','a']):
+
+    fig, ax = plt.subplots(1, len(load_components))
+
+    for i, component in enumerate(load_components):
+        # structure
+        ax[i].set_title('load signal direction ' + component)
+        ax[i].plot(nodal_coordinates['y0'],
+                    nodal_coordinates['x0'], 
+                    label = 'structure', 
+                    marker = 'o', 
+                    color = 'grey', 
+                    linestyle = '--')
+        for node in range(len(nodal_coordinates['x0'])):
+            shift_scale = 1e+05
+            if component == 'a':
+                shift_scale *= 5
+            ax[i].plot(np.arange(0,len(load_signals[component][node])),
+                        load_signals[component][node] + nodal_coordinates['x0'][node]*shift_scale)
+    
+        #ax[i].legend()
+        ax[i].grid()
+    plt.show()
+
+def plot_load_time_histories_node_wise(load_signals, n_nodes, scale_load, load_components = ['y','z','a']):
+
+    ax_i = list(range(n_nodes-1, -1, -1))
+    for component in load_components:
+        
+        fig, ax = plt.subplots(n_nodes, 1)
+        fig.canvas.set_window_title('signals in ' + component + ' direction')
+        fig.suptitle('signals in ' + 'direction ' + component + ' - scaled with ' + str(scale_load))
+        for node in range(n_nodes):
+            
+            ax[ax_i[node]].plot(np.arange(0,len(load_signals[component][node])),
+                        load_signals[component][node]*scale_load,
+                        label = 'node_'+str(node))
+            ax[ax_i[node]].grid()
+            ax[ax_i[node]].legend()
         plt.show()

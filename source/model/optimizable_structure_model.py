@@ -13,7 +13,6 @@ from source.model.structure_model import StraightBeam
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 import source.auxiliary.global_definitions as GD
 from source.analysis.static_analysis import StaticAnalysis
-from source.auxiliary.auxiliary_functionalities import stop_run
 import source.postprocess.plotter_utilities as plotter_utilities
 from source.auxiliary.other_utilities import get_signed_maximum
 import source.auxiliary.CAARC_utilities as caarc

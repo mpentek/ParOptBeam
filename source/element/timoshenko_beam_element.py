@@ -372,8 +372,5 @@ class TimoshenkoBeamElement(BeamElement):
                      [],
                      []])    
 
-    def stop_run(self):
-        stop = input('Want to continue? (y/n) ')
-        if stop == 'n':
-            sys.exit()
+
         

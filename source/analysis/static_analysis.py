@@ -9,7 +9,6 @@ import source.postprocess.writer_utilitites as writer_utilities
 from source.auxiliary.validate_and_assign_defaults import validate_and_assign_defaults
 from source.auxiliary.other_utilities import get_adjusted_path_string
 import source.auxiliary.global_definitions as GD
-from input.force.generic_building.generate_force_file_from_python import generate_static_force_file
 
 
 class StaticAnalysis(AnalysisType):
@@ -110,6 +109,16 @@ class StaticAnalysis(AnalysisType):
                          "a": np.zeros(0),
                          "b": np.zeros(0),
                          "g": np.zeros(0)}
+
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                               1:step][:, 0]
+            self.force_action[label] = self.force[start:stop + 1:step]
+            self.reaction[label] = self.resisting_force[start:stop + 1:step][:, 0]
 
     def plot_solve_result(self, pdf_report, display_plot):
         """

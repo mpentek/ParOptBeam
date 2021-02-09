@@ -33,6 +33,8 @@ MODE_CATEGORIZATION = {
         'sway_y': ['z', 'b'],
         'sway_z': ['y', 'g']}}
 
+RESPONSE_DIRECTION_MAP = {'Qx':'x', 'Qy':'y', 'Qz':'z', 'Mx':'a', 'My':'b', 'Mz':'g'}
+
 NODES_PER_LEVEL = 2
 
 THRESHOLD = 1e-8

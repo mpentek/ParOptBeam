@@ -146,7 +146,7 @@ class BeamElement(object):
 
     def _get_transformation_matrix(self):
         ''' 
-        transform the elem matrix from the shear center to the coordinate center (geometric center)
+        transform the element matrix from the shear center to the coordinate center (geometric center)
         '''
         ey = self.ey
         ez = self.ez   
