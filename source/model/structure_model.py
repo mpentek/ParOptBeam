@@ -476,9 +476,9 @@ class StraightBeam(object):
         self.comp_m = self.apply_bc_by_reduction(self.m)
         # stiffness matrix
         self.k = self._get_stiffness()
-        np.savetxt('k_glob.csv', self.k)
+        #np.savetxt('k_glob.csv', self.k)
         self.comp_k = self.apply_bc_by_reduction(self.k)
-        np.savetxt('k_comp.csv', self.comp_k)
+        #np.savetxt('k_comp.csv', self.comp_k)
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)
