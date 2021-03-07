@@ -477,7 +477,26 @@ class StraightBeam(object):
             self.parameters['m'][idx] += self.parameters['point_m'][idx]
 
     def decompose_and_quantify_eigenmodes(self, considered_modes=15):
+        ''' splits each eigenmode in contributions from each DOF
+
+        Calls eigenvalue_solve() to get the eigenvalues and modes
+        For each mode contributions of each DOF are computed. 
+        Therefore modal_masses are computed and compared with the total mass
+
+        Parameters
+        ----------
+        considered_modes: int, optional
+            Number of eigenmodes to be computed. default = 15
+
+
+        Raises
+        ----------
+        ZeroDivisionError: float division by zero
+            If only one element is beeing used total mass will be 0 as loop for storey masses won't be entered!
+        '''
+        
         # TODO remove code duplication: considered_modes
+        # NOTE number of DOFs == number of eigenmodes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
         else:
@@ -489,6 +508,7 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
 
+        # loop over the first n=considered_modes eigenmodes
         for mode_idx in range(considered_modes):
             decomposed_eigenmode = {}
             rel_contrib = {}
@@ -561,6 +581,20 @@ class StraightBeam(object):
                 rel_participation)
 
     def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
+        '''  Identify and sort eigenmodes 
+
+        Computes the first n eigenmodes with n = `considered_modes`.
+        Identifies the types of eigenmodes and sorts them according to their type.
+
+        Parameters
+        ----------
+        considered_modes: int, optional
+            Number of eigenmodes to be computed. default = 15
+
+        print_to_console: bool, optional
+            If set to True eigenmodes will be printed to the console. default = False
+        '''
+
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
@@ -584,6 +618,7 @@ class StraightBeam(object):
                         match_for_case_id = True
 
                 # TODO: check if robust enough for modes where 2 DoFs are involved
+                # see test_scripts.test_structure_model_identify_decoupled_eigenmodes.py
                 if match_for_case_id:
 
                     if case_id in self.mode_identification_results:
@@ -627,6 +662,7 @@ class StraightBeam(object):
 
         # NOTE: it seems that it is anyway sorted
         # TODO: check if it can at all happen that it is not sorted, otherwise operation superflous
+        # linalg.eigh returns: "The N (1<=N<=M) selected eigenvalues, in ascending order, each repeated according to its multiplicity."
         self.eig_freqs_sorted_indices = np.argsort(self.eig_freqs)
 
     def evaluate_characteristic_on_interval(self, running_coord, characteristic_identifier):

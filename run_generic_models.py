@@ -11,8 +11,7 @@ from source.analysis.analysis_controller import AnalysisController
 # NOTE: all currently available models
 
 available_models = [
-    'ProjectParameters3DGenericBuilding.json',
-    'ProjectParameters3DGenericPylon.json',
+    'TestParametersStraightBeam.json'
     ]
 
 for available_model in available_models:
