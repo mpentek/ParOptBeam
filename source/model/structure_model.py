@@ -78,6 +78,21 @@ class StraightBeam(object):
                            'is_nonlinear': parameters["system_parameters"]["element_params"]["is_nonlinear"],
                            'intervals': []}
 
+        self.relative_length_ratios = None
+        try:
+            self.relative_length_ratios = parameters["system_parameters"]["geometry"]["rel_length_ratios"]
+            if len(self.relative_length_ratios) != parameters["system_parameters"]["geometry"]["number_of_elements"]:
+
+                msg = 'The provided relative length ratios is only enough for ' + \
+                    str(self.relative_length_ratios) + ' elements.\n'
+                msg += 'This does not match the number of elements ' + \
+                    str(parameters["system_parameters"]
+                        ["geometry"]["number_of_elements"])
+                raise Exception(msg)
+        except:
+            # by default equal lengths
+            self.relative_length_ratios = [1.0] * self.parameters['n_el']
+
         # defined on intervals as piecewise continuous function on an interval starting from 0.0
         for idx, val in enumerate(parameters["system_parameters"]["geometry"]["defined_on_intervals"]):
             self.parameters["intervals"].append({
@@ -92,7 +107,7 @@ class StraightBeam(object):
                 'c_iz': val["moment_of_inertia_z"],
                 'c_it': val["torsional_moment_of_inertia"]
             })
-            try: 
+            try:
                 self.parameters["intervals"][idx]['m'] = val["outrigger"]["mass"]
                 self.parameters["intervals"][idx]['out_stif_y'] = val["outrigger"]["stiffness_ratio_y"]
                 self.parameters["intervals"][idx]['out_stif_z'] = val["outrigger"]["stiffness_ratio_z"]
@@ -156,11 +171,18 @@ class StraightBeam(object):
         self.identify_decoupled_eigenmodes()
 
     def initialize_elements(self):
-        # running coordinate x - in the middle of each beam element
-        self.parameters['x'] = [x / self.n_elements * self.parameters['lx']
-                                for x in list(range(self.n_nodes))]
-        self.parameters['x_mid'] = [(x + 0.5) / self.n_elements * self.parameters['lx']
-                                    for x in list(range(self.n_elements))]
+
+        param_elem_length_sum = sum(self.relative_length_ratios)
+        param_elem_length_cumul = [0.0]
+        for idx, el_length in enumerate(self.relative_length_ratios):
+            param_elem_length_cumul.append(sum(self.relative_length_ratios[:idx+1]))
+        param_elem_length_cumul_norm = [
+            x/param_elem_length_sum for x in param_elem_length_cumul]
+
+        self.parameters['x'] = [x * self.parameters['lx']
+                                for x in param_elem_length_cumul_norm]
+        self.parameters['x_mid'] = [
+            (a+b)/2 for a, b in zip(self.parameters['x'][:-1], self.parameters['x'][1:])]
 
         # geometric
         self.parameters['ly'] = [self.evaluate_characteristic_on_interval(
@@ -169,7 +191,7 @@ class StraightBeam(object):
             x, 'c_lz') for x in self.parameters['x']]
         # characteristics lengths
         self.charact_length = (
-                                      np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
+            np.mean(self.parameters['ly']) + np.mean(self.parameters['lz'])) / 2
 
         for i in range(self.n_elements):
             element_params = self.initialize_element_geometric_parameters(i)
@@ -208,13 +230,14 @@ class StraightBeam(object):
         Here only element and NO point mass contribution
         '''
         self.parameters['m'] = [0 for val in self.parameters['x']]
-        # point mass contribution are initalized 
+        # point mass contribution are initalized
         self.parameters['point_m'] = [0 for val in self.parameters['x']]
 
         for idx in range(len(self.elements)):
-            self.parameters['m'][idx] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L
-            self.parameters['m'][idx+1] += 0.5 * self.elements[idx].A * self.elements[idx].rho * self.elements[idx].L
-
+            self.parameters['m'][idx] += 0.5 * self.elements[idx].A * \
+                self.elements[idx].rho * self.elements[idx].L
+            self.parameters['m'][idx+1] += 0.5 * self.elements[idx].A * \
+                self.elements[idx].rho * self.elements[idx].L
 
     def initialize_reference_coordinate(self):
         self.nodal_coordinates["x0"] = list(
@@ -323,7 +346,7 @@ class StraightBeam(object):
 
         # point stiffness and point masses at respective dof for the outrigger
         for values in self.parameters['intervals']:
-            if  values['m'] is not None:
+            if values['m'] is not None:
                 if values['bounds'][1] == "End":
                     geom_location = self.parameters['lx']
                     height_of_interval = geom_location
@@ -337,7 +360,7 @@ class StraightBeam(object):
                 geom_node_id = int(geom_location / self.lx_i)
                 print(' geometric node id ', str(geom_node_id))
 
-                # Point mass entries 
+                # Point mass entries
                 # existing nodal mass from area, length and density
                 existing_nodal_mass = self.parameters['m'][geom_node_id]
 
@@ -348,19 +371,25 @@ class StraightBeam(object):
 
                 if existing_nodal_mass < values['m']:
                     # increment needed to reach target nodal mass
-                    incr_fctr = existing_nodal_mass / values['m'] 
-                    self.parameters['point_m'][geom_node_id] += (1-incr_fctr)*values['m'] 
+                    incr_fctr = existing_nodal_mass / values['m']
+                    self.parameters['point_m'][geom_node_id] += (
+                        1-incr_fctr)*values['m']
                 else:
-                    msg = "Existing nodal mass value of " + str(existing_nodal_mass) + " [kg]\n"
-                    msg += "at location x= " + str(geom_location) + " [m] along the beam\n"
-                    msg += "larger than target outrigger of " + str (values['m']) + " [kg].\n"
+                    msg = "Existing nodal mass value of " + \
+                        str(existing_nodal_mass) + " [kg]\n"
+                    msg += "at location x= " + \
+                        str(geom_location) + " [m] along the beam\n"
+                    msg += "larger than target outrigger of " + \
+                        str(values['m']) + " [kg].\n"
                     msg += "Not incrementing to target (as is it lower) but adding up to existing.\n"
                     print(msg)
 
-                    self.parameters['point_m'][geom_node_id] += 0 # values['m']  DONE : check
+                    # values['m']  DONE : check
+                    self.parameters['point_m'][geom_node_id] += 0
                     self.parameters['m'][geom_node_id] += values['m']
 
-                global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
+                global_node_id = geom_node_id * \
+                    GD.DOFS_PER_NODE[self.domain_size]
                 affected_dof_ids = {}
                 target_dof_vals = {}
                 for idx, label in enumerate(GD.DOF_LABELS[self.domain_size]):
@@ -373,42 +402,51 @@ class StraightBeam(object):
                     # only global mass matrix entries
                     if existing_nodal_mass < values['m']:
                         # difference to target will be added
-                        self.point_mass[global_node_id + idx] = (1-incr_fctr)*target_dof_vals[label]
+                        self.point_mass[global_node_id +
+                                        idx] = (1-incr_fctr)*target_dof_vals[label]
                     else:
                         # target will be added as is
                         # AK : check
                         self.point_mass[global_node_id + idx] = 0
                         # self.point_mass[global_node_id + idx] = target_dof_vals[label]
                 # Point stiffness entries
-                
+
                 outrigger_stiffness_ratio_y = values['out_stif_y']
                 outrigger_stiffness_ratio_z = values['out_stif_z']
 
-                point_stiffness_rotation_y = self.parameters['e'] * values['c_iy'][0] / height_of_interval * outrigger_stiffness_ratio_y
-                point_stiffness_rotation_z = self.parameters['e'] * values['c_iz'][0] / height_of_interval * outrigger_stiffness_ratio_z
-                point_stiffness_torsion = 0.0 # no torsional stiffness by addition of an outrigger system 
+                point_stiffness_rotation_y = self.parameters['e'] * \
+                    values['c_iy'][0] / height_of_interval * \
+                    outrigger_stiffness_ratio_y
+                point_stiffness_rotation_z = self.parameters['e'] * \
+                    values['c_iz'][0] / height_of_interval * \
+                    outrigger_stiffness_ratio_z
+                # no torsional stiffness by addition of an outrigger system
+                point_stiffness_torsion = 0.0
 
-                global_node_id = geom_node_id * GD.DOFS_PER_NODE[self.domain_size]
+                global_node_id = geom_node_id * \
+                    GD.DOFS_PER_NODE[self.domain_size]
+
                 for idx, label in enumerate(GD.DOF_LABELS[self.domain_size]):
                     if label == 'a':
-                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_y  
+                        self.point_stiffness[global_node_id +
+                                             idx] = point_stiffness_rotation_y
                     elif label == 'b':
-                        self.point_stiffness[global_node_id + idx] = point_stiffness_rotation_z  
+                        self.point_stiffness[global_node_id +
+                                             idx] = point_stiffness_rotation_z
                     elif label == 'g':
-                        self.point_stiffness[global_node_id + idx] = point_stiffness_torsion  
-
-
+                        self.point_stiffness[global_node_id +
+                                             idx] = point_stiffness_torsion
 
     def calculate_total_mass(self, print_to_console=False):
         # update influencing parameters
         self.update_equivalent_nodal_mass()
         self.update_outrigger_contribution()
-        # adding the point mass entries to this 
+        # adding the point mass entries to this
         print(self.parameters['m'])
         self.parameters['m_tot'] = 0.0
         for val in self.parameters['m']:
             self.parameters['m_tot'] += val
-        # Done: Add outrigger masses to this entry as the parameters['m '] is 
+        # Done: Add outrigger masses to this entry as the parameters['m '] is
         # already updated with the point masses in calculate_global matrices
         if print_to_console:
             print('CURRENT:')
@@ -434,11 +472,9 @@ class StraightBeam(object):
         # damping matrix - needs to be done after mass and stiffness as Rayleigh method nees these
         self.b = self._get_damping()
         self.comp_b = self.apply_bc_by_reduction(self.b)
-        # updating the eleemnt mass contribution 
+        # updating the eleemnt mass contribution
         for idx in range(len(self.parameters['x'])):
-            self.parameters['m'][idx] += self.parameters['point_m'][idx] 
-
-
+            self.parameters['m'][idx] += self.parameters['point_m'][idx]
 
     def decompose_and_quantify_eigenmodes(self, considered_modes=15):
         # TODO remove code duplication: considered_modes
@@ -466,12 +502,12 @@ class StraightBeam(object):
                 step = GD.DOFS_PER_NODE[self.domain_size]
                 stop = self.eigen_modes_raw.shape[0] + idx - step
                 decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
-                                                                         1:step][:, selected_mode]
+                                                                   1:step][:, selected_mode]
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
                     rel_contrib[label] = self.charact_length * \
-                                         linalg.norm(decomposed_eigenmode[label])
+                        linalg.norm(decomposed_eigenmode[label])
                 else:
                     # for translation dofs
                     rel_contrib[label] = linalg.norm(
@@ -489,20 +525,25 @@ class StraightBeam(object):
 
                         for el_idx in range(self.n_elements-1):
                             # equivalent mass at node taken as average of 2 elements below and above node
-                            storey_mass = (self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
+                            storey_mass = (
+                                self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][el_idx] ** 2 + self.parameters['ly'][el_idx] ** 2) / 12
+                                storey_mass *= (self.parameters['lz'][el_idx] **
+                                                2 + self.parameters['ly'][el_idx] ** 2) / 12
 
                                 # TODO check as torsion 4-5-6 does not seem to be ok in the results
 
                             total_mass += storey_mass
 
                             # taking the modal dof value at the node misusing naming el_idx
-                            eff_modal_numerator += storey_mass * decomposed_eigenmode[label][el_idx]
-                            eff_modal_denominator += storey_mass * decomposed_eigenmode[label][el_idx] ** 2
+                            eff_modal_numerator += storey_mass * \
+                                decomposed_eigenmode[label][el_idx]
+                            eff_modal_denominator += storey_mass * \
+                                decomposed_eigenmode[label][el_idx] ** 2
 
-                        eff_modal_mass[label] = eff_modal_numerator ** 2 / eff_modal_denominator
+                        eff_modal_mass[label] = eff_modal_numerator ** 2 / \
+                            eff_modal_denominator
                         rel_participation[label] = eff_modal_mass[label] / total_mass
 
                     else:
@@ -548,16 +589,16 @@ class StraightBeam(object):
                     if case_id in self.mode_identification_results:
                         # using list - so that results are ordered
                         self.mode_identification_results[case_id].append({
-                            'mode_id' : (selected_mode + 1),
+                            'mode_id': (selected_mode + 1),
                             'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                            'rel_participation': max(self.decomposed_eigenmodes['rel_participation'][i].values())
                         })
                     else:
                         # using list - so that results are ordered
                         self.mode_identification_results[case_id] = [{
-                            'mode_id' : (selected_mode + 1),
+                            'mode_id': (selected_mode + 1),
                             'eff_modal_mass': max(self.decomposed_eigenmodes['eff_modal_mass'][i].values()),
-                            'rel_participation' : max(self.decomposed_eigenmodes['rel_participation'][i].values())
+                            'rel_participation': max(self.decomposed_eigenmodes['rel_participation'][i].values())
                         }]
 
         if print_to_console:
@@ -611,7 +652,8 @@ class StraightBeam(object):
         for idx, elem in enumerate(self.elements):
             lines.append([str(idx),
                           '{:.3f}'.format(self.nodal_coordinates["x0"][idx]),
-                          '{:.3f}'.format(self.nodal_coordinates["x0"][idx + 1]),
+                          '{:.3f}'.format(
+                              self.nodal_coordinates["x0"][idx + 1]),
                           '{:.3f}'.format(self.parameters['x_mid'][idx]),
                           '{:.3f}'.format(self.parameters['ly'][idx]),
                           '{:.3f}'.format(self.parameters['lz'][idx]),
@@ -635,7 +677,8 @@ class StraightBeam(object):
         file_header += 'Moment of inertia Iy [m^4] | Moment of inertia Iz [m^4] | '
         file_header += 'Torsion constant It  [m^4] | Polar moment of inertia Ip [m^4] | '
         file_header += 'Relative shear factor Py  [-] | Relative shear factor Pz  [-] | '
-        file_header += 'Mass m  [kg] - Total mass ' + '{:.3f}'.format(self.parameters['m_tot']) + ' [kg]\n'
+        file_header += 'Mass m  [kg] - Total mass ' + \
+            '{:.3f}'.format(self.parameters['m_tot']) + ' [kg]\n'
 
         file_name = 'structure_model_properties.dat'
 
@@ -689,8 +732,10 @@ class StraightBeam(object):
         plot_style.append(['-ko', '--ro'])
 
         #
-        plot_title.append("Nodal mass over running coordinate x - Total mass " + '{:.3f}'.format(self.parameters['m_tot']) + " [kg]")
-        struct_property_data.append([{'x': self.parameters['x'], 'y': self.parameters['m']}])
+        plot_title.append("Nodal mass over running coordinate x - Total mass " +
+                          '{:.3f}'.format(self.parameters['m_tot']) + " [kg]")
+        struct_property_data.append(
+            [{'x': self.parameters['x'], 'y': self.parameters['m']}])
         plot_legend.append(['m [kg]'])
         plot_style.append(['-ko'])
 
@@ -797,12 +842,12 @@ class StraightBeam(object):
         # fill global stiffness matrix entries
         for i in range(self.parameters['n_el']):
             glob_matrix[
-            GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
-                                                    GD.DOFS_PER_NODE[
-                                                        self.domain_size] * GD.NODES_PER_LEVEL,
-            GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
-                                                    GD.DOFS_PER_NODE[
-                                                        self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
+                GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL,
+                GD.DOFS_PER_NODE[self.domain_size] * i: GD.DOFS_PER_NODE[self.domain_size] * i +
+                GD.DOFS_PER_NODE[
+                    self.domain_size] * GD.NODES_PER_LEVEL] += el_matrix
         return glob_matrix
 
     def _get_mass(self):
@@ -815,7 +860,8 @@ class StraightBeam(object):
         for element in self.elements:
             el_matrix = element.get_element_mass_matrix()
             i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
-            i_end = i_start + GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
+            i_end = i_start + \
+                GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
             glob_matrix[
                 i_start: i_end,
                 i_start: i_end
@@ -835,11 +881,12 @@ class StraightBeam(object):
         for element in self.elements:
             el_matrix = element.get_element_stiffness_matrix()
             i_start = GD.DOFS_PER_NODE[self.domain_size] * element.index
-            i_end = i_start + GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
+            i_end = i_start + \
+                GD.DOFS_PER_NODE[self.domain_size] * GD.NODES_PER_LEVEL
 
             glob_matrix[
-            i_start: i_end,
-            i_start: i_end] += el_matrix
+                i_start: i_end,
+                i_start: i_end] += el_matrix
 
         for idx, val in self.point_stiffness.items():
             glob_matrix[idx, idx] += val
