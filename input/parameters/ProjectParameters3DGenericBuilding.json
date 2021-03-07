@@ -27,7 +27,7 @@
                     "moment_of_inertia_y" : [196510.0],
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
-                    "outrigger" : 
+                    "outrigger" :
                         {"mass": 947000.0,
                         "stiffness_ratio_y": 5,
                         "stiffness_ratio_z": 5}},
@@ -193,7 +193,36 @@
                 },
                 "output":{
                     "plot": ["deformation", "forces"],
-                    "write": ["deformation"]
+                    "write": ["deformation"],
+                    "selected_dof": {
+                        "dof_list": [0, 1, 2, 3, 4, 5,
+                                     -6, -5, -4, -3, -2, -1],
+                        "help": "result type can be a list containing: reaction, force, displacement",
+                        "result_type": [["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"]],
+                        "write_result": [[true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true]]
+                    }
                 }
             }]}
 }
