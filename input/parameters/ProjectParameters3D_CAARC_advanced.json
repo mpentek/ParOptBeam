@@ -132,7 +132,7 @@
                 "settings": {},
                 "input":{
                     "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
-                    "file_path": "input/force/generic_building/static_force_4_nodes_at_4_in_y.npy",
+                    "file_path": "input/force/generic_building/unit_loads/static_force_4_nodes_at_3_in_y.npy",
                     "is_time_history_file" : false,
                     "selected_time_step" : 15000
                 },

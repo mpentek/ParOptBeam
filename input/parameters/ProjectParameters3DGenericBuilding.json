@@ -27,13 +27,9 @@
                     "moment_of_inertia_y" : [196510.0],
                     "moment_of_inertia_z" : [458260.0],
                     "torsional_moment_of_inertia" : [691771.0],
-                    "excentricity_z": [0.0], 
-                    "excentricity_y": [0.0],
-                   
-                    "outrigger" : 
-                        {"mass": 947000.0,
-                        "stiffness_ratio_y": 5,
-                        "stiffness_ratio_z": 5}},
+                    "eccentricity_z": [0.0], 
+                    "eccentricity_y": [0.0]
+                },
                     {
                     "interval_bounds" : [60.0, 120.0],
                     "length_y": [45.0],
@@ -44,13 +40,10 @@
                     "moment_of_inertia_y" : [101250.0],
                     "moment_of_inertia_z" : [227813.0],
                     "torsional_moment_of_inertia" : [329063.0],
-                    "excentricity_z": [0.0], 
-                    "excentricity_y": [0.0],
+                    "eccentricity_z": [0.0], 
+                    "eccentricity_y": [0.0]
+                },
 
-                    "outrigger" : {
-                        "mass": 846000.0,
-                        "stiffness_ratio_y": 5,
-                        "stiffness_ratio_z": 5}},
                     {
                     "interval_bounds" : [120.0, "End"],
                     "length_y": [35.0],
@@ -61,13 +54,8 @@
                     "moment_of_inertia_y" : [45573.0],
                     "moment_of_inertia_z" : [89323.0],
                     "torsional_moment_of_inertia" : [134896.0],
-                    "excentricity_z": [0.0], 
-                    "excentricity_y": [0.0],
-
-                    "outrigger" : {
-                        "mass": 846000.0,
-                        "stiffness_ratio_y": 5,
-                        "stiffness_ratio_z": 5}}]
+                    "eccentricity_z": [0.0], 
+                    "eccentricity_y": [0.0]}]
             }
         },
         "boundary_conditions": "fixed-free"
@@ -79,7 +67,7 @@
                 "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
                 "partition_shear_bending": [-1, 1],
                 "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
-                "corresponding_mode_ids" : [1, 1, 1],
+                "corresponding_mode_ids" : [2, 1, 3],
                 "corresponding_eigenfrequencies": [0.23,0.20,0.40]}}
     },
     "analyses_parameters":{
@@ -130,7 +118,6 @@
                     }
             },{
                 "type" : "dynamic_analysis",
-                "get_dynamic_result": false,
                 "settings": {
                     "solver_type": "Linear",
                     "run_in_modal_coordinates": false,
@@ -196,7 +183,7 @@
                 "settings": {},
                 "input":{
                     "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
-                    "file_path": "input/force/generic_building/dynamic_force_4_nodes.npy",
+                    "file_path": "input/force/generic_building/unit_loads/static_force_4_nodes_at_3_in_y.npy",
                     "is_time_history_file" : true,
                     "selected_time_step" : 15000
                 },

@@ -15,9 +15,10 @@ domain_size = '3D'
 levels = np.array([80.0, 160.0, 240.0])
 level_factor = 300
 
+
 '''
 Beschreibung:
-comp_k und comp_m sind vom ParOptBeam kopiert nachdem die schon vonrhanden Optimierungen gelaufen sind.
+comp_k und comp_m sind vom ParOptBeam kopiert nachdem die schon vonrhanden Optimierungen gelaufen sind -> mit 3 elementen.
 Mit diesen Matrizen wird eine Eigenwertanalyse durchgeführt.
 Der Funktion factorization werden 2 Faktoren übergeben und spezifizierte Einträge in der Steifigkeits bzw Masse matrix multipliziert.
 Danach werden wieder eigenwerte und vektoren berechnet. 
@@ -26,10 +27,10 @@ Die ersten 3 Frequenzen und die werte des 1. Eigenvektors an den 3 Verschieblich
 Man sieht den Einfluss einzelner Einträge der Matrizen auf die Änderung von Eigenvektoren und Werten.
 '''
 
-variables_available = ['K','K_i','K_6','M', 'M_i','M_6', 'M_-6' ]
+variables_available = ['K','K_11','K_6','M', 'M_11','M_6', 'M_-6' ]
 '''
 K: die komplette comp_K matrix ist multipliziert
-K_i: comp_K[1][1] 
+K_11: comp_K[1][1] 
 K_6: comp_K[:6,:6]
 --> dasselbe gilt für M
 M_-6: comp_m[-6:,-6:] --> die letzten 6*6 einträge werden multipliziert
@@ -41,12 +42,12 @@ const_factor = 0.1
 # eine 2. variable wird mit verschiedenen werten geändert
 # --> Ziel ist rauszufinden ob dadurch frequenzen und eigenfromen auch wieder geändert werden
 
-factors = np.linspace(1.1,1,200)
-#factors = np.linspace(1,10,50)
+#factors = np.linspace(1.1,1,200)
+factors = np.linspace(1,20,50)
 second_factor = False # wenn True werden für beide variablen die linspace factoren verwendet
 
-const_var = 'K'
-variable_to_change = 'M_-6'
+const_var = 'K_11'
+variable_to_change = 'M'
  
 def factorization (const_factor, var_factor ,const_var, var_var = None):
 
@@ -271,13 +272,13 @@ def factorization (const_factor, var_factor ,const_var, var_var = None):
 # constant variable factorization
     if const_var == 'K':
         comp_k *= const_factor
-    elif const_var == 'K_i':
+    elif const_var == 'K_11':
         comp_k[1][1] *= const_factor
     elif const_var == 'K_6':
         comp_k[:6,:6] *= const_factor
     elif const_var == 'M':
         comp_m *= const_factor
-    elif const_var == 'M_i':
+    elif const_var == 'M_11':
         comp_m[1][1] *=const_factor
     elif const_var == 'M_6':
         comp_m[:6,:6] *= const_factor
@@ -287,13 +288,13 @@ def factorization (const_factor, var_factor ,const_var, var_var = None):
 # changing variable factorization
     if var_var == 'K':
         comp_k *= var_factor
-    elif var_var == 'K_i':
+    elif var_var == 'K_11':
         comp_k[1][1] *= var_factor
     elif var_var == 'K_6':
         comp_k[:6,:6] *= var_factor
     elif var_var == 'M':
         comp_m *= var_factor
-    elif var_var == 'M_i':
+    elif var_var == 'M_11':
         comp_m[1][1] *=var_factor
     elif var_var == 'M_6':
         comp_m[:6,:6] *= var_factor
@@ -316,24 +317,27 @@ def factorization (const_factor, var_factor ,const_var, var_var = None):
     # return eigenfreqs and the eigenform of the first mode
     eig_form = eigen_modes_raw[start:stop+1:step][:, mode_id]
 
+    if eig_form[1] < 0:
+        eig_form *= -1
+
     return eig_freqs, eig_form
 
-# the original values with nothing changed [f, phi, f,phi,...]
-origin = [0.23099993404177824, -9.198036040538999e-05, 0.4289999827897454, -0.00029979455002958593, 1.2639517004152314,  -0.0005466425267693131]
+# the original values with nothing changed [freq, phi, f,phi,...]
+origin = [0.23099993404177824, 9.198036040538999e-05, 0.4289999827897454,-0.00029979455002958593, 1.2639517004152314,  0.0005466425267693131]
 
 # call of the function and evaluation with the different factors
 eigen_results = {}
 # phi_i ist der wert des eigenvectors am knoten i
 
 for i in range(3):
-    eigen_results['freq'+str(i)] = np.zeros(len(factors))
-    eigen_results['phi'+str(i)]  = np.zeros(len(factors))
+    eigen_results['f mode_'+str(i)] = np.zeros(len(factors))
+    eigen_results['phi node_'+str(i)]  = np.zeros(len(factors))
 for j, fac in enumerate(factors):
     if second_factor:
         const_factor = fac
     for i in range(3):
-        eigen_results['freq'+str(i)][j] = factorization(const_factor, fac, const_var, variable_to_change)[0][i] 
-        eigen_results['phi'+str(i)][j]  = factorization(const_factor, fac, const_var, variable_to_change)[1][i] + levels[i]/levels[-1]/level_factor
+        eigen_results['f mode_'+str(i)][j] = factorization(const_factor, fac, const_var, variable_to_change)[0][i] 
+        eigen_results['phi node_'+str(i)][j]  = factorization(const_factor, fac, const_var, variable_to_change)[1][i] + levels[i]/levels[-1]/level_factor
 
 # plot 
 fig, ax = plt.subplots(1,2)
@@ -347,22 +351,25 @@ for i, key in enumerate(eigen_results):
         ax_j = ax[1]
         level = levels[l[i]]/levels[-1]/level_factor
     ax_j.plot(factors, eigen_results[key], label = key)
-    ax_j.hlines(origin[i]+ level, factors[0],factors[-1], label = key + ' origin', linestyles = 'dashed',color = colors[i])    
+    ax_j.hlines(origin[i]+ level, factors[0],factors[-1], 
+                label = key + ' origin', 
+                linestyles = 'dashed',
+                color = colors[i])    
 
 for axis in ax:
     axis.grid()
     axis.legend()
-    axis.set_xlabel('factor')
+    axis.set_xlabel('factor ' + variable_to_change)
 
-title0 = 'eigenfreqs: '+const_var + ' constant ' + str(const_factor) + ' '+variable_to_change + ' as factor'
-title1 = 'eigenform: '+const_var + ' as ' + str(const_factor) +' '+ variable_to_change + ' as factor'
+
+title = const_var + ' as ' + str(const_factor) +' '+ variable_to_change + ' as factor'
 if second_factor:
-    title0 = 'eigenfreqs: '+ const_var + ' and ' + variable_to_change + ' as factor'
-    title1 = 'eigenform: '+ const_var + ' and ' + variable_to_change + ' as factor'
+    title = const_var + ' and ' + variable_to_change + ' as factor'
 
-ax[0].set_title(title0)
+ax[0].set_title('eigenfrequencies first 3 modes')
 ax[0].set_ylabel('freq')
-ax[1].set_title(title1)
+ax[1].set_title('eigenform of 1st mode')
+fig.suptitle(title)
 ax[1].set_ylabel('amplitude')
 plt.show()
 

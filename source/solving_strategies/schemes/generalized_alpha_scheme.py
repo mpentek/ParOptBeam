@@ -14,7 +14,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
 
         # generalized alpha parameters (to ensure unconditional stability, 2nd order accuracy)
         self.alphaM = (2.0 * p_inf - 1.0) / (p_inf + 1.0)
-        print("alphaM: ", self.alphaM)
+        #print("alphaM: ", self.alphaM)
 
         self.alphaF = p_inf / (p_inf + 1.0)
         self.beta = 0.25 * (1 - self.alphaM + self.alphaF)**2
@@ -61,7 +61,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
 
         # force from a previous time step (initial force)
         if self.M.ndim == 2:
-            print('System: in matrix form')
+            #print('System: in matrix form')
             self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
                                                     self.v0) + np.dot(self.K, self.u0)
             self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
@@ -75,7 +75,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
         else:
             raise Exception('Dimension of system parameters is GeneralizedAlphaScheme is wrong')
         
-        self._print_time_integration_setup()
+        #self._print_time_integration_setup()
 
     def _print_time_integration_setup(self):
         print("Printing Generalized Alpha Method integration scheme setup:")

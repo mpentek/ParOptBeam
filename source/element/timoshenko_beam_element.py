@@ -17,7 +17,7 @@ class TimoshenkoBeamElement(BeamElement):
         self.evaluate_torsional_inertia()
         self.evaluate_relative_importance_of_shear()
 
-        self._print_element_information()
+        #self._print_element_information()
 
     def _print_element_information(self):
         msg = str(self.domain_size) + " Timoshenko Beam Element " + str(self.index) + "\n"
@@ -327,34 +327,13 @@ class TimoshenkoBeamElement(BeamElement):
         
         # the eccentricity is indroduced at the end by using a transformation matrix
         # T_t * K * T --> transfer stiffnes matrix from shear center to geometric center
-        # print ('k_el before transform: ')
-        # print (k_el[3])
-        # print()
-        # print (self.T)
+        
+        #if self.ey != 0.0 or self.ez != 0.0:
         k_el = np.matmul(np.matmul(np.transpose(self.T), k_el), self.T)
-        # print ('k_el after transform \n')
-        # print ('Git/L \n')
-        # print (k_a)
-        # print ('')
-        # print (k_el[3])
-        # print ('')
-
-        # manually reset K_aa to pure K_aa again without excentricity
-        # k_el[3][3] = k_el_a[0][0]
-        # k_el[3][3 + GD.DOFS_PER_NODE[self.domain_size]] = k_el_a[0][1]
-        # k_el[3 + GD.DOFS_PER_NODE[self.domain_size]][3] = k_el_a[1][0]
-        # k_el[3 + GD.DOFS_PER_NODE[self.domain_size]][3 +GD.DOFS_PER_NODE[self.domain_size]] = k_el_a[1][1]
-        # print ('k_el after correction \n')
-        # print ('Git/L \n')
-        # print (k_a)
-        # print ('')
-        # print (k_el[3])
-        # print ('')
-
+        
         # print ('here the element matrix: \n', k_el)
         # np.savetxt("k_el.csv", k_el, delimiter= ' ')
 
-        #self.stop_run()
         return k_el
 
     def _compute_stiffnes_matrix_material(self):

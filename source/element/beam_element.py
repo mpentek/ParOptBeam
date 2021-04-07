@@ -27,6 +27,7 @@ class BeamElement(object):
         self.Iz = element_params['iz']
         # torsion constant J
         self.It = element_params['it']
+        self.opt_ip = element_params['opt_ip']
 
         # trosional coupling parameters
         self.ey = element_params['ey']
@@ -70,7 +71,11 @@ class BeamElement(object):
     def evaluate_torsional_inertia(self):
         # polar moment of inertia
         # assuming equivalency with circle
-        self.Ip = self.Iy + self.Iz
+        #if self.material_params[]
+        if self.opt_ip:
+            self.Ip = self.opt_ip
+        else:
+            self.Ip = self.Iy + self.Iz
 
     def evaluate_relative_importance_of_shear(self):
         self.G = self.E / 2 / (1 + self.nu)

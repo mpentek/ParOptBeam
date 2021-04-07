@@ -710,8 +710,11 @@ class OptimizableStraightBeam(object):
 # # cross stiffness for specified first n nodes 
 
     def adjust_across_stiffness_lower_section (self, nodes_to_adjust):
-        # target: y component of eigenmode 1 of caarc
-        # the factorized caarc is used 
+        '''
+        target: y component of eigenmode 1 of caarc
+        the factorized caarc is used 
+        '''
+
         # self.adjust_CAARC_eigenform_by_factor(plot_opt_func=False)
         for e in self.model.elements:
         # initial parameters to adjust 
@@ -830,10 +833,9 @@ class OptimizableStraightBeam(object):
                 node_levels_ParOpt.append(interval['bounds'][0])
         node_levels_ParOpt.append(self.model.parameters['lx']) # add level of last node
 
-        # TODO: so far it only adjusts in the 1st Eigenmode, maybe need other ones to adjust
+        # TODO: so far it only adjusts in the 1st Eigenmode
         for dof in GD.DOF_LABELS[self.model.domain_size][1:4]: # only y,z, alpha
             for node_id, node in enumerate(node_levels_ParOpt):
-                # in comp_k ground nodes are already reduced. Thus node_id starts with 0 
                 initial_k = self.model.comp_k.copy() 
                 mode_id = 1
                 
@@ -897,7 +899,7 @@ class OptimizableStraightBeam(object):
 
         return result
 
-# # GLOABL STIFFNESS FOR CAARC EIGENFORM --> not sensible: global K changes the frequency but the eigenform will remain the same
+# # GLOABL STIFFNESS FOR CAARC EIGENFORM
 
     def adjust_global_stiffness_for_CAARC_eigenform(self, plot_opt_func = True):
 

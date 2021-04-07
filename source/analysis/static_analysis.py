@@ -88,21 +88,25 @@ class StaticAnalysis(AnalysisType):
             self.force, 'row_vector')
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        #print(k)
-        self.static_result = np.linalg.solve(k, force)
+        
+        static_result = np.linalg.solve(k, force)
         self.static_result = self.structure_model.recuperate_bc_by_extension(
-            self.static_result, 'row_vector')
-        self.force_action = {"x": np.zeros(0),
-                             "y": np.zeros(0),
-                             "z": np.zeros(0),
-                             "a": np.zeros(0),
-                             "b": np.zeros(0),
-                             "g": np.zeros(0)}
+            static_result, 'row_vector')
 
-        #self.force = self.structure_model.recuperate_bc_by_extension(self.force,'row_vector')
-        self.resisting_force = self.force - np.dot(self.structure_model.k, self.static_result)
-        ixgrid = np.ix_(self.structure_model.dofs_to_keep, [0])
-        self.resisting_force[ixgrid] = 0
+        f = np.dot(self.structure_model.k, self.static_result)
+        self.resisting_force = self.force - f
+
+        # nullify
+        self.resisting_force[abs(self.resisting_force) < GD.THRESHOLD] = 0.0
+
+        # placeholders
+        self.force_action = {"x": np.zeros(0),
+                        "y": np.zeros(0),
+                        "z": np.zeros(0),
+                        "a": np.zeros(0),
+                        "b": np.zeros(0),
+                        "g": np.zeros(0)}
+
         self.reaction = {"x": np.zeros(0),
                          "y": np.zeros(0),
                          "z": np.zeros(0),

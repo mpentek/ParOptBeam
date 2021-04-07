@@ -43,7 +43,7 @@ class Solver(object):
                           comp_model, initial_conditions)
 
         self._print_structural_setup()
-        self._print_solver_info()
+        #self._print_solver_info()
 
     def _init_scheme(self, time_integration_scheme, comp_model, initial_conditions):
         if time_integration_scheme == "GenAlpha":
@@ -84,8 +84,8 @@ class Solver(object):
             print("damping: ", self.B)
             print("stiffness: ", self.K)
             print(" ")
-        else:
-            print ("printing of structural setup in solver base class was suppressed\n")
+        # else:
+        #     print ("printing of structural setup in solver base class was suppressed\n")
             
     def solve(self):
         pass

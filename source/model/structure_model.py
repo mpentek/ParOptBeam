@@ -110,6 +110,10 @@ class StraightBeam(object):
                 'c_ez': val["eccentricity_z"]
             })
             try:
+                self.parameters["intervals"][idx]['opt_ip'] = val['opt_ip']
+            except:
+                self.parameters["intervals"][idx]['opt_ip'] = None
+            try:
                 self.parameters["intervals"][idx]['m'] = val["outrigger"]["mass"]
                 self.parameters["intervals"][idx]['out_stif_y'] = val["outrigger"]["stiffness_ratio_y"]
                 self.parameters["intervals"][idx]['out_stif_z'] = val["outrigger"]["stiffness_ratio_z"]
@@ -279,6 +283,12 @@ class StraightBeam(object):
         # torsion constant
         element_params['it'] = self.evaluate_characteristic_on_interval(
             x, 'c_it')
+        
+        # if a parameter ip is given that is not computed from iz and iy
+        if self.parameters['intervals'][0]['opt_ip']:
+            element_params['opt_ip'] = self.evaluate_characteristic_on_interval(x, 'opt_ip')
+        else:
+           element_params['opt_ip'] = None 
 
         # eccentricity 
         element_params['ey'] = self.evaluate_characteristic_on_interval(x, 'c_ey')
@@ -291,8 +301,7 @@ class StraightBeam(object):
         if 'elastic_fixity_dofs' in self.parameters:
             elastic_bc_dofs_tmp = self.parameters["elastic_fixity_dofs"]
         else:
-            print(
-                'parameters does not have "elastic_fixity_dofs"')
+            #print('parameters does not have "elastic_fixity_dofs"')
             elastic_bc_dofs_tmp = {}
 
         for key in elastic_bc_dofs_tmp:
@@ -533,11 +542,12 @@ class StraightBeam(object):
                         total_mass = 0.0
 
                         for el_idx in range(self.n_elements-1):
+                            #storey_mass = self.parameters['m'][el_idx]
                             # equivalent mass at node taken as average of 2 elements below and above node
-                            storey_mass = (
-                                self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
+                            storey_mass = (self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
                             if label == 'a':
                                 # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
+                                # NOTE: JZ -> parameters['m'] is the lumped mass / storey mass already?
                                 storey_mass *= (self.parameters['lz'][el_idx] **
                                                 2 + self.parameters['ly'][el_idx] ** 2) / 12
 
@@ -546,6 +556,7 @@ class StraightBeam(object):
                             total_mass += storey_mass
 
                             # taking the modal dof value at the node misusing naming el_idx
+                            # decomposed modes are without base node -> BC is apllied 
                             eff_modal_numerator += storey_mass * \
                                 decomposed_eigenmode[label][el_idx]
                             eff_modal_denominator += storey_mass * \

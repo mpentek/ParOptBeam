@@ -47,6 +47,7 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markersize":     [4,      4,    4,      4,    4,    4]}
+LINESTYLE = ["--",    "-.",  ":",    "-",   "-",   "-"]
 
 LEGEND_SETUP = {"fontsize": [16, 14, 12, 10, 8]}
 
@@ -868,72 +869,3 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
     if display_plot:
         plt.show()
 
-
-# ===============================
-# ============ ESWL =============
-# ===============================
-
-def plot_load_components(eswl_total, nodal_coordinates ,load_components, response_label):
-    '''
-    gets the eswl dictionary and the structure nodal coordiantes dictionary 
-    '''
-    fig, ax = plt.subplots()
-
-    for component in load_components:
-        eswl = eswl_total[response_label][component]
-        ax.plot(eswl, nodal_coordinates['x0'], label = 'F'+component)
-
-    ax.plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
-                label = 'structure', 
-                marker = 'o', 
-                color = 'grey', 
-                linestyle = '--')
-    ax.xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-    ax.set_xlabel('load [?]')
-    ax.set_ylabel('height [m]')
-
-    plt.title('ESWL for ' + response_label)
-    plt.legend()
-    plt.grid()
-    plt.show()
-
-def plot_load_time_histories(load_signals, nodal_coordinates, load_components = ['y','z','a']):
-
-    fig, ax = plt.subplots(1, len(load_components))
-
-    for i, component in enumerate(load_components):
-        # structure
-        ax[i].set_title('load signal direction ' + component)
-        ax[i].plot(nodal_coordinates['y0'],
-                    nodal_coordinates['x0'], 
-                    label = 'structure', 
-                    marker = 'o', 
-                    color = 'grey', 
-                    linestyle = '--')
-        for node in range(len(nodal_coordinates['x0'])):
-            shift_scale = 1e+05
-            if component == 'a':
-                shift_scale *= 5
-            ax[i].plot(np.arange(0,len(load_signals[component][node])),
-                        load_signals[component][node] + nodal_coordinates['x0'][node]*shift_scale)
-    
-        #ax[i].legend()
-        ax[i].grid()
-    plt.show()
-
-def plot_load_time_histories_node_wise(load_signals, n_nodes, scale_load, load_components = ['y','z','a']):
-
-    ax_i = list(range(n_nodes-1, -1, -1))
-    for component in load_components:
-        
-        fig, ax = plt.subplots(n_nodes, 1)
-        fig.canvas.set_window_title('signals in ' + component + ' direction')
-        fig.suptitle('signals in ' + 'direction ' + component + ' - scaled with ' + str(scale_load))
-        for node in range(n_nodes):
-            
-            ax[ax_i[node]].plot(np.arange(0,len(load_signals[component][node])),
-                        load_signals[component][node]*scale_load,
-                        label = 'node_'+str(node))
-            ax[ax_i[node]].grid()
-            ax[ax_i[node]].legend()
-        plt.show()
