@@ -1,9 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 from matplotlib.ticker import FormatStrFormatter, ScalarFormatter
 
 import source.auxiliary.global_definitions as GD
 
+def cm2inch(value):
+    return value/2.54
 
 LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "magenta", 'orange','gold','purple'],
                    "linestyle":      ["--",    "-",  "-",    "-",   "-",   "-"],
@@ -13,11 +16,78 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "markersize":     [4,      4,    4,      4,    4,    4]}
 LINESTYLE = ["--",    "-.",  ":",    "-",   "-",   "-"]
 
+# SAVE DESTINATION 
+destination = 'plots\\ESWL_plots'
 
-def plot_load_components(eswl_total, nodal_coordinates ,load_components, response_label):
+# global PLOT PARAMS
+plt.rcParams['text.latex.preamble']=[r"\usepackage{lmodern}"]
+#Options
+width = cm2inch(16)
+height = cm2inch(11.0)
+
+params = {
+        # FIGURE
+        'text.usetex': True,
+        'font.size': 6,
+        #'font.family': 'lmodern', -> not supported when usetex?!
+        #'text.latex.unicode': True,
+        'figure.titlesize': 8,
+        'figure.figsize': (width, height),
+        'figure.dpi': 300,
+        'figure.constrained_layout.use': True,
+        # SUBPLOTS
+        # USE with the suplot_tool() to check which settings work the best
+        'figure.subplot.left': 0.1,
+        'figure.subplot.bottom': 0.15,
+        'figure.subplot.right': 0.9,
+        'figure.subplot.top': 0.8,
+        'figure.subplot.wspace': 0.20,
+        'figure.subplot.hspace': 0.30,
+        # AXES
+        'axes.titlesize': 8,
+        'axes.titlepad': 6,
+        'axes.labelsize': 6,
+        'axes.labelpad': 4,
+        'axes.grid': True,
+        'axes.grid.which': 'both',
+        'axes.xmargin': 0.1,
+        'axes.ymargin': 0.1,
+        # FORMATTER
+        'axes.formatter.limits':(-3,3), #limit der tausender ab wann sie in potenzen dargestellt werden 
+        #'axes.formatter.min_exponent': 4,
+        # TICKS
+        'xtick.labelsize': 6,
+        'ytick.labelsize': 6,
+        'ytick.minor.visible': False,
+        'xtick.minor.visible': False,
+        'grid.linestyle': '-',
+        'grid.linewidth': 0.25,
+        'grid.alpha': 0.5,
+        'legend.fontsize': 4,
+        # LINES
+        'lines.linewidth': 0.5,
+        'lines.markersize': 1,
+        'lines.markerfacecolor': 'darkgrey',
+        # TEXT
+        'mathtext.default': 'regular',
+        # SAVING
+        'savefig.dpi': 300,
+        'savefig.format': 'pdf',
+        'savefig.bbox': 'tight',
+        # ERRORBARS
+        'errorbar.capsize': 2.0,
+        
+    }
+
+#plt.rcParams.update(params)
+
+def convert_for_latex(string):
+    return '\_'.join(string.split('_'))
+
+def plot_directional_load_components(eswl_total, nodal_coordinates ,load_components, response_label):
     '''
     gets the eswl dictionary and the structure nodal coordiantes dictionary 
-    plots the ESWL components 
+    plots the total ESWL for each directional component (y,z,...)
     '''
     fig, ax = plt.subplots()
 
@@ -32,7 +102,7 @@ def plot_load_components(eswl_total, nodal_coordinates ,load_components, respons
                 color = 'grey', 
                 linestyle = '--')
     ax.xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-    ax.set_xlabel('load [?]')
+    ax.set_xlabel('load')
     ax.set_ylabel('height [m]')
 
     plt.title('ESWL for ' + response_label)
@@ -40,7 +110,12 @@ def plot_load_components(eswl_total, nodal_coordinates ,load_components, respons
     plt.grid()
     plt.show()
 
-def plot_eswl_components(eswl_components, nodal_coordinates, load_directions, response_label, textstr, components_to_plot = ['all']):
+def plot_eswl_components(eswl_components, nodal_coordinates, load_directions, response_label, textstr, influences ,components_to_plot = ['all']):
+  
+    
+    # plt.rcParams['text.latex.preamble']=[r"\usepackage{lmodern}"]
+    # plt.rcParams.update(params2)
+    
     fig, ax = plt.subplots(1, len(load_directions), sharey=True)
     fig.canvas.set_window_title('for_'+response_label)
 
@@ -50,80 +125,126 @@ def plot_eswl_components(eswl_components, nodal_coordinates, load_directions, re
     else:
         components = components_to_plot
     for i, direction in enumerate(load_directions):
+        # for labels
         if direction in ['x','y','z']:
             unit = '[N]'
         else:
             unit = '[Nm]'
+        # sturcutre and nodes
         ax[i].plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
-                label = 'structure', 
+                label = r'$structure$', 
                 marker = 'o', 
                 color = 'grey', 
                 linestyle = '--')
+        ax[i].set_title(r'nodal force ' + r'${}$'.format(GD.DIRECTION_LOAD_MAP[direction]))
+        # plot each component
         for j, component in enumerate(components):
             eswl = eswl_components[response_label][direction][component]
             if component == 'total':
                 line = '-'
                 color = LINE_TYPE_SETUP['color'][i+2]
-            # elif component == 'lrc':
-            #     line = "-"
-            #     color = LINE_TYPE_SETUP['color'][i+3]
             else:
                 line = LINESTYLE[j]
                 color = LINE_TYPE_SETUP['color'][i+2]
-            ax[i].plot(eswl, 
-                    nodal_coordinates['x0'], 
-                    label = GD.DIRECTION_LOAD_MAP[direction] + '_' + component,
-                    linestyle = line,
-                    color = color)
 
+            component_label = convert_for_latex(component)
+            #my_label = r'${}_{{{}}}$'.format(GD.DIRECTION_LOAD_MAP[direction], component_label)
+            my_label = r'${}$'.format(component_label)
+
+            ax[i].plot(eswl, 
+                        nodal_coordinates['x0'], 
+                        label = my_label,
+                        linestyle = line,
+                        color = color)
+
+        # calculate R for each direction -> to check if the signs are sensible
+        R_i = sum(np.multiply(influences[response_label][direction], eswl_components[response_label][direction]['total']))
+        ax[i].plot(0,0, 
+                label = r'$R_i=$' + r'${:.2e}$'.format(round(R_i)),
+                linestyle = ' ',
+                color = 'k')
+
+        # settings
         ax[i].locator_params(axis='x', nbins = 4)
         #ax[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-        ax[i].ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        ax[i].ticklabel_format(style='sci', axis='x', scilimits=(-3,3))
+        # ax[i].xmargin = 0.5
+        # ax[i].ymargin = 0.5
         ax[i].set_xlabel('load '+unit)
-        ax[i].legend(fontsize = 8 )
+        ax[i].legend(fontsize = 12)
         ax[i].grid()
     ax[0].set_ylabel('height [m]')
 
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax[-1].text(-1.0, 0.15, textstr, transform=ax[-1].transAxes, fontsize=14,
+    ax[-1].text(-0.3, 0.12, textstr, transform=ax[-1].transAxes, fontsize=10,
             verticalalignment='top', bbox= props)
 
-    fig.suptitle('ESWL for ' + response_label)
+    fig.suptitle('ESWL for base ' + response_label, fontsize = 14)
+
+    # saving of figure
+    dest = destination
+    component_folder_dict = {'mean':'mean_parts',
+                             'background':'background_parts', 'lrc':'background_parts',
+                             'resonant':'resonant_parts', 'resonant_m_lumped':'resonant_parts','resonant_m':'resonant_parts',
+                             'all':'all_parts',
+                             'mixed':'mixed_parts'}
     
+    fname = 'for_'+ response_label
+    if len(components_to_plot) == 1:
+        key = components_to_plot[0]
+    elif set(components_to_plot).issubset(['background', 'lrc']):
+        key = components_to_plot[0]
+        for comp in components_to_plot:
+            fname += '_' + comp[0]
+    elif set(components_to_plot).issubset(['resonant', 'resonant_m', 'resonant_m_lumped']):
+        key = components_to_plot[0]
+        fname += '_r'
+        for comp in components_to_plot:
+            s = comp.split('_')
+            if len(s) == 2:
+                fname += '_m'
+            elif len(s) == 3:
+                fname += '_l'
+    else:
+        key = 'mixed'
+        for comp in components_to_plot:
+            fname += '_' + comp[0]
+        
+    full_dest = dest + os.path.sep + component_folder_dict[key] + os.path.sep + fname
+    #plt.savefig(full_dest)
+
+    #fig.tight_layout()
     plt.show()
 
 def plot_rho(list_of_rhos, response):
     fig, ax = plt.subplots(2,3, sharey=True)
-    nodes = np.arange(len(list_of_rhos['y'][0]))
-    # 0: numpy, 1: manual, 2: semi manual, 3: B_sl
+    nodes = np.arange(len(list_of_rhos['y'][next(iter(list_of_rhos['y']))]))
+    
     for d, direction in enumerate(list_of_rhos):
+        rho_labels = []
         for i, rho in enumerate(list_of_rhos[direction]):
-            if i ==0:
-                label1 = 'numpy corrcoeff'
-            elif i ==1:
-                label2 = 'sig_R with cov method rms(load)'
-            elif i ==2:
-                label3 = 'sig_R with cov method std(load)'
-            else:
-                label = 'from B_sl'
+            rho_labels.append(rho)
             if direction in ['y','z']:
-                row = 0
-                col = d
+                row, col = 0, d
             else:
-                row = 1
-                col = d-2
-
-            ax[row][col].plot(rho, nodes)#, label=label)
-            ax[row][col].set_title('lrc coeff '+ direction + ' ' + response)
-            ax[row][col].grid()
+                row, col = 1, d-2
+            if rho == 'rho_Rps_corrcoef': 
+                l_st = '--'
+            else: l_st = '-'
+                 
+            ax[row][col].plot(list_of_rhos[direction][rho], nodes, linestyle=l_st)
+            ax[row][col].set_title('lrc coeff p'+ direction + ' - ' + response)
+            ax[row][col].grid(True)
 
     ax[0][0].set_ylabel('node')
-    ax[1][0].set_xlabel('rho')
+    ax[1][0].set_ylabel('node')
+    for i in range(3):
+        ax[1][i].set_xlabel('rho')
 
-    for i in range(len(list_of_rhos['y'])):
-        ax[0][2].plot(0,0)        
-    ax[0][2].legend([label1,label2])#,label3])
-    
+    for i in range(len(rho_labels)):
+        ax[0][2].plot(0,0)    
+
+    ax[0][2].legend(rho_labels)
     
     plt.show()
 
@@ -197,6 +318,8 @@ def plot_inluences(eswl_object):
     
     plt.show()
 
+# LOAD SIGNALS
+
 def plot_load_time_histories(load_signals, nodal_coordinates):
 
     fig, ax = plt.subplots(1, len(load_signals))
@@ -223,7 +346,7 @@ def plot_load_time_histories(load_signals, nodal_coordinates):
         ax[i].grid()
     plt.show()
 
-def plot_load_time_histories_node_wise(load_signals, n_nodes, load_signal_labels = None):
+def plot_load_time_histories_node_wise(load_signals, n_nodes, discard_time, load_signal_labels = None):
     '''
     for each node it plots the time history of the loading 
     parameter: load_signal_labels 
@@ -234,10 +357,11 @@ def plot_load_time_histories_node_wise(load_signals, n_nodes, load_signal_labels
     if load_signal_labels:
         components = load_signal_labels
     else:
+        load_signals.pop('sample_freq')
         components = load_signals.keys()
     for component in components:
-        if component == 'sample_freq':
-            break
+        # if component == 'sample_freq':
+        #     break
         fig, ax = plt.subplots(n_nodes, 1)
         fig.canvas.set_window_title('signals of ' +  GD.DIRECTION_LOAD_MAP[component] )
         fig.suptitle('signal of ' + GD.DIRECTION_LOAD_MAP[component])
@@ -253,6 +377,11 @@ def plot_load_time_histories_node_wise(load_signals, n_nodes, load_signal_labels
             ax[ax_i[node]].plot(np.arange(0,len(load_signals[component][node])),
                                 load_signals[component][node],
                                 label = 'node_'+str(node))
+
+            ax[ax_i[node]].vlines(discard_time, min(load_signals[component][node]), max(load_signals[component][node]), 
+                                  color = 'grey', 
+                                  linestyle = '--',
+                                  label = 'discard')
 
             #ax[ax_i[node]].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
             
@@ -290,6 +419,4 @@ def plot_n_mode_shapes(mode_shapes_sorted, charact_length ,n = 3):
     
     plt.show()
 
-def plot_static_displacement(static_analysis):
 
-    static_response = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[response]]

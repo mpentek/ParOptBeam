@@ -5,6 +5,8 @@
 .vscode
 *.avi
 *.mp4
+*.csv
+*.pdf
 
 local
 

@@ -22,7 +22,7 @@ class BESWL(object):
         self.rho_collection_all = {}
 
         self.weighting_factors_raw = {self.response: {}} # first key is repsonse, 2nd direction
-        self.spatial_distribution = {self.response: {}} #keys are directions, values arrays of z
+        self.spatial_distribution = {self.response: {}} # keys are directions, values arrays of z
 
         self.get_rms_background_response()
         self.get_spatial_distribution()
@@ -31,7 +31,8 @@ class BESWL(object):
     
     def get_spatial_distribution(self):
         '''
-        if using Kareem this is the gust envelope = rms of load at each point
+        if using Kareem this is the gust envelope = rms/std of load at each point
+        Kareem eq. 25 / 32
         '''
         for direction in self.load_directions:
             self.spatial_distribution[self.response][direction] = np.zeros(self.strucutre_model.n_nodes)
@@ -42,50 +43,51 @@ class BESWL(object):
     def get_weighting_factor(self):
         '''
         makes the spatial distribution response specific
+        Kareem eq. 33
         '''
         self.intermediate_w_factors = {} #used to track it for some sign stuff
-        for direction in self.load_directions:
-            self.intermediate_w_factors[direction] = []
+        for s in self.load_directions:
+            self.intermediate_w_factors[s] = []
             w_b_s = 0.0
             for l in self.load_directions:
                 static_load_response = self.get_static_load_response(l)
-                B_sl = self.get_B_sl(direction, l)
+                B_sl = self.get_B_sl(s, l)
                 if round(B_sl,3) != 0:
-                    print ('B_sl for', self.response, 'of', str(direction), '&', str(l), ' ', round(B_sl,3), 'static load response sig_'+l, round(static_load_response,0))
+                    print ('B_sl for', self.response, 'of', str(s), '&', str(l), ' ', round(B_sl,3), 'static load response sig_'+l, round(static_load_response,0))
                 w_b_s += B_sl * static_load_response
                 # track the sign ob w_b_s 
-                self.intermediate_w_factors[direction].append(w_b_s)
+                self.intermediate_w_factors[s].append(w_b_s)
 
-            self.weighting_factors_raw[self.response][direction] = w_b_s
+            self.weighting_factors_raw[self.response][s] = w_b_s
 
     def get_static_load_response(self, direction):
         '''
-        current response due to rms of load in direction s at z
+        current response due to rms/std of load in direction s at z
         in the formula this is σ'_Rb
+        Kareem eq. 22
         '''
-        
-        array_rms = np.array([np.std(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
-        sig_Rb = sum(np.multiply(array_rms, self.influence_function[self.response][direction]))
-
-        #sig_Rb_loop = 0.0
-        # for i in range(self.strucutre_model.n_nodes):
-        #     sig_Rb_loop += rms(self.load_signals[direction][i]) * self.influence_function[self.response][direction][i]
+        array_std = np.array([np.std(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
+        sig_Rb = sum(np.multiply(array_std, self.influence_function[self.response][direction]))
         
         return sig_Rb
 
     def get_B_sl(self, s, l):
         '''
-        factor representing loss of correlation of wind loads in different directions s & l
+        factor representing loss of correlation of wind loads in different directions s & l and different heights
+        Kareem eq. 21
         '''
         self.correlation_coefficient = []
         B_sl_numerator = 0.0
         for node1 in range(self.strucutre_model.n_nodes):
             for node2 in range(self.strucutre_model.n_nodes): 
+                # influences
                 mü_1 = self.influence_function[self.response][s][node1]
                 mü_2 = self.influence_function[self.response][l][node2]
+                # covatriance
                 covariance_matrix = np.cov(self.load_signals[s][node1], self.load_signals[l][node2]) # -> np.cov gives matrix.. 
                 covariance = covariance_matrix[0][1]
                 self.correlation_coefficient.append(covariance /(np.sqrt(covariance_matrix[0][0])*np.sqrt(covariance_matrix[1][1])))
+                # numerator
                 B_sl_numerator += mü_1 * mü_2 * covariance
 
         sig_Rb_s = self.get_static_load_response(s)
@@ -95,17 +97,21 @@ class BESWL(object):
             return 0.0
 
         elif abs(sig_Rb_l) < 1e-5 and (sig_Rb_l) < 1e-5:
+            # this seems to be numerically or so be possible but makes things wrong
             print ('static load response very small for:', s, '&',l)
         else:
-            B_sl = B_sl_numerator / (sig_Rb_s * sig_Rb_l)
-            # if B_sl < 0:
-            #    print ('Warning: B_sl of', s,'-',l ,'is negative', B_sl) 
+            B_sl = B_sl_numerator / (sig_Rb_s * sig_Rb_l) 
             if round(B_sl,3) > 1.0:
                 print ('Warning: B_sl of', s, 'at node_'+str(node1), l ,'at node_'+str(node2),'is larger than 1', B_sl)
                 #raise Exception('B_sl is larger then 1:', B_sl)
             return B_sl
 
     def get_rms_background_response(self):
+        '''
+        gives the background part of the response.
+        is called rms but is the rms of mean zero signal -> std
+        Kareem eq. 20
+        '''
         result = 0.0
         for s in self.load_directions:
             for l in self.load_directions:
@@ -115,95 +121,10 @@ class BESWL(object):
                 result += sig_Rb_s * sig_Rb_l * B_sl
 
         # here sqrt since sig*sig = sig² and rms/std is sig^1
-        self.rms_background_response = np.sqrt(result)
-    
-    # # VARIANTE 1 NOT USED AND ÜERARBEITET
+        # NOTE -> returning the square, since this is used for the R-max calculation
+        self.rms_background_response = result
 
-    def load_response_correlation_coeff(self, load_direction):
-        '''
-        from Kasperskis LRC it gives directly the spatial distribution 
-        '''
-        #warnings.simplefilter('always')
-        s = load_direction
-        rho_r_ps = np.zeros(self.strucutre_model.n_nodes)
-        numerator = 0.0
-        denominator = 0.0
-        total_count = 0
-        count = 0
-        negativ_covs = []
-        errors = []
-        #print ()
-
-        for node1 in range(self.strucutre_model.n_nodes):
-            for node2 in range(self.strucutre_model.n_nodes):
-                #print ('correlations of node', node1, 'with node', node2)
-                for l in self.load_directions:
-                    mü_l = self.influence_function[self.response][l][node1]
-                    rho_sl = np.corrcoef(self.load_signals[s][node1], self.load_signals[l][node2])[0][1]
-                    sig_pl = np.std(self.load_signals[l][node1])
-                    numerator += mü_l * rho_sl * sig_pl
-
-                
-                for s in self.load_directions:
-                    for l in self.load_directions:
-                        total_count +=1
-                        mü_l = self.influence_function[self.response][l][node1]
-                        mü_s = self.influence_function[self.response][s][node2]
-                        rho_sl = np.corrcoef(self.load_signals[s][node1], self.load_signals[l][node2])[0][1]
-                        #cov_rho = rho_sl * np.std(self.load_signals[s][node])* np.std(self.load_signals[l][node])
-                        cov = np.cov(self.load_signals[s][node1], self.load_signals[l][node2])[0][1]
-                        #cov = np.cov(abs(self.load_signals[s][node1]), abs(self.load_signals[l][node2]))[0][1] # is the same as correlation_coef/(sig_s * sig_p)?!
-                        
-                        if cov < 0:
-                            pair = sorted((s,l))
-                            if pair not in negativ_covs:
-                                negativ_covs.append(pair)
-                            #print ('covariance for', self.response, 'of', s, '&', l, cov)
-                        # if round(cov - cov_rho, 0) != 0:
-                        #     count += 1
-                        #     dif_p = round((cov - cov_rho)/cov * 100,6)
-                        #     print ('cov with rho for', self.response, 'of', s, '&', l, cov_rho)
-                        #     print ('covariance for', self.response, 'of', s, '&', l, cov)
-                        #     print ('difference cov - cov_rho:', round(cov - cov_rho, 0), 'this is', dif_p , '%')
-                        #     if dif_p not in perc:
-                        #         perc.append(dif_p)
-                        #     print ()
-                        sign = 1
-                        if mü_l * mü_s * cov < 0:
-                            # if l == 'g' and s == 'g':
-                            #     print('gg')
-                            sign = -1
-                            errors.append((node1, node2, s,l))
-                        #     #print ('here the irregualr sqrt: mü_'+ s, round(mü_s,2), 'mü_'+ l, round(mü_l,2), 'cov_'+s+l, round(cov,2) )
-                        #     if l == 'z':
-                        #         print ('mü_z', mü_l)
-                        #         if mü_s < 0 or cov < 0:
-                        #             print ('not mü_z cuasing problem')
-                        #     elif s == 'z':
-                        #         print ('mü_z', mü_s)
-                        #         if mü_l < 0 or cov < 0:
-                        #             print ('not mü_z cuasing problem')
-                        # error = mü_l * mü_s * cov
-                        #a = mü_l * mü_s * cov
-                        denominator += np.sqrt(sign*mü_l * mü_s * cov)
-                
-            # print ('total differences:', count, 'of', total_count)
-            # print ('following percentages are were collected:', perc)
-                        # if denominator != 0:
-                        #     if math.isnan(numerator / denominator):
-                        #         print ('nan occurs: ', node1, node2, s, l)
-                        #         print ('numerator:', numerator)
-                        #         print ('denominator:', denominator)
-            if denominator == 0:
-                rho_r_ps[node1] = 0.0
-            else:
-                rho_r_ps[node1] = numerator / denominator 
-
-        #print ('negative covarianves occur for these pairs:', negativ_covs)
-        #print ('points at which the expression under sqrt is negative', errors)
-        return rho_r_ps
-
-    # # VARAINTE 2
+    # # LRC coefficient according to Kaspersik 
     def get_columns_from_header(self, file):
         '''
         returns list with all column identifiers
@@ -224,34 +145,38 @@ class BESWL(object):
 
         return columns
 
-    def lrc_coeff_1(self, load_direction):
-        # cov(R,ps)
-        #self.rho_collection = []
-        self.rho_collection_all[load_direction] = []
-        src = 'input\\force\\generic_building\\force_structure.dat'
-        columns = self.get_columns_from_header(src)
-        direct = GD.RESPONSE_DIRECTION_MAP[self.response]
-        force_kr = GD.DIRECTION_LOAD_MAP[direct]
-        id_r = columns.index(force_kr)
-        response_time_hist = np.loadtxt(src, usecols=id_r+6)
+    def lrc_coeff(self, load_direction, print_infos = False):
+        '''
+        compute the LRC(load - response - correlation) coefficient according to KAsperski 1992.
+        several (own) methods are tested and compared
+        '''
+        # also use the actual response time history 
+        self.rho_collection_all[load_direction] = {}
+        src_response = 'input\\force\\generic_building\\force_structure.dat'
+        columns = self.get_columns_from_header(src_response)
+        direction = GD.RESPONSE_DIRECTION_MAP[self.response]
+        force_kratos = GD.DIRECTION_LOAD_MAP[direction]
+        id_r = columns.index(force_kratos)
+        response_time_hist = np.loadtxt(src_response, usecols=id_r+6)# +6 for body attached 
 
         shape_dif = response_time_hist.shape[0] - self.load_signals['x'][0].shape[0]
 
-        # sig R_t from the response time history
-        sig_R_t = np.std(response_time_hist[shape_dif:])
+        # sig R_t: std of the response time history
+        std_R_time_hist = np.std(response_time_hist[shape_dif:])
 
-        cov_Rps = np.zeros(self.strucutre_model.n_nodes)
+        # JZ: eq. 4.7, Kasperski: Eq. 3
+        cov_Rps = np.zeros(self.strucutre_model.n_nodes) # covariance between reposne R and load p_s
         for node1 in range(self.strucutre_model.n_nodes):
             for node2 in range(self.strucutre_model.n_nodes):
-                for direction in self.load_directions: #l
+                for l in self.load_directions: #l
 
-                    I_pl_z = self.influence_function[self.response][direction][node2]
-                    cov_psl = np.cov(self.load_signals[load_direction][node1], self.load_signals[direction][node2])[0][1]
+                    I_pl_z = self.influence_function[self.response][l][node2]
+                    cov_psl = np.cov(self.load_signals[load_direction][node1], self.load_signals[l][node2])[0][1]
 
                     cov_Rps[node1] += I_pl_z * cov_psl
         
-        sig_R_2 = 0.0 # scalar value: just the rms of the response 
-        # TODO this could be taken form the time history of the response ?! -> see sig_R_t
+        # standard deviation of the response using covariance method Kasperski (eq. 1)
+        sig_R_2 = 0.0 # scalar value: just the rms/std of the response 
         for node1 in range(self.strucutre_model.n_nodes):
             for node2 in range(self.strucutre_model.n_nodes):
                 for s in self.load_directions: #s
@@ -263,22 +188,12 @@ class BESWL(object):
 
                         sig_R_2 += I_ps_z * I_pl_z * cov_psl
 
-        rho_r_ps_direct = np.zeros(self.strucutre_model.n_nodes)
+        std_R_cov_method = np.sqrt(abs(sig_R_2))
+        rho_Rps_corrcoef = np.zeros(self.strucutre_model.n_nodes)
 
         for node in range(self.strucutre_model.n_nodes):
             load = self.load_signals[load_direction][node]
-            rho_r_ps_direct[node] = np.corrcoef(response_time_hist[shape_dif:], load)[0][1] 
-
-        
-        print('\nrms of response', self.response)
-        print('rms from time history: ', round(sig_R_t))
-        print('with covariance method:', round(np.sqrt(abs(sig_R_2))))
-        print('std form time history  ', round(np.std(response_time_hist[shape_dif:])))
-        print('with B_sl:             ', round(self.rms_background_response))
-        dif = round(np.sqrt(abs(sig_R_2))-sig_R_t)
-        print('difference time cov - time hist:', dif, 'that is', str(round(dif/sig_R_t * 100, 5))+'%', 'of time hist sigma')
-        print()
-        print ('std of response')
+            rho_Rps_corrcoef[node] = np.corrcoef(response_time_hist[shape_dif:], load)[0][1]
     
 
         # TODO: here use std or rms 
@@ -290,37 +205,49 @@ class BESWL(object):
             std_ps[i] = np.std(signal)
             cov_R_ps_np[i] = np.cov(response_time_hist[shape_dif:], signal)[0][1]
 
-        #rho_Rps_manual_rms = np.divide(cov_Rps, rms_ps) / np.sqrt(abs(sig_R_2))
-        rho_Rps_manual_std = np.divide(cov_Rps, std_ps) / np.sqrt(abs(sig_R_2))
-        rho_Rps_t = np.divide(cov_Rps, std_ps) / sig_R_t
-        rho_Rps_np = np.divide(cov_R_ps_np, std_ps) / sig_R_t
-        
-        # using corrcoeff of numpy
-        self.rho_collection_all[load_direction].append(rho_r_ps_direct)
-        # using covariance method and rms of load
-        #self.rho_collection_all[load_direction].append(rho_Rps_manual_rms)
-        # using covariance method and std of load
-        self.rho_collection_all[load_direction].append(rho_Rps_manual_std)
+        rho_Rps_cov_manual_R_covMethod = np.divide(cov_Rps, std_ps*std_R_cov_method)
+        rho_Rps_cov_manual_R_timeHist = np.divide(cov_Rps, std_ps*std_R_time_hist) 
+        rho_Rps_cov_timehist_R_timeHist = np.divide(cov_R_ps_np, std_ps* std_R_time_hist) 
 
-        rho_Rps = rho_Rps_manual_std
+        # # 1. differences between the methods when computing standard deviantion and covavriances
+        if print_infos:
+            print('\nstd of response', self.response)
+            print('with np.std form time history:', round(std_R_time_hist))
+            print('with covariance method:       ', round(std_R_cov_method))
+            print('with B_sl:                    ', round(np.sqrt(self.rms_background_response)))
+            dif = round(std_R_cov_method-std_R_time_hist)
+            print('difference cov method - time hist:', dif,
+             '; std of cov method is', str(round(std_R_cov_method/std_R_time_hist * 100, 1))+'%', 'of time history std')
+            print()
+            print ('covariance calculations cov_Rps -',self.response,'-',load_direction)
+            print ('with Kasperski using influences: ', cov_Rps)
+            print ('with np.cov using time histories:', cov_R_ps_np)
+        
+        # # 2. differences between the methods when computing the correlation coefficient 
+        # using corrcoeff of numpy
+        self.rho_collection_all[load_direction]['rho_Rps_corrcoef'] = rho_Rps_corrcoef
+        # using eq. 3 for cov_Rps and covariance method for std of Response R
+        self.rho_collection_all[load_direction]['rho_Rps_cov_manual_R_covMethod'] = rho_Rps_cov_manual_R_covMethod
+        # using eq. 3 for cov_Rps and time history of R for std of Response R
+        self.rho_collection_all[load_direction]['rho_Rps_cov_manual_R_timeHist'] = rho_Rps_cov_manual_R_timeHist
+        # using time histories of R and p for cov_Rps and time history of R for std of Response R
+        self.rho_collection_all[load_direction]['rho_Rps_cov_timehist_R_timeHist'] = rho_Rps_cov_timehist_R_timeHist
+
+        # select one of them for further calculation
+        rho_Rps = rho_Rps_cov_manual_R_covMethod
 
         return rho_Rps
 
-
-    def get_beswl_LRC_1(self, load_direction):
-        rho = self.lrc_coeff_1(load_direction)
+    def get_beswl_LRC(self, load_direction):
+        '''
+        computes the LRC distribution of beswl for a given load direction
+        this still needs to be multiplied with the peak factor g_b
+        '''
+        rho = self.lrc_coeff(load_direction)
         sig_ps = np.zeros(self.strucutre_model.n_nodes)
         for i, signal in enumerate(self.load_signals[load_direction]):
             sig_ps[i] = np.std(signal)
 
         return np.multiply(rho, sig_ps)
 
-
-    def get_beswl_LRC (self, load_direction):
-        '''
-        computes the LRC distribution of beswl for a given load direction
-        this still needs to be multiplied with the peak factor g_b
-        '''
-        rho_r_ps = self.load_response_correlation_coeff(load_direction)
-
-        return np.multiply(np.std(self.load_signals[load_direction]), rho_r_ps) 
+    
