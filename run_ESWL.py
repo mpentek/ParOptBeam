@@ -1,4 +1,3 @@
-#%% IMPORTS
 import json
 from os.path import join as os_join
 
@@ -13,7 +12,6 @@ from source.ESWL.ESWL import ESWL
 from source.model.structure_model import StraightBeam
 
 # 1. get the load signals from the input.force
-# 2. get the response time history from a dynamic analysis or from other sources
 # 3. create a structure model and solve the eigenvalue problem 
 # 4. create the ESWL object; which itself creates B and R ESWL objects and calculates them 
 # 5. call a ESWL.solve() function the computes the loads and stores them in a dictionary with direction and specified response as keys
@@ -21,11 +19,11 @@ from source.model.structure_model import StraightBeam
 
 available_models = [
     'ProjectParameters3DGenericBuilding.json',
-    'ProjectParameters3DGenericPylon.json',
     'ProjectParameters3DGenericBuilding_unsymmetric.json',
     'ProjectParameters3D_CAARC_advanced.json',
     'ProjectParameters3DGenericBuildingUniform.json',
-    'opt_ProjectParameters3DGenericBuildingUniform.json'
+    'opt_ProjectParameters3DGenericBuildingUniform.json',
+    'opt_ProjectParameters3DGenericBuildingUniform_60.json'
     ]
 
 available_loads = [
@@ -34,18 +32,30 @@ available_loads = [
     "input/force/generic_building/dynamic_force_61_nodes.npy"
 ]
 
-simple_uniform = [available_models[4]]
-simple_uniform_opt = [available_models[5]]
+discard_ramp_up = 2000
+time_array = np.load('input\\force\\generic_building\\array_time.npy')
+
 symmetric_model = [available_models[0]]
-unsymmetric_model = [available_models[2]]
-CAARC_model = [available_models[3]]
+unsymmetric_model = [available_models[1]]
+
+CAARC_model = [available_models[2]]
+
+# # one interval only 
+simple_uniform = [available_models[3]]
+# with optimized 
+simple_uniform_optimized = [available_models[4]]
+
+# # for a load file with 61 nodes
+simple_uniform_optimized_60 = [available_models[5]]
 
 dynamic_load_file = available_loads[0]
-print ('...finished imports')
+
+plot_load_signals = False
+
 # ==============================================
-#%% Model initialization - ESWL calculation - ESWL application - dynamic calculations
 # READ AND CREATE THE BEAM MODEL
-for available_model in simple_uniform_opt:
+# ==============================================
+for available_model in simple_uniform_optimized:
     
     with open(os_join(*['input', 'parameters', available_model]), 'r') as parameter_file:
         parameters = json.loads(parameter_file.read())
@@ -66,6 +76,7 @@ else:
 
 # ==============================================
 # CREATE EIGENVALUE ANALYSIS
+# ==============================================
 eigenvalue_analysis_in_parameters = False
 for analyses_param in parameters['analyses_parameters']["runs"]:
     if analyses_param['type'] == "eigenvalue_analysis":
@@ -76,43 +87,73 @@ for analyses_param in parameters['analyses_parameters']["runs"]:
 if not eigenvalue_analysis_in_parameters:
     raise Exception('no Eigenvalue Analysis in the Parameters')
 
+
 # ==============================================
-# # READ THE LOAD SIGNALS
-load_signals_raw = np.load(get_adjusted_path_string(dynamic_load_file))
+# READ THE LOAD SIGNALS
+# ==============================================
+
+# drop the first entries beloning to the ramp up
+load_signals_raw = np.load(get_adjusted_path_string(dynamic_load_file))[:,discard_ramp_up:]
 if len(load_signals_raw) != (beam_model.n_nodes*GD.DOFS_PER_NODE[beam_model.domain_size]):
     raise Exception('beam model and dynamic load signal have different number of nodes')
 else:
-    load_signals = auxiliary.parse_load_signal(load_signals_raw, GD.DOFS_PER_NODE[beam_model.domain_size], discard_time = 1000)
+    # create a dictionary with directions as keys
+    load_signals = auxiliary.parse_load_signal(load_signals_raw, GD.DOFS_PER_NODE[beam_model.domain_size], time_array)
 
-time_array = np.load('input\\force\\generic_building\\array_time.npy')
-if time_array:
-    dt = time_array[1] - time_array[0] # simulation time step
-else: 
-    dt = 0.1 
-    
-load_signals['sample_freq'] = 1/dt
-
-# # plots of the load signals
-#plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes, 1/1e+05)
+# # PLOTS OF LOAD SIGNALS
+if plot_load_signals:
+    plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes, discard_ramp_up)
 
 # ==============================================
-# CREATE ESWL FOR A RESPONSE 
-response_labels = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
-load_directions = ['y','z','a','b','g']
-resonant_load_directions = ['y','z','a'] #directions that have a mass that is moving in the eigenmode
-include_all_rotations = True # this uses also for resonant calculations ['y','z','a','b','g']
-lumped = False
-# if false influences are computed using static analysis
-plot_correlations = True
-decoupled_influences = True
-plot_influences = False
+# RUN A DYNAMIC ANALYSIS 
+# ==============================================
+# for comparison of results
+print('\nDynamic analysis with original dynamic load')
 
-for response in response_labels[2:]:
-    #response = 'My'
+# TODO: no discarded ramp up here, guess that it is not influencing the result signigicantly 
+dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
+dynamic_analysis.solve()
+
+
+# ==============================================
+# INPUT SETTINGS FOR THE ESWL OBJECT
+# ==============================================
+response_labels_avail = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
+# for selected quantities list slices: Qy: :1, Qz: 1:2, Mx: 2:3, My: 3:4, Mz: 4:5
+responses_to_analyse = response_labels_avail[3:5]
+
+load_directions = ['y','z','a','b','g']
+decoupled_influences = False # if false influences are computed using static analysis, this should directly incorporate coupling if it is present. Else just by simple mechanics
+use_lumped = False
+use_lrc = False # wheter lrc should be used for calculate total eswl
+
+plot_mode_shapes = False
+plot_correlations = False
+plot_influences = False
+plot_load_time_hist = False
+plot_eswl = True
+include_dynamic_results = True
+available_components = ['mean', 'background', 'resonant', 'resonant_m','resonant_m_lumped','total', 'lrc']
+'''
+NOTE: all components use: ['all']
+    'background': Kareems methods
+    'lrc': background component using LRC method
+    'resonant': distribution of base moment e.g. Kareem eq. 29
+    'resonant_m': modal inertial load consisten calculation Kareem eq. 27
+    'resonant_m_lumped: modal inertial using a nodal mass matrix/vector
+''' 
+components_to_plot = ['resonant', 'resonant_m','background', 'mean']
+
+# ===============================================
+# CALCULATION OF ESWL FOR DIFFERENT RESPONSES
+# ==============================================
+
+for response in responses_to_analyse:
     # direction 'x' is left out for now since no response is related to it 
 
-    eswl = ESWL(beam_model, eigenvalue_analysis, response, load_signals, resonant_load_directions, 
-                load_directions, lumped, decoupled_influences, include_all_rotations)
+    eswl = ESWL(beam_model, eigenvalue_analysis, response, load_signals,load_directions, 
+                use_lumped, decoupled_influences, use_lrc, plot_mode_shapes)
+
     if plot_influences:
         plotter_utilities.plot_inluences(eswl)
     
@@ -120,10 +161,6 @@ for response in response_labels[2:]:
 
     if plot_correlations:
         plotter_utilities.plot_rho(eswl.BESWL.rho_collection_all, response)
-
-    plot_eswl = True
-    include_dynamic_results = True
-
 
     # ===============================================
     # RUN A STATIC ANALYSIS WITH THE ESWL 
@@ -136,13 +173,8 @@ for response in response_labels[2:]:
     static_response = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[response]]
 
     # ==============================================
-    # RUN A DYNAMIC ANALYSIS WITH ORIGINAL LOAD SIGNAL
+    # TAKE RESULT FROM DYNAMIC ANALYSIS AND PREPARE AN OUTPUT
     if include_dynamic_results:
-        print('\nDynamic analysis with original dynamic load...')
-
-        dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
-        dynamic_analysis.solve()
-
         response_id = GD.DOF_LABELS['3D'].index(GD.RESPONSE_DIRECTION_MAP[response])
         dynamic_response = dynamic_analysis.solver.dynamic_reaction[response_id]
 
@@ -152,7 +184,7 @@ for response in response_labels[2:]:
                             'ESWL = '+ str( round( abs(static_response[0]) / max(abs(dynamic_response)),2 ) ) + ' of dyn' ) )
 
         print ('\n','|'+response+'|', 'with ESWL: ', '{:.2e}'.format(abs(static_response[0])))
-        print ('|',response, 'max| with dynamic: ', '{:.2e}'.format(max(abs(dynamic_response))))
+        print ('|'+response+ ' max| with dynamic: ', '{:.2e}'.format(max(abs(dynamic_response))))
         print ('|ESWL| - |Max_dyn|: '+ '{:.2e}'.format(abs(static_response[0])- max(abs(dynamic_response))) + ' should be positive' + '\n',
                 'ESWL result = '+ str( round( abs(static_response[0]) / max(abs(dynamic_response)),2 ) ) + ' of dyn result; should be > 1.00') 
 
@@ -160,19 +192,18 @@ for response in response_labels[2:]:
 
     else:
         result_text = response + ' with ESWL: '+ '{:.2e}'.format(static_response[0])
-        print (response, 'with ESWL: ', '{:.2e}'.format(static_response[0]))
+        print (result_text)
     # ============================================================
-    #%% Potsprocessing PLOTTING
+    # PLOTTING
+    # ============================================================
 
-    #plotter_utilities.plot_load_time_histories(load_signals, beam_model.nodal_coordinates)
-    #plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes)
+    if plot_load_time_hist:
+        plotter_utilities.plot_load_time_histories(load_signals, beam_model.nodal_coordinates)
+        plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes)
 
-    available_components = ['mean', 'background', 'resonant', 'resonant_m','resonant_m_lumped','total', 'lrc', 'lrc1']
-    # NOTE: all components use: ['all']
     if plot_eswl:
-        #eswl.plot_eswl_directional_components(load_directions, response) # -> dictionary that has the loads for each reaction and each direction 
-        #eswl.plot_eswl_directional_components(load_directions, response)['resonant', 'resonant_m']
-        eswl.plot_eswl_components(response, load_directions, result_text, components_to_plot=['background', 'lrc', 'lrc1'])
+        #eswl.plot_eswl_directional_load_components(eswl.eswl_total, eswl.structure_model.nodal_coordinates, load_directions, response) # 
+        eswl.plot_eswl_components(response, load_directions, result_text, eswl.influences ,components_to_plot=components_to_plot)
 
     print ('... finished plotting')
-    # %%
+    

@@ -51,7 +51,7 @@ def rms_spectra(y,x,digits=3):
     '''
     2 different forms of integration
     '''
-    return [np.around(np.sqrt(np.trapz(abs(y),x)),digits), np.around(np.sqrt(simps(abs(y),x)),digits)] 
+    return np.around(np.sqrt(np.trapz(abs(y),x)),digits)
 
 def integrate_spectra(y,x,digits=3):
     '''
@@ -226,23 +226,21 @@ def get_velocity_spectra_methods(time_series, velocity_series, z, z0, lux, subtr
     return results
 
 def cross_spectral_density(x,y, time_series, nperseg, window_type,
-                    subtract_mean, use_fs = True, use_nfft = True,):
+                    subtract_mean, use_fs = True, use_nfft = True):
     '''
     retrun a freq arry and the accroding spectral array
     '''
     # if subtract_mean:
     #     x = x - np.mean(x)
     #     y = y - np.mean(y)
-    # -------- FS NFFT 
-    if use_fs:
-        fs = 1/(time_series[1] - time_series[0])
-    else:
-        fs = 1.0# default value
+    # -------- NFFT 
+    
     if use_nfft:
         nfft = len(time_series)
     else:
         nfft = None # default 
-    # ------- WINDOW
+        
+    # ------- WINDOW - if a window type is specified then no nperseg can be used
     if window_type == 'hann':
         # default is hann but without argument?
         win = hann(len(time_series),False)
@@ -307,7 +305,7 @@ def plot_csd(result_list, signal_labels, show_plot, param_list, param_label):
     
     plt.figure(3)
     plt.suptitle('abs(CSD) of ' + signal_labels[0] + ' & ' + signal_labels[1] + ' - ' + param_label + ' as parameter')
-    lstyles = ['-','--',':']
+    lstyles = ['-','--',':','-.']
     max_csd = []
     for param_i, result in enumerate(result_list):
         
@@ -365,20 +363,29 @@ subtract_mean = False
 partial_freqs = False
 show_plots = True
 
+check_rms = True
+
+# round digits
+digits = 3
+
 # # CSD SETTINGS
-nperseg_avail = [1024, 2048, 4096]
+nperseg_avail = [2048, 4096, 8192, 16258]
 window_type_avail = ['hann','box', None]
 
-use_fs = True
+fs = 1/(time_array[1] - time_array[0])
+print ('fs from time array:', fs)
+Ts = time_array[1] - time_array[0]
 use_nfft = True
 nperseg = nperseg_avail[1]
 window_type = window_type_avail[0]
 
-param_label = 'nps' #'win'
+param_label = 'win' #'win', 'fs','nps
 if param_label == 'nps':
     params_list = nperseg_avail
 elif param_label == 'win':
     params_list = window_type_avail
+elif param_label == 'fs':
+    params_list = [0.01,0.1,1.0, Ts]
 
 if subtract_mean:   
     print('\n------- Subtracting mean value of the signal -------')
@@ -399,12 +406,30 @@ for param in params_list:
     elif param_label== 'win':
         nps = None
         win = param
+    elif param_label == 'fs':
+        fs = 1/param
+        nps, win = None,None
     
+    #win = 'box'
     f_csd, csd_raw, csd_fj = cross_spectral_density(s1, s2, time_series,
                                              nps, win,
-                                             subtract_mean = subtract_mean,
-                                             use_fs = True, use_nfft = True,
+                                             subtract_mean,
+                                             use_fs = fs, use_nfft = True,
                                              )
+
+    if check_rms:
+        for s, signal in enumerate([s1,s2]):
+            f_csd, csd_raw, csd_fj = cross_spectral_density(signal, signal, time_series,
+                                             nps, win,
+                                             subtract_mean,
+                                             use_fs = fs, use_nfft = True,
+                                             )
+            std_np = np.std(signal)
+            std_csd = rms_spectra(csd_raw, f_csd)
+            print(param_label , param)
+            print ('    std of signal', s, 'numpy:', round(std_np,digits))
+            print ('    std of signal', s, 'CSD  :', round(std_csd,digits))
+
 
     result_list.append((f_csd, csd_raw, csd_fj))
 
@@ -429,9 +454,6 @@ f_sample = 1/(series_t[1] - series_t[0])
 
 
 
-# round digits
-digits = 3
-
 print()
 # print ('\n----- tests using sin and cos: correlation coefficent should be -1.0 -----\n')
 # # std and rms 
@@ -442,7 +464,7 @@ if selected_signal_1 == selected_signal_2:
     rms_csd = rms_spectra(csd_raw, f_csd)
     # only using trapz here
     # if the signals are the same, this rms should be the rms from above per definition --> depending on how csd does its things
-    print ('rms csd:', round(abs(rms_csd[0]),digits))
+    print ('rms csd:', round(abs(rms_csd),digits))
 
 # # ---------------- covariances -----------------------------------
 

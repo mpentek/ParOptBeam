@@ -20,7 +20,7 @@ symmetric_model = [available_models[0]]
 unsymmetric_model = [available_models[2]]
 CAARC_model = [available_models[3]]
 
-for available_model in CAARC_model:
+for available_model in symmetric_model:
 
     # ==============================================
     # Parameter read

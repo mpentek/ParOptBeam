@@ -24,7 +24,7 @@ def cov_custom(signal1, signal2):
         
     return cov/len(signal1)
 
-def parse_load_signal(signal_raw, dofs_per_node, discard_time = None):
+def parse_load_signal(signal_raw, dofs_per_node, time_array):#, discard_time = None):
     '''
     sorts the load signals in a dictionary with load direction as keys: 
     x,y,z: nodal force 
@@ -37,10 +37,14 @@ def parse_load_signal(signal_raw, dofs_per_node, discard_time = None):
         signal = {}
         for i, label in enumerate(GD.DOF_LABELS['3D']):
             signal[label] = signal_raw[i::dofs_per_node]
-            
-            if discard_time:                
-                signal[label] = np.delete(signal[label], np.arange(0,discard_time), 1)
-  
+    
+    if time_array.any():
+        dt = time_array[1] - time_array[0] # simulation time step
+    else: 
+        dt = 0.1 # some default
+    
+    signal['sample_freq'] = 1/dt
+
     return signal
 
 def parse_load_signal_backwards(signal):
@@ -56,6 +60,7 @@ def parse_load_signal_backwards(signal):
             sort_id = i * GD.DOFS_PER_NODE['3D'] + dof_label_id
             signal_raw[sort_id] = val
 
+    #TODO: must this be transposed?!
     return signal_raw
 
 def generate_static_load_vector_file(load_vector):
@@ -337,6 +342,7 @@ def check_and_flip_sign(mode_shape_array, mode_id = None):
     '''
     change the sign of the mode shape such that the first entry is positive
     the translational dof is taken: the rotations are coupled and thus the sign is coupled
+    y+ -> 
     '''
     trans_rot = {'y':4,'z':2}
     flips = []
@@ -357,6 +363,6 @@ def check_and_flip_sign(mode_shape_array, mode_id = None):
                 mode_shape_array[step+rot_id::step] *= -1
 
     if mode_id < 3:        
-        print ('in mode', mode_id, 'flipped',flips)        
+        print ('  in mode', mode_id, 'flipped',flips)        
     return mode_shape_array 
     
