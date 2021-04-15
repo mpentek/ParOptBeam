@@ -51,7 +51,10 @@ simple_uniform_optimized_60 = [available_models[5]]
 
 dynamic_load_file = available_loads[0]
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> feature_torsion_coupling
 plot_load_signals = False
 
 # ==============================================
@@ -96,9 +99,12 @@ if not eigenvalue_analysis_in_parameters:
 
 # drop the first entries beloning to the ramp up
 load_signals_raw = np.load(get_adjusted_path_string(dynamic_load_file))[:,discard_ramp_up:]
+<<<<<<< HEAD
 
 dynamic_load_file_ramp_up = auxiliary.discard_ramp_up(dynamic_load_file)
 np.save(dynamic_load_file_ramp_up, load_signals_raw)
+=======
+>>>>>>> feature_torsion_coupling
 if len(load_signals_raw) != (beam_model.n_nodes*GD.DOFS_PER_NODE[beam_model.domain_size]):
     raise Exception('beam model and dynamic load signal have different number of nodes')
 else:
@@ -108,6 +114,7 @@ else:
 # # PLOTS OF LOAD SIGNALS
 if plot_load_signals:
     plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes, discard_ramp_up)
+<<<<<<< HEAD
 
 # ==============================================
 # RUN A DYNAMIC ANALYSIS 
@@ -120,14 +127,35 @@ if discard_ramp_up:
 
 dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
 dynamic_analysis.solve()
+=======
+
+# ==============================================
+# RUN A DYNAMIC ANALYSIS 
+# ==============================================
+# for comparison of results
+print('\nDynamic analysis with original dynamic load')
+
+# TODO: no discarded ramp up here, guess that it is not influencing the result signigicantly 
+dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
+dynamic_analysis.solve()
+
+>>>>>>> feature_torsion_coupling
 
 
 # ==============================================
 # INPUT SETTINGS FOR THE ESWL OBJECT
 # ==============================================
+<<<<<<< HEAD
 response_labels_avail = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
 # for selected quantities list slices: Qy: :1, Qz: 1:2, Mx: 2:3, My: 3:4, Mz: 4:5
 responses_to_analyse = response_labels_avail[4:5]
+=======
+# INPUT SETTINGS FOR THE ESWL OBJECT
+# ==============================================
+response_labels_avail = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
+# for selected quantities list slices: Qy: :1, Qz: 1:2, Mx: 2:3, My: 3:4, Mz: 4:5
+responses_to_analyse = response_labels_avail[3:5]
+>>>>>>> feature_torsion_coupling
 
 load_directions = ['y','z','a','b','g']
 decoupled_influences = False # if false influences are computed using static analysis, this should directly incorporate coupling if it is present. Else just by simple mechanics
@@ -149,7 +177,11 @@ NOTE: all components use: ['all']
     'resonant_m': modal inertial load consisten calculation Kareem eq. 27
     'resonant_m_lumped: modal inertial using a nodal mass matrix/vector
 ''' 
+<<<<<<< HEAD
 components_to_plot = ['background', 'lrc', 'mean']
+=======
+components_to_plot = ['resonant', 'resonant_m','background', 'mean']
+>>>>>>> feature_torsion_coupling
 
 # ===============================================
 # CALCULATION OF ESWL FOR DIFFERENT RESPONSES

@@ -52,6 +52,7 @@ class BESWL(object):
             for l in self.load_directions:
                 static_load_response = self.get_static_load_response(l)
                 B_sl = self.get_B_sl(s, l)
+<<<<<<< HEAD
                 w_b_s += B_sl * static_load_response
 
                 if round(B_sl,3) != 0:
@@ -81,6 +82,24 @@ class BESWL(object):
         std_z = np.array([np.std(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
         signed_std_z = np.multiply(signs, std_z)
         sig_Rb = sum(np.multiply(signed_std_z, self.influence_function[self.response][direction]))
+=======
+                if round(B_sl,3) != 0:
+                    print ('B_sl for', self.response, 'of', str(s), '&', str(l), ' ', round(B_sl,3), 'static load response sig_'+l, round(static_load_response,0))
+                w_b_s += B_sl * static_load_response
+                # track the sign ob w_b_s 
+                self.intermediate_w_factors[s].append(w_b_s)
+
+            self.weighting_factors_raw[self.response][s] = w_b_s
+
+    def get_static_load_response(self, direction):
+        '''
+        current response due to rms/std of load in direction s at z
+        in the formula this is σ'_Rb
+        Kareem eq. 22
+        '''
+        array_std = np.array([np.std(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
+        sig_Rb = sum(np.multiply(array_std, self.influence_function[self.response][direction]))
+>>>>>>> feature_torsion_coupling
         
         return sig_Rb
 
