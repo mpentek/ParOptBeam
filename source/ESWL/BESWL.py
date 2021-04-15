@@ -52,22 +52,35 @@ class BESWL(object):
             for l in self.load_directions:
                 static_load_response = self.get_static_load_response(l)
                 B_sl = self.get_B_sl(s, l)
-                if round(B_sl,3) != 0:
-                    print ('B_sl for', self.response, 'of', str(s), '&', str(l), ' ', round(B_sl,3), 'static load response sig_'+l, round(static_load_response,0))
                 w_b_s += B_sl * static_load_response
-                # track the sign ob w_b_s 
-                self.intermediate_w_factors[s].append(w_b_s)
+
+                if round(B_sl,3) != 0:
+                    print ('B_sl for', self.response, 'of', str(s), '&', str(l), ' ', round(B_sl,3), 'static load response sig_'+l, round(static_load_response,0),
+                        '    w_b_s_i:', round(B_sl * static_load_response, 2))
+                    # track the sign ob w_b_s 
+                    self.intermediate_w_factors[s].append(B_sl * static_load_response)
 
             self.weighting_factors_raw[self.response][s] = w_b_s
 
+            # if self.intermediate_w_factors[s]:
+            #     print ('    for direction', s, 'the sum of w_b_s used for w_b_s_total is composed by:', self.intermediate_w_factors[s], '\n')
+
     def get_static_load_response(self, direction):
         '''
-        current response due to rms/std of load in direction s at z
+        current response due to rms/std of load in direction s
         in the formula this is σ'_Rb
         Kareem eq. 22
         '''
-        array_std = np.array([np.std(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
-        sig_Rb = sum(np.multiply(array_std, self.influence_function[self.response][direction]))
+        
+        mean_z = np.array([np.mean(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
+
+        # TODO: is it necessary to take the sign here? guess yes since the coupled loads counteract otherwise
+        # need to take signs since they matter in the coupled case b - z for My 
+        signs = np.divide(mean_z, abs(mean_z))
+
+        std_z = np.array([np.std(self.load_signals[direction][i]) for i in range(self.strucutre_model.n_nodes)])
+        signed_std_z = np.multiply(signs, std_z)
+        sig_Rb = sum(np.multiply(signed_std_z, self.influence_function[self.response][direction]))
         
         return sig_Rb
 

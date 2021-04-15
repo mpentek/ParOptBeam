@@ -119,7 +119,7 @@ class ESWL(object):
             resonant_sign, flipped_sign = self.get_sign_for_resonant(mean_load ,background ,p_z_r_e, direction)
 
             if flipped_sign:
-                print ('\nflipped sign of resonant', direction, ', reason: component combination')
+                print ('\n   flipped sign of resonant', direction, ', reason: component combination')
             
             p_z_r_e = resonant_sign*p_z_r_e
             p_z_r_em = resonant_sign*p_z_r_em

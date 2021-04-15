@@ -63,6 +63,11 @@ def parse_load_signal_backwards(signal):
     #TODO: must this be transposed?!
     return signal_raw
 
+def discard_ramp_up(load_file):
+    new_name = load_file.split(os.path.sep)[-1].split('.')[0] + '_ramp_up' + '.npy'
+    dest = os.path.join(*load_file.split(os.path.sep)[:-1])
+    return os.path.join(dest, new_name)
+
 def generate_static_load_vector_file(load_vector):
     '''
     return a npy file and saves it for a given load.
@@ -271,6 +276,11 @@ def create_dynamic_analysis_custom(structure_model, dynamic_load_file):
     false = False
     true = True
 
+    load = np.load(dynamic_load_file)
+
+    dt = 0.02
+    T = (load.shape[1] -1) * dt
+
     analysis_params_custom = {
                 "type" : "dynamic_analysis",
                 "settings": {
@@ -279,8 +289,8 @@ def create_dynamic_analysis_custom(structure_model, dynamic_load_file):
                     "time":{
                         "integration_scheme": "GenAlpha",
                         "start": 0.0,
-                        "end": 600.0,
-                        "step" : 0.02},
+                        "end": T,
+                        "step" : dt},
                     "intial_conditions": {
                         "displacement": "None",
                         "velocity": "None",

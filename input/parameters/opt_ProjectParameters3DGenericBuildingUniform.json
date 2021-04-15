@@ -38,7 +38,8 @@
                                          "animate_skin_model": [1]}, "selected_eigenmode_range": {
                                              "help": "maximum 4 modes per range at a time",
                                               "considered_ranges": [[1, 2]], "plot_range": [true, true],
-                                               "write_range": [true, false]}}}, {"type": "dynamic_analysis",
+                                               "write_range": [true, false]}}},
+                                {"type": "dynamic_analysis",
                                                  "settings": {"solver_type": "Linear", "run_in_modal_coordinates": false,
                                                      "time": {"integration_scheme": "GenAlpha", "start": 0.0, "end": 600.0, "step": 0.02},
                                                       "intial_conditions": {"displacement": "None", "velocity": "None", "acceleration": "None"}},

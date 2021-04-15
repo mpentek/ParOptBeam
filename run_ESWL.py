@@ -1,5 +1,6 @@
 import json
 from os.path import join as os_join
+import os
 
 import numpy as np
 
@@ -27,9 +28,9 @@ available_models = [
     ]
 
 available_loads = [
-    "input/force/generic_building/dynamic_force_4_nodes.npy",
-    "input/force/generic_building/dynamic_90_force_4_nodes.npy", 
-    "input/force/generic_building/dynamic_force_61_nodes.npy"
+    "input\\force\\generic_building\\dynamic_force_4_nodes.npy",
+    "input\\force\\generic_building\\dynamic_90_force_4_nodes.npy", 
+    "input\\force\\generic_building\\dynamic_force_61_nodes.npy"
 ]
 
 discard_ramp_up = 2000
@@ -49,6 +50,7 @@ simple_uniform_optimized = [available_models[4]]
 simple_uniform_optimized_60 = [available_models[5]]
 
 dynamic_load_file = available_loads[0]
+
 
 plot_load_signals = False
 
@@ -94,6 +96,9 @@ if not eigenvalue_analysis_in_parameters:
 
 # drop the first entries beloning to the ramp up
 load_signals_raw = np.load(get_adjusted_path_string(dynamic_load_file))[:,discard_ramp_up:]
+
+dynamic_load_file_ramp_up = auxiliary.discard_ramp_up(dynamic_load_file)
+np.save(dynamic_load_file_ramp_up, load_signals_raw)
 if len(load_signals_raw) != (beam_model.n_nodes*GD.DOFS_PER_NODE[beam_model.domain_size]):
     raise Exception('beam model and dynamic load signal have different number of nodes')
 else:
@@ -110,7 +115,9 @@ if plot_load_signals:
 # for comparison of results
 print('\nDynamic analysis with original dynamic load')
 
-# TODO: no discarded ramp up here, guess that it is not influencing the result signigicantly 
+if discard_ramp_up:
+    dynamic_load_file = dynamic_load_file_ramp_up
+
 dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
 dynamic_analysis.solve()
 
@@ -120,7 +127,7 @@ dynamic_analysis.solve()
 # ==============================================
 response_labels_avail = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
 # for selected quantities list slices: Qy: :1, Qz: 1:2, Mx: 2:3, My: 3:4, Mz: 4:5
-responses_to_analyse = response_labels_avail[3:5]
+responses_to_analyse = response_labels_avail[4:5]
 
 load_directions = ['y','z','a','b','g']
 decoupled_influences = False # if false influences are computed using static analysis, this should directly incorporate coupling if it is present. Else just by simple mechanics
@@ -142,7 +149,7 @@ NOTE: all components use: ['all']
     'resonant_m': modal inertial load consisten calculation Kareem eq. 27
     'resonant_m_lumped: modal inertial using a nodal mass matrix/vector
 ''' 
-components_to_plot = ['resonant', 'resonant_m','background', 'mean']
+components_to_plot = ['background', 'lrc', 'mean']
 
 # ===============================================
 # CALCULATION OF ESWL FOR DIFFERENT RESPONSES
