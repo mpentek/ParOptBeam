@@ -108,7 +108,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
             RHS = np.dot(self.M, (self.a1m * self.un1 +
                                 self.a2m * self.vn1 + self.a3m * self.an1))
             RHS += np.dot(self.B, (self.a1b * self.un1 +
-                                self.a2b * self.v0 + self.a3b * self.an1))
+                                self.a2b * self.vn1 + self.a3b * self.an1))
             RHS += np.dot(self.a1k * self.K, self.un1) + F
 
             # main solve
@@ -119,7 +119,7 @@ class GeneralizedAlphaScheme(TimeIntegrationScheme):
             RHS = self.M * (self.a1m * self.un1 +
                                 self.a2m * self.vn1 + self.a3m * self.an1)
             RHS += self.B * (self.a1b * self.un1 +
-                                self.a2b * self.v0 + self.a3b * self.an1)
+                                self.a2b * self.vn1 + self.a3b * self.an1)
             RHS += (self.a1k * self.K) * self.un1 + F
 
             # main solve
