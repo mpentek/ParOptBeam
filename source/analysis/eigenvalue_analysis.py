@@ -167,7 +167,7 @@ class EigenvalueAnalysis(AnalysisType):
         file_header = '# Result of decoupled eigenmode identification for the first ' + \
             str(counter) + ' mode(s)\n'
         file_header += '# ConsideredModesCounter | Mode | TypeCounter | Eigenfrequency [Hz] | Type |'
-        file_header += ' EffModalMass [kg] or [kg*m^2] | RelPart | EffModalMass/TotalMass\n'
+        file_header += ' EffModalMass [kg] or [kg*m^2] | RelPart\n'
 
         file_name = 'eigenvalue_analysis_eigenmode_identification.dat'
 
