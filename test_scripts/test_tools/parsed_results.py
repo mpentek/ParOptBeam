@@ -38,8 +38,11 @@ class ParsedResults:
         return self._data
 
 
-    def AsDictionary(self):
-        dictionary = {"description" : self._description}
+    def AsDictionary(self, include_description=True):
+        dictionary = {}
+
+        if include_description:
+            dictionary["description"] = self._description
 
         for tag, items in zip(self._data_tags, self._data):
             dictionary[tag] = items
