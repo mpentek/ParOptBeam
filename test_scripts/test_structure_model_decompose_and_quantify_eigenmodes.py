@@ -1,5 +1,5 @@
 import unittest
-import mock
+import unittest.mock as mock
 import numpy as np
 from scipy import linalg
 from source.model.structure_model import StraightBeam
