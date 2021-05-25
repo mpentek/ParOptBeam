@@ -1,33 +1,16 @@
-# --- External Imports ---
-import numpy as np
-
 # --- Internal Imports ---
 from source.model.structure_model import StraightBeam
 from source.analysis.analysis_controller import AnalysisController
+
 from source.test_utils.test_case import TestCase
+from source.test_utils.code_structure import OUTPUT_DIRECTORY, TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY
+from source.test_utils.parsed_results import ParsedResults
 
 # --- STL Imports ---
-from os.path import join as os_join
-import json
+import unittest
 
 
 class BeamEigenvalueAnalyticalTest(TestCase):
-
-    def setUp(self):
-        pass
-
-
-    def tearDown(self):
-        pass
-
-
-    available_models = [['FixedFixedTest','fixed-fixed'],
-                        ['FreeFixedTest','free-fixed'],
-                        ['FixedFreeTest','fixed-free'],
-                        ['FixedPinnedTest','fixed-pinned'],
-                        ['PinnedFixedTest','pinned-fixed'],
-                        ['PinnedPinnedTest','pinned-pinned']]
-
 
     def test_fixed_fixed(self):
         self.runModel("FixedFixedTest", "fixed-fixed")
@@ -150,32 +133,36 @@ class BeamEigenvalueAnalyticalTest(TestCase):
         # test results against available analytical solutions
         abs_tol = 1e-1
 
-        name = parameters['model_parameters']['name']
-        result = np.loadtxt(os_join(*['output',name,'eigenvalue_analysis_eigenmode_identification.dat']),
-        dtype='i,f,S12', usecols=(2,3,4))  
-        result_analytical = np.loadtxt(os_join(*['test_scripts','analytical_reference_results',name +'.txt']),
-        dtype={'names': ('type_counter','frequency','type'),'formats':('i','f','S6')})
+        # Parse result and reference files
+        result_file_path = OUTPUT_DIRECTORY / model_name / "eigenvalue_analysis_eigenmode_identification.dat"
+        reference_file_path = TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY / (model_name + ".txt")
+        
+        self.assertTrue(result_file_path.is_file())
+        self.assertTrue(reference_file_path.is_file())
 
-        msg = "##################################################################################\n"
-        msg += name
-        print(msg)
-        for i_res_an in range(len(result_analytical)):
-            type_counter = result_analytical[i_res_an][0]
-            frequency = result_analytical[i_res_an][1]
-            typ = result_analytical[i_res_an][2]
-            for i_res in range(len(result)):
-                if (result[i_res][0] == type_counter) & (result[i_res][2] == typ):
-                    try:
-                        delta = abs(result[i_res][1]-frequency)
-                        assert delta <= abs_tol
-                        msg = '\nMode ' + str(type_counter) + ', Type: ' + str(typ,'utf-8') + ', passed'
-                        print(msg)
+        result = ParsedResults(result_file_path).AsDictionary()
+        reference = ParsedResults(reference_file_path).AsDictionary()
 
-                    except AssertionError:
-                        msg = '\nMode ' + str(type_counter) + ', Type: ' + str(typ,'utf-8')
-                        msg += '\nIs: ' + str(result[i_res][1])
-                        msg += ', Should be: ' + str(frequency)
-                        msg += ', Differs by: ' + str(delta)
-                        print(msg)
-        msg = "##################################################################################\n"
-        print(msg)
+        # Check result data
+        self.assertTrue("TypeCounter" in result)
+        self.assertTrue("Eigenfrequency [Hz]" in result)
+        self.assertTrue("Type" in result)
+
+        # Check reference data
+        self.assertTrue("TypeCounter" in reference)
+        self.assertTrue("Eigenfrequency [Hz]" in reference)
+        self.assertTrue("Type" in reference)
+
+        # Checks
+        for ref_type_counter, ref_frequency, ref_typ in zip(reference["TypeCounter"], reference["Eigenfrequency [Hz]"], reference["Type"]):
+            for type_counter, frequency, typ in zip(result["TypeCounter"], result["Eigenfrequency [Hz]"], result["Type"]):
+                if type_counter == ref_type_counter and typ == ref_typ:
+                    self.assertAlmostEqual(
+                        frequency,
+                        ref_frequency,
+                        delta = abs_tol
+                    )
+
+
+if __name__ == "__main__":
+    unittest.main()
