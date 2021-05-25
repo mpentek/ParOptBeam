@@ -82,12 +82,14 @@ class test_schemes(unittest.TestCase):
         for scheme in schemes:
             solver = LinearSolver(array_time, scheme, dt, [M,B,K], [u0, v0, a0], f, None)
             solver.solve()
-            plt.figure()
-            plt.plot(array_time,u_analytic,label='analytic')
-            plt.plot(array_time,solver.displacement[0], label=scheme)
-            plt.title(scheme)
-            plt.show()
             self.assertIsNone(np.testing.assert_allclose(u_analytic,solver.displacement[0],rtol = 1e-5, atol = 1e-10))
+            
+            if __name__ == "__main__":
+                plt.figure()
+                plt.plot(array_time,u_analytic,label='analytic')
+                plt.plot(array_time,solver.displacement[0], label=scheme)
+                plt.title(scheme)
+                plt.show()
 
 
 if __name__ == "__main__":
