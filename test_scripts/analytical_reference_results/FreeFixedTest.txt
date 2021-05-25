@@ -1,8 +1,8 @@
 # Analytical results following BENDING FREQUENCIES OF BEAMS, RODS, AND PIPES, Revision T, By Tom Irvine
 # TypeCounter | Eigenfrequency [Hz] | Type
-1	0.53467	sway_y
-2	3.35130	sway_y
-3	9.33316	sway_y
-1	0.26733	sway_z
-2	1.67565	sway_z
-3	4.66658	sway_z
+1 0.53467 sway_y
+2 3.35130 sway_y
+3 9.33316 sway_y
+1 0.26733 sway_z
+2 1.67565 sway_z
+3 4.66658 sway_z
