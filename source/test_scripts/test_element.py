@@ -1,10 +1,18 @@
+# --- External Imports ---
+import numpy as np
+
+# --- Internal Imports ---
 from source.element.cr_beam_element import CRBeamElement
 from source.element.timoshenko_beam_element import TimoshenkoBeamElement
 
-import numpy as np
+# --- STL Imports ---
+import unittest
 
-if __name__ == "__main__":
-    def test_timoshenko_element():
+
+class TestElement(unittest.TestCase):
+
+    @unittest.expectedFailure # reason: missing reference for the stiffness matrix
+    def test_timoshenko_element(self):
         material_params = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': False}
         element_params = {'a': 5., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
@@ -17,11 +25,10 @@ if __name__ == "__main__":
         K = element.get_element_stiffness_matrix()
         print(K)
 
+        raise RuntimeError("Missing stiffness matrix reference")
 
-    TOL = 1e-6
 
-
-    def test_crbeam_element_update_incremental():
+    def test_crbeam_element_update_incremental(self):
         material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
         element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
@@ -36,26 +43,12 @@ if __name__ == "__main__":
         new_coords = element._get_current_nodal_position()
         new_coords_sol = [1.2, 0.6, 0.0, 2.0, 0.0, 0.0]
 
-        try:
-            assert (abs(new_coords - new_coords_sol) < TOL).all()
-        except AssertionError:
-            msg = "##################################################################################\n"
-            msg += "Mistake in coordinate update\n"
-            msg += "New coordinate is suppose to be:\n" + str(new_coords_sol)
-            msg += "\nIt is however:\n" + str(new_coords)
-            print(msg)
+        self.AssertArray(new_coords, new_coords_sol, delta=self.tolerance)
 
         l = element._calculate_current_length()
         l_sol = np.sqrt(0.8 ** 2 + 0.6 ** 2)
 
-        try:
-            assert l - l_sol < TOL
-        except AssertionError:
-            msg = "##################################################################################\n"
-            msg += "Mistake in current length calculation\n"
-            msg += "Current length is suppose to be:\n" + str(l_sol)
-            msg += "\nIt is however:\n" + str(l)
-            print(msg)
+        self.assertAlmostEqual(l, l_sol, delta=self.tolerance)
 
         S = element._calculate_transformation_s()
 
@@ -74,10 +67,7 @@ if __name__ == "__main__":
             [0., 0., 1., 0., 0., 1.],
         ])
 
-        try:
-            assert (abs(S - S_sol) < TOL).all()
-        except AssertionError:
-            print("Mistake in local transformation matrix S calculation")
+        self.AssertMatrix(S, S_sol, delta=self.tolerance)
 
         r0 = element.Quaternion[0]
         r1 = element.Quaternion[1]
@@ -104,16 +94,7 @@ if __name__ == "__main__":
         T_sol = np.dot(tmp, n_xyz)
         T = element.LocalRotationMatrix
 
-        try:
-            assert (abs(T - T_sol) < TOL).all()
-        except AssertionError:
-            msg = "##################################################################################\n"
-            msg += "Mistake in local transformation matrix calculation\n"
-            msg += "Quaternion: " + str(element.Quaternion)
-            msg += "\nReference Rotation Matrix:\n" + str(element.LocalReferenceRotationMatrix)
-            msg += "\nT is suppose to be:\n" + str(T_sol)
-            msg += "\nIt is however:\n" + str(T)
-            print(msg)
+        self.AssertMatrix(T, T_sol, delta=self.tolerance)
 
         dv = element.v
         nx = T_sol[:, 0]
@@ -136,34 +117,22 @@ if __name__ == "__main__":
         ])
         # Eq.(4.84) Klaus
         dv_sol = np.dot(S_global.T, dp)
-        try:
-            assert (abs(dv - dv_sol) < TOL).all()
-            print(dv - dv_sol)
-        except AssertionError:
-            msg = "##################################################################################\n"
-            msg += "Mistake in deformation mode calculation\n"
-            msg += "nx = " + str(nx)
-            msg += "\nv is suppose to be:\n" + str(dv_sol)
-            msg += "\nIt is however:\n" + str(dv)
-            print(msg)
+
+        self.AssertMatrix(dv, dv_sol, delta=self.tolerance)
 
         ke_mat_2 = element._get_element_stiffness_matrix_material()
 
-        try:
-            assert (ke_mat_1 - ke_mat_2 < TOL).all()
-        except AssertionError:
-            print("Ke_const wrong")
+        self.AssertMatrix(ke_mat_1, ke_mat_2, delta=self.tolerance)
 
+        # TODO: missing references?
         K = element.get_element_stiffness_matrix()
         f_test = np.dot(K, dp)
         q = element.nodal_force_global
         print(f_test)
         print(q)
 
-        np.set_printoptions(precision=1)
 
-
-    def test_crbeam_element_update_total():
+    def test_crbeam_element_update_total(self):
         material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
         element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
 
@@ -177,13 +146,27 @@ if __name__ == "__main__":
         K = element.get_element_stiffness_matrix()
         f_test = np.dot(K, dp_v)
         q = element.nodal_force_global
-        try:
-            assert (abs(f_test - q) < TOL).all()
-        except AssertionError:
-            msg = "##################################################################################\n"
-            msg += "Mistake in force calculation\n"
-            msg += "q is suppose to be:\n" + str(f_test)
-            msg += "\nIt is however:\n" + str(q)
-            print(msg)
 
-        np.set_printoptions(precision=1)
+        self.AssertArray(f_test, q, delta=self.tolerance)
+
+
+    @property
+    def tolerance(self):
+        return 1e-6
+
+
+    def AssertArray(self, array, reference, **kwargs):
+        for item, item_reference in zip(array, reference):
+            self.assertAlmostEqual(item, item_reference, **kwargs)
+
+
+    def AssertMatrix(self, matrix: np.ndarray, reference: np.ndarray, **kwargs):
+        for row, row_reference in zip(matrix, reference):
+            if issubclass(type(row), (list, tuple, np.ndarray)):
+                self.AssertArray(row, row_reference, **kwargs)
+            else:
+                self.assertAlmostEqual(row, row_reference, **kwargs)
+
+
+if __name__ == "__main__":
+    unittest.main()
