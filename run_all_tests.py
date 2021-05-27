@@ -57,6 +57,8 @@ if __name__ == "__main__":
         top_level_dir = ROOT_DIRECTORY
     )
 
+    OUTPUT_DIRECTORY.mkdir(parents=True, exist_ok=True)
+
     test_output_file_name = OUTPUT_DIRECTORY / "test_output.log"
     test_results_file_name = OUTPUT_DIRECTORY / "test_results.log"
     stderr = sys.stderr

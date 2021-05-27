@@ -19,11 +19,11 @@ import pathlib
 
 ROOT_DIRECTORY = pathlib.Path(__file__).absolute().parent.parent.parent
 
-TEST_SCRIPTS_DIRECTORY = ROOT_DIRECTORY / "test_scripts"
-
-TEST_UTILS_DIRECTORY = TEST_SCRIPTS_DIRECTORY / "test_utils"
-
 SOURCE_DIRECTORY = ROOT_DIRECTORY / "source"
+
+TEST_SCRIPTS_DIRECTORY = SOURCE_DIRECTORY / "test_scripts"
+
+TEST_UTILS_DIRECTORY = SOURCE_DIRECTORY / "test_utils"
 
 TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY = TEST_SCRIPTS_DIRECTORY / "analytical_reference_results"
 

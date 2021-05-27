@@ -2,7 +2,6 @@
 from source.model.structure_model import StraightBeam
 from source.analysis.analysis_controller import AnalysisController
 
-from source.test_utils.test_case import TestCase
 from source.test_utils.code_structure import OUTPUT_DIRECTORY, TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY
 from source.test_utils.parsed_results import ParsedResults
 
@@ -10,7 +9,7 @@ from source.test_utils.parsed_results import ParsedResults
 import unittest
 
 
-class BeamEigenvalueAnalyticalTest(TestCase):
+class BeamEigenvalueAnalyticalTest(unittest.TestCase):
 
     def test_fixed_fixed(self):
         self.runModel("FixedFixedTest", "fixed-fixed")
