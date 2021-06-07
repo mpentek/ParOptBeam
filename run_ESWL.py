@@ -13,8 +13,8 @@ from source.ESWL.ESWL import ESWL
 from source.model.structure_model import StraightBeam
 
 # 1. get the load signals from the input.force
-# 3. create a structure model and solve the eigenvalue problem 
-# 4. create the ESWL object; which itself creates B and R ESWL objects and calculates them 
+# 3. create a structure model and solve the eigenvalue problem
+# 4. create the ESWL object; which itself creates B and R ESWL objects and calculates them
 # 5. call a ESWL.solve() function the computes the loads and stores them in a dictionary with direction and specified response as keys
 # 6. postprocess
 
@@ -29,7 +29,7 @@ available_models = [
 
 available_loads = [
     "input\\force\\generic_building\\dynamic_force_4_nodes.npy",
-    "input\\force\\generic_building\\dynamic_90_force_4_nodes.npy", 
+    "input\\force\\generic_building\\dynamic_90_force_4_nodes.npy",
     "input\\force\\generic_building\\dynamic_force_61_nodes.npy"
 ]
 
@@ -41,9 +41,9 @@ unsymmetric_model = [available_models[1]]
 
 CAARC_model = [available_models[2]]
 
-# # one interval only 
+# # one interval only
 simple_uniform = [available_models[3]]
-# with optimized 
+# with optimized
 simple_uniform_optimized = [available_models[4]]
 
 # # for a load file with 61 nodes
@@ -51,20 +51,16 @@ simple_uniform_optimized_60 = [available_models[5]]
 
 dynamic_load_file = available_loads[0]
 
-<<<<<<< HEAD
-
-=======
->>>>>>> feature_torsion_coupling
 plot_load_signals = False
 
 # ==============================================
 # READ AND CREATE THE BEAM MODEL
 # ==============================================
 for available_model in simple_uniform_optimized:
-    
+
     with open(os_join(*['input', 'parameters', available_model]), 'r') as parameter_file:
         parameters = json.loads(parameter_file.read())
-        
+
 # create initial model
 beam_model = StraightBeam(parameters['model_parameters'])
 
@@ -86,7 +82,7 @@ eigenvalue_analysis_in_parameters = False
 for analyses_param in parameters['analyses_parameters']["runs"]:
     if analyses_param['type'] == "eigenvalue_analysis":
         eigenvalue_analysis = EigenvalueAnalysis(beam_model, analyses_param)
-        eigenvalue_analysis.solve() #directly solve to have eigenforms etc available 
+        eigenvalue_analysis.solve() #directly solve to have eigenforms etc available
         eigenvalue_analysis_in_parameters = True
 
 if not eigenvalue_analysis_in_parameters:
@@ -99,12 +95,6 @@ if not eigenvalue_analysis_in_parameters:
 
 # drop the first entries beloning to the ramp up
 load_signals_raw = np.load(get_adjusted_path_string(dynamic_load_file))[:,discard_ramp_up:]
-<<<<<<< HEAD
-
-dynamic_load_file_ramp_up = auxiliary.discard_ramp_up(dynamic_load_file)
-np.save(dynamic_load_file_ramp_up, load_signals_raw)
-=======
->>>>>>> feature_torsion_coupling
 if len(load_signals_raw) != (beam_model.n_nodes*GD.DOFS_PER_NODE[beam_model.domain_size]):
     raise Exception('beam model and dynamic load signal have different number of nodes')
 else:
@@ -114,48 +104,27 @@ else:
 # # PLOTS OF LOAD SIGNALS
 if plot_load_signals:
     plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes, discard_ramp_up)
-<<<<<<< HEAD
 
 # ==============================================
-# RUN A DYNAMIC ANALYSIS 
-# ==============================================
-# for comparison of results
-print('\nDynamic analysis with original dynamic load')
-
-if discard_ramp_up:
-    dynamic_load_file = dynamic_load_file_ramp_up
-
-dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
-dynamic_analysis.solve()
-=======
-
-# ==============================================
-# RUN A DYNAMIC ANALYSIS 
+# RUN A DYNAMIC ANALYSIS
 # ==============================================
 # for comparison of results
 print('\nDynamic analysis with original dynamic load')
 
-# TODO: no discarded ramp up here, guess that it is not influencing the result signigicantly 
+# TODO: no discarded ramp up here, guess that it is not influencing the result signigicantly
 dynamic_analysis = auxiliary.create_dynamic_analysis_custom(beam_model, dynamic_load_file)
 dynamic_analysis.solve()
 
->>>>>>> feature_torsion_coupling
 
 
 # ==============================================
 # INPUT SETTINGS FOR THE ESWL OBJECT
 # ==============================================
-<<<<<<< HEAD
-response_labels_avail = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
-# for selected quantities list slices: Qy: :1, Qz: 1:2, Mx: 2:3, My: 3:4, Mz: 4:5
-responses_to_analyse = response_labels_avail[4:5]
-=======
 # INPUT SETTINGS FOR THE ESWL OBJECT
 # ==============================================
 response_labels_avail = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
 # for selected quantities list slices: Qy: :1, Qz: 1:2, Mx: 2:3, My: 3:4, Mz: 4:5
 responses_to_analyse = response_labels_avail[3:5]
->>>>>>> feature_torsion_coupling
 
 load_directions = ['y','z','a','b','g']
 decoupled_influences = False # if false influences are computed using static analysis, this should directly incorporate coupling if it is present. Else just by simple mechanics
@@ -176,33 +145,29 @@ NOTE: all components use: ['all']
     'resonant': distribution of base moment e.g. Kareem eq. 29
     'resonant_m': modal inertial load consisten calculation Kareem eq. 27
     'resonant_m_lumped: modal inertial using a nodal mass matrix/vector
-''' 
-<<<<<<< HEAD
-components_to_plot = ['background', 'lrc', 'mean']
-=======
+'''
 components_to_plot = ['resonant', 'resonant_m','background', 'mean']
->>>>>>> feature_torsion_coupling
 
 # ===============================================
 # CALCULATION OF ESWL FOR DIFFERENT RESPONSES
 # ==============================================
 
 for response in responses_to_analyse:
-    # direction 'x' is left out for now since no response is related to it 
+    # direction 'x' is left out for now since no response is related to it
 
-    eswl = ESWL(beam_model, eigenvalue_analysis, response, load_signals,load_directions, 
+    eswl = ESWL(beam_model, eigenvalue_analysis, response, load_signals,load_directions,
                 use_lumped, decoupled_influences, use_lrc, plot_mode_shapes)
 
     if plot_influences:
         plotter_utilities.plot_inluences(eswl)
-    
+
     eswl.calculate_total_ESWL()
 
     if plot_correlations:
         plotter_utilities.plot_rho(eswl.BESWL.rho_collection_all, response)
 
     # ===============================================
-    # RUN A STATIC ANALYSIS WITH THE ESWL 
+    # RUN A STATIC ANALYSIS WITH THE ESWL
     print('\nStatic analysis with ESWL...')
     eswl_vector = auxiliary.generate_static_load_vector_file(eswl.eswl_total[response])
 
@@ -225,7 +190,7 @@ for response in responses_to_analyse:
         print ('\n','|'+response+'|', 'with ESWL: ', '{:.2e}'.format(abs(static_response[0])))
         print ('|'+response+ ' max| with dynamic: ', '{:.2e}'.format(max(abs(dynamic_response))))
         print ('|ESWL| - |Max_dyn|: '+ '{:.2e}'.format(abs(static_response[0])- max(abs(dynamic_response))) + ' should be positive' + '\n',
-                'ESWL result = '+ str( round( abs(static_response[0]) / max(abs(dynamic_response)),2 ) ) + ' of dyn result; should be > 1.00') 
+                'ESWL result = '+ str( round( abs(static_response[0]) / max(abs(dynamic_response)),2 ) ) + ' of dyn result; should be > 1.00')
 
         print ('\n... finished calculations')
 
@@ -241,8 +206,7 @@ for response in responses_to_analyse:
         plotter_utilities.plot_load_time_histories_node_wise(load_signals, beam_model.n_nodes)
 
     if plot_eswl:
-        #eswl.plot_eswl_directional_load_components(eswl.eswl_total, eswl.structure_model.nodal_coordinates, load_directions, response) # 
+        #eswl.plot_eswl_directional_load_components(eswl.eswl_total, eswl.structure_model.nodal_coordinates, load_directions, response) #
         eswl.plot_eswl_components(response, load_directions, result_text, eswl.influences ,components_to_plot=components_to_plot)
 
     print ('... finished plotting')
-    
