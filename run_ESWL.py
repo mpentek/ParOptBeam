@@ -28,13 +28,13 @@ available_models = [
     ]
 
 available_loads = [
-    "input\\force\\generic_building\\dynamic_force_4_nodes.npy",
-    "input\\force\\generic_building\\dynamic_90_force_4_nodes.npy",
-    "input\\force\\generic_building\\dynamic_force_61_nodes.npy"
+    os_join(*['input','force','generic_building','dynamic_force_4_nodes.npy']),
+    os_join(*['input','force','generic_building','dynamic_90_force_4_nodes.npy']),
+    os_join(*['input','force','generic_building','dynamic_force_61_nodes.npy'])
 ]
 
 discard_ramp_up = 2000
-time_array = np.load('input\\force\\generic_building\\array_time.npy')
+time_array = np.load(os_join(*['input','force','generic_building','array_time.npy']))
 
 symmetric_model = [available_models[0]]
 unsymmetric_model = [available_models[1]]

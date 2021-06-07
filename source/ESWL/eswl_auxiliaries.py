@@ -15,20 +15,20 @@ def rms(signal, subtract_mean = True):
     return result
 
 def cov_custom(signal1, signal2):
-    
+
     mean1 = np.mean(signal1)
     mean2 = np.mean(signal2)
     cov = 0.0
     for i in range(len(signal1)):
         cov += (signal1[i] - mean1)*(signal2[i] - mean2)
-        
+
     return cov/len(signal1)
 
 def parse_load_signal(signal_raw, dofs_per_node, time_array):#, discard_time = None):
     '''
-    sorts the load signals in a dictionary with load direction as keys: 
-    x,y,z: nodal force 
-    a,b,g: nodal moments 
+    sorts the load signals in a dictionary with load direction as keys:
+    x,y,z: nodal force
+    a,b,g: nodal moments
     deletes first entries until discard_time
     '''
     if dofs_per_node != 6:
@@ -37,12 +37,12 @@ def parse_load_signal(signal_raw, dofs_per_node, time_array):#, discard_time = N
         signal = {}
         for i, label in enumerate(GD.DOF_LABELS['3D']):
             signal[label] = signal_raw[i::dofs_per_node]
-    
+
     if time_array.any():
         dt = time_array[1] - time_array[0] # simulation time step
-    else: 
+    else:
         dt = 0.1 # some default
-    
+
     signal['sample_freq'] = 1/dt
 
     return signal
@@ -50,7 +50,7 @@ def parse_load_signal(signal_raw, dofs_per_node, time_array):#, discard_time = N
 def parse_load_signal_backwards(signal):
     '''
     signal kommt als dictionary mit den Richtungen als keys (müssen nicht alle 6 Richtugne sein)
-    output soll row vector sein mit dofs * n_nodes einträgen 
+    output soll row vector sein mit dofs * n_nodes einträgen
     '''
     shape = GD.DOFS_PER_NODE['3D'] * len(list(signal.values())[0])
     signal_raw = np.zeros(shape)
@@ -105,7 +105,7 @@ def reduce_nodes_of_dynamic_load_file(file_name):
             mid = int(start + 0.5*step)
             end = int(start + step)
             # sum and alpha
-                
+
             node0 = dof_loads[start:mid]
             node0_sum = sum(node0)
 
@@ -123,7 +123,7 @@ def reduce_nodes_of_dynamic_load_file(file_name):
                 for i in range(len(dx0)):
                     f0[i] *= dx0[i]
                     f1[i] *= dx1[i]
-            
+
                 force_red[dof+elidx*6] += sum(f0)
                 force_red[dof+(elidx+1)*6] += sum(f1)
 
@@ -131,9 +131,9 @@ def reduce_nodes_of_dynamic_load_file(file_name):
 
 def generate_unit_nodal_force_file(number_of_nodes, node_of_load_application, force_direction, magnitude):
     '''
-    creating a force .npy file with a nodal force at given node, direction and magnitude 
+    creating a force .npy file with a nodal force at given node, direction and magnitude
     '''
-    src_path = 'input/force/generic_building/unit_loads/'
+    src_path = os.path.join(*['input','force','generic_building','unit_loads'])
     domain_size = '3D'
 
     loaded_dof = (node_of_load_application)*GD.DOFS_PER_NODE[domain_size] + GD.DOF_LABELS[domain_size].index(force_direction)
@@ -145,20 +145,20 @@ def generate_unit_nodal_force_file(number_of_nodes, node_of_load_application, fo
     force_file_name = src_path + 'unit_static_force_' + str(number_of_nodes) + '_nodes_at_' + str(node_of_load_application) + \
                         '_in_' + force_direction+'.npy'
     np.save(force_file_name, force_data)
-    
+
     return force_file_name
 
 def get_influence(structure_model, load_direction, node_id, response):
     '''
     influence function representing the response R due to a unit load acting at elevation z along load direction s
     '''
-    src_path = 'input/force/generic_building/unit_loads/'
+    src_path = os.path.join(*['input','force','generic_building','unit_loads'])
 
     needed_force_file = src_path + 'unit_static_force_' + str(structure_model.n_nodes) + \
                         '_nodes_at_' + str(node_id) + \
                         '_in_' + load_direction+'.npy'
 
-    
+
     if os.path.isfile(needed_force_file):
         unit_load_file = needed_force_file
     else:
@@ -168,13 +168,13 @@ def get_influence(structure_model, load_direction, node_id, response):
     static_analysis.solve()
 
     influence = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[response]]
-    
+
     if load_direction in ['a','b','g'] and node_id == 0 and load_direction == GD.RESPONSE_DIRECTION_MAP[response]:
         return 1.0
-    # maybe due to numerical stuff or whatever 
+    # maybe due to numerical stuff or whatever
     # set small values that are mechanically expected to be 0 to actual 0 that in the b_sl calculation 0 and not a radnom value occurs
     if abs(influence[0]) < 1e-05:
-        influence[0] = 0.0 
+        influence[0] = 0.0
     # returning here the influence of 0 since this is the reaction at the base node
     return influence[0]
 
@@ -194,7 +194,7 @@ def get_decoupled_influences(structure_model, load_direction, node_id, response)
             # positive
             return nodal_coordinates[node_id]
         elif shear_load[load_direction] == response:
-            return 1.0     
+            return 1.0
         elif response == 'Mx':
             c_e = 'c_ez'
             if len(structure_model.parameters["intervals"]):
@@ -204,8 +204,8 @@ def get_decoupled_influences(structure_model, load_direction, node_id, response)
             else:
                 if node_id == 0:
                     excentricity = structure_model.parameters["intervals"][node_id][c_e][0]
-                else: 
-                    excentricity = structure_model.parameters["intervals"][node_id-1][c_e][0] 
+                else:
+                    excentricity = structure_model.parameters["intervals"][node_id-1][c_e][0]
             # negative sign for positive Mx
             return -excentricity
         else:
@@ -216,7 +216,7 @@ def get_decoupled_influences(structure_model, load_direction, node_id, response)
             # negative
             return -nodal_coordinates[node_id]
         elif shear_load[load_direction] == response:
-            return 1.0     
+            return 1.0
         elif response == 'Mx':
             c_e = 'c_ey'
             if len(structure_model.parameters["intervals"]):
@@ -226,8 +226,8 @@ def get_decoupled_influences(structure_model, load_direction, node_id, response)
             else:
                 if node_id == 0:
                     excentricity = structure_model.parameters["intervals"][node_id][c_e][0]
-                else: 
-                    excentricity = structure_model.parameters["intervals"][node_id-1][c_e][0] 
+                else:
+                    excentricity = structure_model.parameters["intervals"][node_id-1][c_e][0]
             # positive sign for positive Mx
             return excentricity
         else:
@@ -352,12 +352,12 @@ def check_and_flip_sign(mode_shape_array, mode_id = None):
     '''
     change the sign of the mode shape such that the first entry is positive
     the translational dof is taken: the rotations are coupled and thus the sign is coupled
-    y+ -> 
+    y+ ->
     '''
     trans_rot = {'y':4,'z':2}
     flips = []
     for dof, label in enumerate(['x','y','z','a']):
-        
+
         step = GD.DOFS_PER_NODE['3D']
         dof_id = GD.DOF_LABELS['3D'].index(label)
 
@@ -372,7 +372,6 @@ def check_and_flip_sign(mode_shape_array, mode_id = None):
                 rot_shape = mode_shape_array[step+rot_id::step]
                 mode_shape_array[step+rot_id::step] *= -1
 
-    if mode_id < 3:        
-        print ('  in mode', mode_id, 'flipped',flips)        
-    return mode_shape_array 
-    
+    if mode_id < 3:
+        print ('  in mode', mode_id, 'flipped',flips)
+    return mode_shape_array
