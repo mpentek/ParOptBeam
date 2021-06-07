@@ -1,6 +1,9 @@
 from math import ceil, log10
 import sys
 import numpy as np
+import os
+
+import source.auxiliary.global_definitions as GD
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
 
 CUST_MAGNITUDE = 4
@@ -16,6 +19,7 @@ def map_lin_to_log(val, base=10**3):
     # TODO: implment check
     return base**(1.0 - val)
 
+def cm2inch(val_in_cm): return val_in_cm*0.3937007874
 
 def shift_normalize(val, base=10**3):
     # TODO: implment check
@@ -52,7 +56,4 @@ def get_fitted_array (x, y, degree):
 
     return eigenmodes_fitted 
 
-def stop_run():
-        stop = input('Want to continue? (y/n) ')
-        if stop == 'n':
-            sys.exit()
+

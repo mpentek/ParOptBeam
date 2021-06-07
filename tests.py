@@ -1,23 +1,24 @@
 import numpy as np
-from scipy import linalg
-import math 
 import matplotlib.pyplot as plt
-fig, ax = plt.subplots(1, 1)
-def mul (fac):
-    return 2*fac
-    
-x= np.linspace(1,3,3)
-ax.plot(x,mul(x))
-k1 = 2
-k2 = 1
-m = 1.3
-x = np.linspace(0.2, 5, 20)
+from scipy import linalg
+from scipy import signal
+import json
+import os
+import source.auxiliary.global_definitions as GD
 
-def f(k1,k2,m):
-    return ((2*k2 + k1) + math.sqrt(4*k2**2 +k1**2)) / (2*m)
+<<<<<<< HEAD
+l = np.asarray([-1,1])
+print (abs(l))
+=======
+ls = [np.array([2.70056570e+07, 8.08342680e+08, 1.17012613e+09, 2.81668588e+08]),
+       np.array([ 2.70056570e+07, -7.99470290e+08, -1.15959190e+09, -3.56018532e+08]) ]
 
-def phi (k1,k2):
-    return (2*k2 +k1 + math.sqrt(4*k2**2 + k1**2))/(2*k2) + k1/k2 +1
-
-A = np.arange(25).reshape(5,5)
-print (np.linspace(0.5,1.0,0.02))
+[26963381.744200196+ 4406617.601090656+ 5230943.047890966, -37128264.67161786]
+i = np.array([1., 1., 1., 1.])
+a = -2288075065
+b = 2287143055
+2.70056570e+07+ -7.99470290e+08+ -1.15959190e+09
+print (np.matmul(np.transpose(i),ls[0]))
+print (sum(np.multiply(i,ls[0])))
+print (sum(np.multiply(i,ls[1])))
+>>>>>>> feature_torsion_coupling

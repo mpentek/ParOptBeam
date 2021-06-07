@@ -11,6 +11,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from source.auxiliary import global_definitions as GD
 from source.auxiliary.other_utilities import get_signed_maximum
 from source.auxiliary.auxiliary_functionalities import get_fitted_array
+from source.auxiliary.auxiliary_functionalities import cm2inch
 
 
 '''
@@ -46,8 +47,68 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markersize":     [4,      4,    4,      4,    4,    4]}
+LINESTYLE = ["--",    "-.",  ":",    "-",   "-",   "-"]
 
 LEGEND_SETUP = {"fontsize": [16, 14, 12, 10, 8]}
+
+width = cm2inch(5)
+height = cm2inch(3)
+parameters = {'text.usetex': False,
+
+          'font.size': 10,
+
+          'font.family': 'sans-serif',
+
+          'text.latex.unicode': False,
+
+          'figure.titlesize': 10,
+
+          'figure.figsize': (width, height),
+
+          'figure.dpi': 300,
+
+          'axes.titlesize': 10,
+
+          'axes.labelsize': 10,
+
+          'axes.grid': 'True',
+
+          'axes.grid.which': 'both',
+
+          'axes.xmargin': 0.05,
+
+          'axes.ymargin': 0.05,
+
+          'lines.linewidth': 0.5,
+
+          'lines.linestyle': '--',
+
+          'lines.markersize': 3,
+
+          'xtick.labelsize': 10,
+
+          'ytick.labelsize': 10,
+
+          'ytick.minor.visible': 'true',
+
+          'xtick.minor.visible': 'true',
+
+          'grid.linestyle': '-',
+
+          'grid.linewidth': 0.5,
+
+          'grid.alpha': 0.3,
+
+          'legend.fontsize': 10,
+
+          'savefig.dpi': 300,
+
+          'savefig.format': 'pdf',
+
+          'savefig.bbox': 'tight'
+
+          }
+
 
 '''
 geometry = {"undeformed":...,
@@ -564,6 +625,7 @@ def plot_CAARC_eigenmodes(CAARC_eigenmodes, display_plot, max_normed, suptitle =
                         color=LINE_TYPE_SETUP["color"][0],
                         linestyle=LINE_TYPE_SETUP["linestyle"][0])
             max_deformations, min_deformations = [], []
+            mode_id = i +1
             for j, sway in enumerate(['y', 'z', 'a']): #plot first three dofs
                 label_dof = GD.DOF_LABELS['3D'][j+1]
                 if label_dof == 'a':
@@ -806,3 +868,4 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
 
     if display_plot:
         plt.show()
+

@@ -59,8 +59,8 @@ class DynamicAnalysis(AnalysisType):
             err_msg += " is not a valid file!"
             raise Exception(err_msg)
         else:
-            print(get_adjusted_path_string(
-                self.parameters['input']['file_path']) + ' set as load file path in DynamicAnalysis')
+            # print(get_adjusted_path_string(
+            #     self.parameters['input']['file_path']) + ' set as load file path in DynamicAnalysis')
             force = np.load(get_adjusted_path_string(
                 self.parameters['input']['file_path']))
 
@@ -175,7 +175,7 @@ class DynamicAnalysis(AnalysisType):
             force = np.dot(np.transpose(
                 self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered]), force)
 
-        print(self.parameters)
+        #print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
             from source.solving_strategies.strategies.linear_solver import LinearSolver
             self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
@@ -205,7 +205,7 @@ class DynamicAnalysis(AnalysisType):
 
     def solve(self):
 
-        print("Solving the structure for dynamic loads \n")
+        #print("Solving the structure for dynamic loads \n")
         self.solver.solve()
 
 
