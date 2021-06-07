@@ -21,10 +21,10 @@ class ESWL(object):
         self.eigenvalue_analysis = eigenvalue_analysis
         self.load_signals = load_signals
         self.load_directions = load_directions
-        self.use_lumped = use_lumped 
+        self.use_lumped = use_lumped
         self.use_lrc = use_lrc
         self.plot_mode_shapes = plot_mode_shapes
-        
+
         if response in response_labels:
             self.response = response
         else:
@@ -48,11 +48,11 @@ class ESWL(object):
         from source.ESWL.BESWL import BESWL
         from source.ESWL.RESWL import RESWL
 
-        #für jede direction wird jetzt ein neues objekt erzeugt und immer wieder initialisiert -> manche variablen sind aber Richtungs unabhängig 
+        #für jede direction wird jetzt ein neues objekt erzeugt und immer wieder initialisiert -> manche variablen sind aber Richtungs unabhängig
         self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.load_directions, self.response)
-        self.RESWL = RESWL(self.structure_model, self.influences, self.eigenvalue_analysis, 
-                            self.load_signals, self.load_directions, self.response, 
-                            self.use_lumped, self.plot_mode_shapes) 
+        self.RESWL = RESWL(self.structure_model, self.influences, self.eigenvalue_analysis,
+                            self.load_signals, self.load_directions, self.response,
+                            self.use_lumped, self.plot_mode_shapes)
 
         self.eswl_components[self.response] = {}
         self.eswl_total[self.response] = {}
@@ -63,17 +63,17 @@ class ESWL(object):
         print ('\nESWL Component Combinations:')
         # calculate the eswl for each load direction
         for direction in self.load_directions:
-            
+
             # =======================================================================
-            # # MEAN PART 
+            # # MEAN PART
             mean_load = np.asarray([np.mean(x) for x in self.load_signals[direction]])
-            
+
             # =======================================================================
-            # BESWL - BACKGROUND PART 
+            # BESWL - BACKGROUND PART
             g_b = self._get_peak_factor('background')
             w_b = self.BESWL.weighting_factors_raw[self.response][direction] * g_b / R_max
-            p_z_b = self.BESWL.spatial_distribution[self.response][direction] * g_b  
-            p_z_b_e = abs(w_b * p_z_b) 
+            p_z_b = self.BESWL.spatial_distribution[self.response][direction] * g_b
+            p_z_b_e = abs(w_b * p_z_b)
 
             # # ALTERNATIVE for BESWL - LRC KASPERSIK
             w_b_lrc = np.sqrt(self.BESWL.rms_background_response) * g_b / R_max # weoghting factor for combinations Kareem eq. 33, Holmes eq.4.41
@@ -92,11 +92,11 @@ class ESWL(object):
                     background[node] *= -1
 
             # =======================================================================
-            # # RESWL - RESONANT PART 
-            # NOTE: seperation of modes -> Rule: fi+1*0,9 > fi -> given for CAARC 
-            w_r_j = self.RESWL.weighting_factors_raw[self.response][direction] 
+            # # RESWL - RESONANT PART
+            # NOTE: seperation of modes -> Rule: fi+1*0,9 > fi -> given for CAARC
+            w_r_j = self.RESWL.weighting_factors_raw[self.response][direction]
             # 1. variante: distribute resonant base moment along height Kareem eq. 29
-            p_z_r = self.RESWL.spatial_distribution[self.response][direction] 
+            p_z_r = self.RESWL.spatial_distribution[self.response][direction]
             # 2. modal inertial load: Kareem eq. 27
             p_z_rm = self.RESWL.modal_inertial[self.response][direction]
             p_z_rm_lumped = self.RESWL.modal_inertial_lumped[self.response][direction]
@@ -110,21 +110,17 @@ class ESWL(object):
                 w_r = w_r_j[mode_id] * g_r / R_max # weighting factor
 
                 # multiplying p_z_r_ with g_r according to eq. 27,29 Kareem
-                p_z_r_e +=  w_r * p_z_r[mode_id] * g_r  
-                p_z_r_em += w_r * p_z_rm[mode_id] * g_r 
-                p_z_r_em_lumped += w_r * p_z_rm_lumped[mode_id] * g_r 
-            
+                p_z_r_e +=  w_r * p_z_r[mode_id] * g_r
+                p_z_r_em += w_r * p_z_rm[mode_id] * g_r
+                p_z_r_em_lumped += w_r * p_z_rm_lumped[mode_id] * g_r
+
             # # SIGN OF RESONANT PART
             # 1. select sign du to combination with other components
             resonant_sign, flipped_sign = self.get_sign_for_resonant(mean_load ,background ,p_z_r_e, direction)
 
             if flipped_sign:
-<<<<<<< HEAD
-                print ('\n   flipped sign of resonant', direction, ', reason: component combination')
-=======
                 print ('\nflipped sign of resonant', direction, ', reason: component combination')
->>>>>>> feature_torsion_coupling
-            
+
             p_z_r_e = resonant_sign*p_z_r_e
             p_z_r_em = resonant_sign*p_z_r_em
             p_z_r_em_lumped = resonant_sign*p_z_r_em_lumped
@@ -139,8 +135,8 @@ class ESWL(object):
                     sign_y = 'n'
                 else:
                     sign_y = 'p'
-           
-            if direction == 'g': 
+
+            if direction == 'g':
                 if p_z_r_e[1] < 0:
                     if sign_y == 'p':
                         print ('  flipped sign of resonant g, reason: coupled y-g')
@@ -161,8 +157,8 @@ class ESWL(object):
                     sign_z = 'n'
                 else:
                     sign_z = 'p'
-           
-            if direction == 'b': 
+
+            if direction == 'b':
                 if p_z_r_e[1] < 0:
                     if sign_z == 'n':
                         print ('  flipped sign of resonant b, reason: coupled z-b')
@@ -177,7 +173,7 @@ class ESWL(object):
                         p_z_r_e *= -1
                     else:
                         flipped_b_coupling = False
-            
+
             # =======================================================================
             # # TOTAL
 
@@ -195,7 +191,7 @@ class ESWL(object):
             self.eswl_components[self.response][direction]['resonant_m'] = p_z_r_em
             self.eswl_components[self.response][direction]['resonant_m_lumped'] = p_z_r_em_lumped
             self.eswl_components[self.response][direction]['total'] = eswl_total
-            
+
 
     def _get_peak_factor(self, response_type = None , frequency = None):
         '''
@@ -221,11 +217,11 @@ class ESWL(object):
         maximum response according to e.g. Holmes eq. 5.41 and Kareem eq. 18
         '''
         # background
-        g_b = self._get_peak_factor('background') 
-        R_b = g_b**2 * self.BESWL.rms_background_response 
+        g_b = self._get_peak_factor('background')
+        R_b = g_b**2 * self.BESWL.rms_background_response
 
-        # resonant 
-        # for each response one mode is the most relevant, the g_R associated with this mode is then the one mostly contributing to the response 
+        # resonant
+        # for each response one mode is the most relevant, the g_R associated with this mode is then the one mostly contributing to the response
         R_r = 0.0
         for mode_id in range(3):
             sig_R_r = self.RESWL.get_rms_resonant_response(mode_id)
@@ -271,11 +267,11 @@ class ESWL(object):
 
     def _initialize_influence_functions(self, decoupled_influences):
         '''
-        calculates the influences of each load direction at each node 
-        if decoupled_influences = True: 
+        calculates the influences of each load direction at each node
+        if decoupled_influences = True:
             influences are caclulated simple/manually
         else:
-            a static analysis with a respective unit load is created 
+            a static analysis with a respective unit load is created
         '''
         # the influences on the base moments are needed in the resonant computations, thus they are computed at least for all of them
         required_responses = ['Mx', 'My', 'Mz']
@@ -292,18 +288,18 @@ class ESWL(object):
                 self.influences[response][direction] = np.zeros(self.structure_model.n_nodes)
                 for node in range(self.structure_model.n_nodes):
                     if self.decoupled_influences:
-                        
+
                         influence = get_decoupled_influences(self.structure_model, direction, node, response)
                     else:
-                        
+
                         influence = get_influence(self.structure_model, direction, node, response)
                     self.influences[response][direction][node] = influence
 
     # # PLOTS
 
     def plot_eswl_directional_components(self, load_directions, response_label):
-        
-        plotter_utilities.plot_load_components(self.eswl_total, 
+
+        plotter_utilities.plot_load_components(self.eswl_total,
                                                 self.structure_model.nodal_coordinates,
                                                 load_directions,
                                                 response_label)
