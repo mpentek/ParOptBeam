@@ -13,16 +13,18 @@ class ParsedResults:
         self._file_path = pathlib.Path("")
         self._description = ""
         self._data_tags = []
-        self._is_non_numeric = []
+        self._data_types = []
 
         self.Load(filePath)
 
 
     @property
-    def non_numeric_tags(self):
-        return ["Type"]
+    def data_types(self):
+        return {
+            "Type" : str
+        }
 
-    
+
     @property
     def description(self):
         return self._description
@@ -87,7 +89,7 @@ class ParsedResults:
         self._file_path = pathlib.Path("")
         self._description = ""
         self._data_tags = []
-        self._is_non_numeric = []
+        self._data_types = []
 
 
     def _ParseHeader(self, file):
@@ -132,13 +134,22 @@ class ParsedResults:
         """
         Expecting one line of csv with '|' as delimiter. Example:
         tag_0 | tag_1 | tag_2|tag_3 |tag_4| tag_5 | ... | tag_n
+
+        All data is interpreted as float, unless their tag has a type entry
+        in ParsedResults::data_types
         """
         for tag in dataTagLine.split('|'):
             tag = tag.strip()
 
             if not (tag in self._data_tags):
                 self._data_tags.append(tag)
-                self._is_non_numeric.append(tag in self.non_numeric_tags)
+
+                # Get data type based on its tag (default is float)
+                if not tag in self.data_types:
+                    self._data_types.append(float)
+                else:
+                    self._data_types.append(self.data_types[tag])
+
                 self._data.append([])
             else:
                 raise SyntaxError("Duplicate data tag: {}".format(tag))
@@ -159,8 +170,11 @@ class ParsedResults:
 
         # Convert numeric columns
         for index in range(len(self._data)):
-            if not self._is_non_numeric[index]:
-                self._data[index] = numpy.asarray([float(item) for item in self._data[index]])
+            type = self._data_types[index]
+            if type == float:
+                self._data[index] = numpy.asarray([type(item) for item in self._data[index]])
+            else:
+                self._data[index] = [type(item) for item in self._data[index]]
 
 
     def __str__(self):
@@ -183,3 +197,27 @@ class ParsedResults:
                 string += tmp + '\n'
 
         return string
+
+
+    def __getitem__(self, tag: str):
+        """overload operator[] to function as a dict"""
+        try:
+            index = self._data_tags.index(tag)
+            return self._data[index]
+        except Exception as exception:
+            raise KeyError("'{}' does not match any tags".format(tag))
+
+
+    def keys(self):
+        for key in self._data_tags:
+            yield key
+
+
+    def values(self):
+        for value in self._data:
+            yield value
+
+
+    def items(self):
+        for key, value in zip(self.keys(), self.values()):
+            yield key, value
