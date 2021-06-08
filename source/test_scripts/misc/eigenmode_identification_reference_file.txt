@@ -1,0 +1,7 @@
+# TypeCounter | Eigenfrequency [Hz] | Type
+1 3.40258 sway_y
+2 9.38092 sway_y
+3 18.38755 sway_y
+1 1.70129 sway_z
+2 4.69046 sway_z
+3 9.19378 sway_z

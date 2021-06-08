@@ -1,0 +1,7 @@
+# Used for testing ResultFileComparator
+# Note: all result files are expected to follow this format
+# some_integer_data | some_float_data | Type
+0 0.123 "first"
+1 1.234 "second"
+2 2.345 "third"
+3 3.456 "fourth"
