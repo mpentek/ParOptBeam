@@ -3,7 +3,7 @@ from source.model.structure_model import StraightBeam
 from source.analysis.analysis_controller import AnalysisController
 
 from source.test_utils.code_structure import OUTPUT_DIRECTORY, TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY
-from source.test_utils.parsed_results import ParsedResults
+from source.test_utils.result_file_comparator import ResultFileComparator
 
 # --- STL Imports ---
 import unittest
@@ -129,38 +129,19 @@ class BeamEigenvalueAnalyticalTest(unittest.TestCase):
         analyses_controller.postprocess()
 
         # ==============================================
-        # test results against available analytical solutions
-        abs_tol = 1e-1
 
-        # Parse result and reference files
         result_file_path = OUTPUT_DIRECTORY / model_name / "eigenvalue_analysis_eigenmode_identification.dat"
         reference_file_path = TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY / (model_name + ".txt")
         
-        self.assertTrue(result_file_path.is_file())
-        self.assertTrue(reference_file_path.is_file())
-
-        result = ParsedResults(result_file_path).AsDictionary()
-        reference = ParsedResults(reference_file_path).AsDictionary()
-
-        # Check result data
-        self.assertTrue("TypeCounter" in result)
-        self.assertTrue("Eigenfrequency [Hz]" in result)
-        self.assertTrue("Type" in result)
-
-        # Check reference data
-        self.assertTrue("TypeCounter" in reference)
-        self.assertTrue("Eigenfrequency [Hz]" in reference)
-        self.assertTrue("Type" in reference)
-
-        # Checks
-        for ref_type_counter, ref_frequency, ref_typ in zip(reference["TypeCounter"], reference["Eigenfrequency [Hz]"], reference["Type"]):
-            for type_counter, frequency, typ in zip(result["TypeCounter"], result["Eigenfrequency [Hz]"], result["Type"]):
-                if type_counter == ref_type_counter and typ == ref_typ:
-                    self.assertAlmostEqual(
-                        frequency,
-                        ref_frequency,
-                        delta = abs_tol
-                    )
+        ResultFileComparator(
+            result_file_path,
+            reference_file_path,
+            testCase = self,
+            settings = {
+                "analysis_type" : "eigenmode_identification",
+                "absolute_tolerance" : 1e-1
+            }
+        ).Compare()
 
 
 if __name__ == "__main__":
