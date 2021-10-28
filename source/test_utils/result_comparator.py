@@ -1,6 +1,7 @@
 # --- STL Imports ---
 import unittest
 import pathlib
+from unittest import TestCase
 
 # --- External Imports ---
 import numpy
@@ -9,33 +10,37 @@ import numpy
 from .parsed_results import ParsedResults
 
 
-class ResultFileComparator:
+class ResultComparator:
 
-    def __init__(self, testFilePath: pathlib.Path, referenceFilePath: pathlib.Path, settings={}, testCase=None):
-        self.test_results = ParsedResults(testFilePath)
-        self.reference_results = ParsedResults(referenceFilePath)
+    def __init__(self, test_results: ParsedResults, reference_results: ParsedResults, test_case=None, **settings):
+        if not all(isinstance(item, ParsedResults) for item in (test_results, reference_results)):
+            raise TypeError("Expecting 'ParsedResults' objects, but got {}".format((type(test_results), type(reference_results))))
 
+        self.test_results = test_results
+        self.reference_results = reference_results
+
+        # Settings
         settings = self.ValidateAndAddDefaults(settings.copy())
-        self.absolute_tolerance = settings["absolute_tolerance"]
+        self.delta = settings["delta"]
         self.allow_additional_data = settings["allow_additional_data"]
         self.analysis_type = settings["analysis_type"]
 
-        if testCase == None:
-            self.test_case = unittest.TestCase()
+        if test_case == None:
+            self.test_case = TestCase()
         else:
-            self.test_case = testCase
+            self.test_case = test_case
 
 
     def Compare(self):
         # Check whether the requested analysis type has a corresponding result comparison method
         if not (self.analysis_type in self.analysis_check_map):
             raise ValueError("'{}' is not a valid analysis type, options are: {}".format(self.analysis_type, list(self.analysis_check_map.keys)))
-        
+
         # Perform the comparison
         self.analysis_check_map[self.analysis_type]()
 
 
-    def CompareFileContents(self, match_entry_lengths=True):
+    def CompareContents(self, match_entry_lengths=True):
         reference_keys = list(self.reference_results.keys())
         test_keys = list(self.test_results.keys())
 
@@ -120,7 +125,7 @@ class ResultFileComparator:
                 key = key,
                 index = index
             ),
-            delta=self.absolute_tolerance
+            delta=self.delta
         )
 
 
@@ -156,7 +161,7 @@ class ResultFileComparator:
     @staticmethod
     def GetDefaultSettings():
         return {
-            "absolute_tolerance" : 1e-16,
+            "delta" : 1e-16,
             "analysis_type" : "default",
             "allow_additional_data" : True
         }
@@ -166,7 +171,7 @@ class ResultFileComparator:
     def ValidateAndAddDefaults(settings: dict):
         """Check whether all keys in the arguments are valid, and append it with keys are missing"""
         default_settings = ResultFileComparator.GetDefaultSettings()
-        
+
         for key in settings.keys():
             if not (key in default_settings):
                 raise KeyError("{} is not a valid setting to be specified".format(key))
@@ -176,3 +181,36 @@ class ResultFileComparator:
                 settings[key] = value
 
         return settings
+
+
+    @staticmethod
+    def _CheckPath(path: pathlib.Path) -> pathlib.Path:
+        if not ininstance(path, pathlib.Path):
+            if isinstance(path, str):
+                path = pathlib.Path(path)
+            else:
+                raise TypeError("Invalid path type: {}".format(type(path)))
+
+        if not path.is_file():
+            raise FileNotFoundError(str(path))
+
+        return path
+
+
+class ResultFileComparator(ResultComparator):
+
+    def __init__(self, testFilePath: pathlib.Path, referenceFilePath: pathlib.Path, *args, **kwargs):
+        # Check input types
+        testilePath = self._CheckPath(testFilePath)
+        referenceFilePath = self._CheckPath(referenceFilePath)
+
+        # Check file types
+        extension = str(testFilePath.suffix).lower()
+        if extension != str(referenceFilePath.suffix).lower():
+            raise RuntimeError("File type mismatch: {} and {}".format(testFilePath, referenceFilePath))
+
+        # Parse
+        Parser = ParsedResults.GetParserForFileType(extension)
+        test_results = Parser(testFilePath)
+        reference_results = Parser(referenceFilePath)
+        ResultComparator.__init__(self, test_results, reference_results, *args, **kwargs)

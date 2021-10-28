@@ -3,19 +3,18 @@ import numpy
 
 # --- STL Imports ---
 import pathlib
+import io
 
 
 class ParsedResults:
-    """A decorated dictionary containing the output of any implemented analysis."""
-    
+    """Base class for parsing the output of analyses."""
+
     def __init__(self, filePath: pathlib.Path):
         self._data = []
-        self._file_path = pathlib.Path("")
+        self._file_path = pathlib.Path(filePath)
         self._description = ""
         self._data_tags = []
         self._data_types = []
-
-        self.Load(filePath)
 
 
     @property
@@ -40,6 +39,28 @@ class ParsedResults:
         return self._data
 
 
+    @property
+    def file_path(self):
+        return self._file_path
+
+
+    @staticmethod
+    def GetExtensionParserMap():
+        return {
+            ".dat"  : ParsedDat,
+            ".csv"  : ParsedCSV
+        }
+
+
+    @staticmethod
+    def GetParserForFileType(extension: str):
+        extension = str(extension)
+        if extension.lower() in ParsedResults.GetExtensionParserMap():
+            return ParsedResults.GetExtensionParserMap()[extension]
+        else:
+            raise RuntimeError("Unsuppoted file type: {}".format(extension))
+
+
     def AsDictionary(self, include_description=True):
         dictionary = {}
 
@@ -52,17 +73,177 @@ class ParsedResults:
         return dictionary
 
 
+    @classmethod
+    def FromData(cls, data=[], data_tags=[], data_types=[]):
+        """Load from existing data instead of a file."""
+        raise RuntimeError("Virtual base class member")
+
+
+    def _Clear(self):
+        self._data = []
+        self._file_path = pathlib.Path("")
+        self._description = ""
+        self._data_tags = []
+        self._data_types = []
+
+
+    def __str__(self):
+        # Header
+        string = '# ' + self._description.replace('\n', "\n# ") + '\n# '
+
+        for tag_index, tag in enumerate(self._data_tags):
+            tmp = tag
+            if tag_index < len(self._data_tags) - 1:
+                tmp += " | "
+            string += tmp
+        string += '\n'
+
+        # Data
+        if self._data:
+            for index in range(len(self._data[0])):
+                tmp = ""
+                for item in [self._data[component_index][index] for component_index in range(len(self._data))]:
+                    tmp += str(item) + ' '
+                string += tmp + '\n'
+
+        return string
+
+
+    def __getitem__(self, tag: str):
+        """overload operator[] to function as a dict"""
+        try:
+            index = self._data_tags.index(tag)
+            return self._data[index]
+        except Exception as exception:
+            raise KeyError("'{}' does not match any tags".format(tag))
+
+
+    def keys(self):
+        for key in self._data_tags:
+            yield key
+
+
+    def values(self):
+        for value in self._data:
+            yield value
+
+
+    def items(self):
+        for key, value in zip(self.keys(), self.values()):
+            yield key, value
+
+
+
+
+class ParsedCSV(ParsedResults):
+    """
+    CSV with no header and only numeric data, loaded into a dictionary to
+    conform with the .dat format.
+
+    Note: the dictionary's keys are the columns' indices
+    """
+
+    def __init__(self, filePath: pathlib.Path, load=True):
+        ParsedResults.__init__(self, filePath)
+        if load:
+            self.Load(filePath)
+
+
     def Load(self, filePath: pathlib.Path):
         # Clear previous contents
         self._Clear()
 
-        # Set output file path to be loaded
+        # Set file path to be loaded
         argument_type = type(filePath)
         if not issubclass(argument_type, (pathlib.Path)):
             if issubclass(argument_type, (str)):
                 filePath = pathlib.Path(filePath)
             else:
-                raise ValueError("Expecting a pathlib.Path object for output file path, got {}".format(argument_type))
+                raise TypeError("Expecting a pathlib.Path object for file path, got {}".format(argument_type))
+        self._file_path = filePath
+
+        if self._file_path.is_file():
+            self._data = numpy.loadtxt(self._file_path, delimiter=' ')
+
+            if len(self._data.shape) == 1:
+                self._data = numpy.array([self._data])
+
+            number_of_variables = self._data.shape[0]
+            self._data_tags = [index for index in range(number_of_variables)]
+            self._data_types = [float for _ in range(number_of_variables)]
+
+        else: # self._file_path.is_file()
+            raise FileNotFoundError("{} is not a file".format(self._file_path))
+
+
+    @classmethod
+    def FromData(cls, data=[], data_tags=[], data_types=[]):
+        # Check data
+        data = numpy.asarray(data)
+
+        if len(data.shape) == 1:
+            data = numpy.array([data])
+        elif len(data.shape) != 2:
+            raise ValueError("Expecting an array or matrix but got an object of shape {}".format(data.shape))
+
+        # Check other arguments
+        if data_tags:
+            raise ValueError("ParsedCSV does not expect 'data_tags', but got {}".format(data_tags))
+
+        if data_types:
+            raise ValueError("ParsedCSV does not expect 'data_types', but got {}".format(data_types))
+
+        # Construct object
+        this = ParsedCSV("", load=False)
+        this._data = data
+        this._data_tags = [index for index in range(len(data))]
+        this._data_types = [float for _ in range(len(data))]
+
+        return this
+
+
+    def __str__(self) -> str:
+        stream = io.BytesIO()
+        numpy.savetxt(stream, self._data, delimiter=' ')
+        return stream.getvalue().decode("utf-8")
+
+
+
+class ParsedDat(ParsedResults):
+    """
+    A decorated dictionary containing the output of any implemented analysis.
+
+    Expecting a file with .dat extension in the following format:
+        - begins with any number of header lines that start with '#'
+        - the last line of the header contains data tags for their corresponding
+          column, separated by '|'
+        - apart from the header, the data should be in csv format (',' delimiter)
+          that may contain numeric or string values (columns must have consistent types)
+    """
+
+    def __init__(self, filePath: pathlib.Path, load=True):
+        ParsedResults.__init__(self, filePath)
+        # Base class defines:
+        #   self._data
+        #   self._file_path
+        #   self._description
+        #   self._data_tags
+        #   self._data_types
+        if load:
+            self.Load(filePath)
+
+
+    def Load(self, filePath: pathlib.Path):
+        # Clear previous contents
+        self._Clear()
+
+        # Set file path to be loaded
+        argument_type = type(filePath)
+        if not issubclass(argument_type, (pathlib.Path)):
+            if issubclass(argument_type, (str)):
+                filePath = pathlib.Path(filePath)
+            else:
+                raise TypeError("Expecting a pathlib.Path object for file path, got {}".format(argument_type))
         self._file_path = filePath
 
         if self._file_path.is_file():
@@ -84,12 +265,29 @@ class ParsedResults:
             raise FileNotFoundError("{} is not a file".format(self._file_path))
 
 
-    def _Clear(self):
-        self._data = []
-        self._file_path = pathlib.Path("")
-        self._description = ""
-        self._data_tags = []
-        self._data_types = []
+    @classmethod
+    def FromData(cls, data=[], data_tags=[], data_types=[]):
+        # Check data
+        if not data:
+            raise ValueError("Input data is empty")
+
+        if not isinstance(data[0], (list,tuple,numpy.ndarray)):
+            data = [data]
+
+        if len(data) != len(data_tags) or len(data) != len(data_types):
+            raise ValueError("Input size mismatch: {} {} {}".format(len(data), len(data_tags), len(data_types)))
+
+        for item in data_types:
+            if not isinstance(item, type):
+                raise TypeError("Expecting types in 'data_types', but got {}".format(data_types))
+
+        # Construct object
+        this = ParsedDat("", load=False)
+        this._data = data
+        this._data_tags = data_tags
+        this._data_types = data_types
+
+        return this
 
 
     def _ParseHeader(self, file):
@@ -175,49 +373,3 @@ class ParsedResults:
                 self._data[index] = numpy.asarray([type(item) for item in self._data[index]])
             else:
                 self._data[index] = [type(item) for item in self._data[index]]
-
-
-    def __str__(self):
-        # Header
-        string = '# ' + self._description.replace('\n', "\n# ") + '\n# '
-
-        for tag_index, tag in enumerate(self._data_tags):
-            tmp = tag
-            if tag_index < len(self._data_tags):
-                tmp += " | "
-            string += tmp
-        string += '\n'
-
-        # Data
-        if self._data:
-            for index in range(len(self._data[0])):
-                tmp = ""
-                for item in [self._data[component_index][index] for component_index in range(len(self._data))]:
-                    tmp += str(item) + ' '
-                string += tmp + '\n'
-
-        return string
-
-
-    def __getitem__(self, tag: str):
-        """overload operator[] to function as a dict"""
-        try:
-            index = self._data_tags.index(tag)
-            return self._data[index]
-        except Exception as exception:
-            raise KeyError("'{}' does not match any tags".format(tag))
-
-
-    def keys(self):
-        for key in self._data_tags:
-            yield key
-
-
-    def values(self):
-        for value in self._data:
-            yield value
-
-
-    def items(self):
-        for key, value in zip(self.keys(), self.values()):
-            yield key, value
