@@ -13,7 +13,7 @@ import source.auxiliary.global_definitions as GD
 
 class StaticAnalysis(AnalysisType):
     """
-    Dervied class for the static analysis of a given structure model        
+    Dervied class for the static analysis of a given structure model
     """
 
     # using these as default or fallback settings
@@ -44,6 +44,7 @@ class StaticAnalysis(AnalysisType):
             if self.parameters['input']['is_time_history_file']:
                 self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))[
                     :, self.parameters['input']['selected_time_step']]
+                self.force = np.reshape(self.force, (-1,1))
             else:
                 self.force = np.load(get_adjusted_path_string(
                     self.parameters['input']['file_path']))
@@ -84,22 +85,25 @@ class StaticAnalysis(AnalysisType):
             self.force, 'row_vector')
 
         k = self.structure_model.apply_bc_by_reduction(self.structure_model.k)
-        print(k)
-        self.static_result = np.linalg.solve(k, force)
-        self.static_result = self.structure_model.recuperate_bc_by_extension(
-            self.static_result, 'row_vector')
-        self.force_action = {"x": np.zeros(0),
-                             "y": np.zeros(0),
-                             "z": np.zeros(0),
-                             "a": np.zeros(0),
-                             "b": np.zeros(0),
-                             "g": np.zeros(0)}
 
-        #self.force = self.structure_model.recuperate_bc_by_extension(self.force,'row_vector')
-        self.resisting_force = self.force - \
-            np.dot(self.structure_model.k, self.static_result)
-        ixgrid = np.ix_(self.structure_model.dofs_to_keep, [0])
-        self.resisting_force[ixgrid] = 0
+        static_result = np.linalg.solve(k, force)
+        self.static_result = self.structure_model.recuperate_bc_by_extension(
+            static_result, 'row_vector')
+
+        f = np.dot(self.structure_model.k, self.static_result)
+        self.resisting_force = self.force - f
+
+        # nullify
+        self.resisting_force[abs(self.resisting_force) < GD.THRESHOLD] = 0.0
+
+        # placeholders
+        self.force_action = {"x": np.zeros(0),
+                        "y": np.zeros(0),
+                        "z": np.zeros(0),
+                        "a": np.zeros(0),
+                        "b": np.zeros(0),
+                        "g": np.zeros(0)}
+
         self.reaction = {"x": np.zeros(0),
                          "y": np.zeros(0),
                          "z": np.zeros(0),
@@ -202,6 +206,47 @@ class StaticAnalysis(AnalysisType):
         writer_utilities.write_result(os_join(global_folder_path, file_name), file_header,
                                       geometry, scaling)
 
+    def write_result_at_dof(self, global_folder_path, dof, selected_result):
+        """
+        Pass to plot function:
+            Plots the time series of required quantitiy
+        """
+        print('Writing result for selected dof in StaticAnalysis \n')
+
+        if selected_result == 'displacement':
+            result_data = self.static_result[dof, :]
+        elif selected_result == 'force':
+            result_data = self.force[dof, :]
+        elif selected_result == 'reaction':
+            if dof in self.structure_model.bc_dofs or dof in self.structure_model.elastic_bc_dofs:
+                result_data = self.resisting_force[dof, :]
+            else:
+                err_msg = "The selected DoF \"" + str(dof)
+                err_msg += "\" is not avaialbe in the list of available boundary condition dofs \n"
+                err_msg += "Choose one of: " + \
+                           ", ".join([str(val)
+                                      for val in self.structure_model.bc_dofs])
+                raise Exception(err_msg)
+        else:
+            err_msg = "The selected result \"" + selected_result
+            err_msg += "\" is not available \n"
+            err_msg += "Choose one of: \"displacement\", \"force_ext\", \"force_react\", \"reaction\""
+            raise Exception(err_msg)
+
+        coord_label = GD.DOF_LABELS[self.structure_model.domain_size][int(dof % GD.DOFS_PER_NODE[self.structure_model.domain_size])]
+
+        file_header = "# Static Analysis result " + selected_result + "\n"
+        file_header += "# for DoF " + str(dof) + " -> " + coord_label + " over time \n"
+        # TODO add DoF height coordinate into header
+
+        file_name = 'static_analysis_result_' + \
+                    selected_result + '_for_dof_' + str(dof) + '.dat'
+
+        writer_utilities.write_result_at_dof(os_join(global_folder_path, file_name),
+                                             file_header,
+                                             result_data,
+                                             [0.0])
+
     def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         """
         Postprocess something
@@ -219,5 +264,20 @@ class StaticAnalysis(AnalysisType):
                 self.write_solve_result(global_folder_path)
             if write_result == 'forces':
                 pass
+
+        for idx_dof, dof_id in enumerate(self.parameters['output']['selected_dof']['dof_list']):
+            for idx_res, res in enumerate(self.parameters['output']['selected_dof']['result_type'][idx_dof]):
+                if res in ['displacement', 'force','reaction']:
+                    # if self.parameters['output']['selected_dof']['plot_result'][idx_dof][idx_res]:
+                    #     self.plot_result_at_dof(
+                    #         pdf_report, display_plots, dof_id, res)
+                    if self.parameters['output']['selected_dof']['write_result'][idx_dof][idx_res]:
+                        self.write_result_at_dof(
+                            global_folder_path, dof_id, res)
+                else:
+                    err_msg = "The selected result \"" + res
+                    err_msg += "\" is not avaialbe \n"
+                    err_msg += "Choose one of: \"displacement\", \"force\" , \"reaction\""
+                    raise Exception(err_msg)
 
         pass

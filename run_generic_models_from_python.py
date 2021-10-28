@@ -206,7 +206,36 @@ parameters["analyses_parameters"]["runs"].append(dict({
                 },
                 "output":{
                     "plot": ["deformation", "forces"],
-                    "write": ["deformation"]
+                    "write": ["deformation"],
+                    "selected_dof": {
+                        "dof_list": [0, 1, 2, 3, 4, 5,
+                                     -6, -5, -4, -3, -2, -1],
+                        "help": "result type can be a list containing: reaction, force, displacement",
+                        "result_type": [["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"]],
+                        "write_result": [[True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True],
+                                         [True, True]]
+                    }
                 }
             }))
 
