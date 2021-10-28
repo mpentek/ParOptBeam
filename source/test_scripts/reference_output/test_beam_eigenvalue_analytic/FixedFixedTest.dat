@@ -1,0 +1,17 @@
+# Result of decoupled eigenmode identification for the first 15 mode(s)
+# ConsideredModesCounter | Mode | TypeCounter | Eigenfrequency [Hz] | Type | EffModalMass [kg] or [kg*m^2] | RelPart
+1.0 1.0 1.0 1.701 sway_z 10723.145 0.781 
+2.0 3.0 2.0 4.691 sway_z 2.048 0.0 
+3.0 4.0 3.0 9.201 sway_z 1882.229 0.137 
+4.0 7.0 4.0 15.232 sway_z 11.628 0.001 
+5.0 9.0 5.0 22.818 sway_z 622.962 0.045 
+6.0 12.0 6.0 32.018 sway_z 22.07 0.002 
+7.0 13.0 7.0 42.911 sway_z 245.403 0.018 
+8.0 2.0 1.0 3.402 sway_y 10723.091 0.781 
+9.0 5.0 2.0 9.377 sway_y 2.048 0.0 
+10.0 8.0 3.0 18.387 sway_y 1883.484 0.137 
+11.0 10.0 4.0 30.421 sway_y 11.624 0.001 
+12.0 14.0 5.0 45.538 sway_y 624.372 0.045 
+13.0 6.0 1.0 15.101 torsional 204.521 0.893 
+14.0 11.0 2.0 30.576 torsional 0.115 0.001 
+15.0 15.0 3.0 46.801 torsional 16.766 0.073 
