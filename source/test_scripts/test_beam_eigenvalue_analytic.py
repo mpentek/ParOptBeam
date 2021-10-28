@@ -2,14 +2,11 @@
 from source.model.structure_model import StraightBeam
 from source.analysis.analysis_controller import AnalysisController
 
-from source.test_utils.code_structure import OUTPUT_DIRECTORY, TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY
-from source.test_utils.result_file_comparator import ResultFileComparator
-
-# --- STL Imports ---
-import unittest
+from source.test_utils.code_structure import OUTPUT_DIRECTORY, TEST_REFERENCE_OUTPUT_DIRECTORY
+from source.test_utils.test_case import TestCase, TestMain
 
 
-class BeamEigenvalueAnalyticalTest(unittest.TestCase):
+class BeamEigenvalueAnalyticalTest(TestCase):
 
     def test_fixed_fixed(self):
         self.runModel("FixedFixedTest", "fixed-fixed")
@@ -88,23 +85,23 @@ class BeamEigenvalueAnalyticalTest(unittest.TestCase):
                         "input":{},
                         "output":{
                             "eigenmode_summary": {
-                                "write" : False, 
+                                "write" : False,
                                 "plot" : False},
                             "eigenmode_identification": {
-                                "write" : True, 
+                                "write" : True,
                                 "plot" : False},
                             "selected_eigenmode": {
-                                "plot_mode": [], 
+                                "plot_mode": [],
                                 "write_mode": [],
                                 "animate_mode": [],
                                 "animate_skin_model": []},
                             "selected_eigenmode_range": {
                                 "help": "maximum 4 modes per range at a time",
-                                "considered_ranges": [[1,2]], 
-                                "plot_range": [False, False], 
+                                "considered_ranges": [[1,2]],
+                                "plot_range": [False, False],
                                 "write_range": [False, False]}
                             }
-                    
+
                     }]
             }
         }
@@ -131,18 +128,10 @@ class BeamEigenvalueAnalyticalTest(unittest.TestCase):
         # ==============================================
 
         result_file_path = OUTPUT_DIRECTORY / model_name / "eigenvalue_analysis_eigenmode_identification.dat"
-        reference_file_path = TEST_ANALYTICAL_REFERENCE_RESULTS_DIRECTORY / (model_name + ".txt")
-        
-        ResultFileComparator(
-            result_file_path,
-            reference_file_path,
-            testCase = self,
-            settings = {
-                "analysis_type" : "eigenmode_identification",
-                "absolute_tolerance" : 1e-1
-            }
-        ).Compare()
+        reference_file_path = TEST_REFERENCE_OUTPUT_DIRECTORY / "test_beam_eigenvalue_analytic" / (model_name + ".dat")
+
+        self.CompareFiles(result_file_path, reference_file_path)
 
 
 if __name__ == "__main__":
-    unittest.main()
+    TestMain()

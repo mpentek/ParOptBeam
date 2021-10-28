@@ -6,12 +6,11 @@ from cycler import cycler
 # --- Internal Imports ---
 from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 from source.model.structure_model import StraightBeam
+from source.test_utils.test_case import TestCase, TestMain
+from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 
-# --- STL Imports ---
-import unittest
 
-
-class TestMultipleElements(unittest.TestCase):
+class TestMultipleElements(TestCase):
 
     def test_multiple_elements(self):
         dt = 0.1
@@ -155,6 +154,10 @@ class TestMultipleElements(unittest.TestCase):
             "boundary_conditions": "fixed-free"
         }
 
+    @property
+    def reference_directory(self):
+        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_multiple_elements"
+
 
 if __name__ == "__main__":
-    unittest.main()
+    TestMain()
