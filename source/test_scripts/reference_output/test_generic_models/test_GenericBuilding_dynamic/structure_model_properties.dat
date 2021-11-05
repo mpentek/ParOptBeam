@@ -1,0 +1,5 @@
+# Properties of the structure model
+# ElemNr | x_start [m] | x_end [m] | x_mid [m] | Cross section ly [m] | Cross section lz [m] | Area [m^2] | Shear area_sy  [m^2] | Shear area_sz  [m^2] | Moment of inertia Iy [m^4] | Moment of inertia Iz [m^4] | Torsion constant It  [m^4] | Polar moment of inertia Ip [m^4] | Relative shear factor Py  [-] | Relative shear factor Pz  [-] | Mass m  [kg] - Total mass 38880133.338 [kg]
+0.0 0.0 60.0 30.0 55.0 35.0 1925.0 1457.918 652.035 5104.713 107045.161 98824.429 1233648.61 0.538 0.057 16810646.187 
+1.0 60.0 120.0 90.0 45.0 30.0 1350.0 1021.905 457.034 2630.157 53214.942 47009.0 614296.088 0.382 0.042 11789284.339 
+2.0 120.0 180.0 150.0 35.0 25.0 875.0 662.195 296.158 1183.843 20865.0 19270.857 242537.278 0.231 0.029 7641202.812 
