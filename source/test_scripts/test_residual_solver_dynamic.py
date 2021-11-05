@@ -1,26 +1,24 @@
 # --- External Imports ---
 import numpy as np
-import matplotlib.pyplot as plt
-from cycler import cycler
 
 # --- Internal Imports ---
 from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
 from source.model.structure_model import StraightBeam
+from source.test_utils.test_case import TestCase, TestMain
+from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 
-# --- STL Imports ---
-import unittest
 
+class TestDynamicResidualBasedSolvers(TestCase):
 
-class TestDynamicResidualBasedSolvers(unittest.TestCase):
-
+    # This case throws a null division error
     def test_residual_based_solvers(self):
         dt = 0.1
         tend = 10.
         steps = int(tend / dt)
         array_time = np.linspace(0.0, tend, steps + 1)
         array_time_kratos = np.linspace(0.1, 10, 101)
-        
+
         f_ext = np.array([np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                     0.0, 0.0, 100.0 * np.sin(t), 0.0, 0.0, 0.0])
                         for t in np.sin(array_time)])
@@ -30,6 +28,7 @@ class TestDynamicResidualBasedSolvers(unittest.TestCase):
         a0 = np.zeros(6)
 
         scheme = "BackwardEuler1"
+        # Division by zero error is thrown here
         beam = StraightBeam(self.params)
 
         f_ext = beam.apply_bc_by_reduction(f_ext, 'column').T
@@ -48,7 +47,16 @@ class TestDynamicResidualBasedSolvers(unittest.TestCase):
         reference_file = "kratos_reference_results/dynamic_displacement_z.txt"
         disp_z_soln = np.loadtxt(reference_file)[:, 1]
 
+        self.CompareToReferenceFile(
+            newton_solver.displacement[2,:],
+            self.reference_directory / "dynamic_displacement_z.csv")
+
+        self.CompareToReferenceFile(
+            picard_solver.displacement[2,:],
+            self.reference_directory / "dynamic_displacement_z.csv")
+
         if __name__ == "__main__":
+            import matplotlib.pyplot as plt
             plt.plot(array_time, newton_solver.displacement[2, :], c='b', label='Newton Raphson')
             plt.plot(array_time, picard_solver.displacement[2, :], c='g', label='Picard')
             plt.plot(array_time_kratos, disp_z_soln, c='k', label='Kratos reference')
@@ -96,5 +104,10 @@ class TestDynamicResidualBasedSolvers(unittest.TestCase):
         }
 
 
+    @property
+    def reference_directory(self):
+        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_residual_solver_dynamic"
+
+
 if __name__ == "__main__":
-    unittest.main()
+    TestMain()

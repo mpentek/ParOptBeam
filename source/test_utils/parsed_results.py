@@ -58,7 +58,7 @@ class ParsedResults:
         if extension.lower() in ParsedResults.GetExtensionParserMap():
             return ParsedResults.GetExtensionParserMap()[extension]
         else:
-            raise RuntimeError("Unsuppoted file type: {}".format(extension))
+            raise RuntimeError("Unsupported file type: {}".format(extension))
 
 
     def AsDictionary(self, include_description=True):
@@ -163,9 +163,9 @@ class ParsedCSV(ParsedResults):
         self._file_path = filePath
 
         if self._file_path.is_file():
-            self._data = numpy.loadtxt(self._file_path, delimiter=' ')
+            self._data = numpy.loadtxt(self._file_path, delimiter=' ', comments=['#'])
 
-            if len(self._data.shape) == 1:
+            while len(self._data.shape) < 2:
                 self._data = numpy.array([self._data])
 
             number_of_variables = self._data.shape[0]
@@ -180,10 +180,10 @@ class ParsedCSV(ParsedResults):
     def FromData(cls, data=[], data_tags=[], data_types=[]):
         # Check data
         data = numpy.asarray(data)
-
-        if len(data.shape) == 1:
+        while len(data.shape) < 2:
             data = numpy.array([data])
-        elif len(data.shape) != 2:
+
+        if len(data.shape) != 2:
             raise ValueError("Expecting an array or matrix but got an object of shape {}".format(data.shape))
 
         # Check other arguments
@@ -259,7 +259,7 @@ class ParsedDat(ParsedResults):
                 try:
                     self._ParseData(file)
                 except Exception as exception:
-                    raise RuntimeError("While parsing data in {}:\n{}".format(self._file_path, exception))
+                    raise RuntimeError("{} while parsing data in {}:\n{}".format(exception, self._file_path, exception))
 
         else: # self._file_path.is_file()
             raise FileNotFoundError("{} is not a file".format(self._file_path))
@@ -360,8 +360,14 @@ class ParsedDat(ParsedResults):
             if line:
                 items = line.strip().split(delimiter)
 
-                if len(items) != len(self._data_tags):
-                    raise SyntaxError("in line: {}\nnumber of items ({}) does not match the number of expected items ({})".format(line, len(items), len(self._data_tags)))
+                if 1 < len(self._data_tags):
+                    if len(items) != len(self._data_tags):
+                        raise SyntaxError("in line: {}\nnumber of items ({}) does not match the number of expected items ({})".format(line, len(items), len(self._data_tags)))
+                else: # File didn't have a line for data tags => .csv
+                    self._data_tags = [str(index) for index in range(len(items))]
+                    self._data_types = [float for _ in items]
+                    self._data = [[] for _ in items]
+
 
                 for index, item in enumerate(items):
                     self._data[index].append(item.strip())

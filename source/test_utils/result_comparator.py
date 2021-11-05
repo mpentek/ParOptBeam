@@ -50,7 +50,8 @@ class ResultComparator:
             else:
                 if match_entry_lengths:
                     if len(self.reference_results[key]) != len(self.test_results[key]):
-                        raise ValueError("result array size mismatch for '{}'".format(key))
+                        raise ValueError("result array size mismatch for '{}': {} != {}".format(
+                            key, len(self.reference_results[key]), len(self.test_results[key])))
 
         if not (self.allow_additional_data):
             for key in test_keys:
@@ -60,7 +61,7 @@ class ResultComparator:
 
     def CompareDefaultAnalysisResults(self):
         """Directly compares each component of every data column to its corresponding reference"""
-        self.CompareFileContents()
+        self.CompareContents()
         for key, reference_values in self.reference_results.items():
             test_values = self.test_results[key]
 
@@ -73,7 +74,7 @@ class ResultComparator:
 
     def CompareEigenmodeIdentificationResults(self):
         """Compare eigenmodes defined by their 'TypeCounter' and 'Type'"""
-        self.CompareFileContents(match_entry_lengths=False)
+        self.CompareContents(match_entry_lengths=False)
 
         # Require 'TypeCounter' and 'Type' in both files
         for results, results_name in zip([self.reference_results, self.test_results], ["reference", "test"]):
@@ -185,7 +186,7 @@ class ResultComparator:
 
     @staticmethod
     def _CheckPath(path: pathlib.Path) -> pathlib.Path:
-        if not ininstance(path, pathlib.Path):
+        if not isinstance(path, pathlib.Path):
             if isinstance(path, str):
                 path = pathlib.Path(path)
             else:

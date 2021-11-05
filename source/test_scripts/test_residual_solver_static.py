@@ -6,13 +6,13 @@ from cycler import cycler
 # --- Internal Imports ---
 from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 from source.model.structure_model import StraightBeam
+from source.test_utils.test_case import TestCase, TestMain
+from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 
-# --- STL Imports ---
-import unittest
 
+class TestStatcResiudalBasedSolvers(TestCase):
 
-class TestStatcResiudalBasedSolvers(unittest.TestCase):
-
+    # This case throws a null division error
     def test_newton_raphson_solver(self):
         dt = 1.
         tend = 1.
@@ -28,6 +28,7 @@ class TestStatcResiudalBasedSolvers(unittest.TestCase):
         a0 = np.zeros(6)
 
         scheme = "BackwardEuler1"
+        # A division by zero error is thrown here
         beam = StraightBeam(self.params)
 
         f_ext = beam.apply_bc_by_reduction(f_ext, 'column').T
@@ -42,13 +43,13 @@ class TestStatcResiudalBasedSolvers(unittest.TestCase):
         reaction_kratos = np.array([6.0974569e-09, -0.0000000e+00, -2.6529294e-05,
                                     -0.0000000e+00, -2.1223438e-05, -0.0000000e+00])
 
-        self.AssertArray(reaction, reaction_kratos)
+        self.assertArrayAlmostEqual(reaction, reaction_kratos)
 
         displacement = solver.scheme.get_displacement()
         displacement_kratos = np.array([1.0226219e-07, 0.0000000e+00, 2.7839541e-04,
                                         0.0000000e+00, -3.4799422e-04, 0.0000000e+00])
 
-        self.AssertArray(displacement, displacement_kratos)
+        self.assertArrayAlmostEqual(displacement, displacement_kratos)
 
 
     @property
@@ -88,10 +89,10 @@ class TestStatcResiudalBasedSolvers(unittest.TestCase):
         }
 
 
-    def AssertArray(self, array, reference, **kwargs):
-        for item, item_reference in zip(array, reference):
-            self.assertAlmostEqual(item, item_reference, **kwargs)
+    @property
+    def reference_directory(self):
+        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_residual_solver_static"
 
 
 if __name__ == "__main__":
-    unittest.main()
+    TestMain()

@@ -34,6 +34,8 @@ TEST_KRATOS_REFERENCE_RESULTS_DIRECTORY = TEST_SCRIPTS_DIRECTORY / "kratos_refer
 #    across changes to ParOptBeam but do not necessarily mean they are correct.
 TEST_REFERENCE_OUTPUT_DIRECTORY = TEST_SCRIPTS_DIRECTORY / "reference_output"
 
+TEST_INPUT_DIRECTORY = TEST_SCRIPTS_DIRECTORY / "input"
+
 INPUT_DIRECTORY = ROOT_DIRECTORY / "input"
 
 OUTPUT_DIRECTORY = ROOT_DIRECTORY / "output"

@@ -1,11 +1,18 @@
-import unittest
-import unittest.mock as mock
+# --- External Improts ---
 import numpy as np
 from scipy import linalg
-from source.model.structure_model import StraightBeam
 
-class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
-    
+# --- Internal Imports ---
+from source.model.structure_model import StraightBeam
+from source.test_utils.test_case import TestCase, TestMain
+from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
+
+# --- STL Imports ---
+import unittest.mock as mock
+
+
+class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
+
     def create_mock_self_for_contribution (self):
         mock_self = mock.MagicMock()
         mock_self.eig_freqs_sorted_indices = np.array([0])
@@ -69,7 +76,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         for [idx,label] in [[0,'a'],[1,'b'],[2,'g'],[3,'x'],[4,'y'],[5,'z']]:
             mock_self = self.create_mock_self_for_contribution()
             mock_zip.return_value = [[idx,label]]
-            StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+            StraightBeam.decompose_and_quantify_eigenmodes(mock_self)
             if label in ['a', 'b', 'g']:
                 self.assertEqual(mock_self.decomposed_eigenmodes['rel_contribution'][0],{label: mock_self.charact_length * linalg.norm(mock_self.eigen_modes_raw[idx:(13+idx):6][:,0])})
             else:
@@ -80,29 +87,28 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
     # ------------------------------------------------------------------------------------------------------
     # 2. check modal mass calculation with unit values for every label
     # ------------------------------------------------------------------------------------------------------
-    @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
-    def test_modal_masses (self,mock_eigenvalue_solve,mock_zip):
- 
-        for [idx,label] in [[0,'a'],[1,'b'],[2,'g'],[3,'x'],[4,'y'],[5,'z']]:
+    def test_modal_masses (self,mock_eigenvalue_solve):
+
+        for label in ('a', 'b', 'g', 'x', 'y', 'z'):
             mock_self = self.create_mock_self_for_modal_mass()
             mock_self.parameters['m'] = [1000.0,2000.0,2000.0,1000.0]
             mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
-            mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]    
+            mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
             # decomposed_eigenmode == 1
             # symmetric and 3 elements --> storey_mass == 1./2 * total_mass
             # numerator == total_mass
             # denominator == total_mass
             # modal_mass == total_mass
-            if label in ['b','g']:
-                participation = 0.0
-            else:
-                participation = 1.
-            mock_zip.return_value = [[idx,label]]
-            StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
-            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],participation))
+            StraightBeam.decompose_and_quantify_eigenmodes(mock_self)
+
+            reference_file_name = "test_modal_masses_" + label + ".csv"
+            self.CompareToReferenceFile(
+                float(mock_self.decomposed_eigenmodes['rel_participation'][0][label]),
+                self.reference_directory / reference_file_name)
+
             mock_self.reset_mock(return_value=True)
-  
+
     # ------------------------------------------------------------------------------------------------------
     # 3. check modal mass calculation with reference results from matlab
     # ------------------------------------------------------------------------------------------------------
@@ -113,17 +119,13 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
         mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
 
-        matlab_reference_results = {
-            'a': 10815.2259890856,
-            'b': 0,
-            'g': 0,
-            'x': 3224.79725690119,
-            'y': 5000.00000000000,
-            'z': 5000}
-        
-        StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+        StraightBeam.decompose_and_quantify_eigenmodes(mock_self)
+
         for label in ['x', 'y', 'z', 'a', 'b', 'g']:
-            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
+            reference_file_name = "test_modal_mass_values_symmetric_" + label + ".csv"
+            self.CompareToReferenceFile(
+                float(mock_self.decomposed_eigenmodes['rel_participation'][0][label]),
+                self.reference_directory / reference_file_name)
 
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
     def test_modal_mass_values_nonsymmetric (self, mock_eigenvalue_solve):
@@ -132,17 +134,15 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         mock_self.parameters['lz'] = [0.4, 0.4, 0.4, 0.4]
         mock_self.parameters['ly'] = [0.2, 0.2, 0.2, 0.2]
 
-        matlab_reference_results = {
-            'a': 16222.8389836285,
-            'b': 0,
-            'g': 0,
-            'x': 4837.19588535178,
-            'y': 7500.00000000000,
-            'z': 7500}
-        
-        StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+        StraightBeam.decompose_and_quantify_eigenmodes(mock_self)
+        for key, value in mock_self.decomposed_eigenmodes.items():
+            print(key, value)
+
         for label in ['x', 'y', 'z', 'a', 'b', 'g']:
-            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_participation'][0][label],matlab_reference_results[label]))
+            reference_file_name = "test_modal_mass_value_nonsymmetric_" + label + ".csv"
+            self.CompareToReferenceFile(
+                float(mock_self.decomposed_eigenmodes["rel_participation"][0][label]),
+                self.reference_directory / reference_file_name)
 
     # ------------------------------------------------------------------------------------------------------
     # 4. check decomposition for pinned-fixed structure
@@ -154,19 +154,20 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(unittest.TestCase):
         # after reduction 15 DOF left which are not ordered x,y,z,a,b,g
         # order is: a b g x y z a b g x y z a b g
 
-        mock_self = self.create_mock_self_for_modal_mass()                                                                                                        
+        mock_self = self.create_mock_self_for_modal_mass()
 
-        reference_result = {
-            'a': 3.77686072870527e-16, 
-            'b': 0.00344384466429105, 
-            'g': 3.06484892574840e-17, 
-            'x': 0.0184413615000000, 
-            'y': 0.00640126011000000, 
-            'z': 1.27786613425473e-18}
-        
-        StraightBeam.decompose_and_quantify_eigenmodes(mock_self) 
+        StraightBeam.decompose_and_quantify_eigenmodes(mock_self)
         for label in ['x', 'y', 'z', 'a', 'b', 'g']:
-            self.assertIsNone(np.testing.assert_allclose(mock_self.decomposed_eigenmodes['rel_contribution'][0][label],reference_result[label]),msg='mismatch in: '+str(reference_result[label]))
+            reference_file_name = "test_decomposing_eigenmode_" + label + ".csv"
+            self.CompareToReferenceFile(
+                float(mock_self.decomposed_eigenmodes["rel_contribution"][0][label]),
+                self.reference_directory / reference_file_name)
+
+
+    @property
+    def reference_directory(self):
+        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_structure_model_decompose_and_quantify_eigenmodes"
+
 
 if __name__ == "__main__":
-    unittest.main()   
+    TestMain()
