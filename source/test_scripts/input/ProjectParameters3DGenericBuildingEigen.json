@@ -1,0 +1,125 @@
+{
+    "model_parameters": {
+        "name": "GenericBuilding",
+        "domain_size": "3D",
+        "system_parameters": {
+            "element_params": {
+                "type": "Timoshenko",
+                "is_nonlinear": false
+            },
+            "material": {
+                "is_nonlinear": false,
+                "density": 160.0,
+                "youngs_modulus": 2.861e8,
+                "poisson_ratio": 0.1,
+                "damping_ratio": 0.0
+            },
+            "geometry": {
+                "length_x": 180,
+                "number_of_elements": 3,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0, 60.0],
+                    "length_y": [55.0],
+                    "length_z": [35.0],
+                    "area"    : [1925.0],
+                    "shear_area_y" : [1605.0],
+                    "shear_area_z" : [1605.0],
+                    "moment_of_inertia_y" : [196510.0],
+                    "moment_of_inertia_z" : [458260.0],
+                    "torsional_moment_of_inertia" : [691771.0],
+                    "outrigger" :
+                        {"mass": 947000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
+                    {
+                    "interval_bounds" : [60.0, 120.0],
+                    "length_y": [45.0],
+                    "length_z": [30.0],
+                    "area"    : [1350],
+                    "shear_area_y" : [1125.0],
+                    "shear_area_z" : [1125.0],
+                    "moment_of_inertia_y" : [101250.0],
+                    "moment_of_inertia_z" : [227813.0],
+                    "torsional_moment_of_inertia" : [329063.0],
+
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}},
+                    {
+                    "interval_bounds" : [120.0, "End"],
+                    "length_y": [35.0],
+                    "length_z": [25.0],
+                    "area"    : [875.0],
+                    "shear_area_y" : [729.0],
+                    "shear_area_z" : [729.0],
+                    "moment_of_inertia_y" : [45573.0],
+                    "moment_of_inertia_z" : [89323.0],
+                    "torsional_moment_of_inertia" : [134896.0],
+
+                    "outrigger" : {
+                        "mass": 846000.0,
+                        "stiffness_ratio_y": 5,
+                        "stiffness_ratio_z": 5}}]
+            }
+        },
+        "boundary_conditions": "fixed-free"
+    },
+    "optimization_parameters": {
+        "adapt_for_target_values": {
+            "density_for_total_mass": 38880000.0,
+            "geometric_properties_for": {
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "partition_shear_bending": [-1, 1],
+                "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
+                "corresponding_mode_ids" : [1, 1, 1],
+                "corresponding_eigenfrequencies": [0.23,0.20,0.40]}}
+    },
+    "analyses_parameters":{
+        "global_output_folder" : "test_GenericBuilding_eigen",
+        "model_properties": {
+            "write": true,
+            "plot":true
+        },
+        "report_options": {
+            "combine_plots_into_pdf" : true,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : true
+        },
+        "skin_model_parameters":{
+            "geometry": [ [0, -22.5, -15.0], [0, -22.5, 15], [0, 22.5, 15],
+                          [0, 22.5, -15]
+            ],
+            "contour_density": 1,
+            "record_animation": true,
+            "visualize_line_structure": true,
+            "beam_direction": "x",
+            "scaling_vector": [1.0, 1.0 , 1.0, 1.0, 1.0, 1.0, 1.0],
+            "eigenmode_scaling_factor" : 1e5,
+            "dynamic_scaling_factor" : 1e3
+        },
+        "runs": [{
+            "type": "eigenvalue_analysis",
+            "settings": {
+                "normalization": "mass_normalized"},
+            "input":{},
+            "output":{
+                "eigenmode_summary": {
+                    "write" : true,
+                    "plot" : false},
+                "eigenmode_identification": {
+                    "write" : true,
+                    "plot" : false},
+                "selected_eigenmode": {
+                    "plot_mode": [],
+                    "write_mode": [1,2,3],
+                    "animate_mode": [],
+                    "animate_skin_model": []},
+                "selected_eigenmode_range": {
+                    "help": "maximum 4 modes per range at a time",
+                    "considered_ranges": [[1,2]],
+                    "plot_range": [],
+                    "write_range": [true, false]}
+                }
+        }]}
+}
