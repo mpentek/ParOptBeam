@@ -103,7 +103,10 @@ class ParsedResults:
             for index in range(len(self._data[0])):
                 tmp = ""
                 for item in [self._data[component_index][index] for component_index in range(len(self._data))]:
-                    tmp += str(item) + ' '
+                    if isinstance(item, (float, numpy.float32, numpy.float64)):
+                        tmp += "{:.18E} ".format(item)
+                    else:
+                        tmp += "{} ".format(item)
                 string += tmp + '\n'
 
         return string
@@ -204,7 +207,7 @@ class ParsedCSV(ParsedResults):
 
     def __str__(self) -> str:
         stream = io.BytesIO()
-        numpy.savetxt(stream, self._data, delimiter=' ')
+        numpy.savetxt(stream, self._data, delimiter=' ', fmt="%.18e")
         return stream.getvalue().decode("utf-8")
 
 
