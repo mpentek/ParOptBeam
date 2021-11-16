@@ -1,4 +1,5 @@
 from math import ceil, log10
+import numpy as np
 
 # TODO: clean up these function, see how to make the shear beam / additional rotational stiffness
 
@@ -15,6 +16,7 @@ def map_lin_to_log(val, base=10**3):
     # TODO: implment check
     return base**(1.0 - val)
 
+def cm2inch(val_in_cm): return val_in_cm*0.3937007874
 
 def shift_normalize(val, base=10**3):
     # TODO: implment check
@@ -39,3 +41,12 @@ def evaluate_polynomial(x, coefs):
     for idx, coef in enumerate(coefs):
         val += coef * x**idx
     return val
+
+def get_fitted_array (x, y, degree):
+                
+    # returns the fitted polynomial and the discrete array 
+    current_polynomial = np.poly1d(np.polyfit(x,y,degree))
+    values = []
+    for x_i in x:# evaluate the fitted array at certain intervals
+        values.append(current_polynomial(x_i))
+    return np.asarray(values)

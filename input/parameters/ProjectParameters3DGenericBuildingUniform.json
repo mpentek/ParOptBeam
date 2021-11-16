@@ -1,0 +1,194 @@
+{
+    "model_parameters": {
+        "name": "GenericBuilding",
+        "domain_size": "3D",
+        "system_parameters": {
+            "element_params": {
+                "type": "Timoshenko",
+                "is_nonlinear": false
+            },
+            "material": {
+                "is_nonlinear": false,
+                "density": 160.0,
+                "youngs_modulus": 2.861e8,
+                "poisson_ratio": 0.1,
+                "damping_ratio": 0.01
+            },
+            "geometry": {
+                "length_x": 180,
+                "number_of_elements": 3,
+                "defined_on_intervals": [{
+                    "interval_bounds" : [0.0,"End"],
+                    "length_y": [30.0],
+                    "length_z": [45.0],
+                    "area"    : [1350],
+                    "shear_area_y" : [1125.0],
+                    "shear_area_z" : [1125.0],
+                    "moment_of_inertia_y" : [227813.0],
+                    "moment_of_inertia_z" : [101250.0],
+                    "torsional_moment_of_inertia" : [329063.0]
+                    
+            }]}
+        },
+        "boundary_conditions": "fixed-free"
+    },
+    "optimization_parameters": {
+        "adapt_for_target_values": {
+            "density_for_total_mass": 38880000.0,
+            "geometric_properties_for": {
+                "help": "first entry: sway_y, second entry: sway_z, -1: shear, +1: bending",
+                "partition_shear_bending": [-1, 1],
+                "consider_decomposed_modes": ["sway_z","sway_y", "torsional"],
+                "corresponding_mode_ids" : [1, 2, 3],
+                "corresponding_eigenfrequencies": [0.20,0.23,0.40]}}
+    },
+    "analyses_parameters":{
+        "global_output_folder" : "GenericBuildingStatic",
+        "model_properties": {
+            "write": true,
+            "plot":false
+        },
+        "report_options": {
+            "combine_plots_into_pdf" : true,
+            "display_plots_on_screen" : false,
+            "use_skin_model" : false
+        },
+        "skin_model_parameters":{
+            "geometry": [ [0, -22.5, -15.0], [0, -22.5, 15], [0, 22.5, 15],
+                          [0, 22.5, -15]
+            ],
+            "contour_density": 1,
+            "record_animation": true,
+            "visualize_line_structure": true,
+            "beam_direction": "x",
+            "scaling_vector": [1.0, 1.0 , 1.0, 1.0, 1.0, 1.0, 1.0],
+            "eigenmode_scaling_factor" : 1e5,
+            "dynamic_scaling_factor" : 1e3
+        },
+        "runs": [{
+            "type": "eigenvalue_analysis",
+            "settings": {
+                "normalization": "mass_normalized"},
+            "input":{},
+            "output":{
+                "eigenmode_summary": {
+                    "write" : true,
+                    "plot" : false},
+                "eigenmode_identification": {
+                    "write" : true,
+                    "plot" : false},
+                "selected_eigenmode": {
+                    "plot_mode": [1,2,3],
+                    "write_mode": [1,2,3],
+                    "animate_mode": [1],
+                    "animate_skin_model": [1]},
+                "selected_eigenmode_range": {
+                    "help": "maximum 4 modes per range at a time",
+                    "considered_ranges": [[1,2]],
+                    "plot_range": [true, true],
+                    "write_range": [true, false]}
+                }
+        },{
+            "type" : "dynamic_analysis",
+            "settings": {
+                "solver_type": "Linear",
+                "run_in_modal_coordinates": false,
+                "time":{
+                    "integration_scheme": "GenAlpha",
+                    "start": 0.0,
+                    "end": 600.0,
+                    "step" : 0.02},
+                "intial_conditions": {
+                    "displacement": "None",
+                    "velocity": "None",
+                    "acceleration" : "None"
+                }},
+            "input": {
+                "help":"provide load file in the required format",
+                "file_path": "input/force/generic_building/dynamic_force_4_nodes.npy"
+            },
+            "output":{
+                "selected_instance": {
+                    "plot_step": [1500, 2361],
+                    "write_step": [3276],
+                    "plot_time": [30.5, 315.25],
+                    "write_time": [450.15]
+                },
+                "animate_time_history" : false,
+                "animate_skin_model_time_history": false,
+                "kinetic_energy": {
+                    "write": false,
+                    "plot": false
+                },
+                "skin_model_animation_parameters":{
+                    "start_record": 160,
+                    "end_record": 200,
+                    "record_step": 10
+                },
+                "selected_dof": {
+                    "dof_list": [1, 2, 0, 4, 5, 3,
+                                -5,
+                                -4,
+                                -2,
+                                -1],
+                    "help": "result type can be a list containing: reaction, ext_force, displacement, velocity, acceleration",
+                    "result_type": [["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"], ["reaction"],
+                                    ["displacement", "velocity", "acceleration"],
+                                    ["displacement", "velocity", "acceleration"],
+                                    ["displacement", "velocity", "acceleration"],
+                                    ["displacement", "velocity", "acceleration"]],
+                    "plot_result": [[true], [true], [true], [true], [true], [true],
+                                    [true, true, true],
+                                    [true, true, true],
+                                    [true, false, true],
+                                    [true, false, true]],
+                    "write_result": [[false],[false],[false],[true],[true],[true],
+                                        [true, false, true],
+                                        [true, false, true],
+                                        [true, false, true],
+                                        [true, false, true]]
+                }
+            }
+        },{
+                "type" : "static_analysis",
+                "settings": {},
+                "input":{
+                    "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
+                    "file_path": "force_static_4_nodes.npy",
+                    "is_time_history_file" : false
+                },
+                "output":{
+                    "plot": ["deformation", "forces"],
+                    "write": ["deformation", "forces"],
+                    "selected_dof": {
+                        "dof_list": [0, 1, 2, 3, 4, 5,
+                                     -6, -5, -4, -3, -2, -1],
+                        "help": "result type can be a list containing: reaction, force, displacement",
+                        "result_type": [["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["reaction", "force"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"],
+                                        ["force", "displacement"]],
+                        "write_result": [[true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true],
+                                         [true, true]]
+                    }
+                }
+            }]}
+}

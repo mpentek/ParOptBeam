@@ -36,3 +36,33 @@ MODE_CATEGORIZATION = {
 NODES_PER_LEVEL = 2
 
 THRESHOLD = 1e-8
+
+
+MODE_CATEGORIZATION_REVERSE = {'3D':{'x':'longitudinal',
+                                      'a':'torsional',
+                                      'z':'sway_y',
+                                      'b':'sway_y',
+                                      'y':'sway_z',
+                                      'g':'sway_z'}}
+
+CAARC_MODE_DIRECTIONS = {'0_deg':{'sway_z':0, 'sway_y':1, 'trosional':2}}
+
+RESPONSE_DIRECTION_MAP = {'Qx':'x', 'Qy':'y', 'Qz':'z', 'Mx':'a', 'My':'b', 'Mz':'g'}
+DIRECTION_RESPONSE_MAP = {'x':'Qx', 'y':'Qy', 'z':'Qz', 'a':'Mx', 'b':'My', 'g':'Mz'}
+
+LOAD_DIRECTION_MAP = {'all':['y', 'z', 'a', 'b', 'g'],'Fy':'y', 'Fz':'z', 'Mx':'a', 'My':'b', 'Mz':'g'}# b = cross wind, g = anlong wind
+DIRECTION_LOAD_MAP = {'x':'Fx', 'y':'Fy', 'z':'Fz', 'a':'Mx', 'b':'My', 'g':'Mz'}
+
+UNITS_LOAD_DIRECTION = {'x':'[N/m]', 'y':'[N/m]', 'z':'[N/m]', 'a':'[Nm/m]', 'b':'[Nm/m]', 'g':'[Nm/m]'}
+
+UNITS_POINT_LOAD_DIRECTION = {'x':'[N]', 'y':'[N]', 'z':'[N]', 'a':'[Nm]', 'b':'[Nm]', 'g':'[Nm]'}
+
+UNIT_SCALE = {'N':1.0,'KN':1e-3,'MN':1e-6}
+
+GREEK = {'y':'y','z':'z', 'x':'x','a':r'\alpha', 'b':r'\beta', 'g':r'\gamma'}
+
+LOAD_DIRECTIONS_RESPONSES_UNCOUPLED = {'Qx':['x'], 'Qy':['y'], 'Qz':['z'], 'Mx':['a'], 'My':['z','b'], 'Mz':['y','g']}
+
+LOAD_DIRECTIONS_RESPONSES_UNCOUPLED_RED = {'Qx':['x'], 'Qy':['y'], 'Qz':['z'], 'Mx':['a'], 'My':['z'], 'Mz':['y']}
+
+LOAD_DIRECTIONS_RESPONSES_COUPLED = {'Qx':['x'], 'Qy':['y'], 'Qz':['z'], 'Mx':['y','a'], 'My':['z','b'], 'Mz':['y','g','a']}

@@ -111,6 +111,16 @@ class StaticAnalysis(AnalysisType):
                          "b": np.zeros(0),
                          "g": np.zeros(0)}
 
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                               1:step][:, 0]
+            self.force_action[label] = self.force[start:stop + 1:step]
+            self.reaction[label] = self.resisting_force[start:stop + 1:step][:, 0]
+
     def plot_solve_result(self, pdf_report, display_plot):
         """
         Pass to plot function:
@@ -137,7 +147,8 @@ class StaticAnalysis(AnalysisType):
                                    self.structure_model.nodal_coordinates["z0"]],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
                     "deformed": None}
 
         force = {"external": [self.force_action["x"],
