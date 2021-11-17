@@ -10,8 +10,6 @@ from source.ESWL.eswl_auxiliaries import integrate_influence
 from source.ESWL.eswl_auxiliaries import get_radi_of_gyration
 from source.ESWL.eswl_plotters import plot_n_mode_shapes 
 
-response_displacement_map = {'Qx': 'x', 'Qy': 'y', 'My': 'z', 'Mz': 'y', 'Mx': 'a'}
-
 class RESWL(object):
 
     def __init__(self, structure_model, influence_function, eigenvalue_analysis, load_signals,
@@ -42,7 +40,7 @@ class RESWL(object):
         if plot_mode_shapes:
             plot_n_mode_shapes(self.eigenform_sorted, self.structure_model.charact_length)
 
-        # calculations of things needed 
+        # calculations of things needed multiple times
         self.get_nodal_mass_distribution()
         self.radi_of_gyration = get_radi_of_gyration(self.structure_model)
         self.power_spectral_density_jth_generalized_force()
@@ -50,9 +48,11 @@ class RESWL(object):
         self.generalized_displacements = np.zeros(self.modes_to_consider)
         for mode_id in range(self.modes_to_consider):
             self.generalized_displacements[mode_id] = self.get_generalized_displacement(mode_id)
-            
-        self.get_spatial_distribution()
-        self.modal_inertial_load()
+        
+        if self.settings['types_to_compute']['base_moment_distr']:
+            self.get_spatial_distribution()
+        if self.settings['types_to_compute']['modal_consistent'] or self.settings['types_to_compute']['modal_lumped']:
+            self.modal_inertial_load()
         self.get_weighting_factors()
 
     def get_nodal_mass_distribution(self):
@@ -90,16 +90,16 @@ class RESWL(object):
         eq. 27 Kareem g_r factor is added in ESWL class
         '''
         
-        self.modal_inertial = {self.response: {}} # using consistnet formulation
+        self.modal_inertial_cons = {self.response: {}} # using consistnet formulation
         self.modal_inertial_lumped = {self.response: {}}# using a lumped mass vector -> see get_nodal_mass
         
+        for direction in self.load_directions:
+            self.modal_inertial_lumped[self.response][direction] = []
+            self.modal_inertial_cons[self.response][direction] = []
+
         # LUMPED
         if self.settings['types_to_compute']['modal_lumped']:
             for d_i, direction in enumerate(self.load_directions):
-
-                self.modal_inertial_lumped[self.response][direction] = []
-                self.modal_inertial[self.response][direction] = []
-
                 for mode_id in range(self.modes_to_consider):
                     generalized_displacement = self.generalized_displacements[mode_id]
                     m_z = self.mass_moment_matrix[:,d_i]
@@ -121,7 +121,7 @@ class RESWL(object):
                 result_sorted = self.sort_row_vectors_dof_wise(result)
 
                 for d_i, direction in enumerate(self.load_directions):
-                    self.modal_inertial[self.response][direction].append(result_sorted[direction])
+                    self.modal_inertial_cons[self.response][direction].append(result_sorted[direction])
         
 # VARIANT 2: DISTRIBUTION OF RESONANT BASE MOMENT
 
@@ -141,8 +141,8 @@ class RESWL(object):
             response_type = load_moment_response_map[direction]
             
             for mode_id in range(self.modes_to_consider):
-                # TODO: here nothing is consisten sofar
-                # NOTE: is this actually not so correct if coupled motion is used? see derivation of resonant part e.g. Boggs eq. 14+
+                # TODO: here nothing is consisten sofar -> guess not really possible
+                # NOTE: probably this is actually not so correct if coupled motion is used? see derivation of resonant part e.g. Boggs eq. 14+
                 jth_resonant_modal_base_moment = abs(self.get_resonant_modal_base_moment(mode_id, response_type))
 
                 # d_i+1 to leave out x
@@ -195,10 +195,8 @@ class RESWL(object):
         '''
         
         participation_coeff = self.get_participation_coefficient(mode_id, response_type)
-        # TODO: could make the displacement an attribute since it is only depent on the mode_id and is called and calcualted new for each direction
-        generalized_displacement = self.get_generalized_displacement(mode_id)
 
-        return participation_coeff * generalized_displacement
+        return participation_coeff * self.generalized_displacements[mode_id]
 
     def get_participation_coefficient(self, mode_id, response):
         '''
@@ -267,7 +265,7 @@ class RESWL(object):
         # rms value of generalized displacement
         # returning the sqrt 
         return np.sqrt(sig_q_j_r)
-        
+
     def power_spectral_density_jth_generalized_force(self, window_type = 'box'):
         '''
         the power spectral density of the generalized force of the jth eigenmode
@@ -346,6 +344,8 @@ class RESWL(object):
             # for each of the first 3 modes 
             self.psd_of_jth_generalized_force.append(S_Q_jj_i)
 
+# FUNCTIONS REQUIRED FOR BOTH VARIANTS
+
     def get_weighting_factors(self):
         '''
         computes the weighting_factors for the first 3 modes
@@ -361,8 +361,7 @@ class RESWL(object):
                 generalized_displacement = self.generalized_displacements[mode_id] # this is already the sqrt 
                 participation_coeff = self.get_participation_coefficient(mode_id, self.response)
 
-                self.weighting_factors_raw[self.response][direction].append(
-                        participation_coeff * generalized_displacement)
+                self.weighting_factors_raw[self.response][direction].append(participation_coeff * generalized_displacement)
 
     def get_rms_resonant_response(self, mode_id):
         '''

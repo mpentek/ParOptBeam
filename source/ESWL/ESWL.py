@@ -237,7 +237,7 @@ class ESWL(object):
             p_z_r_all['base_moment_distr'] = self.RESWL.spatial_distribution[self.response][direction]
         # 2. modal inertial load: Kareem eq. 27
         if self.reswl_settings['types_to_compute']['modal_consistent']:
-            p_z_r_all['modal_consistent'] = self.RESWL.modal_inertial[self.response][direction]
+            p_z_r_all['modal_consistent'] = self.RESWL.modal_inertial_cons[self.response][direction]
         if self.reswl_settings['types_to_compute']['modal_lumped']:
             p_z_r_all['modal_lumped'] = self.RESWL.modal_inertial_lumped[self.response][direction]
 
