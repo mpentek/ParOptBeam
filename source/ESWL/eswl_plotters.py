@@ -34,12 +34,12 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "tab:blue", "tab:orange",
                    "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markersize":     [4,      4,    4,      4,    4,    4]}
-LINESTYLE = ["--",    "-.",  ":",    "-",   "-",   "-"]
+LINESTYLE = ["--",    "-.",  ":",  "-",   "-",   "-"]
 
 COLORS = ['tab:blue','tab:orange','tab:green']
 
 # SAVE DESTINATION 
-destination = 'plots\\ESWL_plots'
+destination = os_join('plots','ESWL_plots')
 
 
 def convert_for_latex(string):
@@ -244,7 +244,7 @@ def plot_eswl_components(eswl_components, nodal_coordinates, load_directions_to_
         components = components_to_plot
     
     if go_final:
-        naming = {'mean':'mean', 'gle':'beswl', 'resonant':'reswl', 'resonant_m':'reswl','resonant_m_lumped':'reswl','total':'total','lrc':'beswl'}
+        naming = {'mean':'mean', 'gle':'beswl', 'res_base_distr':'reswl', 'res_mod_cons':'reswl','res_mod_lumped':'reswl','total':'total','lrc':'beswl'}
 
     for i, direction in enumerate(load_directions):
         # for labels
@@ -276,7 +276,7 @@ def plot_eswl_components(eswl_components, nodal_coordinates, load_directions_to_
             if go_final:
                 component_label = naming[component]
             else:
-                component_label = r'${}$'.format(component)#convert_for_latex(component)
+                component_label = component#r'${}$'.format(component)#convert_for_latex(component)
 
             ax_eswl = axes[i].plot(eswl, 
                         nodal_coordinates['x0'], 

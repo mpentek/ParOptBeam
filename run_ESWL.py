@@ -90,18 +90,18 @@ plot_influences = False
 plot_load_time_hist = False
 plot_eswl = True
 include_dynamic_results = True
-available_components = ['mean', 'gle', 'resonant', 'resonant_m','resonant_m_lumped','total', 'lrc']
+available_components = ['mean', 'gle', 'res_base_distr', 'res_mod','res_mod_lumped','total', 'lrc']
 '''
 NOTE: all components use: ['all']
     'gle': Kareems methods for background component
     'lrc': background component using LRC method
-    'resonant': distribution of base moment e.g. Kareem eq. 29
-    'resonant_m': modal inertial load consistent calculation Kareem eq. 27
-    'resonant_m_lumped: modal inertial load using a nodal mass matrix/vector
+    'res_base_distr': resonant component - distribution of base moment e.g. Kareem eq. 29
+    'res_m': resonant component - modal inertial load consistent calculation Kareem eq. 27
+    'res_m_lumped: resonant component - modal inertial load using a nodal mass matrix/vector
 '''
-components_to_plot = ['resonant', 'lrc', 'mean','total']#]#, 'resonant_m_lumped',
-#components_to_plot = ['lrc', 'gle','resonant_m_lumped','mean','total']#['gle', 'lrc']#, 
-#components_to_plot = ['lrc', 'gle']#,'resonant_m_lumped','mean','total']#['gle', 'lrc']#, 
+components_to_plot = ['res_mod_lumped', 'res_base_distr', 'lrc', 'mean','total']#]#, 'res_m_lumped',
+#components_to_plot = ['lrc', 'gle','res_m_lumped','mean','total']#['gle', 'lrc']#, 
+#components_to_plot = ['lrc', 'gle']#,'res_m_lumped','mean','total']#['gle', 'lrc']#, 
 
 save_eswl_object = False
 save_eswl_components = False

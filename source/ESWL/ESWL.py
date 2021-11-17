@@ -228,40 +228,33 @@ class ESWL(object):
 
         # =======================================================================
         # # RESWL - RESONANT PART
+        p_z_r_all = {}
+        p_z_r_e_all = {}
         # NOTE: seperation of modes -> Rule: fi+1*0,9 > fi -> given for CAARC
         w_r_j = self.RESWL.weighting_factors_raw[self.response][direction]
         # 1. variante: distribute resonant base moment along height Kareem eq. 29
         if self.reswl_settings['types_to_compute']['base_moment_distr']:
-            p_z_r = self.RESWL.spatial_distribution[self.response][direction]
-            p_z_r_e = np.zeros(self.structure_model.n_nodes)
+            p_z_r_all['base_moment_distr'] = self.RESWL.spatial_distribution[self.response][direction]
         # 2. modal inertial load: Kareem eq. 27
-        if self.reswl_settings['types_to_compute']['modal']:
-            p_z_rm = self.RESWL.modal_inertial[self.response][direction]
-            p_z_r_em = np.zeros(self.structure_model.n_nodes)
+        if self.reswl_settings['types_to_compute']['modal_consistent']:
+            p_z_r_all['modal_consistent'] = self.RESWL.modal_inertial[self.response][direction]
         if self.reswl_settings['types_to_compute']['modal_lumped']:
-            p_z_rm_lumped = self.RESWL.modal_inertial_lumped[self.response][direction]
-            p_z_r_em_lumped = np.zeros(self.structure_model.n_nodes)
+            p_z_r_all['modal_lumped'] = self.RESWL.modal_inertial_lumped[self.response][direction]
+
+        types_to_compute = [i for i in self.reswl_settings['types_to_compute'] if self.reswl_settings['types_to_compute'][i]]
             
         # sum up over first 3 modes and multiply with weighting factor
         for mode_id in range(3):
             g_r = self.get_peak_factor('resonant', self.structure_model.eig_freqs[mode_id])
             w_r = w_r_j[mode_id] * g_r / R_max # weighting factor
-
             # multiplying p_z_r_ with g_r according to eq. 27,29 Kareem
-            if self.reswl_settings['types_to_compute']['base_moment_distr']:
-                p_z_r_e +=  w_r * p_z_r[mode_id] * g_r
-            if self.reswl_settings['types_to_compute']['modal']:
-                p_z_r_em += w_r * p_z_rm[mode_id] * g_r
-            if self.reswl_settings['types_to_compute']['modal_lumped']:
-                p_z_r_em_lumped += w_r * p_z_rm_lumped[mode_id] * g_r
+            for type_r in types_to_compute:
+                if mode_id == 0:
+                    p_z_r_e_all[type_r] = np.zeros(self.structure_model.n_nodes)
+                p_z_r_e_all[type_r] +=  w_r * p_z_r_all[type_r][mode_id] * g_r
 
-        # choosing whcihc one is the one to us in the combination 
-        if self.reswl_settings['type_to_combine'] == 'base_moment_distr':
-            pass
-        elif self.reswl_settings['type_to_combine'] == 'modal':
-            p_z_r_e = p_z_r_em
-        elif self.reswl_settings['type_to_combine'] == 'modal_lumped':
-            p_z_r_e = p_z_r_em_lumped
+        # selecting th type for the combination and save it in a extra variable to better handle it
+        p_z_r_e = p_z_r_e_all[self.reswl_settings['type_to_combine']]
 
         # # SIGN OF RESONANT PART
         # 1. select sign du to combination with other components
@@ -272,17 +265,16 @@ class ESWL(object):
                 print ('   flipped sign of resonant', direction, ', reason: component combination')
         
         #if self.reswl_settings['base_moment_distr']:
-        p_z_r_e = resonant_sign*p_z_r_e
-        if self.reswl_settings['types_to_compute']['modal']:
-            p_z_r_em = resonant_sign*p_z_r_em
-        if self.reswl_settings['types_to_compute']['modal_lumped']:
-            p_z_r_em_lumped = resonant_sign*p_z_r_em_lumped
+        p_z_r_e *= resonant_sign
+
+        for type_r  in types_to_compute:
+            p_z_r_e_all[type_r] *= resonant_sign
 
         '''
         NOTE: here manually adjusting the signs of b(My), g(Mz) coupled with z(Fz), y(Fy) of resonant component.
         since resonant loads are dependent on the mode shapes and b,z and g,y are coupled the signs must be coupled aswell
         '''
-
+        # coupled g and y
         if direction == 'y':
             if p_z_r_e[1] < 0:
                 self.sign_y = 'n'
@@ -294,27 +286,18 @@ class ESWL(object):
                 if self.sign_y == 'p':
                     if not self.optimize_gb:
                         print ('   flipped sign of resonant g, reason: coupled y-g')
-                    flipped_g_coupling = True
                     p_z_r_e *= -1
-                    if self.reswl_settings['types_to_compute']['modal']:
-                        p_z_r_em *= -1
-                    if self.reswl_settings['types_to_compute']['modal_lumped']:
-                        p_z_r_em_lumped *= -1
-                else:
-                    flipped_g_coupling = False
+                    for type_r  in types_to_compute:
+                        p_z_r_e_all[type_r] *= -1
             else:
                 if self.sign_y == 'n':
                     if not self.optimize_gb:
                         print ('   flipped sign of resonant g, reason: coupled y-g')
-                    flipped_g_coupling = True
                     p_z_r_e *= -1
-                    if self.reswl_settings['types_to_compute']['modal']:
-                        p_z_r_em *= -1
-                    if self.reswl_settings['types_to_compute']['modal_lumped']:
-                        p_z_r_em_lumped *= -1
-                else:
-                    flipped_g_coupling = False
-
+                    for type_r  in types_to_compute:
+                        p_z_r_e_all[type_r] *= -1
+        
+        # coupled b and z
         if direction == 'z':
             if p_z_r_e[1] < 0:
                 self.sign_z = 'n'
@@ -326,30 +309,21 @@ class ESWL(object):
                 if self.sign_z == 'n':
                     if not self.optimize_gb:
                         print ('   flipped sign of resonant b, reason: coupled z-b')
-                    flipped_b_coupling =True
                     p_z_r_e *= -1
-                    if self.reswl_settings['types_to_compute']['modal']:
-                        p_z_r_em *= -1
-                    if self.reswl_settings['types_to_compute']['modal_lumped']:
-                        p_z_r_em_lumped *= -1
-                else:
-                    flipped_b_coupling = False
+                    for type_r  in types_to_compute:
+                        p_z_r_e_all[type_r] *= -1
             else:
                 if self.sign_z == 'p':
                     if not self.optimize_gb:
                         print ('   flipped sign of resonant b, reason: coupled z-b')
                     flipped_b_coupling = True
                     p_z_r_e *= -1
-                    if self.reswl_settings['types_to_compute']['modal']:
-                        p_z_r_em *= -1
-                    if self.reswl_settings['types_to_compute']['modal_lumped']:
-                        p_z_r_em_lumped *= -1
-                else:
-                    flipped_b_coupling = False
+                    for type_r  in types_to_compute:
+                        p_z_r_e_all[type_r] *= -1
 
         # =======================================================================
         # # TOTAL
-        eswl_total = mean_load + background
+        eswl_total = mean_load + background + p_z_r_e
 
         # this is needed in this format for postprocessing
         self.eswl_total[self.response][direction] = eswl_total
@@ -362,11 +336,12 @@ class ESWL(object):
             self.eswl_components[self.response][direction]['gle'] = p_z_b_e_gle
         if self.use_lrc:
             self.eswl_components[self.response][direction]['lrc'] = p_z_b_e_lrc
-        self.eswl_components[self.response][direction]['resonant'] = p_z_r_e
-        if self.reswl_settings['types_to_compute']['modal']:
-            self.eswl_components[self.response][direction]['resonant_m'] = p_z_r_em
+        if self.reswl_settings['types_to_compute']['base_moment_distr']:
+            self.eswl_components[self.response][direction]['res_base_distr'] = p_z_r_e_all['base_moment_distr']
+        if self.reswl_settings['types_to_compute']['modal_consistent']:
+            self.eswl_components[self.response][direction]['res_mod_cons'] = p_z_r_e_all['modal_consistent']
         if self.reswl_settings['types_to_compute']['modal_lumped']:
-            self.eswl_components[self.response][direction]['resonant_m_lumped'] = p_z_r_em_lumped
+            self.eswl_components[self.response][direction]['res_mod_lumped'] = p_z_r_e_all['modal_lumped']
         self.eswl_components[self.response][direction]['total'] = eswl_total
 
         if self.evaluate_gb:
