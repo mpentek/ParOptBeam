@@ -102,6 +102,11 @@ class AnalysisController(object):
                 from source.analysis.static_analysis import StaticAnalysis
                 self.analyses.append(StaticAnalysis(
                     self.model, analysis_param))
+            
+            elif analysis_param['type'] == 'ESWL_analysis':
+                from source.analysis.eswl_analysis import EswlAnalysis
+                self.analyses.append(EswlAnalysis(
+                    self.model, analysis_param))
 
             else:
                 err_msg = "The analysis type \"" + \

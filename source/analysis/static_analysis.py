@@ -39,8 +39,8 @@ class StaticAnalysis(AnalysisType):
             err_msg += " is not a valid file!"
             raise Exception(err_msg)
         else:
-            print(get_adjusted_path_string(
-                self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
+            #print(get_adjusted_path_string(
+            #   self.parameters['input']['file_path']) + ' set as load file path in StaticAnalysis')
             if self.parameters['input']['is_time_history_file']:
                 self.force = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))[
                     :, self.parameters['input']['selected_time_step']]
@@ -170,6 +170,56 @@ class StaticAnalysis(AnalysisType):
                                       force,
                                       scaling,
                                       1)
+    
+
+    def plot_solve_result_2D(self, pdf_report, display_plot):
+        """
+        Pass to plot function:
+            from structure model undeformed geometry
+            self.displacmenet
+            self.force
+            self.reaction_force
+        """
+
+        print("Plotting 2D result in StaticAnalysis \n")
+
+        for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
+                              GD.DOF_LABELS[self.structure_model.domain_size]):
+            start = idx
+            step = GD.DOFS_PER_NODE[self.structure_model.domain_size]
+            stop = self.static_result.shape[0] + idx - step
+            self.structure_model.nodal_coordinates[label] = self.static_result[start:stop +
+                                                                               1:step][:, 0]
+            self.force_action[label] = self.force[start:stop + 1:step]
+            self.reaction[label] = self.resisting_force[start:stop + 1:step][:, 0]
+
+        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                   self.structure_model.nodal_coordinates["y0"],
+                                   self.structure_model.nodal_coordinates["z0"]],
+                    "deformation": [self.structure_model.nodal_coordinates["x"],
+                                    self.structure_model.nodal_coordinates["y"],
+                                    self.structure_model.nodal_coordinates["z"],
+                                    self.structure_model.nodal_coordinates["a"]],
+                    "deformed": None}
+
+        force = {"external": [self.force_action["x"],
+                              self.force_action["y"],
+                              self.force_action["z"]],
+                 "reaction": [self.reaction["x"],
+                              self.reaction["y"],
+                              self.reaction["z"]]}
+
+        scaling = {"deformation": 1,
+                   "force": 1}
+
+        plot_title = "Static Analysis : "
+
+        plotter_utilities.plot_result_2D(pdf_report,
+                                         display_plot,
+                                         plot_title,
+                                         geometry,
+                                         force,
+                                         scaling)
 
     def write_solve_result(self, global_folder_path):
         """

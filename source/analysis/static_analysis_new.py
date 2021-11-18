@@ -49,10 +49,7 @@ class StaticAnalysis(AnalysisType):
                 self.force = np.load(get_adjusted_path_string(
                     self.parameters['input']['file_path']))
                                                          
-
-
-        # of nodes-dofs
-        
+        # of nodes-dofs   
         n_dofs_model = structure_model.n_nodes * \
             GD.DOFS_PER_NODE[structure_model.domain_size]
         n_dofs_force = len(self.force)
@@ -279,9 +276,6 @@ class StaticAnalysis(AnalysisType):
 
         for plot_result in self.parameters['output']['plot']:
             if plot_result == 'deformation':
-                #display_plot = True
-                #self.plot_solve_result(pdf_report, display_plot)
-                #display_plot = True
                 self.plot_solve_result_2D(pdf_report, display_plot)
             if plot_result == 'forces':
                 pass

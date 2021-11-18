@@ -25,7 +25,7 @@ available_models = [
     ]
 
 
-destination = 'input\\parameters\\optimized\\'
+destination = os_join('..','input','parameters','optimized')
 
 symmetric_model = [available_models[0]]
 unsymmetric_model = [available_models[2]]
@@ -70,10 +70,7 @@ for available_model in symmetric_model:
             intervals[i]["moment_of_inertia_y"] = [e.Iy]
             intervals[i]["moment_of_inertia_z"] = [e.Iz]
             intervals[i]["torsional_moment_of_inertia"] = [e.It]
-            intervals[i]["opt_ip"] = [e.Ip]
-            intervals[i]["eccentricity_z"]= [e.ey] 
-            intervals[i]["eccentricity_y"]= [e.ez]
-        
+            intervals[i]["opt_ip"] = [e.Ip]        
        
     parameters["model_parameters"]['system_parameters']['material'] = material
     parameters["model_parameters"]['system_parameters']['geometry']["defined_on_intervals"] = intervals
@@ -83,7 +80,7 @@ for available_model in symmetric_model:
 
     s = re.split('[_.]', available_model)
     
-    if 'optimized\\opt' in re.split('[_.]', available_model):
+    if os_join('optimized','opt') in re.split('[_.]', available_model):
         new_model = 'opt1_' + s[1] + '.json'
     else:
         new_model = 'opt_'+available_model

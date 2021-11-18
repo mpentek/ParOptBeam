@@ -154,8 +154,9 @@
                 "settings": {},
                 "input":{
                     "help":"provide load file in the required format - either some symbolic generated or time step from dynamic",
-                    "file_path": "force_static_4_nodes.npy",
-                    "is_time_history_file" : false
+                    "file_path": "input/force/generic_building/dynamic_force_4_nodes.npy",
+                    "is_time_history_file" : true,
+                    "selected_time_step" : 15000
                 },
                 "output":{
                     "plot": ["deformation", "forces"],
@@ -190,5 +191,28 @@
                                          [true, true]]
                     }
                 }
+            },{
+                "type": "ESWL_analysis",
+                "settings":{
+                    "result_type":"reaction",
+                    "responses_to_analyse":["My","Mz"],
+                    "at_height":0,
+                    "eswl_components_to_compute":["total", "mean","lrc","gle","res_mod_lumped", "res_mod","res_base_distr"],
+                    "beswl_to_combine":"lrc",
+                    "reswl_to_combine":"res_mod_lumped"
+                },
+                "input":{
+                    "help":"required is a dynamic load file, a dynamic analysis and an eigenvalue analysis"
+                },
+                "output":{
+                    "plot":{
+                        "compare_dynamic_eswl":[true, "est"],
+                        "eswl_load_distribution":[true, ["total", "mean","lrc","res_mod_lumped"]],
+                        "eswl_component_rates":true,
+                        "load_signals":false,
+                        "influence_functions":false
+                    }
+                }
+
             }]}
 }

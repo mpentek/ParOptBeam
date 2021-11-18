@@ -89,6 +89,8 @@ class EigenvalueAnalysis(AnalysisType):
 
         self.eigenform = self.structure_model.recuperate_bc_by_extension(
             self.eigenform)
+        
+        self.structure_model.eigenform_from_eigenvalue_analysis = self.eigenform
 
     def write_eigenmode_summary(self, global_folder_path, considered_modes=15):
         # TODO check to avoid redundancy in EigenvalueAnalysis and StructureModel
