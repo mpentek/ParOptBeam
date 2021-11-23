@@ -197,20 +197,24 @@
                     "result_type":"reaction",
                     "responses_to_analyse":["My","Mz"],
                     "at_height":0,
-                    "eswl_components_to_compute":["total", "mean","lrc","gle","res_mod_lumped", "res_mod","res_base_distr"],
+                    "influence_function_computation":"analytic",
+                    "beswl_options":{"lrc":true,"gle":true},
+                    "reswl_options":{"modal_inertial":true, "base_moment_distr":true},
                     "beswl_to_combine":"lrc",
-                    "reswl_to_combine":"res_mod_lumped"
+                    "reswl_to_combine":"modal_inertial"
                 },
                 "input":{
-                    "help":"required is a dynamic load file, a dynamic analysis and an eigenvalue analysis"
+                    "help":"required is a dynamic load file - the same as for the dynamic analysis.",
+                    "file_path": "input/force/generic_building/dynamic_force_4_nodes.npy"
                 },
                 "output":{
                     "plot":{
                         "compare_dynamic_eswl":[true, "est"],
-                        "eswl_load_distribution":[true, ["total", "mean","lrc","res_mod_lumped"]],
+                        "eswl_load_distribution":{"plot":true, "components_to_plot":["total", "mean","lrc","modal_inertial"]},
                         "eswl_component_rates":true,
                         "load_signals":false,
-                        "influence_functions":false
+                        "influence_functions":false,
+                        "mode_shapes":false
                     }
                 }
 

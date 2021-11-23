@@ -94,6 +94,8 @@ class AnalysisController(object):
                 #     self.analyses.append(DynamicAnalysis(
                 #         self.model, analysis_param))
                 # else: 
+                print('\nNOTE! Suppressing the dynamic analysis in the analysis_controller\n')
+                continue
                 from source.analysis.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(
                     self.model, analysis_param))

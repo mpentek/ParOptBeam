@@ -1,19 +1,13 @@
 import numpy as np
-import sys
-import math
-import matplotlib.pyplot as plt
-from os.path import join as os_join
 from source.ESWL.ESWL import ESWL
-from source.ESWL.eswl_auxiliaries import get_influence, rms, integrate_influence
-import warnings
 import source.auxiliary.global_definitions as GD
 
-class BESWL(object):
+class BESWL(ESWL):
 
-    def __init__(self,strucutre_model, influence_function, load_signals, load_directions, response, use_lrc, use_gle):
+    def __init__(self,strucutre_model, influence_function, load_signals, response, options):
         '''
         Background Part of the ESWL
-        Can be calculated with the GLE and the LRC approach respectivley -> use the booleans use_gle, use_lrc
+        Can be calculated with the GLE and the LRC approach respectivley (use options to set)
         - influence_function: influence of all load_directions on the current response
         - load_signals: time history of measured loads
         - load_directions: directions of the load to compute 
@@ -24,44 +18,43 @@ class BESWL(object):
         self.influence_function = influence_function
         self.load_signals = load_signals
         self.response = response
-        self.load_directions = load_directions
+        self.load_directions = GD.LOAD_DIRECTION_MAP['all']
 
-        self.use_lrc = use_lrc
-        self.use_gle = use_gle
-
-        self.weighting_factors_raw = {self.response: {}} # first key is repsonse, 2nd direction
-        self.spatial_distribution = {self.response: {}} # keys are directions, values arrays of z
+        self.options = options     
 
         self.get_rms_background_response()
 
-        if self.use_lrc:
-            self.get_std_background_response_lrc()
-
-        if self.use_gle:
-            self.get_spatial_distribution()
-            self.get_weighting_factor()
+        if self.options['lrc']:
+            self.get_weighting_factor_lrc()
+            self.get_spatial_distribution_lrc()
+            
+        if self.options['gle']:
+            self.get_spatial_distribution_gle()
+            self.get_weighting_factor_gle()
 
     # ===========================================
     # # GLE Approach according to Chen and Kareem
     # ===========================================
 
-    def get_spatial_distribution(self):
+    def get_spatial_distribution_gle(self):
         '''
         if using Kareem this is the gust envelope = rms/std of load at each point
         Kareem eq. 25 / 32
         '''
+        self.spatial_distribution_gle = {self.response: {}} # keys are directions, values arrays of z
         for direction in self.load_directions:
-            self.spatial_distribution[self.response][direction] = np.zeros(self.strucutre_model.n_nodes)
+            self.spatial_distribution_gle[self.response][direction] = np.zeros(self.strucutre_model.n_nodes)
 
             for i in range(self.strucutre_model.n_nodes):
-                self.spatial_distribution[self.response][direction][i] = np.std(self.load_signals[direction][i])
+                self.spatial_distribution_gle[self.response][direction][i] = np.std(self.load_signals[direction][i])
 
-    def get_weighting_factor(self):
+    def get_weighting_factor_gle(self):
         '''
         only if gle is used 
         makes the spatial distribution response specific
         Kareem eq. 33
         '''
+        self.weighting_factors_raw_gle = {self.response: {}} 
         for s in self.load_directions:
             w_b_s = 0.0
             for l in self.load_directions:
@@ -73,7 +66,7 @@ class BESWL(object):
                     #     '    w_b_s_i:', round(B_sl * static_load_response, 2))
                     pass
 
-            self.weighting_factors_raw[self.response][s] = w_b_s
+            self.weighting_factors_raw_gle[self.response][s] = w_b_s
 
     def get_static_load_response(self, direction):
         '''
@@ -155,20 +148,42 @@ class BESWL(object):
     # LRC COEFFICIENT according to Kaspersik
     # ========================================
 
-    def get_beswl_LRC(self, load_direction):
+    def get_spatial_distribution_lrc(self):
         '''
         computes the LRC distribution of beswl for a given load direction
         this still needs to be multiplied with the peak factor g_b
         '''
-        rho_Rps = self.get_lrc_coeff(load_direction)
-        sig_ps = np.asarray([np.std(i) for i in self.load_signals[load_direction]])
+        self.spatial_distribution_lrc = {self.response: {}}
+        for direction in self.load_directions:
+            rho_Rps = self.get_lrc_coeff(direction)
+            sig_ps = np.asarray([np.std(i) for i in self.load_signals[direction]])
 
-        lrc = np.multiply(rho_Rps, sig_ps)
+            lrc = np.multiply(rho_Rps, sig_ps)
 
-        if np.any(rho_Rps > 1):
-            print ('\nWARNING lrc coefficient, rho_Rps is larger than 1: ', rho_Rps, 'for direction', load_direction, 'for response', self.response, 'BESWL LRC result might be wrong!')
+            if np.any(rho_Rps > 1):
+                print ('\nWARNING lrc coefficient, rho_Rps is larger than 1: ', rho_Rps, 'for direction', direction, 'for response', self.response, 'BESWL LRC result might be wrong!')
+            
+            self.spatial_distribution_lrc[self.response][direction] = lrc
+
+    def get_weighting_factor_lrc(self):
+        '''
+        this is the standard deviation of the response using covariance method Kasperski (eq. 1)
+        NOTE from Kasperski extended it to a coupled case with wind loads in different directions causing the same reaction. 
+        '''
+        sig_R_2 = 0.0 # scalar value: just the rms/std of the response 
+        for node1 in range(self.strucutre_model.n_nodes):
+            for node2 in range(self.strucutre_model.n_nodes):
+                for s in self.load_directions: 
+                    for l in self.load_directions: 
+                        I_ps_z = self.influence_function[self.response][s][node1]
+                        I_pl_z = self.influence_function[self.response][l][node2]
+
+                        cov_psl = np.cov(self.load_signals[s][node1], self.load_signals[l][node2])[0][1]
+
+                        sig_R_2 += I_ps_z * I_pl_z * cov_psl  
         
-        return lrc
+        # saved as member since it is required multiple times
+        self.weighting_factors_raw_lrc = sig_R_2
 
     def get_lrc_coeff(self, load_direction):
         '''
@@ -189,29 +204,10 @@ class BESWL(object):
                     cov_Rps[node1] += I_pl_z * cov_psl
 
         # standard deviation of the response using covariance method Kasperski (eq. 1)
-        sig_R_2 = self.std_background_response_lrc
-        std_R_cov_method = np.sqrt(abs(sig_R_2))
+        std_background_response = self.weighting_factors_raw_lrc
+        std_R_cov_method = np.sqrt(abs(std_background_response))
         # lrc coefficient = correlation coefficient between ps and R
         rho_Rps = np.divide(cov_Rps, np.multiply(std_ps, std_R_cov_method))
             
         return rho_Rps
-
-    def get_std_background_response_lrc(self):
-        '''
-        standard deviation of the response using covariance method Kasperski (eq. 1)
-        NOTE from Kasperski extended it to a coupled case with wind loads in different directions causing the same reaction. 
-        '''
-        sig_R_2 = 0.0 # scalar value: just the rms/std of the response 
-        for node1 in range(self.strucutre_model.n_nodes):
-            for node2 in range(self.strucutre_model.n_nodes):
-                for s in self.load_directions: 
-                    for l in self.load_directions: 
-                        I_ps_z = self.influence_function[self.response][s][node1]
-                        I_pl_z = self.influence_function[self.response][l][node2]
-
-                        cov_psl = np.cov(self.load_signals[s][node1], self.load_signals[l][node2])[0][1]
-
-                        sig_R_2 += I_ps_z * I_pl_z * cov_psl  
-        
-        # saved as member since it is required multiple times
-        self.std_background_response_lrc = sig_R_2
+  

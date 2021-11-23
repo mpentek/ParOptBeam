@@ -28,7 +28,7 @@ def cov_custom(signal1, signal2):
 
     return cov/len(signal1)
 
-def parse_load_signal(signal_raw, dofs_per_node, time_array, load_directions_to_include = 'all', discard_time = None):
+def parse_load_signal(signal_raw, dofs_per_node, time_array = None, load_directions_to_include = 'all', discard_time = None):
     '''
     - sorts the load signals in a dictionary with load direction as keys:
         x,y,z: nodal force
@@ -52,7 +52,7 @@ def parse_load_signal(signal_raw, dofs_per_node, time_array, load_directions_to_
             else:
                 signal[label] = np.zeros((n_nodes,signal_raw.shape[1]))
 
-    if time_array.any():
+    if time_array:
         dt = time_array[1] - time_array[0] # simulation time step
     else:
         dt = 0.1 # some default
@@ -235,7 +235,7 @@ def get_influence(structure_model, load_direction, node_id, response, response_n
         
     return influence[response_node_id]
 
-def get_decoupled_influences(structure_model, load_direction, node_id, response, response_node_id=0):
+def get_analytic_influences(structure_model, load_direction, node_id, response, response_node_id=0):
     '''
     for a lever arm this is simple
     if shear response -> return 1
@@ -496,7 +496,22 @@ def get_radi_of_gyration(structure_model):
     radi = {'a':rp, 'b':ry, 'g':rz, 'x':1.0,'y':1.0,'z':1.0}
 
     return radi
+
+def sort_row_vectors_dof_wise(unsorted_vector):
+    '''
+    unsorted vector is of dimenosn n_nodes * n_dofs
+    sort it in to a dict with dof lables as keys
+    '''
+    sorted_dict = {}
+    for idx, label in zip(list(range(GD.DOFS_PER_NODE['3D'])),
+                            GD.DOF_LABELS['3D']):
+        start = idx
+        step = GD.DOFS_PER_NODE['3D']
+        stop = unsorted_vector.shape[0] + idx - step
+        sorted_dict[label] = unsorted_vector[start:stop+1:step]
     
+    return sorted_dict
+
 # # DYNAMIC ANALYSIS
 def get_fft(given_series, sampling_freq):
     '''

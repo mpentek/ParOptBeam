@@ -206,7 +206,7 @@ def plot_directional_load_components(eswl_total, nodal_coordinates ,load_compone
     plt.show()
 
 
-def plot_eswl_components(eswl_components, nodal_coordinates, load_directions_to_include, response_label, 
+def plot_eswl_components(eswl_components, nodal_coordinates, response_label, load_directions_to_include, 
                          textstr, influences ,components_to_plot = ['all'], gb_label = '', go_final = False, R_total = None, unit= 'N', save_suffix = '',
                          options = default_plot_options):
     
@@ -1201,11 +1201,13 @@ def plot_load_time_histories_node_wise_figure(load_signals, n_nodes, discard_tim
 
 # MODE SHAPES
 
-def plot_n_mode_shapes(mode_shapes_sorted, charact_length ,n = 3, options = default_plot_options, save_suffix=''):
+def plot_n_mode_shapes(mode_shapes, charact_length ,n = 3, options = default_plot_options, save_suffix=''):
     ''' 
     mode_shapes_sorted: mode shapres as a dictionary with dofs 
     charact_length: scale for the rotaional dofs
     ''' 
+    if not isinstance(mode_shapes, dict):
+        utilities.sort_row_vectors_dof_wise(mode_shapes)
 
     fig, ax = plt.subplots(1, n, sharey=True)
     fig.canvas.set_window_title('mode shapes first 3 modes')
@@ -1536,7 +1538,7 @@ def plot_fft(dof_label, dynamic_analysis = [None], damping_lables = [None], give
 
 # # OPTIMIZATION
 
-def plot_objective_function_2D(objective_function, opt_res ,evaluation_space = [-5,5, 0.2],design_var_label = 'g_b',
+def plot_objective_function_gb_2D(objective_function, opt_res ,evaluation_space = [-5,5, 0.2],design_var_label = 'g_b',
                                 options = default_plot_options):
 
     print ('\nEVALUATE AND PLOT OBJECTIVE FUNCTION\n')

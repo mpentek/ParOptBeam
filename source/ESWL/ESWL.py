@@ -1,17 +1,11 @@
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
-import timeit
 from functools import partial
 from scipy.optimize import minimize, minimize_scalar
-from os.path import join as os_join
-from os.path import sep
 
 import source.auxiliary.global_definitions as GD
 import source.ESWL.eswl_plotters as plotter_utilities
 import source.ESWL.eswl_auxiliaries as auxiliary
 import source.auxiliary.statistics_utilities as stats_utils
-from source.ESWL.eswl_plotters import plot_objective_function_2D, plot_dynamic_results
 
 ''' 
 Main sources and theoretical background:
@@ -22,15 +16,11 @@ Main sources and theoretical background:
                     https://www.researchgate.net/publication/264844555_Incorporation_of_the_LRC-method_into_codified_wind_load_distributions 
 - Holmes: Wind Loading of Structures 3rd Edit - Chapter 5 (5.4)
 ''' 
-
-response_labels = ['Qx', 'Qy', 'Qz', 'Mx', 'My', 'Mz']
+response_labels = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
 
 class ESWL(object):
 
-    def __init__(self, structure_model, eigenvalue_analysis, response, response_height, load_signals, load_directions, load_directions_to_compute, 
-                 decoupled_influences, plot_influences, use_lrc, use_gle, reswl_settings, 
-                 optimize_gb = False, target = 'estimate', evaluate_gb = False,
-                 plot_mode_shapes = False, dynamic_analysis_solved = None, plot_objective_function = False):
+    def __init__(self, structure_model, settings, load_signals, eigenform):
         '''
         ESWL object is initialized for the response given (base reactions atm):
         [Qx, Qy, Qz, Mx, My, Mz]
@@ -50,8 +40,8 @@ class ESWL(object):
             - decouple_influences:
                 True: a simple inlfuence function is computed, no coupling effects are involved here
                 False: influence function is calculated with static analyis and unit loads
-            - use_lrc: if LRC method shall be used for background part
-            - use_gle: if GLE approach should be used for background part
+            - compute_lrc: if LRC method shall be used for background part
+            - compute_gle: if GLE approach should be used for background part
                 if both are True LRC will be used for calculation of total ESWL 
             - reswl_settings: different approaches to calculate this part are implemented,
                 set booleans for which to calculate and specify which is used for total ESWL
@@ -65,79 +55,61 @@ class ESWL(object):
                 'max_factor': the global maximum of the dynamic result times a factor 1.3 is set as target
             - plot_mode_shapes: obvious
             - dynamic_analysis_solved: the solver object of a dynamic_analysis after solving, required if optimization of g_b
-            - plot_objective_function: wheter to evaluate and plot the objective function of the peak factor adjustment
+            - plot_objective_function_gb: wheter to evaluate and plot the objective function of the peak factor adjustment
 
         '''
 
         self.structure_model = structure_model
-        self.eigenvalue_analysis = eigenvalue_analysis
-        self.dynamic_analysis_solved = dynamic_analysis_solved
+        self.eigenform = eigenform
         self.load_signals = load_signals
-        if load_directions == 'all':
-            self.load_directions = GD.LOAD_DIRECTION_MAP[load_directions]
-        else:
-            self.load_directions = [GD.LOAD_DIRECTION_MAP[l_i] for l_i in load_directions]
-        if load_directions_to_compute == 'all':
-            self.load_directions_to_compute = GD.LOAD_DIRECTION_MAP[load_directions_to_compute]
-        elif load_directions_to_compute == 'automatic':
-            self.load_directions_to_compute = GD.LOAD_DIRECTIONS_RESPONSES_UNCOUPLED[response]
-        else:
-            self.load_directions_to_compute = [GD.LOAD_DIRECTION_MAP[l_i] for l_i in load_directions_to_compute]
-
-        self.response_height = response_height
-        print ('\nComputing ESWL for load directions', self.load_directions_to_compute, 'for response', response, ' at H = ', self.response_height)
+        self.settings = settings
         
-        self.use_lrc = use_lrc
-        self.use_gle = use_gle
-        self.optimize_gb = optimize_gb
-        self.target = target
-        self.evaluate_gb = evaluate_gb
-        self.plot_objective_function = plot_objective_function
-        self.reswl_settings = reswl_settings
-        self.plot_mode_shapes = plot_mode_shapes
+        # beswl settings
+        self.beswl_options = self.settings['beswl_options']
+        self.reswl_options = self.settings['reswl_options']
 
-        if response in response_labels:
-            self.response = response
-        else:
-            raise Exception(response + ' is not a valid response label, use: ', response_labels)
+        self.optimize_gb = False
+        self.target = 'default'
+        self.plot_objective_function_gb = False
 
-        # do this at initialization since it is needed multiple times and pass it to R and B
-        self.decoupled_influences = decoupled_influences
-        self.plot_influences = plot_influences
-        if self.decoupled_influences:
-            print ('\nusing decoupled influences\n')
+
+        # # do this at initialization since it is needed multiple times and pass it to R and B
+        if self.settings['influence_function_computation']:
+            print ('\nusing analytic influence functions\n')
         else:
             print ('\nusing influences from static analysis\n')
-        self.initialize_influence_functions(self.decoupled_influences)
+        self.initialize_influence_functions(self.settings['influence_function_computation'])
 
-        self.eswl_components = {} # first key is the response, second the load direciton
+        self.eswl_components = {}# first key is the response, second the load direciton
         self.eswl_total = {}
 
-    def calculate_total_ESWL(self):
+    def calculate_total_ESWL(self, response):
         '''
         Fills a dictionary with the components of the ESWL that are specefied (mean, gle, resonant, total ,lrc)
         '''
+        if response in response_labels:
+            self.response = response
+            self.eswl_components[response] = {}# first key is the response, second the load direciton
+            self.eswl_total[response] = {}
+            self.load_directions_to_compute = GD.LOAD_DIRECTIONS_RESPONSES_UNCOUPLED[response]
+        else:
+            raise Exception(response + ' is not a valid response label, use: ', response_labels)
+
         from source.ESWL.BESWL import BESWL
         from source.ESWL.RESWL import RESWL
 
         # initializing the Background and Resonant Part
-        self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.load_directions, self.response, 
-                           self.use_lrc, self.use_gle)
-        self.RESWL = RESWL(self.structure_model, self.influences, self.eigenvalue_analysis,
-                            self.load_signals, self.load_directions, self.response,
-                            self.plot_mode_shapes, self.reswl_settings)
-
-        self.eswl_components[self.response] = {}
-        self.eswl_total[self.response] = {}
-        
-        # setting up the target for the optimization of the factor g_b
-        response_id = GD.DOF_LABELS['3D'].index(GD.RESPONSE_DIRECTION_MAP[self.response])
-        dynamic_response = self.dynamic_analysis_solved.dynamic_reaction[response_id]
+        self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.response, self.beswl_options)
+        self.RESWL = RESWL(self.structure_model, self.influences, self.load_signals, self.response, self.eigenform, self.reswl_options)
 
         if self.target == 'default':
             self.optimize_gb = False
+        
 
         if self.optimize_gb:
+            # setting up the target for the optimization of the factor g_b
+            response_id = GD.DOF_LABELS['3D'].index(GD.RESPONSE_DIRECTION_MAP[self.response])
+            dynamic_response = self.dynamic_analysis_solved.dynamic_reaction[response_id]
             glob_max = max(abs(dynamic_response))
             if self.target == 'max_factor':
                 target_response = glob_max*1.3
@@ -150,17 +122,6 @@ class ESWL(object):
         print ('\nESWL Component Combinations:')
         # calculate the eswl for each load direction
         for direction in self.load_directions_to_compute:
-
-            if self.evaluate_gb:
-                print ('\nevaluating gb for', self.response, 'in', direction)
-                print('WARNING: this cannot be used with optimizing gb in one run sofar')
-                resp_gb = []
-                for gb_i in np.arange(1, 5.1, 0.1):
-                    resp_gb.append(self.component_combination(direction, target_response, gb_i))
-                dest = os_join(*['source','ESWL','output','gb_eval'])
-                fname = self.response + '_' + direction + '.npy'
-                np.save(dest + sep + fname, np.array(resp_gb))
-                print('\nsaved:',dest + sep + fname)
                 
             # # INCLUDE AN ADAPTION OF THE BACKGROUND PEAK FACTOR FOR A TARGET MAXIMUM RESPONSE
             if self.optimize_gb and not self.target == 'default':
@@ -176,8 +137,8 @@ class ESWL(object):
 
                 self.g_b_optimized.append(min_res.x)
 
-                if self.plot_objective_function:
-                    plot_objective_function_2D(self.objective_function, opt_res=min_res.x,
+                if self.plot_objective_function_gb:
+                    plotter_utilities.plot_objective_function_gb_2D(self.objective_function, opt_res=min_res.x,
                                                 evaluation_space = [-10,10, 0.5],
                                                 design_var_label='g_b for load ' + direction)
 
@@ -209,21 +170,21 @@ class ESWL(object):
         background_sign = auxiliary.get_sign_for_background(mean_load, direction)
         # =======================================================================
         # GLE - KAREEM
-        if self.use_gle:
-            w_b = self.BESWL.weighting_factors_raw[self.response][direction] * g_b / R_max
-            p_z_b = self.BESWL.spatial_distribution[self.response][direction] * g_b
+        if self.beswl_options['gle']:
+            w_b = self.BESWL.weighting_factors_raw_gle[self.response][direction] * g_b / R_max
+            p_z_b = self.BESWL.spatial_distribution_gle[self.response][direction] * g_b
             p_z_b_e_gle = abs(w_b * p_z_b) * background_sign
 
         # #LRC KASPERSIK
-        if self.use_lrc:
-            w_b_lrc = np.sqrt(self.BESWL.std_background_response_lrc) * g_b / R_max # weighting factor for combinations Kareem eq. 33, Holmes eq.4.41
-            p_z_b_lrc = g_b * self.BESWL.get_beswl_LRC(direction)
+        if self.beswl_options['lrc']:
+            w_b_lrc = np.sqrt(self.BESWL.weighting_factors_raw_lrc) * g_b / R_max # weighting factor for combinations Kareem eq. 33, Holmes eq.4.41
+            p_z_b_lrc = g_b * self.BESWL.spatial_distribution_gle[self.response][direction]
             p_z_b_e_lrc = abs(w_b_lrc * p_z_b_lrc) * background_sign
      
         # primary use lrc -> if both are true lrc is taken fro combination
-        if self.use_lrc:
+        if self.settings['beswl_to_combine'] == 'lrc':
             background = p_z_b_e_lrc
-        elif self.use_gle:
+        elif self.settings['beswl_to_combine'] == 'gle':
             background = p_z_b_e_gle
 
         # =======================================================================
@@ -233,15 +194,13 @@ class ESWL(object):
         # NOTE: seperation of modes -> Rule: fi+1*0,9 > fi -> given for CAARC
         w_r_j = self.RESWL.weighting_factors_raw[self.response][direction]
         # 1. variante: distribute resonant base moment along height Kareem eq. 29
-        if self.reswl_settings['types_to_compute']['base_moment_distr']:
+        if self.reswl_options['base_moment_distr']:
             p_z_r_all['base_moment_distr'] = self.RESWL.spatial_distribution[self.response][direction]
         # 2. modal inertial load: Kareem eq. 27
-        if self.reswl_settings['types_to_compute']['modal_consistent']:
-            p_z_r_all['modal_consistent'] = self.RESWL.modal_inertial_cons[self.response][direction]
-        if self.reswl_settings['types_to_compute']['modal_lumped']:
-            p_z_r_all['modal_lumped'] = self.RESWL.modal_inertial_lumped[self.response][direction]
+        if self.reswl_options['modal_inertial']:
+            p_z_r_all['modal_inertial'] = self.RESWL.modal_inertial[self.response][direction]
 
-        types_to_compute = [i for i in self.reswl_settings['types_to_compute'] if self.reswl_settings['types_to_compute'][i]]
+        types_to_compute = [i for i in self.reswl_options if self.reswl_options[i]]
             
         # sum up over first 3 modes and multiply with weighting factor
         for mode_id in range(3):
@@ -254,7 +213,7 @@ class ESWL(object):
                 p_z_r_e_all[type_r] +=  w_r * p_z_r_all[type_r][mode_id] * g_r
 
         # selecting th type for the combination and save it in a extra variable to better handle it
-        p_z_r_e = p_z_r_e_all[self.reswl_settings['type_to_combine']]
+        p_z_r_e = p_z_r_e_all[self.settings['reswl_to_combine']]
 
         # # SIGN OF RESONANT PART
         # 1. select sign du to combination with other components
@@ -332,22 +291,15 @@ class ESWL(object):
         self.eswl_components['x_coords'] = self.structure_model.nodal_coordinates['x0']
         self.eswl_components[self.response][direction] = {}
         self.eswl_components[self.response][direction]['mean'] = mean_load
-        if self.use_gle:
+        if self.beswl_options['gle']:
             self.eswl_components[self.response][direction]['gle'] = p_z_b_e_gle
-        if self.use_lrc:
+        if self.beswl_options['lrc']:
             self.eswl_components[self.response][direction]['lrc'] = p_z_b_e_lrc
-        if self.reswl_settings['types_to_compute']['base_moment_distr']:
-            self.eswl_components[self.response][direction]['res_base_distr'] = p_z_r_e_all['base_moment_distr']
-        if self.reswl_settings['types_to_compute']['modal_consistent']:
-            self.eswl_components[self.response][direction]['res_mod_cons'] = p_z_r_e_all['modal_consistent']
-        if self.reswl_settings['types_to_compute']['modal_lumped']:
-            self.eswl_components[self.response][direction]['res_mod_lumped'] = p_z_r_e_all['modal_lumped']
+        if self.reswl_options['base_moment_distr']:
+            self.eswl_components[self.response][direction]['base_moment_distr'] = p_z_r_e_all['base_moment_distr']
+        if self.reswl_options['modal_inertial']:
+            self.eswl_components[self.response][direction]['modal_inertial'] = p_z_r_e_all['modal_inertial']
         self.eswl_components[self.response][direction]['total'] = eswl_total
-
-        if self.evaluate_gb:
-            self.evaluate_equivalent_static_loading()
-
-            return self.static_response[0]
         
         if self.optimize_gb:
             # evaluate result 
@@ -469,23 +421,21 @@ class ESWL(object):
         ''' 
 
 
-    def initialize_influence_functions(self, decoupled_influences):
+    def initialize_influence_functions(self, method):
         '''
         calculates the influences of each load direction at each node
-        if decoupled_influences = True:
-            influences are caclulated simple/manually
+        method
+            'analytic': influences are caclulated simple/manually
         else:
             a static analysis with a respective unit load is created
         '''
         # the influences on the base moments are needed in the resonant computations, thus they are computed at least for all of them
-        required_responses = ['Mx', 'My', 'Mz']
-        if self.response not in required_responses:
-            required_responses.append(self.response)
+        required_responses = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
         
         h = self.structure_model.nodal_coordinates['x0'][-1]
-        response_node_id = int(round(self.response_height/(h/self.structure_model.n_nodes)))
+        response_node_id = int(round(self.settings['at_height']/( h / self.structure_model.n_nodes)))
 
-        from source.ESWL.eswl_auxiliaries import get_decoupled_influences
+        from source.ESWL.eswl_auxiliaries import get_analytic_influences
         from source.ESWL.eswl_auxiliaries import get_influence
 
         self.influences = {}
@@ -494,33 +444,9 @@ class ESWL(object):
             for direction in GD.DOF_LABELS['3D']:
                 self.influences[response][direction] = np.zeros(self.structure_model.n_nodes)
                 for node in range(self.structure_model.n_nodes):
-                    if self.decoupled_influences:
-
-                        influence = get_decoupled_influences(self.structure_model, direction, node, response, response_node_id)
+                    if method == 'analytic':
+                        influence = get_analytic_influences(self.structure_model, direction, node, response, response_node_id)
                     else:
-
                         influence = get_influence(self.structure_model, direction, node, response, response_node_id)
                     self.influences[response][direction][node] = influence
-        
-        if self.plot_influences:
-            plotter_utilities.plot_influences(self)
-
-    # # PLOTS
-
-    def plot_eswl_directional_components(self, load_directions, response_label):
-
-        plotter_utilities.plot_load_components(self.eswl_total,
-                                                self.structure_model.nodal_coordinates,
-                                                load_directions,
-                                                response_label)
-
-    def plot_eswl_components(self, response_label, load_directions, textstr, influences , components_to_plot = ['all']):
-
-        plotter_utilities.plot_eswl_components(self.eswl_components,
-                                                self.structure_model.nodal_coordinates,
-                                                load_directions,
-                                                response_label,
-                                                textstr,
-                                                influences,
-                                                components_to_plot)
 
