@@ -311,8 +311,8 @@ def animate_result(title, array_time, geometry, force, scaling):
         undeformed_line.set_data([], [])
         deformed_line.set_data([], [])
         # NOTE: there is no .set_data() for 3 dim data...
-        undeformed_line.set_3d_properties([])
-        deformed_line.set_3d_properties([])
+        # undeformed_line.set_3d_properties([])
+        # deformed_line.set_3d_properties([])
 
         text.set_text('')
 
@@ -338,7 +338,7 @@ def animate_result(title, array_time, geometry, force, scaling):
     # call the animator.  blit=True means only re-draw the parts that have
     # changed.
     # frames = number of columns in result
-    animation.FuncAnimation(fig, animate, init_func=init,
+    anim = animation.FuncAnimation(fig, animate, init_func=init,
                             frames=len(array_time[::step])-1, interval=20, blit=True)
 
     plt.show()
