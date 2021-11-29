@@ -20,58 +20,25 @@ response_labels = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
 
 class ESWL(object):
 
-    def __init__(self, structure_model, settings, load_signals, eigenform):
+    def __init__(self, structure_model, settings, load_signals):
         '''
         ESWL object is initialized for the response given (base reactions atm):
         [Qx, Qy, Qz, Mx, My, Mz]
         Attributes:
             - structure_model: an object of the Straight_beam
-            - eigenvalue_analysis: object of eingevalue analysis
-            - response: current response for which to calculate the ESWL
+            - settings
             - load_signals: load signals parsed by auxiliary.parse_load_signal() [as nodal forces and moments]
-            - load_directions: load directions that are considered in the calculation of correlations between loads 
-            - load_directons_to_compute: 
-                from [Fx, Fy, Fz, Mx, My, Mz]: actual directions for which the should be computed
-                'all': include all directions
-                'automatic': relevant load directions for uncoupled self.response 
-            - used_lumped: 
-                True: if only lumped mass formulations should be used
-                False: some parts are formulated in a consistent way
-            - decouple_influences:
-                True: a simple inlfuence function is computed, no coupling effects are involved here
-                False: influence function is calculated with static analyis and unit loads
-            - compute_lrc: if LRC method shall be used for background part
-            - compute_gle: if GLE approach should be used for background part
-                if both are True LRC will be used for calculation of total ESWL 
-            - reswl_settings: different approaches to calculate this part are implemented,
-                set booleans for which to calculate and specify which is used for total ESWL
-            - inclued_reswl: wheter to include resonant part into calculation of total ESWL
-            - optimize_gb: wheter to use an optimization procedure for the background peak factor to reach a specified maximum response ('target')
-            - target:
-                'default': g_b is not optimized
-                'estimate': an extreme Value analysis (estimate) of the dynamic result is set as target max
-                'quantile': an extreme Value analysis (quantile) of the dynamic result is set as target max
-                            --> difference of these 2 see Extreme Value analysis NIST Translational Process approach
-                'max_factor': the global maximum of the dynamic result times a factor 1.3 is set as target
-            - plot_mode_shapes: obvious
-            - dynamic_analysis_solved: the solver object of a dynamic_analysis after solving, required if optimization of g_b
-            - plot_objective_function_gb: wheter to evaluate and plot the objective function of the peak factor adjustment
 
         '''
 
         self.structure_model = structure_model
-        self.eigenform = eigenform
+        self.eigenform = structure_model.recuperate_bc_by_extension(structure_model.eigen_modes_raw)
         self.load_signals = load_signals
         self.settings = settings
         
         # beswl settings
         self.beswl_options = self.settings['beswl_options']
         self.reswl_options = self.settings['reswl_options']
-
-        self.optimize_gb = False
-        self.target = 'default'
-        self.plot_objective_function_gb = False
-
 
         # # do this at initialization since it is needed multiple times and pass it to R and B
         if self.settings['influence_function_computation']:
@@ -80,7 +47,8 @@ class ESWL(object):
             print ('\nusing influences from static analysis\n')
         self.initialize_influence_functions(self.settings['influence_function_computation'])
 
-        self.eswl_components = {}# first key is the response, second the load direciton
+        # first key is the response, second the load direciton
+        self.eswl_components = {}
         self.eswl_total = {}
 
     def calculate_total_ESWL(self, response):
@@ -89,8 +57,7 @@ class ESWL(object):
         '''
         if response in response_labels:
             self.response = response
-            self.eswl_components[response] = {}# first key is the response, second the load direciton
-            self.eswl_total[response] = {}
+            self.eswl_components[response] = {}
             self.load_directions_to_compute = GD.LOAD_DIRECTIONS_RESPONSES_UNCOUPLED[response]
         else:
             raise Exception(response + ' is not a valid response label, use: ', response_labels)
@@ -102,54 +69,13 @@ class ESWL(object):
         self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.response, self.beswl_options)
         self.RESWL = RESWL(self.structure_model, self.influences, self.load_signals, self.response, self.eigenform, self.reswl_options)
 
-        if self.target == 'default':
-            self.optimize_gb = False
-        
-
-        if self.optimize_gb:
-            # setting up the target for the optimization of the factor g_b
-            response_id = GD.DOF_LABELS['3D'].index(GD.RESPONSE_DIRECTION_MAP[self.response])
-            dynamic_response = self.dynamic_analysis_solved.dynamic_reaction[response_id]
-            glob_max = max(abs(dynamic_response))
-            if self.target == 'max_factor':
-                target_response = glob_max*1.3
-
-            elif self.target == 'estimate' or self.target == 'quantile':
-                target_response = auxiliary.extreme_value_analysis(self.dynamic_analysis_solved, self.response, self.target)
-
-        self.g_b_optimized = []
-
         print ('\nESWL Component Combinations:')
         # calculate the eswl for each load direction
         for direction in self.load_directions_to_compute:
-                
-            # # INCLUDE AN ADAPTION OF THE BACKGROUND PEAK FACTOR FOR A TARGET MAXIMUM RESPONSE
-            if self.optimize_gb and not self.target == 'default':
-                print ('\nadjusting background peak factor g_b for target dynamic maximum ' + self.target + '...')
-                self.objective_function = partial(self.component_combination,
-                                                    direction,
-                                                    target_response)
+            # # background peak factor with selected method
+            g_b = self.get_peak_factor('default')
 
-                bounds = (1,10)
-
-                min_res = minimize_scalar(self.objective_function, bounds = bounds, method='bounded', options={'disp':True})
-                print ('final objective function:', min_res.fun)
-
-                self.g_b_optimized.append(min_res.x)
-
-                if self.plot_objective_function_gb:
-                    plotter_utilities.plot_objective_function_gb_2D(self.objective_function, opt_res=min_res.x,
-                                                evaluation_space = [-10,10, 0.5],
-                                                design_var_label='g_b for load ' + direction)
-
-                print ('\nadjusted g_b for target static maximum', self.target, self.response, 'for load direction', direction)
-                print ('g_b:', min_res.x)
-                
-            # # BACKGROUND PEAK FACTOR WITH SELECTED METHOD
-            else:
-                g_b = self.get_peak_factor('default')
-
-                self.component_combination(direction, g_b=g_b)
+            self.component_combination(direction, g_b=g_b)
 
         print ('\nUsing gb:', g_b)
 
@@ -284,9 +210,6 @@ class ESWL(object):
         # # TOTAL
         eswl_total = mean_load + background + p_z_r_e
 
-        # this is needed in this format for postprocessing
-        self.eswl_total[self.response][direction] = eswl_total
-
         # collect all load components in one dict to easy access them
         self.eswl_components['x_coords'] = self.structure_model.nodal_coordinates['x0']
         self.eswl_components[self.response][direction] = {}
@@ -300,28 +223,7 @@ class ESWL(object):
         if self.reswl_options['modal_inertial']:
             self.eswl_components[self.response][direction]['modal_inertial'] = p_z_r_e_all['modal_inertial']
         self.eswl_components[self.response][direction]['total'] = eswl_total
-        
-        if self.optimize_gb:
-            # evaluate result 
-            self.evaluate_equivalent_static_loading()
-
-            current_response = self.static_response[0]
-
-            difference = (abs(target_dyn) - abs(current_response))**2 / target_dyn**2
-
-            return difference
                
-    def evaluate_equivalent_static_loading(self):
-        ''' 
-        The static response of the structure_model to the ESWL is calculated and saved as self.static_response
-        ''' 
-        eswl_vector = auxiliary.generate_static_load_vector_file(self.eswl_total[self.response])
-
-        static_analysis = auxiliary.create_static_analysis_custom(self.structure_model, eswl_vector)
-        static_analysis.solve()
-
-        self.static_response = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[self.response]]
-
     def get_peak_factor(self, response_type = None , frequency = None, probability_of_exceedance = 0.98, T = 600):
         '''
         Calculation of peak factor:
@@ -343,27 +245,6 @@ class ESWL(object):
         elif response_type == 'resonant':
             g_r = np.sqrt(2*np.log(T*frequency)) + 0.5772/np.sqrt(2*np.log(T*frequency))
             return g_r
-
-        elif response_type == 'extreme_value':
-            if self.response not in GD.RESPONSE_DIRECTION_MAP.keys():
-                raise Exception('peak factor calculations not available for other then base reactions')
-            response_id = GD.DOF_LABELS['3D'].index(GD.RESPONSE_DIRECTION_MAP[self.response])
-            dynamic_response = self.dynamic_analysis_solved.dynamic_reaction[response_id]
-            dt = self.dynamic_analysis_solved.dt
-            T_series = self.dynamic_analysis_solved.dt * len(dynamic_response)
-            dur_ratio = T / T_series
-            # # MAXMINEST NIST
-            P1 = probability_of_exceedance
-            max_qnt, min_qnt, max_est, min_est, max_std, min_std = stats_utils.maxmin_qnt_est(dynamic_response, cdf_p_max = P1 , cdf_p_min = 0.0001, cdf_qnt = P1, dur_ratio = dur_ratio)
-            
-            r_max = max([abs(max_est), abs(min_est)])[0]
-            rms = stats_utils.rms(dynamic_response)
-            
-            g = r_max / rms
-            print ('\nFor the response', self.response, 'a peak value calculated including mean, resonant and background parts is:')
-            print ('  ', round(g,2))
-            return g
-            # z.B. extreme value analysis or as Kaspersik 2009
 
     def get_maximum_response(self, response, g_b):
         '''
@@ -414,13 +295,6 @@ class ESWL(object):
             flipped = False
         return sign, flipped
 
-    def optimize_g_b(self):
-        ''' 
-        Finding a value of g_b so that the ESWL give a certain target
-        TODO this is in calculate_total_eswl sofar
-        ''' 
-
-
     def initialize_influence_functions(self, method):
         '''
         calculates the influences of each load direction at each node
@@ -450,3 +324,13 @@ class ESWL(object):
                         influence = get_influence(self.structure_model, direction, node, response, response_node_id)
                     self.influences[response][direction][node] = influence
 
+    def evaluate_equivalent_static_loading(self):
+        ''' 
+        The static response of the structure_model to the ESWL is calculated and saved as self.static_response
+        ''' 
+        eswl_vector = auxiliary.generate_static_load_vector_file(self.eswl_total[self.response])
+
+        static_analysis = auxiliary.create_static_analysis_custom(self.structure_model, eswl_vector)
+        static_analysis.solve()
+
+        self.static_response = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[self.response]]

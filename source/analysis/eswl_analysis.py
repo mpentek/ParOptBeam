@@ -8,6 +8,7 @@ import source.auxiliary.global_definitions as GD
 import source.ESWL.eswl_auxiliaries as auxiliary
 from source.auxiliary.other_utilities import get_adjusted_path_string
 import source.ESWL.eswl_plotters as eplt
+import source.postprocess.plotter_utilities as plotter_utilities
 
 
 class EswlAnalysis(AnalysisType):
@@ -27,8 +28,6 @@ class EswlAnalysis(AnalysisType):
 
     def solve(self):
 
-        eigenform = self.structure_model.recuperate_bc_by_extension(
-            self.structure_model.eigen_modes_raw)
 
         # drop the first entries beloning to the ramp up
         load_signals_raw = np.load(get_adjusted_path_string(self.parameters['input']['file_path']))
@@ -39,7 +38,7 @@ class EswlAnalysis(AnalysisType):
             # PARSING FOR ESWL 
             load_signals = auxiliary.parse_load_signal(load_signals_raw, GD.DOFS_PER_NODE[self.structure_model.domain_size])
 
-        self.eswl = ESWL(self.structure_model, self.settings, load_signals, eigenform)
+        self.eswl = ESWL(self.structure_model, self.settings, load_signals)
 
         for response in self.settings['responses_to_analyse']:
 
@@ -47,26 +46,26 @@ class EswlAnalysis(AnalysisType):
 
             self.eswl.calculate_total_ESWL(response)
 
-            # # ===============================================
-            # # RUN A STATIC ANALYSIS WITH THE ESWL
-            # # ===============================================
-            # print('\nStatic analysis with ESWL...')
-            # eswl.evaluate_equivalent_static_loading()
+            # ===============================================
+            # RUN A STATIC ANALYSIS WITH THE ESWL
+            # ===============================================
+            print('\nStatic analysis with ESWL...')
+            eswl.evaluate_equivalent_static_loading()
 
             print()
 
-    def postprocess(self):
+    def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         
         if self.plot_parameters['influence_functions']:
-            eplt.plot_influences(eswl)
+            plotter_utilities.plot_influences(eswl)
 
         if self.plot_parameters['mode_shapes']:
             self.eigenform_sorted = self.sort_row_vectors_dof_wise(self.eigenform_unsorted)
-            eplt.plot_n_mode_shapes(self.eigenform_sorted, self.structure_model.charact_length)
+            plotter_utilities.plot_n_mode_shapes(self.eigenform_sorted, self.structure_model.charact_length)
 
         # if self.plot_parameters['eswl_load_distribution']['plot']:
 
-        #     eplt.plot_eswl_components(self.eswl.eswl_components,
+        #     plotter_utilities.plot_eswl_components(self.eswl.eswl_components,
         #                              self.structure_model.nodal_coordinates,
         #                              load_directions_to_include =  load_directions,
         #                              response_label = res,

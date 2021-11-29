@@ -153,56 +153,7 @@ def plot_result_2D(pdf_report, display_plot, plot_title, geometry, force, scalin
         plt.show()
         display_plot = False
     
-def plot_result_2D_multiple_modes(display_plot, plot_titles, geometry, scaling, number_of_modes):
-    fig, axes = plt.subplots(1, number_of_modes)
 
-    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis], # x
-                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis], # y
-                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis], # z
-                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis]] # visualize twist a in 2D plane
-
-    for i in range(number_of_modes):
-        # plot undeformed
-        axes[i].plot(geometry["undeformed"][1], # y
-                    geometry["undeformed"][0], # x
-                    label='undeformed',
-                    color=LINE_TYPE_SETUP["color"][0],
-                    linestyle=LINE_TYPE_SETUP["linestyle"][0],
-                    marker=LINE_TYPE_SETUP["marker"][0],
-                    markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
-                    markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
-                    markersize=LINE_TYPE_SETUP["markersize"][0])
-        max_deformations, min_deformations = [], []
-        for j in range(1,4): #plot first three dofs
-            max_deformations.append(max(geometry['deformed'][j][:, i]))
-            min_deformations.append(min(geometry['deformed'][j][:, i]))
-            absolute_maximum = max(abs(geometry['deformed'][j][:, i]))
-
-            print ('mode ', j, 'direction ', GD.DOF_LABELS['3D'][j], geometry["deformed"][j][:, i])
-
-            label_dof = GD.DOF_LABELS['3D'][j]
-            if label_dof == 'a':
-                label_dof = '\u03B1'
-
-            axes[i].plot(geometry["deformed"][j][:, i], 
-                        geometry["deformed"][0][:, i], # x
-                        label= label_dof + ' |max|: ' +  '{0:.2e}'.format(absolute_maximum),
-                        color=LINE_TYPE_SETUP["color"][2+j],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1],
-                        marker=LINE_TYPE_SETUP["marker"][1],
-                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
-                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
-                        markersize=LINE_TYPE_SETUP["markersize"][1]) 
-            axes[i].set_title(plot_titles[i])
-        print('')
-        axes[i].set_xlim(min(min_deformations)-5e-5, max(max_deformations)+5e-5)
-        axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-        axes[i].legend(loc = 'lower right', fontsize = LEGEND_SETUP['fontsize'][3])
-        axes[i].grid()
-
-    if display_plot:
-        plt.show()
-        display_plot = False
 
 def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, n_data):
 
@@ -340,261 +291,6 @@ def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, 
     if display_plot:
         plt.show()
         display_plot = False
-
-def plot_CAARC_ParOpt_eigenmodes_normed(CAARC_eigenmodes, geometry, plot_titles, scaling, display_plot, max_normed, dof_ids = [1,2,3],  number_of_modes = 3):
-    fig, axes = plt.subplots(1, number_of_modes)
-
-    suptitle = 'eigenmodes of CAARC and ParOpt'
-    if max_normed:
-        suptitle += ' maximum normed'
-    fig.suptitle(suptitle, fontsize = 16)
-
-    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis], # x
-                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis], # y
-                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis], # z
-                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis]] # visualize twist a in 2D plane
-
-    for i in range(number_of_modes):
-        # plot undeformed
-        mode_id = i+1
-        axes[i].plot(geometry["undeformed"][1], # y
-                    geometry["undeformed"][0], # x
-                    label='undeformed',
-                    color=LINE_TYPE_SETUP["color"][0],
-                    linestyle=LINE_TYPE_SETUP["linestyle"][0],
-                    marker=LINE_TYPE_SETUP["marker"][0],
-                    markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
-                    markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
-                    markersize=LINE_TYPE_SETUP["markersize"][0])
-
-        max_deformations, min_deformations = [], []
-        for j in range(dof_ids[0],dof_ids[-1]+1): #plot first three dofs
-            label_dof = GD.DOF_LABELS['3D'][j]
-            if label_dof == 'a':
-                label_dof = '\u03B1'
-            # # CAARC PART # #
-
-            max_deformations.append(max(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]))
-            min_deformations.append(min(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]))
-           
-        
-            signed_maximum = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]])
-            y_caarc = CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]
-            if max_normed:
-                y_caarc /= signed_maximum
-
-            axes[i].plot(y_caarc, 
-                        CAARC_eigenmodes['storey_level'], # x
-                        label= label_dof + '_caarc' + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
-                        color=LINE_TYPE_SETUP["color"][2+j],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
-
-            # # PAROPT PART # # 
-
-            max_deformations.append(max(geometry['deformed'][j][:, i]))
-            min_deformations.append(min(geometry['deformed'][j][:, i]))
-
-            signed_maximum = get_signed_maximum(geometry['deformed'][j][:, i])
-
-            y_paropt = geometry["deformed"][j][:, i]
-            if max_normed:
-                y_paropt /= signed_maximum
-            
-            axes[i].plot(y_paropt, 
-                        geometry["deformed"][0][:, i], # x
-                        label= label_dof + '_parOpt' + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
-                        color=LINE_TYPE_SETUP["color"][2+j],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1],
-                        marker=LINE_TYPE_SETUP["marker"][1],
-                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
-                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
-                        markersize=LINE_TYPE_SETUP["markersize"][1]) 
-            
-            # set title
-            axes[i].set_title(plot_titles[i])
-
-        #axes[i].set_xlim(min(min_deformations)+min(min_deformations)/2, max(max_deformations)+max(max_deformations)/2)
-        axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-        axes[i].legend(loc = 'upper left', fontsize = LEGEND_SETUP['fontsize'][3])
-        axes[i].grid()
-    
-    
-    print()
-    if display_plot:
-        plt.show()    
-    
-def plot_CAARC_ParOpt_eigenmodes_y_alpha(CAARC_eigenmodes, geometry, plot_titles, scaling, display_plot, use_fitted_CAARC , max_normed, dof_ids = [1,2,3], number_of_modes = 3):
-    y_a_fitted = False
-    fig, axes = plt.subplots(1, number_of_modes)
-    suptitle = 'eigenmodes - y/\u03B1'
-    if max_normed:
-        suptitle += ' max normed'
-    if use_fitted_CAARC:
-        suptitle += ' - y & \u03B1 fitted'
-    if y_a_fitted:
-        suptitle += ' - y/\u03B1 fitted'
-    fig.suptitle(suptitle, fontsize = LEGEND_SETUP["fontsize"][0])
-
-    geometry["deformed"] = [geometry["deformation"][0] * scaling["deformation"] + geometry["undeformed"][0][:, np.newaxis], # x
-                            geometry["deformation"][1] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis], # y
-                            geometry["deformation"][2] * scaling["deformation"] + geometry["undeformed"][2][:, np.newaxis], # z
-                            geometry["deformation"][3] * scaling["deformation"] + geometry["undeformed"][1][:, np.newaxis]] # visualize twist a in 2D plane
-
-    for i in range(number_of_modes):
-        # plot undeformed
-        mode_id = i+1
-        axes[i].plot(geometry["undeformed"][1], # y
-                    geometry["undeformed"][0], # x
-                    label='undeformed',
-                    color=LINE_TYPE_SETUP["color"][0],
-                    linestyle=LINE_TYPE_SETUP["linestyle"][0],
-                    marker=LINE_TYPE_SETUP["marker"][0],
-                    markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][0],
-                    markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][0],
-                    markersize=LINE_TYPE_SETUP["markersize"][0])
-
-        max_deformations, min_deformations = [], []
-        for j in range(dof_ids[0], dof_ids[1]):#,dof_ids[-1]+1): #plot first three dofs
-            label_dof = GD.DOF_LABELS['3D'][j]
-            if label_dof == 'a':
-                label_dof = '\u03B1'
-            # # CAARC PART # #
-            
-            signed_maximum = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]])
-            y = CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]
-            if max_normed:
-                y /= signed_maximum
-
-            max_deformations.append(max(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]/signed_maximum))
-            min_deformations.append(min(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][j]]/signed_maximum))
-
-            signed_maximum_a = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][3]])
-            alpha= CAARC_eigenmodes['shape'][mode_id][GD.DOF_LABELS['3D'][3]]
-            if max_normed:
-                alpha /= signed_maximum_a
-
-            y_a_caarc = np.zeros(len(alpha))
-            for v, val in enumerate(y):
-                if alpha[v] != 0.0:
-                    y_a_caarc[v] += val/alpha[v]
-            
-            if y_a_fitted:
-                y_a_caarc = get_fitted_array(CAARC_eigenmodes['storey_level'], y_a_caarc, 3) 
-        
-            axes[i].plot(y_a_caarc, 
-                        CAARC_eigenmodes['storey_level'], # x
-                        label= label_dof + '/\u03B1_caarc',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
-                        color=LINE_TYPE_SETUP["color"][j],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
-            
-            axes[i].plot(y, 
-                        CAARC_eigenmodes['storey_level'], # x
-                        label=  'y_caarc',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
-                        color=LINE_TYPE_SETUP["color"][j+2],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
-            
-            axes[i].plot(alpha, 
-                        CAARC_eigenmodes['storey_level'], # x
-                        label= '\u03B1_caarc',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
-                        color=LINE_TYPE_SETUP["color"][j+3],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1])
-
-            # # PAROPT PART # # 
-            
-            
-            max_deformations.append(max(geometry['deformed'][j][:, i]/signed_maximum))
-            min_deformations.append(min(geometry['deformed'][j][:, i]/signed_maximum))
-            signed_maximum = get_signed_maximum(geometry['deformed'][j][:, i])
-            y = geometry["deformed"][j][:, i]
-            if max_normed:
-                y /= signed_maximum
-
-            signed_maximum_a = get_signed_maximum(geometry['deformed'][3][:, i])
-            alpha = geometry['deformed'][3][:, i]
-            if max_normed:
-                alpha /= signed_maximum_a
-
-            y_a_paropt = np.zeros(len(alpha))
-            for v, val in enumerate(y):
-                if alpha[v] != 0.0:
-                    y_a_paropt[v] += val/alpha[v]
-
-            axes[i].plot(y_a_paropt, 
-                        geometry["deformed"][0][:, i], # x
-                        label= label_dof + '/\u03B1_parOpt',# + ' |max|: ' +  '{0:.2e}'.format(signed_maximum),
-                        color=LINE_TYPE_SETUP["color"][j+1],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][1],
-                        marker=LINE_TYPE_SETUP["marker"][1],
-                        markeredgecolor=LINE_TYPE_SETUP["markeredgecolor"][1],
-                        markerfacecolor=LINE_TYPE_SETUP["markerfacecolor"][1],
-                        markersize=LINE_TYPE_SETUP["markersize"][1]) 
-            
-            #difference = y_a_caarc - y_a_paropt
-
-            # set title
-            axes[i].set_title(plot_titles[i])
-
-        #print('')
-        #axes[i].set_xlim(min(min_deformations)+min(min_deformations)/2, max(max_deformations)+max(max_deformations)/2)
-        axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-        axes[i].legend(loc = 'upper left', fontsize = LEGEND_SETUP['fontsize'][3])
-        axes[i].grid()
-    print()
-    if display_plot:
-        plt.show()
-
-def plot_CAARC_eigenmodes(CAARC_eigenmodes, display_plot, max_normed, suptitle = 'CAARC',number_of_modes = 3):
-        fig, axes = plt.subplots(1, number_of_modes)
-
-        fig.suptitle(suptitle)
-        scaling = {"deformation": 1,
-                   "force": 1}
-
-        frequencies_CAARC = [0.231,0.429,0.536]
-
-        plot_titles = []
-        for selected_mode in range(number_of_modes):
-            plot_titles.append("Eigenmode " + str(selected_mode + 1) + "\n" + "  Frequency: " + str(np.round(
-                frequencies_CAARC[selected_mode], 2)) + "  Period: " + str(np.round(
-                1/frequencies_CAARC[selected_mode], 2)) + "\n")
-
-        for i in range(number_of_modes):
-            # plot undeformed
-            axes[i].axvline(0.0, CAARC_eigenmodes['storey_level'][0], CAARC_eigenmodes['storey_level'][-1], # y
-                        #CAARC_eigenmodes['storey_level'], # x
-                        label='undeformed',
-                        color=LINE_TYPE_SETUP["color"][0],
-                        linestyle=LINE_TYPE_SETUP["linestyle"][0])
-            max_deformations, min_deformations = [], []
-            mode_id = i +1
-            for j, sway in enumerate(['y', 'z', 'a']): #plot first three dofs
-                label_dof = GD.DOF_LABELS['3D'][j+1]
-                if label_dof == 'a':
-                    label_dof = '\u03B1'
-                max_deformations.append(max(CAARC_eigenmodes['shape'][mode_id][sway]))
-                min_deformations.append(min(CAARC_eigenmodes['shape'][mode_id][sway]))
-                absolute_maximum = max(abs(CAARC_eigenmodes['shape'][mode_id][sway]))
-                if max_normed:
-                    signed_maximum = get_signed_maximum(CAARC_eigenmodes['shape'][mode_id][sway])
-                    y = CAARC_eigenmodes['shape'][mode_id][sway]/signed_maximum
-                else:
-                    y = CAARC_eigenmodes['shape'][mode_id][sway]
-
-                axes[i].plot(y, 
-                            CAARC_eigenmodes['storey_level'], # x
-                            label= label_dof + ' |max|: ' +  '{0:.2e}'.format(absolute_maximum),
-                            color=LINE_TYPE_SETUP["color"][2+j],
-                            linestyle=LINE_TYPE_SETUP["linestyle"][1]) 
-                axes[i].set_title(plot_titles[i])
-
-            #axes[i].set_xlim(min(min_deformations)+min(min_deformations)/2, max(max_deformations)+max(max_deformations)/2)
-            #axes[i].set_ylim(0.0, CAARC_eigenmodes['storey_level'][-1]+10.0)
-            axes[i].xaxis.set_major_formatter(FormatStrFormatter('%.0e'))
-            axes[i].legend(loc = 'upper left', fontsize = LEGEND_SETUP['fontsize'][3])
-            axes[i].grid()
-
-        if display_plot:
-            plt.show()
 
 def plot_optimizable_function(optimizable_function, label, x = np.arange(0.01,10,0.1)):
         # x = np.arange(0.01,10,0.1)
@@ -735,7 +431,6 @@ def animate_result(title, array_time, geometry, force, scaling):
 
     plt.show()
 
-
 def get_plot_limits(deformed_geometry, offset_factor=10.):
     try:
         # case of dynamic / multi plot
@@ -756,7 +451,6 @@ def get_plot_limits(deformed_geometry, offset_factor=10.):
                          y_max + (y_max - y_min) / offset_factor]}
 
     return plot_limits
-
 
 def plot_dynamic_result(pdf_report, display_plot, plot_title, result_data, array_time):
 
@@ -784,7 +478,6 @@ def plot_dynamic_result(pdf_report, display_plot, plot_title, result_data, array
     if display_plot:
         plt.show()
 
-
 def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, column_labels):
 
     fig, ax = plt.subplots()
@@ -810,3 +503,564 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
     if display_plot:
         plt.show()
 
+# ESWL PLOTTERS
+
+def plot_eswl_components(eswl_components, nodal_coordinates, response_label, load_directions_to_include, 
+                         textstr, influences ,components_to_plot = ['all'], gb_label = '', go_final = False, R_total = None, unit= 'N', save_suffix = '',
+                         options = default_plot_options):
+    
+    if options['update_plot_params']:
+        mpl.rcParams.update(mpl.rcParamsDefault)
+        plt.rcParams.update(options['update_plot_params'])
+
+    dest = os_join(*['plots', 'ESWL_plots'])
+    
+    plt.rcParams.update({'axes.formatter.limits':(-3,3)}) 
+    if load_directions_to_include == 'all':
+        load_directions = GD.LOAD_DIRECTION_MAP['all']
+    else:
+        load_directions = load_directions_to_include
+    
+    if len(load_directions) == 1:
+        fig, ax = plt.subplots(num='for_'+response_label)
+        axes = [ax]
+    else:
+        fig, axes = plt.subplots(ncols = len(load_directions), sharey=True, num='for_'+response_label)
+    
+    fig.suptitle('ESWL for base ' + convert_load_for_latex(response_label), fontsize = 10)
+    
+    dx = nodal_coordinates['x0'][1]
+    l_i = np.full(len(nodal_coordinates['x0']), dx)
+    l_i[0] /= 2
+    l_i[-1] /= 2
+
+    #fig, ax = plt.subplots(1, len(load_directions), sharey=True, num=)
+
+    if components_to_plot[0] == 'all':
+        # taking the keys from the first direction
+        components = eswl_components[response_label]['y'].keys()
+    else:
+        components = components_to_plot
+    
+    if go_final:
+        naming = {'mean':'mean', 'gle':'beswl', 'res_base_distr':'reswl', 'res_mod_cons':'reswl','res_mod_lumped':'reswl','total':'total','lrc':'beswl'}
+
+    for i, direction in enumerate(load_directions):
+        # for labels
+        unit_label = GD.UNITS_LOAD_DIRECTION[direction]
+        unit_label = unit_label.replace(unit_label[1], unit)
+        force_label = '{}'.format(convert_load_for_latex(GD.DIRECTION_LOAD_MAP[direction],lower=True))
+       
+        axes[i].plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
+                label = r'structure', 
+                marker = 'o', 
+                color = 'grey', 
+                linestyle = '--')
+
+        if not go_final:
+            axes[i].set_title('{}'.format(convert_load_for_latex(GD.DIRECTION_LOAD_MAP[direction], lower = True)))
+        # plot each component
+        for j, component in enumerate(components):
+            if component not in eswl_components[response_label][direction].keys():
+                #print ('\nskipped:', component, 'as it was not computed')
+                continue
+            eswl = eswl_components[response_label][direction][component] / l_i * GD.UNIT_SCALE[unit]
+            if component == 'total':
+                line = '-'
+                color = LINE_TYPE_SETUP['color'][i+2]
+            else:
+                line = LINESTYLE[j]
+                color = LINE_TYPE_SETUP['color'][i+2]
+
+            if go_final:
+                component_label = naming[component]
+            else:
+                component_label = component#r'${}$'.format(component)#convert_for_latex(component)
+
+            ax_eswl = axes[i].plot(eswl, 
+                        nodal_coordinates['x0'], 
+                        label = component_label,
+                        linestyle = line,
+                        color = color)
+
+        
+        eswl_leg = axes[i].legend(fontsize = 9)
+        # calculate R for each direction -> to check if the signs are sensible
+        
+        #R_tot = sum(np.multiply(influences[response_label][direction], eswl_components[response_label][direction]['total']))
+        R_i = sum(np.multiply(influences[response_label][direction], eswl_components[response_label][direction]['total']))
+        if R_total:
+            if response_label != 'Mx':
+                R_i = R_i/R_total
+                label_R_i = '{}'.format(convert_load_for_latex(response_label)) +\
+                                        r'$_i$' +r'$($' +'{}'.format(force_label) +r'$)$' + r'$={}$'.format(round(R_i,2)) + ' of total    ' #+ r'$\quad$'
+
+                r_i_ax =axes[i].plot(0,0, 
+                                    label = label_R_i,
+                                    linestyle = '')
+
+                r_i_legend = axes[i].legend(loc= 'upper center', handles= r_i_ax, fontsize = 9)
+
+        else:
+            axes[i].plot(0,0, 
+                label = r'${}$'.format(response_label) + r'$_i = $ ' + r'${:.2e}$'.format(round(R_i)),
+                linestyle = ' ',
+                color = 'k')
+
+        # settings
+        axes[i].locator_params(axis='x', nbins = 4)
+        axes[i].locator_params(axis='y', nbins = 4)
+        #axes[i].set_yticks([])
+        #axes[i].set_yticklabels([])
+        axes[i].set_ylim(bottom=0,top=200)
+        if R_total:
+            axes[i].add_artist(eswl_leg)
+        if R_total:
+            if response_label != 'Mx':
+                axes[i].add_artist(r_i_legend)
+
+            # props = dict(facecolor='lightgray')
+            # r_i_text = AnchoredText(label_R_i,  loc='upper center')#, bbox_to_anchor=(0.5, -0.02))#, fontsize= 10),boxstyle='round', 
+            # r_i_text.patch.set_boxstyle('round', prop= props)#, edgecolor = )
+            # axes[i].add_artist(r_i_text)
+
+        axes[i].set_xlabel('{}'.format(convert_load_for_latex(GD.DIRECTION_LOAD_MAP[direction], lower = True)) + r' ${}$'.format(unit_label))
+        
+        axes[i].grid()
+    axes[0].set_ylabel('height [m]')
+
+    if textstr:
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+        result_text = AnchoredText(textstr,  loc='lower right')#, fontsize= 10)bbox_to_anchor=(1.05, 0.8),
+        axes[-1].add_artist(result_text)
+
+
+    # saving of figure
+    component_folder_dict = {'mean':'mean_parts',
+                             'gle':'background_parts', 'lrc':'background_parts',
+                             'resonant':'resonant_parts', 'resonant_m_lumped':'resonant_parts','resonant_m':'resonant_parts',
+                             'all':'all_parts',
+                             'mixed':'mixed_parts'}
+    
+    fname = 'for_'+ response_label
+    if len(components_to_plot) == 1:
+        key = components_to_plot[0]
+    elif set(components_to_plot).issubset(['gle', 'lrc']):
+        key = components_to_plot[0]
+        for comp in components_to_plot:
+            fname += '_' + comp[0]
+    elif set(components_to_plot).issubset(['resonant', 'resonant_m', 'resonant_m_lumped']):
+        key = components_to_plot[0]
+        fname += '_r'
+        for comp in components_to_plot:
+            s = comp.split('_')
+            if len(s) == 2:
+                fname += '_m'
+            elif len(s) == 3:
+                fname += '_l'
+    else:
+        key = 'mixed'
+        for comp in components_to_plot:
+            fname += '_' + comp[0]
+    
+    fname += '_' + gb_label + save_suffix
+
+    full_dest = dest + os.path.sep + component_folder_dict[key] + os.path.sep + fname
+    
+    if options['savefig']:
+        plt.savefig(full_dest)
+        #plt.savefig(full_dest + '.svg')
+        print ('\nsaved:',full_dest)
+        #plt.close()
+    
+    if options['savefig_latex']:
+        plt.savefig(dest_latex + os_sep + fname)
+        print ('\nsaved:',dest_latex + os_sep + fname)
+
+    if options['show_plots']:
+        plt.show()
+
+def plot_eswl_dyn_compare(result_dict, compare = ['dyn_est','eswl'], unit='N',
+                         options = default_plot_options):
+
+    if options['update_plot_params']:
+        mpl.rcParams.update(mpl.rcParamsDefault)
+        plt.rcParams.update(options['update_plot_params'])
+
+    dest = os_join(*['plots', 'ESWL_plots', 'dyn_eswl_compare'])
+
+    directions_naming = {'Mz':'alongwind', 'My':'crosswind','Mx':'torsion'}
+
+    factor = 0.5
+    colors = ['tab:blue', 'darkgray', 'gray',  'lightgray']
+    fig, ax = plt.subplots(num='res compare')
+    x = np.arange(0,len(result_dict['labels']),1)* factor
+    width = 0.15
+    x_labels = result_dict['labels']
+    if result_dict['norm_by'] == 'glob_max':
+        norm_by = 1/np.array(result_dict['dyn_max'])
+    if result_dict['norm_by'] == 'ref_vel':
+        if result_dict['labels'] == ['Mz','Qy','My','Qz','Mx']:
+            ref_areas = np.array([45**2 *180, 45*180, 30**2*180, 30*180, 30*45*180])
+        else:
+            raise Exception('coefficient calculation not correct for this order of responses')
+        norm_by = 1/(0.5 * 1.225 * result_dict['u_mean']**2 * ref_areas)
+        x_labels = ['C' + var for var in result_dict['labels']]
+
+    #for i, val in enumerate(compare):
+    res_dyn = np.array(result_dict[compare[0]])* GD.UNIT_SCALE[unit]
+    res_eswl = np.array(result_dict[compare[1]])* GD.UNIT_SCALE[unit]
+    #split = 2
+    col = 3
+    split = [-width/2, width/2]
+    if len(compare) == 3:
+        #split =3
+        width = 0.1
+        col += 1
+        split = [0, width,  -width]
+        res_dyn_1 = np.array(result_dict[compare[2]])* GD.UNIT_SCALE[unit]
+        rects_dyn_1 = ax.bar(x + split[2],  res_dyn_1 * norm_by, 
+                        width, color = colors[0], alpha = 0.5, label=convert_for_latex(compare[2]))
+
+
+    rects_dyn = ax.bar(x + split[0],  res_dyn * norm_by, 
+                    width, color = colors[0], label=convert_for_latex(compare[0]))
+    rects_eswl = ax.bar(x + split[1], res_eswl * norm_by, 
+                    width, color = colors[1], label=convert_for_latex(compare[1]))
+    dx = (x[2] - x[1])/2
+    ax.axvline(x[1]+dx, linestyle = '--', color = 'grey')
+    ax.axvline(x[3]+dx, linestyle = '--', color = 'grey')
+    ax.axhline(1,linestyle = '--', color = 'k',label= convert_for_latex('glob_max'))
+
+    for r_i, r in enumerate(['Mz','My','Mx']):
+        ax.text(x[result_dict['labels'].index(r)],1.9, directions_naming[r])
+    
+    ax.legend(loc= 'upper center', bbox_to_anchor=(0.5, -0.15), ncol= col)
+    ax.set_ylabel(r'$R_{i}/glob_{max}(R_{i})$')
+    ax.set_xticks(x)
+    ax.set_xticklabels([convert_for_latex(x) for x in x_labels])
+
+    save_title = 'reaction_compare_' + compare[0]
+
+    if len(compare) == 3:
+        save_title += '_' + compare[-1]
+
+    if options['savefig']:
+        plt.savefig(dest + os_sep + save_title)
+        #plt.savefig(dest + os_sep + save_title + '.svg')
+        print ('\nsaved:',dest + os_sep + save_title)
+        #plt.close()
+    
+    if options['savefig_latex']:
+        plt.savefig(dest_latex + os_sep + save_title)
+        print ('\nsaved:',dest_latex + os_sep + save_title)
+
+    if options['show_plots']:
+        plt.show()
+    
+def plot_component_rate(eswl_dict, components_to_compare = ['total','mean','lrc', 'resonant_m_lumped'], 
+                        options = default_plot_options):
+    ''' 
+    eswl_1,_2: already directional components of the eswl
+    ''' 
+
+    if options['update_plot_params']:
+        mpl.rcParams.update(mpl.rcParamsDefault)
+        plt.rcParams.update(options['update_plot_params'])
+
+    dest = os_join(*['plots', 'ESWL_plots', 'all_parts'])
+
+    if components_to_compare[0] == 'all':
+        # taking the keys from the first direction
+        components = eswl_components[response_label]['y'].keys()
+    else:
+        components = components_to_compare
+    naming = {'mean':'mean', 'gle':'beswl', 'resonant':'reswl', 'resonant_m':'reswl','resonant_m_lumped':'reswl','total':'total','lrc':'beswl'}
+    directions_naming = {'Mz':'alongwind', 'My':'crosswind','Mx':'torsion'}
+    fig, ax = plt.subplots(num='R_i compare')
+
+    colors = ['tab:blue', 'dimgray', 'darkgray', 'lightgray']
+    width = 0.2
+    x = np.arange(len(eswl_dict))*0.3
+    
+    d_i = width/len(components)
+    for e_i, eswl_resp in enumerate(eswl_dict):
+        R_tot = eswl_dict[eswl_resp][1]
+        direction = eswl_dict[eswl_resp][2][0]
+        eswl = eswl_dict[eswl_resp][0][eswl_resp][direction]
+        influences = eswl_dict[eswl_resp][3][eswl_resp]
+        R_i = []
+        for c_i, component in enumerate(components):
+            R_i = sum(np.multiply(influences[direction], eswl[component])) / R_tot
+            if e_i == 0:
+                label = naming[component]
+            else:
+                label = None
+            rect_ri = ax.bar(x[e_i] - width + c_i * d_i, R_i, width = d_i, color = colors[c_i], label = label)
+            if eswl_resp in ['My','Mz']:
+                if c_i == 0:
+                    ax.text(x[e_i] - width + c_i * d_i, 1.02, directions_naming[eswl_resp])
+            else:
+                if c_i == 1:
+                    ax.text(x[e_i] - width + c_i * d_i, 1.02, directions_naming[eswl_resp])
+        if e_i != len(eswl_dict)-1:
+            ax.axvline(x[e_i], linestyle = '--', color = 'grey')
+
+    if options['present']:
+        ax.legend(bbox_to_anchor = (1.01, 1), loc ='upper left')
+    else:
+        ax.legend(bbox_to_anchor = (0.5, -0.02), loc ='upper center', ncol = 4)
+    
+    ax.set_ylabel('rate of '+ r'$R_{total}$')
+    ax.set_xticks([])
+
+    save_title = 'component_compare'
+
+    if options['savefig']:
+        plt.savefig(dest + os_sep + save_title)
+        #plt.savefig(dest + os_sep + save_title + '.svg')
+        print ('\nsaved:',dest + os_sep + save_title)
+        #plt.close()
+    
+    if options['savefig_latex']:
+        plt.savefig(dest_latex + os_sep + save_title)
+        print ('\nsaved:',dest_latex + os_sep + save_title)
+
+    if options['show_plots']:
+        plt.show()
+
+
+def plot_influences(eswl_object):
+    moment_load = {'y':'Mz', 'z':'My', 'a':'Mx','b':'My', 'g':'Mz'}
+    shear_load = {'y':'Qy', 'z':'Qz'}
+    fig, ax = plt.subplots(1, len(eswl_object.influences[eswl_object.response])-1,sharey=True)
+    fig.canvas.set_window_title('for_' +  eswl_object.response)
+
+    nodal_coordinates = eswl_object.structure_model.nodal_coordinates
+    influences = eswl_object.influences[eswl_object.response]
+    if eswl_object.response in ['Mx','My','Mz']:
+        unit = '[Nm]'
+    elif eswl_object.response in ['Qx','Qy','Qz']:
+        unit = '[N]'
+    for i, direction in enumerate(eswl_object.load_directions):
+
+        ax[i].plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
+                label = 'structure', 
+                marker = 'o', 
+                color = 'grey', 
+                linestyle = '--')
+        ax[i].plot(influences[direction], nodal_coordinates['x0'],
+                    label = GD.DIRECTION_LOAD_MAP[direction] + '_Static_analysis',
+                    color = LINE_TYPE_SETUP['color'][i+2])
+        # expected simple influences
+        if direction in ['y','z']:
+            
+            if moment_load[direction] == eswl_object.response:
+                if direction == 'z' and eswl_object.response == 'My':
+                    ax[i].plot(-nodal_coordinates['x0'], nodal_coordinates['x0'],
+                            label = 'expected',
+                            color = 'black',
+                            linestyle= '--') 
+                else:
+                    ax[i].plot(nodal_coordinates['x0'], nodal_coordinates['x0'],
+                                label = 'expected',
+                                color = 'black',
+                            linestyle= '--') 
+            elif shear_load[direction] == eswl_object.response:
+                ax[i].vlines(1.0, 0, nodal_coordinates['x0'][-1],
+                            label = 'expected',
+                            color = 'black',
+                            linestyle= '--')
+                ax[i].set_xlim(-0.1, 1.1)
+            else:
+                ax[i].plot(nodal_coordinates['x0'][0], 0,
+                            label = 'expected 0',
+                            color = 'black')        
+        else:
+            
+            if moment_load[direction] == eswl_object.response:
+                ax[i].vlines(1.0, 0, nodal_coordinates['x0'][-1],
+                            label = 'expected',
+                            color = 'black',
+                            linestyle= '--')
+                ax[i].set_xlim(-0.1, 1.1)
+            else:
+                ax[i].plot(nodal_coordinates['x0'][0], 0,
+                            label = 'expected 0',
+                            color = 'black',
+                            linestyle= '--') 
+        ax[i].locator_params(axis='x', nbins = 5)
+        ax[i].set_xlabel('response '+ unit)
+        ax[i].legend(fontsize = 8 )
+        ax[i].grid()
+        #ax[i].set_title(GD.DIRECTION_LOAD_MAP[direction] + ' on '+ eswl_object.response)
+    ax[0].set_ylabel('height [m]')
+
+    fig.suptitle('influence functions for ' + eswl_object.response + ' due to unit load at the respective nodes')
+    
+    plt.show()
+
+
+def plot_n_mode_shapes(mode_shapes, charact_length ,n = 3, options = default_plot_options, save_suffix=''):
+    ''' 
+    mode_shapes_sorted: mode shapres as a dictionary with dofs 
+    charact_length: scale for the rotaional dofs
+    ''' 
+    if not isinstance(mode_shapes, dict):
+        utilities.sort_row_vectors_dof_wise(mode_shapes)
+
+    fig, ax = plt.subplots(1, n, sharey=True)
+    fig.canvas.set_window_title('mode shapes first 3 modes')
+    fig.suptitle('mode shapes of first 3 modes - rotations multiplied with characteristic length')
+    if save_suffix == '_caarc_A':
+        dof_labels = list(mode_shapes_sorted[0].keys())
+        dof_labels = ['y', 'a', 'z']
+    else:
+        dof_lables = mode_shapes_sorted
+    for mode in range(n):
+        for d, dof_label in enumerate(dof_labels):
+            multiplier = 1.0
+            if dof_label in ['a','b','g']:
+                multiplier = charact_length
+            ax[mode].set_title('mode ' + str(mode+1))
+            if save_suffix == '_caarc_A':
+                mode_s = np.asarray(mode_shapes_sorted[mode][dof_label])
+            else:
+                mode_s = mode_shapes_sorted[dof_label][:,mode]
+            ax[mode].plot(mode_s * multiplier,
+                            np.arange(len(mode_s)),
+                            label = dof_label,
+                            color = LINE_TYPE_SETUP['color'][2+d])
+
+        ax[mode].legend()
+        ax[mode].set_xlabel('defl. [m]')
+        ax[mode].set_ylabel('height [m]')
+        ax[mode].locator_params(axis='y', nbins = 3)
+        
+        ax[mode].xaxis.set_major_formatter(FormatStrFormatter('%.1e'))
+        ax[mode].locator_params(axis='x', nbins = 5)
+        ax[mode].grid()
+    
+    save_title = 'eigenmodes' + save_suffix
+
+    if options['savefig']:
+        plt.savefig(dest + os_sep + save_title)
+        plt.savefig(dest + os_sep + save_title + '.pdf')
+        print ('\nsaved:',dest + os_sep + save_title)
+        #plt.close()
+    
+    if options['savefig_latex']:
+        plt.savefig(dest_latex + os_sep + save_title)
+        print ('\nsaved:',dest_latex + os_sep + save_title)
+
+    if options['show_plots']:
+        plt.show()
+
+
+def plot_load_time_histories(load_signals, nodal_coordinates):
+
+    fig, ax = plt.subplots(1, len(load_signals))
+
+    try:
+        if nodal_coordinates['x0']:
+            nodal_coordinates = nodal_coordinates['x0']
+    except KeyError:
+        nodal_coordinates = nodal_coordinates
+
+    for i, component in enumerate(load_signals):
+        if component == 'sample_freq':
+            break
+        # structure
+        ax[i].set_title('load signal direction ' + component)
+        ax[i].plot(np.zeros(len(nodal_coordinates)),
+                    nodal_coordinates, 
+                    label = 'structure', 
+                    marker = 'o', 
+                    color = 'grey', 
+                    linestyle = '--')
+        for node in range(len(nodal_coordinates)):
+            shift_scale = 1e+05
+            if component == 'a':
+                shift_scale *= 5
+            ax[i].plot(np.arange(0,len(load_signals[component][node])),
+                        load_signals[component][node] + nodal_coordinates['x0'][node]*shift_scale)
+    
+        #ax[i].legend()
+        ax[i].grid()
+    plt.show()
+
+def plot_load_time_histories_node_wise(load_signals, n_nodes, discard_time, load_signal_labels = None,
+                                        options = {'show_plots':True,'savefig':False,'savefig_latex':False, 'update_plot_params':None}):
+    '''
+    for each node it plots the time history of the loading 
+    parameter: load_signal_labels 
+                if not set all signals in the load_signal dict are plotted 
+                can be specified with a list of labels to plot
+    '''
+
+    dest = os_join(*['plots', 'ESWL_plots','load_signals_4_nodes'])
+
+    mpl.rcParams.update(mpl.rcParamsDefault)
+
+    if options['update_plot_params']:
+        plt.rcParams.update(options['update_plot_params'])
+
+    ax_i = list(range(n_nodes-1, -1, -1))
+    if load_signal_labels:
+        components = load_signal_labels
+    else:
+        load_signals.pop('sample_freq')
+        components = load_signals.keys()
+    for component in components:
+        # if component == 'sample_freq':
+        #     break
+        fig, ax = plt.subplots(n_nodes, 1, num = 'signals of ' +  GD.DIRECTION_LOAD_MAP[component])
+        fig.suptitle('signal of ' + GD.DIRECTION_LOAD_MAP[component])
+
+        for node in range(n_nodes):
+            # show also mean 
+            mean = np.mean(load_signals[component][node])
+            ax[ax_i[node]].hlines(mean, 0, len(load_signals[component][node]), 
+                                  color = 'dimgray', 
+                                  linestyle = '--', 
+                                  label = 'mean: ' + '{:.2e}'.format(mean))
+
+            ax[ax_i[node]].plot(np.arange(len(load_signals[component][node])),
+                                load_signals[component][node],
+                                label = 'node_'+str(node))
+
+            # ax[ax_i[node]].vlines(discard_time, min(load_signals[component][node]), max(load_signals[component][node]), 
+            #                       color = 'grey', 
+            #                       linestyle = '--',
+            #                       label = 'discard')
+
+            ax[ax_i[node]].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
+            
+            ax[ax_i[node]].locator_params(axis='y', nbins = 5)
+            ax[ax_i[node]].yaxis.set_major_formatter(FormatStrFormatter('%.1e'))
+            ax[ax_i[node]].grid()
+            ax[ax_i[node]].set_ylabel(r'$x_{}(t)$'.format(node))
+
+            ax[ax_i[node]].set_xlim(0, len(load_signals[component][node]))
+            
+        ax.legend()
+
+        ax[ax_i][0].set_xlabel(r'$t [s]$')
+
+        save_title = 'dyn_load_' + str(n_nodes) + '_' + component
+
+        if options['savefig']:
+            plt.savefig(dest + os_sep + save_title)
+            print ('\nsaved:',dest + os_sep + save_title)
+            #plt.close()
+
+        if options['savefig_latex']:
+            plt.savefig(dest_latex + os_sep + save_title)
+            print ('\nsaved:',dest_latex + os_sep + save_title)
+
+            #plt.close()
+
+        if options['show_plots']:
+            plt.show()
+
+        plt.show()
