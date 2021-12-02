@@ -47,7 +47,7 @@ LINE_TYPE_SETUP = {"color":          ["grey", "black", "red", "green", "blue", "
                    "markeredgecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markerfacecolor": ["grey", "black", "red", "green", "blue", "magenta"],
                    "markersize":     [4,      4,    4,      4,    4,    4]}
-LINESTYLE = ["--",    "-.",  ":",    "-",   "-",   "-"]
+LINESTYLE = ["--",    "-.",  ":",    "--",   "-",   "-"]
 
 LEGEND_SETUP = {"fontsize": [16, 14, 12, 10, 8]}
 
@@ -505,21 +505,12 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
 
 # ESWL PLOTTERS
 
-def plot_eswl_components(eswl_components, nodal_coordinates, response_label, load_directions_to_include, 
-                         textstr, influences ,components_to_plot = ['all'], gb_label = '', go_final = False, R_total = None, unit= 'N', save_suffix = '',
-                         options = default_plot_options):
-    
-    if options['update_plot_params']:
-        mpl.rcParams.update(mpl.rcParamsDefault)
-        plt.rcParams.update(options['update_plot_params'])
+def plot_eswl_components(eswl_components, response_label, parameters, display_plot):
 
-    dest = os_join(*['plots', 'ESWL_plots'])
-    
-    plt.rcParams.update({'axes.formatter.limits':(-3,3)}) 
-    if load_directions_to_include == 'all':
-        load_directions = GD.LOAD_DIRECTION_MAP['all']
+    if parameters['load_directions_to_plot'] == 'automatic':
+        load_directions = GD.LOAD_DIRECTIONS_RESPONSES_UNCOUPLED[response_label]
     else:
-        load_directions = load_directions_to_include
+        load_directions = parameters['load_directions_to_plot']
     
     if len(load_directions) == 1:
         fig, ax = plt.subplots(num='for_'+response_label)
@@ -527,44 +518,39 @@ def plot_eswl_components(eswl_components, nodal_coordinates, response_label, loa
     else:
         fig, axes = plt.subplots(ncols = len(load_directions), sharey=True, num='for_'+response_label)
     
-    fig.suptitle('ESWL for base ' + convert_load_for_latex(response_label), fontsize = 10)
+    fig.suptitle('ESWL for base ' + (response_label), fontsize = 10)
     
-    dx = nodal_coordinates['x0'][1]
-    l_i = np.full(len(nodal_coordinates['x0']), dx)
+    x_coords = eswl_components['x_coords']
+    # to present it as a line load
+    dx = x_coords[1]
+    l_i = np.full(len(x_coords), dx)
     l_i[0] /= 2
     l_i[-1] /= 2
 
-    #fig, ax = plt.subplots(1, len(load_directions), sharey=True, num=)
-
-    if components_to_plot[0] == 'all':
+    if parameters['components_to_plot'][0] == 'all':
         # taking the keys from the first direction
         components = eswl_components[response_label]['y'].keys()
     else:
-        components = components_to_plot
+        components = parameters['components_to_plot']
     
-    if go_final:
-        naming = {'mean':'mean', 'gle':'beswl', 'res_base_distr':'reswl', 'res_mod_cons':'reswl','res_mod_lumped':'reswl','total':'total','lrc':'beswl'}
-
     for i, direction in enumerate(load_directions):
         # for labels
         unit_label = GD.UNITS_LOAD_DIRECTION[direction]
-        unit_label = unit_label.replace(unit_label[1], unit)
-        force_label = '{}'.format(convert_load_for_latex(GD.DIRECTION_LOAD_MAP[direction],lower=True))
+        force_label = '{}'.format(GD.DIRECTION_LOAD_MAP[direction],lower=True)
        
-        axes[i].plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
-                label = r'structure', 
-                marker = 'o', 
-                color = 'grey', 
-                linestyle = '--')
+        axes[i].plot(np.zeros(len(x_coords)), x_coords, 
+                            label = r'structure', 
+                            marker = 'o', 
+                            color = 'grey', 
+                            linestyle = '--')
 
-        if not go_final:
-            axes[i].set_title('{}'.format(convert_load_for_latex(GD.DIRECTION_LOAD_MAP[direction], lower = True)))
+        axes[i].set_title('{}'.format(GD.DIRECTION_LOAD_MAP[direction], lower = True))
         # plot each component
         for j, component in enumerate(components):
             if component not in eswl_components[response_label][direction].keys():
                 #print ('\nskipped:', component, 'as it was not computed')
                 continue
-            eswl = eswl_components[response_label][direction][component] / l_i * GD.UNIT_SCALE[unit]
+            eswl = eswl_components[response_label][direction][component] / l_i 
             if component == 'total':
                 line = '-'
                 color = LINE_TYPE_SETUP['color'][i+2]
@@ -572,116 +558,37 @@ def plot_eswl_components(eswl_components, nodal_coordinates, response_label, loa
                 line = LINESTYLE[j]
                 color = LINE_TYPE_SETUP['color'][i+2]
 
-            if go_final:
-                component_label = naming[component]
-            else:
-                component_label = component#r'${}$'.format(component)#convert_for_latex(component)
-
             ax_eswl = axes[i].plot(eswl, 
-                        nodal_coordinates['x0'], 
-                        label = component_label,
-                        linestyle = line,
-                        color = color)
+                                x_coords, 
+                                label = component,
+                                linestyle = line,
+                                color = color)
 
+        eswl_leg = axes[i].legend(fontsize = 9)        
         
-        eswl_leg = axes[i].legend(fontsize = 9)
-        # calculate R for each direction -> to check if the signs are sensible
-        
-        #R_tot = sum(np.multiply(influences[response_label][direction], eswl_components[response_label][direction]['total']))
-        R_i = sum(np.multiply(influences[response_label][direction], eswl_components[response_label][direction]['total']))
-        if R_total:
-            if response_label != 'Mx':
-                R_i = R_i/R_total
-                label_R_i = '{}'.format(convert_load_for_latex(response_label)) +\
-                                        r'$_i$' +r'$($' +'{}'.format(force_label) +r'$)$' + r'$={}$'.format(round(R_i,2)) + ' of total    ' #+ r'$\quad$'
-
-                r_i_ax =axes[i].plot(0,0, 
-                                    label = label_R_i,
-                                    linestyle = '')
-
-                r_i_legend = axes[i].legend(loc= 'upper center', handles= r_i_ax, fontsize = 9)
-
-        else:
-            axes[i].plot(0,0, 
-                label = r'${}$'.format(response_label) + r'$_i = $ ' + r'${:.2e}$'.format(round(R_i)),
-                linestyle = ' ',
-                color = 'k')
-
         # settings
         axes[i].locator_params(axis='x', nbins = 4)
         axes[i].locator_params(axis='y', nbins = 4)
-        #axes[i].set_yticks([])
-        #axes[i].set_yticklabels([])
         axes[i].set_ylim(bottom=0,top=200)
-        if R_total:
-            axes[i].add_artist(eswl_leg)
-        if R_total:
-            if response_label != 'Mx':
-                axes[i].add_artist(r_i_legend)
-
-            # props = dict(facecolor='lightgray')
-            # r_i_text = AnchoredText(label_R_i,  loc='upper center')#, bbox_to_anchor=(0.5, -0.02))#, fontsize= 10),boxstyle='round', 
-            # r_i_text.patch.set_boxstyle('round', prop= props)#, edgecolor = )
-            # axes[i].add_artist(r_i_text)
-
-        axes[i].set_xlabel('{}'.format(convert_load_for_latex(GD.DIRECTION_LOAD_MAP[direction], lower = True)) + r' ${}$'.format(unit_label))
+        axes[i].add_artist(eswl_leg)
+        
+        axes[i].set_xlabel('{}'.format(GD.DIRECTION_LOAD_MAP[direction], lower = True) + r' ${}$'.format(unit_label))
         
         axes[i].grid()
+
     axes[0].set_ylabel('height [m]')
-
-    if textstr:
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        result_text = AnchoredText(textstr,  loc='lower right')#, fontsize= 10)bbox_to_anchor=(1.05, 0.8),
-        axes[-1].add_artist(result_text)
-
-
-    # saving of figure
-    component_folder_dict = {'mean':'mean_parts',
-                             'gle':'background_parts', 'lrc':'background_parts',
-                             'resonant':'resonant_parts', 'resonant_m_lumped':'resonant_parts','resonant_m':'resonant_parts',
-                             'all':'all_parts',
-                             'mixed':'mixed_parts'}
     
-    fname = 'for_'+ response_label
-    if len(components_to_plot) == 1:
-        key = components_to_plot[0]
-    elif set(components_to_plot).issubset(['gle', 'lrc']):
-        key = components_to_plot[0]
-        for comp in components_to_plot:
-            fname += '_' + comp[0]
-    elif set(components_to_plot).issubset(['resonant', 'resonant_m', 'resonant_m_lumped']):
-        key = components_to_plot[0]
-        fname += '_r'
-        for comp in components_to_plot:
-            s = comp.split('_')
-            if len(s) == 2:
-                fname += '_m'
-            elif len(s) == 3:
-                fname += '_l'
-    else:
-        key = 'mixed'
-        for comp in components_to_plot:
-            fname += '_' + comp[0]
-    
-    fname += '_' + gb_label + save_suffix
+    # if pdf_report is not None:
+    #     pdf_report.savefig()
+    #     plt.close(fig)
+    #     # plt.savefig(os_join(destination,fname))
+    #     # print ('\nsaved:',os_join(destination,fname))
 
-    full_dest = dest + os.path.sep + component_folder_dict[key] + os.path.sep + fname
-    
-    if options['savefig']:
-        plt.savefig(full_dest)
-        #plt.savefig(full_dest + '.svg')
-        print ('\nsaved:',full_dest)
-        #plt.close()
-    
-    if options['savefig_latex']:
-        plt.savefig(dest_latex + os_sep + fname)
-        print ('\nsaved:',dest_latex + os_sep + fname)
-
-    if options['show_plots']:
-        plt.show()
+    #if display_plot:
+    plt.show()
 
 def plot_eswl_dyn_compare(result_dict, compare = ['dyn_est','eswl'], unit='N',
-                         options = default_plot_options):
+                         options = None):
 
     if options['update_plot_params']:
         mpl.rcParams.update(mpl.rcParamsDefault)
@@ -758,76 +665,70 @@ def plot_eswl_dyn_compare(result_dict, compare = ['dyn_est','eswl'], unit='N',
     if options['show_plots']:
         plt.show()
     
-def plot_component_rate(eswl_dict, components_to_compare = ['total','mean','lrc', 'resonant_m_lumped'], 
-                        options = default_plot_options):
+def plot_component_rate(eswl_obj, display_plot, components_to_compare = ['total','mean','lrc', 'resonant_m_lumped'], 
+                        options = None):
     ''' 
     eswl_1,_2: already directional components of the eswl
     ''' 
 
-    if options['update_plot_params']:
-        mpl.rcParams.update(mpl.rcParamsDefault)
-        plt.rcParams.update(options['update_plot_params'])
-
     dest = os_join(*['plots', 'ESWL_plots', 'all_parts'])
 
-    if components_to_compare[0] == 'all':
-        # taking the keys from the first direction
-        components = eswl_components[response_label]['y'].keys()
-    else:
-        components = components_to_compare
+    eswl_components = eswl_obj.eswl_components
+    del eswl_components['x_coords']
     naming = {'mean':'mean', 'gle':'beswl', 'resonant':'reswl', 'resonant_m':'reswl','resonant_m_lumped':'reswl','total':'total','lrc':'beswl'}
     directions_naming = {'Mz':'alongwind', 'My':'crosswind','Mx':'torsion'}
     fig, ax = plt.subplots(num='R_i compare')
 
     colors = ['tab:blue', 'dimgray', 'darkgray', 'lightgray']
     width = 0.2
-    x = np.arange(len(eswl_dict))*0.3
+    factor = 1
+
+    components = ['total', 'mean', eswl_obj.settings['beswl_to_combine'], eswl_obj.settings['reswl_to_combine']]
+    x = np.arange(len(eswl_components))*factor
+    d_i = factor/(len(components)+1)
+    width = d_i * len(components)
     
-    d_i = width/len(components)
-    for e_i, eswl_resp in enumerate(eswl_dict):
-        R_tot = eswl_dict[eswl_resp][1]
-        direction = eswl_dict[eswl_resp][2][0]
-        eswl = eswl_dict[eswl_resp][0][eswl_resp][direction]
-        influences = eswl_dict[eswl_resp][3][eswl_resp]
-        R_i = []
+    for e_i, response in enumerate(eswl_components):
+        R_tot = eswl_obj.static_response[response][eswl_obj.settings['at_height']]
+        influences = eswl_obj.influences[response]
+        #direction
+        eswl = eswl_components[response] 
         for c_i, component in enumerate(components):
-            R_i = sum(np.multiply(influences[direction], eswl[component])) / R_tot
+            R_i = 0
+            for direction in eswl:
+                # computing the part of the response caused by the specific component
+                R_i += sum(np.multiply(influences[direction], eswl[direction][component]))
+
+            # for the legend
             if e_i == 0:
-                label = naming[component]
+                label = component
             else:
                 label = None
-            rect_ri = ax.bar(x[e_i] - width + c_i * d_i, R_i, width = d_i, color = colors[c_i], label = label)
-            if eswl_resp in ['My','Mz']:
-                if c_i == 0:
-                    ax.text(x[e_i] - width + c_i * d_i, 1.02, directions_naming[eswl_resp])
-            else:
-                if c_i == 1:
-                    ax.text(x[e_i] - width + c_i * d_i, 1.02, directions_naming[eswl_resp])
-        if e_i != len(eswl_dict)-1:
+
+            rect_ri = ax.bar(x[e_i] - width + c_i * d_i, R_i/R_tot, width = d_i, color = colors[c_i], label = label)
+            # if response in ['My','Mz']:
+
+        ax.text(x[e_i]-width/2, 1.02, response)#directions_naming[response]
+            
+        if e_i != len(eswl_components)-1:
             ax.axvline(x[e_i], linestyle = '--', color = 'grey')
 
-    if options['present']:
-        ax.legend(bbox_to_anchor = (1.01, 1), loc ='upper left')
-    else:
-        ax.legend(bbox_to_anchor = (0.5, -0.02), loc ='upper center', ncol = 4)
+    ax.axhline(1, linestyle = '--', color = 'grey')
+    ax.legend(bbox_to_anchor = (0.5, -0.02), loc ='upper center', ncol = 4)
     
     ax.set_ylabel('rate of '+ r'$R_{total}$')
     ax.set_xticks([])
 
     save_title = 'component_compare'
 
-    if options['savefig']:
-        plt.savefig(dest + os_sep + save_title)
-        #plt.savefig(dest + os_sep + save_title + '.svg')
-        print ('\nsaved:',dest + os_sep + save_title)
-        #plt.close()
-    
-    if options['savefig_latex']:
-        plt.savefig(dest_latex + os_sep + save_title)
-        print ('\nsaved:',dest_latex + os_sep + save_title)
+    # if options['savefig']:
+    #     plt.savefig(dest + os_sep + save_title)
+    #     #plt.savefig(dest + os_sep + save_title + '.svg')
+    #     print ('\nsaved:',dest + os_sep + save_title)
+    #     #plt.close()
 
-    if options['show_plots']:
-        plt.show()
+    #if display_plot:
+    plt.show()
 
 
 def plot_influences(eswl_object):
@@ -901,7 +802,7 @@ def plot_influences(eswl_object):
     plt.show()
 
 
-def plot_n_mode_shapes(mode_shapes, charact_length ,n = 3, options = default_plot_options, save_suffix=''):
+def plot_n_mode_shapes(mode_shapes, charact_length ,n = 3, options = None, save_suffix=''):
     ''' 
     mode_shapes_sorted: mode shapres as a dictionary with dofs 
     charact_length: scale for the rotaional dofs

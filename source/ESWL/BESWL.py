@@ -4,13 +4,13 @@ import source.auxiliary.global_definitions as GD
 
 class BESWL(ESWL):
 
-    def __init__(self,strucutre_model, influence_function, load_signals, response, options):
+    def __init__(self,strucutre_model, influence_function, load_signals, response, load_directions_to_compute, options):
         '''
         Background Part of the ESWL
         Can be calculated with the GLE and the LRC approach respectivley (use options to set)
         - influence_function: influence of all load_directions on the current response
         - load_signals: time history of measured loads
-        - load_directions: directions of the load to compute 
+        - load_directions_to_compute: directions of the load to compute 
         - response: current response under consideration
         '''
 
@@ -18,7 +18,8 @@ class BESWL(ESWL):
         self.influence_function = influence_function
         self.load_signals = load_signals
         self.response = response
-        self.load_directions = GD.LOAD_DIRECTION_MAP['all']
+        self.load_directions_to_compute = load_directions_to_compute
+        self.load_directions_all = GD.LOAD_DIRECTION_MAP['all']
 
         self.options = options     
 
@@ -42,7 +43,7 @@ class BESWL(ESWL):
         Kareem eq. 25 / 32
         '''
         self.spatial_distribution_gle = {self.response: {}} # keys are directions, values arrays of z
-        for direction in self.load_directions:
+        for direction in self.load_directions_to_compute:
             self.spatial_distribution_gle[self.response][direction] = np.zeros(self.strucutre_model.n_nodes)
 
             for i in range(self.strucutre_model.n_nodes):
@@ -55,9 +56,9 @@ class BESWL(ESWL):
         Kareem eq. 33
         '''
         self.weighting_factors_raw_gle = {self.response: {}} 
-        for s in self.load_directions:
+        for s in self.load_directions_all:
             w_b_s = 0.0
-            for l in self.load_directions:
+            for l in self.load_directions_all:
                 static_load_response = self.get_static_load_response(l)
                 B_sl = self.get_B_sl(s, l)
                 w_b_s += B_sl * static_load_response 
@@ -132,9 +133,10 @@ class BESWL(ESWL):
         is called rms but is the rms of mean zero signal -> std
         Kareem eq. 20
         '''
+        
         result = 0.0
-        for s in self.load_directions:
-            for l in self.load_directions:
+        for s in self.load_directions_all:
+            for l in self.load_directions_all:
                 sig_Rb_s = self.get_static_load_response(s)
                 sig_Rb_l = self.get_static_load_response(l)
                 B_sl = self.get_B_sl(s , l)
@@ -145,7 +147,7 @@ class BESWL(ESWL):
         self.rms_background_response = result
 
     # ========================================
-    # LRC COEFFICIENT according to Kaspersik
+    # LRC Approach according to Kaspersik
     # ========================================
 
     def get_spatial_distribution_lrc(self):
@@ -154,7 +156,7 @@ class BESWL(ESWL):
         this still needs to be multiplied with the peak factor g_b
         '''
         self.spatial_distribution_lrc = {self.response: {}}
-        for direction in self.load_directions:
+        for direction in self.load_directions_to_compute:
             rho_Rps = self.get_lrc_coeff(direction)
             sig_ps = np.asarray([np.std(i) for i in self.load_signals[direction]])
 
@@ -173,8 +175,8 @@ class BESWL(ESWL):
         sig_R_2 = 0.0 # scalar value: just the rms/std of the response 
         for node1 in range(self.strucutre_model.n_nodes):
             for node2 in range(self.strucutre_model.n_nodes):
-                for s in self.load_directions: 
-                    for l in self.load_directions: 
+                for s in self.load_directions_all: 
+                    for l in self.load_directions_all: 
                         I_ps_z = self.influence_function[self.response][s][node1]
                         I_pl_z = self.influence_function[self.response][l][node2]
 
@@ -189,6 +191,7 @@ class BESWL(ESWL):
         '''
         compute the LRC(load - response - correlation) coefficient according to Kasperski 1992.
         '''
+        
         std_ps = np.asarray([np.std(i) for i in self.load_signals[load_direction]])
 
         # COVARIANCE METHOD 
@@ -196,7 +199,7 @@ class BESWL(ESWL):
         cov_Rps = np.zeros(self.strucutre_model.n_nodes) # covariance between reposne R and load p_s
         for node1 in range(self.strucutre_model.n_nodes):
             for node2 in range(self.strucutre_model.n_nodes):
-                for l in self.load_directions: #l
+                for l in self.load_directions_all: #l
 
                     I_pl_z = self.influence_function[self.response][l][node2]
                     cov_psl = np.cov(self.load_signals[load_direction][node1], self.load_signals[l][node2])[0][1]

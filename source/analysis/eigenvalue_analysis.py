@@ -482,8 +482,9 @@ class EigenvalueAnalysis(AnalysisType):
         for mode in self.parameters['output']['selected_eigenmode']['write_mode']:
             self.write_selected_eigenmode(global_folder_path, mode)
 
-        for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
-            self.animate_selected_eigenmode(mode)
+        if display_plot:
+            for mode in self.parameters['output']['selected_eigenmode']['animate_mode']:
+                self.animate_selected_eigenmode(mode)
 
         if skin_model_params is not None:
             for mode in self.parameters['output']['selected_eigenmode']['animate_skin_model']:

@@ -1,6 +1,7 @@
 import numpy as np
 from functools import partial
 from scipy.optimize import minimize, minimize_scalar
+import timeit
 
 import source.auxiliary.global_definitions as GD
 import source.ESWL.eswl_plotters as plotter_utilities
@@ -49,7 +50,7 @@ class ESWL(object):
 
         # first key is the response, second the load direciton
         self.eswl_components = {}
-        self.eswl_total = {}
+        self.static_response = {}
 
     def calculate_total_ESWL(self, response):
         '''
@@ -66,7 +67,8 @@ class ESWL(object):
         from source.ESWL.RESWL import RESWL
 
         # initializing the Background and Resonant Part
-        self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.response, self.beswl_options)
+        beswl_start = timeit.start
+        self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.response, self.load_directions_to_compute, self.beswl_options)
         self.RESWL = RESWL(self.structure_model, self.influences, self.load_signals, self.response, self.eigenform, self.reswl_options)
 
         print ('\nESWL Component Combinations:')
@@ -78,7 +80,6 @@ class ESWL(object):
             self.component_combination(direction, g_b=g_b)
 
         print ('\nUsing gb:', g_b)
-
 
     def component_combination(self, direction, g_b):
         ''' 
@@ -93,7 +94,7 @@ class ESWL(object):
         mean_load = np.asarray([np.mean(x) for x in self.load_signals[direction]])
 
         # background is a weighted std, thus it should increase the mean value absolutley or act such that mean + backgr. + res. = maximum
-        background_sign = auxiliary.get_sign_for_background(mean_load, direction)
+        background_sign = self.get_sign_for_background(mean_load, direction)
         # =======================================================================
         # GLE - KAREEM
         if self.beswl_options['gle']:
@@ -104,7 +105,7 @@ class ESWL(object):
         # #LRC KASPERSIK
         if self.beswl_options['lrc']:
             w_b_lrc = np.sqrt(self.BESWL.weighting_factors_raw_lrc) * g_b / R_max # weighting factor for combinations Kareem eq. 33, Holmes eq.4.41
-            p_z_b_lrc = g_b * self.BESWL.spatial_distribution_gle[self.response][direction]
+            p_z_b_lrc = g_b * self.BESWL.spatial_distribution_lrc[self.response][direction]
             p_z_b_e_lrc = abs(w_b_lrc * p_z_b_lrc) * background_sign
      
         # primary use lrc -> if both are true lrc is taken fro combination
@@ -126,33 +127,32 @@ class ESWL(object):
         if self.reswl_options['modal_inertial']:
             p_z_r_all['modal_inertial'] = self.RESWL.modal_inertial[self.response][direction]
 
-        types_to_compute = [i for i in self.reswl_options if self.reswl_options[i]]
+        types_to_compute_res = [i for i in self.reswl_options if self.reswl_options[i]]
             
         # sum up over first 3 modes and multiply with weighting factor
         for mode_id in range(3):
             g_r = self.get_peak_factor('resonant', self.structure_model.eig_freqs[mode_id])
             w_r = w_r_j[mode_id] * g_r / R_max # weighting factor
             # multiplying p_z_r_ with g_r according to eq. 27,29 Kareem
-            for type_r in types_to_compute:
+            for type_r in types_to_compute_res:
                 if mode_id == 0:
                     p_z_r_e_all[type_r] = np.zeros(self.structure_model.n_nodes)
                 p_z_r_e_all[type_r] +=  w_r * p_z_r_all[type_r][mode_id] * g_r
 
         # selecting th type for the combination and save it in a extra variable to better handle it
-        p_z_r_e = p_z_r_e_all[self.settings['reswl_to_combine']]
+        p_z_r_e = np.copy(p_z_r_e_all[self.settings['reswl_to_combine']])
 
         # # SIGN OF RESONANT PART
         # 1. select sign du to combination with other components
         resonant_sign, flipped_sign = self.get_sign_for_resonant(mean_load ,background ,p_z_r_e, direction)
 
         if flipped_sign:
-            if not self.optimize_gb:
-                print ('   flipped sign of resonant', direction, ', reason: component combination')
+            print ('   flipped sign of resonant', direction, ', reason: component combination')
         
         #if self.reswl_settings['base_moment_distr']:
         p_z_r_e *= resonant_sign
 
-        for type_r  in types_to_compute:
+        for type_r  in types_to_compute_res:
             p_z_r_e_all[type_r] *= resonant_sign
 
         '''
@@ -161,50 +161,25 @@ class ESWL(object):
         '''
         # coupled g and y
         if direction == 'y':
-            if p_z_r_e[1] < 0:
-                self.sign_y = 'n'
-            else:
-                self.sign_y = 'p'
+            self.sign_y = np.sign(p_z_r_e[1])
 
         if direction == 'g':
-            if p_z_r_e[1] < 0:
-                if self.sign_y == 'p':
-                    if not self.optimize_gb:
-                        print ('   flipped sign of resonant g, reason: coupled y-g')
-                    p_z_r_e *= -1
-                    for type_r  in types_to_compute:
-                        p_z_r_e_all[type_r] *= -1
-            else:
-                if self.sign_y == 'n':
-                    if not self.optimize_gb:
-                        print ('   flipped sign of resonant g, reason: coupled y-g')
-                    p_z_r_e *= -1
-                    for type_r  in types_to_compute:
-                        p_z_r_e_all[type_r] *= -1
+            if np.sign(p_z_r_e[1]) != self.sign_y:
+                print ('   flipped sign of resonant g, reason: coupled y-g')
+                p_z_r_e *= -1
+                for type_r  in types_to_compute_res:
+                    p_z_r_e_all[type_r] *= -1
         
         # coupled b and z
         if direction == 'z':
-            if p_z_r_e[1] < 0:
-                self.sign_z = 'n'
-            else:
-                self.sign_z = 'p'
+            self.sign_z = np.sign(p_z_r_e[1])
 
         if direction == 'b':
-            if p_z_r_e[1] < 0:
-                if self.sign_z == 'n':
-                    if not self.optimize_gb:
-                        print ('   flipped sign of resonant b, reason: coupled z-b')
-                    p_z_r_e *= -1
-                    for type_r  in types_to_compute:
-                        p_z_r_e_all[type_r] *= -1
-            else:
-                if self.sign_z == 'p':
-                    if not self.optimize_gb:
-                        print ('   flipped sign of resonant b, reason: coupled z-b')
-                    flipped_b_coupling = True
-                    p_z_r_e *= -1
-                    for type_r  in types_to_compute:
-                        p_z_r_e_all[type_r] *= -1
+            if np.sign(p_z_r_e[1]) != self.sign_z:
+                print ('   flipped sign of resonant b, reason: coupled z-b')
+                p_z_r_e *= -1
+                for type_r  in types_to_compute_res:
+                    p_z_r_e_all[type_r] *= -1
 
         # =======================================================================
         # # TOTAL
@@ -286,7 +261,7 @@ class ESWL(object):
             responses.append(abs(R))
 
         sign = signs[responses.index(max(responses))]
-        if sign < 0:
+        if sign*resonant[1] < 0:
             output_sign = 'n'
 
         if input_sign != output_sign:
@@ -294,6 +269,32 @@ class ESWL(object):
         else:
             flipped = False
         return sign, flipped
+
+    def get_sign_for_background(self, mean_load, direction):
+        ''' 
+        find a sign for the backgorund componetne according to the mean load distribution
+        This is relevant if the mean value is small and changes sign along the height. If the background sign is choosen at each point to amplify the respective mean,
+        this creates a favourable situation. 
+        However for the nodal moment signals it makes sense to secied it node wise especially concerning the bottom and top node
+        '''
+        if direction in ['b','g']:
+            background_sign = np.ones(mean_load.size)
+            for node in range(len(mean_load)):
+                if mean_load[node] <0:
+                    background_sign[node] *= -1
+            return background_sign
+
+        if all(item >= 0 for item in mean_load):
+            return 1
+        if all(item < 0 for item in mean_load):
+            return -1
+        else:
+            negative_sum = sum(mean_load[mean_load < 0])
+            positive_sum = sum(mean_load[mean_load > 0])
+            if abs(negative_sum) > abs(positive_sum):
+                return -1
+            else:
+                return 1
 
     def initialize_influence_functions(self, method):
         '''
@@ -309,9 +310,6 @@ class ESWL(object):
         h = self.structure_model.nodal_coordinates['x0'][-1]
         response_node_id = int(round(self.settings['at_height']/( h / self.structure_model.n_nodes)))
 
-        from source.ESWL.eswl_auxiliaries import get_analytic_influences
-        from source.ESWL.eswl_auxiliaries import get_influence
-
         self.influences = {}
         for response in required_responses:
             self.influences[response] = {}
@@ -319,18 +317,108 @@ class ESWL(object):
                 self.influences[response][direction] = np.zeros(self.structure_model.n_nodes)
                 for node in range(self.structure_model.n_nodes):
                     if method == 'analytic':
-                        influence = get_analytic_influences(self.structure_model, direction, node, response, response_node_id)
+                        influence = self.get_analytic_influences(direction, node, response, response_node_id)
                     else:
-                        influence = get_influence(self.structure_model, direction, node, response, response_node_id)
+                        influence = self.get_influence(direction, node, response, response_node_id)
                     self.influences[response][direction][node] = influence
+
+    def get_influence(self, load_direction, node_id, response, response_node_id = 0):
+        '''
+        influence function representing the response R due to a unit load acting at elevation z along load direction s
+        computed using the beam model and a static analysis with load vector of zeros just 1 at node_id
+        NOTE: Sofar returning always reaction at ground node
+        '''
+        src_path = os.path.join(*['input','force','generic_building','unit_loads'])
+
+        needed_force_file = src_path + os.path.sep + 'unit_static_force_' + str(self.structure_model.n_nodes) + \
+                            '_nodes_at_' + str(node_id) + \
+                            '_in_' + load_direction+'.npy'
+
+        if os.path.isfile(needed_force_file):
+            unit_load_file = needed_force_file
+        else:
+            unit_load_file = auxiliary.generate_unit_nodal_force_file(self.structure_model.n_nodes, node_id, load_direction, 1.0)
+
+        static_analysis = create_static_analysis_custom(self.structure_model, unit_load_file)
+        static_analysis.solve()
+
+        influence = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[response]]
+
+        if load_direction in ['a','b','g'] and node_id == 0 and load_direction == GD.RESPONSE_DIRECTION_MAP[response]:
+            if node_id >= response_node_id:
+                return 1.0
+            else:
+                return 0.0
+        # maybe due to numerical stuff or whatever
+        # set small values that are mechanically expected to be 0 to actual 0 that in the b_sl calculation 0 and not a radnom value occurs
+        if abs(influence[0]) < 1e-05:
+            influence[0] = 0.0
+            
+        return influence[response_node_id]
+
+    def get_analytic_influences(self, load_direction, node_id, response, response_node_id=0):
+        '''
+        for a lever arm this is simple
+        if shear response -> return 1
+        if base moment -> return level* 1
+        '''
+        moment_load = {'y':'Mz', 'z':'My', 'a':'Mx','b':'My', 'g':'Mz'}
+        shear_load = {'y':'Qy', 'z':'Qz'}
+
+        nodal_coordinates = self.structure_model.nodal_coordinates['x0']
+
+        if load_direction == 'y':
+            if moment_load[load_direction] == response:
+                # positive
+                if node_id - response_node_id <= 0:
+                    return 0.0
+                else:
+                    return nodal_coordinates[node_id - response_node_id]
+
+            elif shear_load[load_direction] == response:
+                if node_id >= response_node_id:
+                    return 1.0
+                else:
+                    return 0.0
+            else:
+                return 0.0
+
+        elif load_direction == 'z':
+            if moment_load[load_direction] == response:
+                # negative
+                if node_id - response_node_id <= 0:
+                    return 0.0
+                else:
+                    return -nodal_coordinates[node_id - response_node_id]
+            elif shear_load[load_direction] == response:
+                if node_id >= response_node_id:
+                    return 1.0
+                else:
+                    return 0.0
+            else:
+                return 0.0
+
+        elif load_direction == 'x':
+            return 0.0
+
+        elif load_direction in ['a','b','g']:
+            unit = '[Nm]'
+            if moment_load[load_direction] == response:
+                if node_id >= response_node_id:
+                    return 1.0
+                else:
+                    return 0.0
+            else: # moments don't cause shear forces
+                return 0.0
 
     def evaluate_equivalent_static_loading(self):
         ''' 
         The static response of the structure_model to the ESWL is calculated and saved as self.static_response
         ''' 
-        eswl_vector = auxiliary.generate_static_load_vector_file(self.eswl_total[self.response])
+        eswl_vector = auxiliary.generate_static_load_vector_file(self.eswl_components[self.response])
 
         static_analysis = auxiliary.create_static_analysis_custom(self.structure_model, eswl_vector)
         static_analysis.solve()
 
-        self.static_response = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[self.response]]
+        self.static_response[self.response] = static_analysis.reaction[GD.RESPONSE_DIRECTION_MAP[self.response]]
+

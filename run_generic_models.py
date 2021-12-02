@@ -12,11 +12,12 @@ from source.analysis.analysis_controller import AnalysisController
 
 available_models = [
     'ProjectParameters3DGenericBuildingUniform.json',
+    'ProjectParameters3DGenericBuildingUniform11.json',
     'ProjectParameters3DGenericBuilding.json',
     'ProjectParameters3DGenericPylon.json'    
     ]
 
-for available_model in [available_models[0]]:
+for available_model in [available_models[1]]:
 
     # ==============================================
     # Parameter read

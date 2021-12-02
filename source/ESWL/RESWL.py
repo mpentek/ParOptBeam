@@ -197,6 +197,7 @@ class RESWL(object):
         rms resonant component of the jth generalized displacement 
         Kareem eq. 8
         '''
+        
         S_Q_jj = self.psd_of_jth_generalized_force[mode_id]
         f_j = self.structure_model.eig_freqs[mode_id]
         n_j = self.damping_ratio

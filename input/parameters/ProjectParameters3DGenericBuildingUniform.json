@@ -58,8 +58,8 @@
                           [0, 22.5, -15]
             ],
             "contour_density": 1,
-            "record_animation": true,
-            "visualize_line_structure": true,
+            "record_animation": false,
+            "visualize_line_structure": false,
             "beam_direction": "x",
             "scaling_vector": [1.0, 1.0 , 1.0, 1.0, 1.0, 1.0, 1.0],
             "eigenmode_scaling_factor" : 1e5,
@@ -177,18 +177,18 @@
                                         ["force", "displacement"],
                                         ["force", "displacement"],
                                         ["force", "displacement"]],
-                        "write_result": [[true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true],
-                                         [true, true]]
+                        "write_result": [[false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false],
+                                         [false, false]]
                     }
                 }
             },{
@@ -210,8 +210,11 @@
                 "output":{
                     "plot":{
                         "compare_dynamic_eswl":[true, "est"],
-                        "eswl_load_distribution":{"plot":true, "components_to_plot":["total", "mean","lrc","modal_inertial"]},
-                        "eswl_component_rates":true,
+                        "eswl_load_distribution":{
+                            "plot":true,
+                            "components_to_plot":["total", "mean","lrc","modal_inertial"],
+                            "load_directions_to_plot":"automatic"},
+                        "eswl_component_rate":true,
                         "load_signals":false,
                         "influence_functions":false,
                         "mode_shapes":false

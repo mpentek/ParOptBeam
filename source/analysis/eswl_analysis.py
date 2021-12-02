@@ -35,8 +35,9 @@ class EswlAnalysis(AnalysisType):
         if len(load_signals_raw) != (self.structure_model.n_nodes*GD.DOFS_PER_NODE[self.structure_model.domain_size]):
             raise Exception('beam model and dynamic load signal have different number of nodes')
         else:
-            # PARSING FOR ESWL 
-            load_signals = auxiliary.parse_load_signal(load_signals_raw, GD.DOFS_PER_NODE[self.structure_model.domain_size])
+            # PARSING FOR ESWL
+            time_info = self.parameters['input']['time_info']
+            load_signals = auxiliary.parse_load_signal(load_signals_raw, time_info, GD.DOFS_PER_NODE[self.structure_model.domain_size])
 
         self.eswl = ESWL(self.structure_model, self.settings, load_signals)
 
@@ -50,7 +51,7 @@ class EswlAnalysis(AnalysisType):
             # RUN A STATIC ANALYSIS WITH THE ESWL
             # ===============================================
             print('\nStatic analysis with ESWL...')
-            eswl.evaluate_equivalent_static_loading()
+            self.eswl.evaluate_equivalent_static_loading()
 
             print()
 
@@ -63,12 +64,10 @@ class EswlAnalysis(AnalysisType):
             self.eigenform_sorted = self.sort_row_vectors_dof_wise(self.eigenform_unsorted)
             plotter_utilities.plot_n_mode_shapes(self.eigenform_sorted, self.structure_model.charact_length)
 
-        # if self.plot_parameters['eswl_load_distribution']['plot']:
+        if self.plot_parameters['eswl_load_distribution']['plot']:
+            for response in self.settings['responses_to_analyse']:
+                plotter_utilities.plot_eswl_components(self.eswl.eswl_components, response, 
+                            self.plot_parameters['eswl_load_distribution'], display_plot)
 
-        #     plotter_utilities.plot_eswl_components(self.eswl.eswl_components,
-        #                              self.structure_model.nodal_coordinates,
-        #                              load_directions_to_include =  load_directions,
-        #                              response_label = res,
-        #                                     textstr,
-        #                                     influences,
-        #                                     components_to_plot)
+        if self.plot_parameters['eswl_component_rate']:
+            plotter_utilities.plot_component_rate(self.eswl, display_plot)
