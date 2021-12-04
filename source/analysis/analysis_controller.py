@@ -80,22 +80,20 @@ class AnalysisController(object):
                                       "dofs_input": {}}
 
         self.analyses = []
-
+        dynamic_result = False
         for analysis_param in parameters['runs']:
             if analysis_param['type'] == 'eigenvalue_analysis':
                 from source.analysis.eigenvalue_analysis import EigenvalueAnalysis
                 self.analyses.append(EigenvalueAnalysis(
                     self.model, analysis_param))
                 pass
-
+            
             elif analysis_param['type'] == 'dynamic_analysis':
                 # if analysis_param['settings']['run_in_modal_coordinates']:    
                 #     from source.analysis.dynamic_analysis import DynamicAnalysis
                 #     self.analyses.append(DynamicAnalysis(
                 #         self.model, analysis_param))
                 # else: 
-                print('\nNOTE! Suppressing the dynamic analysis in the analysis_controller\n')
-                continue
                 from source.analysis.dynamic_analysis import DynamicAnalysis
                 self.analyses.append(DynamicAnalysis(
                     self.model, analysis_param))
@@ -107,8 +105,11 @@ class AnalysisController(object):
             
             elif analysis_param['type'] == 'ESWL_analysis':
                 from source.analysis.eswl_analysis import EswlAnalysis
+                for analysis in self.analyses:
+                    if analysis.name == 'dynamic_analysis':
+                        dynamic_result = analysis.solver
                 self.analyses.append(EswlAnalysis(
-                    self.model, analysis_param))
+                    self.model, analysis_param, dynamic_result))
 
             else:
                 err_msg = "The analysis type \"" + \

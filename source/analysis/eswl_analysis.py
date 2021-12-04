@@ -13,7 +13,7 @@ import source.postprocess.plotter_utilities as plotter_utilities
 
 class EswlAnalysis(AnalysisType):
 
-    def __init__(self, structure_model, parameters):
+    def __init__(self, structure_model, parameters, dynamic_result = None):
         '''
         eigenvalue_analysis.eigenform is required for RESWL
         dynamic_analysis results for postprocess
@@ -23,6 +23,7 @@ class EswlAnalysis(AnalysisType):
         self.parameters = parameters
         self.settings = parameters['settings']
         self.plot_parameters = parameters['output']['plot']
+        self.dynamic_result = dynamic_result
         
         super().__init__(structure_model, self.parameters["type"])#?needed
 
@@ -43,7 +44,7 @@ class EswlAnalysis(AnalysisType):
 
         for response in self.settings['responses_to_analyse']:
 
-            print ('\nCalculating ESWL for', response)
+            print ('Calculating ESWL for', response)
 
             self.eswl.calculate_total_ESWL(response)
 
@@ -71,3 +72,7 @@ class EswlAnalysis(AnalysisType):
 
         if self.plot_parameters['eswl_component_rate']:
             plotter_utilities.plot_component_rate(self.eswl, display_plot)
+
+        if self.plot_parameters['compare_eswl_dynamic_extreme']:
+            responses = self.settings['responses_to_analyse']
+            plotter_utilities.plot_eswl_dyn_compare(self.eswl, self.dynamic_result, responses, display_plot)

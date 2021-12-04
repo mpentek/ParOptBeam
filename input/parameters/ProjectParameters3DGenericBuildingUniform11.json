@@ -72,10 +72,10 @@
             "input":{},
             "output":{
                 "eigenmode_summary": {
-                    "write" : true,
+                    "write" : false,
                     "plot" : false},
                 "eigenmode_identification": {
-                    "write" : true,
+                    "write" : false,
                     "plot" : false},
                 "selected_eigenmode": {
                     "plot_mode": [1,2,3],
@@ -210,12 +210,13 @@
                 },
                 "output":{
                     "plot":{
-                        "compare_dynamic_eswl":[true, "est"],
                         "eswl_load_distribution":{
                             "plot":true,
                             "components_to_plot":["total", "mean","lrc","modal_inertial"],
-                            "load_directions_to_plot":"automatic"},
+                            "load_directions_to_plot":"automatic"
+                        },
                         "eswl_component_rate":true,
+                        "compare_eswl_dynamic_extreme":true,
                         "load_signals":false,
                         "influence_functions":false,
                         "mode_shapes":false

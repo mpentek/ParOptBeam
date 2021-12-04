@@ -12,7 +12,7 @@ from source.auxiliary import global_definitions as GD
 from source.auxiliary.other_utilities import get_signed_maximum
 from source.auxiliary.auxiliary_functionalities import get_fitted_array
 from source.auxiliary.auxiliary_functionalities import cm2inch
-
+from source.ESWL.eswl_auxiliaries import extreme_value_analysis_nist
 
 '''
 Everything should boil down to 2 main visualizaiton types:
@@ -536,7 +536,7 @@ def plot_eswl_components(eswl_components, response_label, parameters, display_pl
     for i, direction in enumerate(load_directions):
         # for labels
         unit_label = GD.UNITS_LOAD_DIRECTION[direction]
-        force_label = '{}'.format(GD.DIRECTION_LOAD_MAP[direction],lower=True)
+        force_label = '{}'.format(GD.DIRECTION_LOAD_MAP[direction].lower(),lower=True)
        
         axes[i].plot(np.zeros(len(x_coords)), x_coords, 
                             label = r'structure', 
@@ -544,7 +544,7 @@ def plot_eswl_components(eswl_components, response_label, parameters, display_pl
                             color = 'grey', 
                             linestyle = '--')
 
-        axes[i].set_title('{}'.format(GD.DIRECTION_LOAD_MAP[direction], lower = True))
+        axes[i].set_title('{}'.format(GD.DIRECTION_LOAD_MAP[direction].lower(), lower = True))
         # plot each component
         for j, component in enumerate(components):
             if component not in eswl_components[response_label][direction].keys():
@@ -587,86 +587,66 @@ def plot_eswl_components(eswl_components, response_label, parameters, display_pl
     #if display_plot:
     plt.show()
 
-def plot_eswl_dyn_compare(result_dict, compare = ['dyn_est','eswl'], unit='N',
-                         options = None):
-
-    if options['update_plot_params']:
-        mpl.rcParams.update(mpl.rcParamsDefault)
-        plt.rcParams.update(options['update_plot_params'])
+def plot_eswl_dyn_compare(eswl_obj, dynamic_result, responses, display_plot, T = 600):
 
     dest = os_join(*['plots', 'ESWL_plots', 'dyn_eswl_compare'])
 
     directions_naming = {'Mz':'alongwind', 'My':'crosswind','Mx':'torsion'}
 
+    result_labels = list(eswl_obj.static_response.keys())
+    max_est, max_glob, static_reaction = np.zeros(2),np.zeros(2),np.zeros(2)
+    for r_i, response_label in enumerate(responses):
+
+        if response_label in GD.RESPONSE_DIRECTION_MAP.keys():
+            response_direction = GD.RESPONSE_DIRECTION_MAP[response_label]
+
+        response_id = GD.DOF_LABELS['3D'].index(response_direction) + eswl_obj.response_node_id*eswl_obj.structure_model.n_nodes
+        dynamic_reaction = dynamic_result.dynamic_reaction[response_id]
+        time = {'dt':dynamic_result.dt, 'T':T}
+
+        max_est[r_i] = extreme_value_analysis_nist(dynamic_reaction, time)
+        max_glob[r_i] = abs(max(dynamic_reaction))
+        static_reaction[r_i] = abs(eswl_obj.static_response[response_label][eswl_obj.response_node_id])
+
     factor = 0.5
     colors = ['tab:blue', 'darkgray', 'gray',  'lightgray']
-    fig, ax = plt.subplots(num='res compare')
-    x = np.arange(0,len(result_dict['labels']),1)* factor
-    width = 0.15
-    x_labels = result_dict['labels']
-    if result_dict['norm_by'] == 'glob_max':
-        norm_by = 1/np.array(result_dict['dyn_max'])
-    if result_dict['norm_by'] == 'ref_vel':
-        if result_dict['labels'] == ['Mz','Qy','My','Qz','Mx']:
-            ref_areas = np.array([45**2 *180, 45*180, 30**2*180, 30*180, 30*45*180])
-        else:
-            raise Exception('coefficient calculation not correct for this order of responses')
-        norm_by = 1/(0.5 * 1.225 * result_dict['u_mean']**2 * ref_areas)
-        x_labels = ['C' + var for var in result_dict['labels']]
+    fig, ax = plt.subplots(num='eswl_dyn_compare')
+    x = np.arange(len(result_labels))#* factor
 
-    #for i, val in enumerate(compare):
-    res_dyn = np.array(result_dict[compare[0]])* GD.UNIT_SCALE[unit]
-    res_eswl = np.array(result_dict[compare[1]])* GD.UNIT_SCALE[unit]
+    width = 1/3
+    d_i = width/2
+    norm_by = 1/max_glob
+
     #split = 2
-    col = 3
-    split = [-width/2, width/2]
-    if len(compare) == 3:
-        #split =3
-        width = 0.1
-        col += 1
-        split = [0, width,  -width]
-        res_dyn_1 = np.array(result_dict[compare[2]])* GD.UNIT_SCALE[unit]
-        rects_dyn_1 = ax.bar(x + split[2],  res_dyn_1 * norm_by, 
-                        width, color = colors[0], alpha = 0.5, label=convert_for_latex(compare[2]))
+    rects_dyn = ax.bar(x + d_i,  max_est * norm_by, 
+                    width, color = colors[0], label='dyn_est')
+    rects_eswl = ax.bar(x - d_i, static_reaction * norm_by, 
+                    width, color = colors[1], label='eswl')
+    # dx = (x[2] - x[1])/2
+    # ax.axvline(x[1]+dx, linestyle = '--', color = 'grey')
+    # ax.axvline(x[3]+dx, linestyle = '--', color = 'grey')
+    ax.axhline(1,linestyle = '--', color = 'k',label= ('glob_max'))
 
-
-    rects_dyn = ax.bar(x + split[0],  res_dyn * norm_by, 
-                    width, color = colors[0], label=convert_for_latex(compare[0]))
-    rects_eswl = ax.bar(x + split[1], res_eswl * norm_by, 
-                    width, color = colors[1], label=convert_for_latex(compare[1]))
-    dx = (x[2] - x[1])/2
-    ax.axvline(x[1]+dx, linestyle = '--', color = 'grey')
-    ax.axvline(x[3]+dx, linestyle = '--', color = 'grey')
-    ax.axhline(1,linestyle = '--', color = 'k',label= convert_for_latex('glob_max'))
-
-    for r_i, r in enumerate(['Mz','My','Mx']):
-        ax.text(x[result_dict['labels'].index(r)],1.9, directions_naming[r])
+    # for r_i, r in enumerate(['Mz','My','Mx']):
+    #     ax.text(x[r_i],1.9, r)
     
-    ax.legend(loc= 'upper center', bbox_to_anchor=(0.5, -0.15), ncol= col)
+    ax.legend(bbox_to_anchor = (0.5, -0.02), loc= 'upper center',  ncol= 3)#bbox_to_anchor=(0.5, -0.15),
     ax.set_ylabel(r'$R_{i}/glob_{max}(R_{i})$')
     ax.set_xticks(x)
-    ax.set_xticklabels([convert_for_latex(x) for x in x_labels])
+    ax.set_xticklabels(result_labels)
 
-    save_title = 'reaction_compare_' + compare[0]
+    save_title = 'reaction_compare'
 
-    if len(compare) == 3:
-        save_title += '_' + compare[-1]
+    # if options['savefig']:
+    #     plt.savefig(dest + os_sep + save_title)
+    #     #plt.savefig(dest + os_sep + save_title + '.svg')
+    #     print ('\nsaved:',dest + os_sep + save_title)
+    #     #plt.close()
 
-    if options['savefig']:
-        plt.savefig(dest + os_sep + save_title)
-        #plt.savefig(dest + os_sep + save_title + '.svg')
-        print ('\nsaved:',dest + os_sep + save_title)
-        #plt.close()
+    #if display_plot:
+    plt.show()
     
-    if options['savefig_latex']:
-        plt.savefig(dest_latex + os_sep + save_title)
-        print ('\nsaved:',dest_latex + os_sep + save_title)
-
-    if options['show_plots']:
-        plt.show()
-    
-def plot_component_rate(eswl_obj, display_plot, components_to_compare = ['total','mean','lrc', 'resonant_m_lumped'], 
-                        options = None):
+def plot_component_rate(eswl_obj, display_plot):
     ''' 
     eswl_1,_2: already directional components of the eswl
     ''' 
@@ -675,21 +655,18 @@ def plot_component_rate(eswl_obj, display_plot, components_to_compare = ['total'
 
     eswl_components = eswl_obj.eswl_components
     del eswl_components['x_coords']
-    naming = {'mean':'mean', 'gle':'beswl', 'resonant':'reswl', 'resonant_m':'reswl','resonant_m_lumped':'reswl','total':'total','lrc':'beswl'}
     directions_naming = {'Mz':'alongwind', 'My':'crosswind','Mx':'torsion'}
     fig, ax = plt.subplots(num='R_i compare')
 
     colors = ['tab:blue', 'dimgray', 'darkgray', 'lightgray']
-    width = 0.2
-    factor = 1
 
     components = ['total', 'mean', eswl_obj.settings['beswl_to_combine'], eswl_obj.settings['reswl_to_combine']]
-    x = np.arange(len(eswl_components))*factor
-    d_i = factor/(len(components)+1)
+    x = np.arange(len(eswl_components))
+    d_i = 1/(len(components)+1)
     width = d_i * len(components)
     
     for e_i, response in enumerate(eswl_components):
-        R_tot = eswl_obj.static_response[response][eswl_obj.settings['at_height']]
+        R_tot = eswl_obj.static_response[response][eswl_obj.response_node_id]
         influences = eswl_obj.influences[response]
         #direction
         eswl = eswl_components[response] 
@@ -706,7 +683,6 @@ def plot_component_rate(eswl_obj, display_plot, components_to_compare = ['total'
                 label = None
 
             rect_ri = ax.bar(x[e_i] - width + c_i * d_i, R_i/R_tot, width = d_i, color = colors[c_i], label = label)
-            # if response in ['My','Mz']:
 
         ax.text(x[e_i]-width/2, 1.02, response)#directions_naming[response]
             

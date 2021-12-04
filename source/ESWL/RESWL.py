@@ -22,7 +22,7 @@ class RESWL(object):
         self.damping_ratio = structure_model.parameters['zeta']
         # to be filled and used outside or internally multiple times
         self.eigenform_unsorted = eigenform
-        print('\ncheck and flip signs of mode shapes:\n')
+        print('\ncheck and flip signs of mode shapes:')
         for col in range(self.eigenform_unsorted.shape[1]):
             auxiliary.check_and_flip_sign(self.eigenform_unsorted[:,col], col)
 
@@ -33,10 +33,7 @@ class RESWL(object):
         self.get_nodal_mass_distribution()
         self.radi_of_gyration = auxiliary.get_radi_of_gyration(self.structure_model)
         self.power_spectral_density_jth_generalized_force()
-
-        self.generalized_displacements = np.zeros(self.modes_to_consider)
-        for mode_id in range(self.modes_to_consider):
-            self.generalized_displacements[mode_id] = self.get_generalized_displacement(mode_id)
+        self.get_generalized_displacement()
         
         # actual RESWL 
         if self.options['base_moment_distr']:
@@ -192,29 +189,31 @@ class RESWL(object):
         #self.participation_coeffs_of_jth_mode.append(T_j_Ms)
         return T_j_Ms
 
-    def get_generalized_displacement(self, mode_id):
+    def get_generalized_displacement(self):
         '''
         rms resonant component of the jth generalized displacement 
         Kareem eq. 8
         '''
+        self.generalized_displacements = np.zeros(self.modes_to_consider)
+        for mode_id in range(self.modes_to_consider):
         
-        S_Q_jj = self.psd_of_jth_generalized_force[mode_id]
-        f_j = self.structure_model.eig_freqs[mode_id]
-        n_j = self.damping_ratio
-    
-        # LUMPED
-        M_j = 0.0 
-        for node in range(self.structure_model.n_nodes):
-            for d_i, direction in enumerate(GD.DOF_LABELS['3D']):
-                M_j_i = self.mass_moment_matrix[node][d_i] * \
-                    self.eigenform_sorted[direction][:,mode_id][node]**2
-                M_j += M_j_i
+            S_Q_jj = self.psd_of_jth_generalized_force[mode_id]
+            f_j = self.structure_model.eig_freqs[mode_id]
+            n_j = self.damping_ratio
+        
+            # LUMPED
+            M_j = 0.0 
+            for node in range(self.structure_model.n_nodes):
+                for d_i, direction in enumerate(GD.DOF_LABELS['3D']):
+                    M_j_i = self.mass_moment_matrix[node][d_i] * \
+                        self.eigenform_sorted[direction][:,mode_id][node]**2
+                    M_j += M_j_i
 
-        sig_q_j_r =  np.pi * f_j * S_Q_jj / (M_j**2 * (2*np.pi*f_j)**4 * 4*n_j)    
+            sig_q_j_r =  np.pi * f_j * S_Q_jj / (M_j**2 * (2*np.pi*f_j)**4 * 4*n_j)    
 
-        # rms value of generalized displacement
-        # returning the sqrt 
-        return np.sqrt(sig_q_j_r)
+            # rms value of generalized displacement
+            # returning the sqrt 
+            self.generalized_displacements[mode_id] = np.sqrt(sig_q_j_r)
 
     def power_spectral_density_jth_generalized_force(self, window_type = 'box'):
         '''
@@ -232,22 +231,14 @@ class RESWL(object):
         
         f_sample = self.load_signals['sample_freq'] 
         for mode_id in range(self.modes_to_consider):
-            track, track_m = 0,0
             for s in self.load_directions:
                 for l in self.load_directions:
                     for i1 in range(self.structure_model.n_nodes):
                         for i2 in range(self.structure_model.n_nodes):
-                            if window_type == 'hann':
-                                win = hann(len(self.load_signals[s][i1]),False)
-                            elif window_type == 'box':
-                                win = boxcar(len(self.load_signals[s][i1]),False)
-                            else:
-                                win = None
+                
+                            win = boxcar(len(self.load_signals[s][i1]),False)
                             
-                            if not window_type: #NOTE: window length and nperseg must coincide, thus only one at atime is used
-                                f_csd, csd = signal.csd(self.load_signals[s][i1], self.load_signals[l][i2], f_sample, nperseg= 2048)#, window= win)
-                            else:
-                                f_csd, csd = signal.csd(self.load_signals[s][i1], self.load_signals[l][i2], f_sample, window= win)
+                            f_csd, csd = signal.csd(self.load_signals[s][i1], self.load_signals[l][i2], f_sample, window= win)
 
                             # find the CSD at f_j -> needs interpolation
                             f_j = self.structure_model.eig_freqs[mode_id]

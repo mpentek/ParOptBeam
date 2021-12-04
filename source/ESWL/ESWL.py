@@ -1,7 +1,6 @@
 import numpy as np
 from functools import partial
 from scipy.optimize import minimize, minimize_scalar
-import timeit
 
 import source.auxiliary.global_definitions as GD
 import source.ESWL.eswl_plotters as plotter_utilities
@@ -67,12 +66,12 @@ class ESWL(object):
         from source.ESWL.RESWL import RESWL
 
         # initializing the Background and Resonant Part
-        beswl_start = timeit.start
         self.BESWL = BESWL(self.structure_model, self.influences, self.load_signals, self.response, self.load_directions_to_compute, self.beswl_options)
         self.RESWL = RESWL(self.structure_model, self.influences, self.load_signals, self.response, self.eigenform, self.reswl_options)
 
         print ('\nESWL Component Combinations:')
         # calculate the eswl for each load direction
+
         for direction in self.load_directions_to_compute:
             # # background peak factor with selected method
             g_b = self.get_peak_factor('default')
@@ -270,14 +269,14 @@ class ESWL(object):
             flipped = False
         return sign, flipped
 
-    def get_sign_for_background(self, mean_load, direction):
+    def get_sign_for_background(self, mean_load, current_direction):
         ''' 
         find a sign for the backgorund componetne according to the mean load distribution
-        This is relevant if the mean value is small and changes sign along the height. If the background sign is choosen at each point to amplify the respective mean,
-        this creates a favourable situation. 
-        However for the nodal moment signals it makes sense to secied it node wise especially concerning the bottom and top node
+        This is relevant if the mean value is small and changes sign along the height. 
+        If the background sign is choosen at each point to amplify the respective mean, this creates a favourable situation. 
+        However for the nodal moment signals it makes sense to decied it node wise especially concerning the bottom and top node
         '''
-        if direction in ['b','g']:
+        if current_direction in ['b','g']:
             background_sign = np.ones(mean_load.size)
             for node in range(len(mean_load)):
                 if mean_load[node] <0:
@@ -289,9 +288,11 @@ class ESWL(object):
         if all(item < 0 for item in mean_load):
             return -1
         else:
+            influence = self.influences[self.response][current_direction]
+            R = sum(np.multiply(influence, mean_load))
             negative_sum = sum(mean_load[mean_load < 0])
             positive_sum = sum(mean_load[mean_load > 0])
-            if abs(negative_sum) > abs(positive_sum):
+            if R > 0:
                 return -1
             else:
                 return 1
@@ -308,7 +309,7 @@ class ESWL(object):
         required_responses = ['Qy', 'Qz', 'Mx', 'My', 'Mz']
         
         h = self.structure_model.nodal_coordinates['x0'][-1]
-        response_node_id = int(round(self.settings['at_height']/( h / self.structure_model.n_nodes)))
+        self.response_node_id = int(round(self.settings['at_height']/( h / self.structure_model.n_nodes)))
 
         self.influences = {}
         for response in required_responses:
@@ -317,7 +318,7 @@ class ESWL(object):
                 self.influences[response][direction] = np.zeros(self.structure_model.n_nodes)
                 for node in range(self.structure_model.n_nodes):
                     if method == 'analytic':
-                        influence = self.get_analytic_influences(direction, node, response, response_node_id)
+                        influence = self.get_analytic_influences(direction, node, response, self.response_node_id)
                     else:
                         influence = self.get_influence(direction, node, response, response_node_id)
                     self.influences[response][direction][node] = influence

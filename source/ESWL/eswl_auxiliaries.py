@@ -274,24 +274,21 @@ def get_fft(given_series, sampling_freq):
     
     return freq_half, series_fft
 
-def extreme_value_analysis(dynamic_analysis_solved, response, type_of_return = 'estimate', P1 = 0.98):
+def extreme_value_analysis_nist(time_series, time, type_of_return = 'estimate', P1 = 0.98):
     ''' 
-    dynamic_analysi_solved: dynamic_analysis.solver object
-    response: label given as dof_label, if given as response label it is convertedd
+    Extreme value analysis using NIST TP approach
+    time_series: time series
+    time: dictionary (used for duration ratio calculation)
+        dt: time step of time series
+        T: time for which the extreme shall be estimated
     type_of_return: wheter the estimated or the quantile value of P1 is returned (both are computed)
+    P1: probaility of non exceedance
     ''' 
-    if response in GD.RESPONSE_DIRECTION_MAP.keys():
-        response = GD.RESPONSE_DIRECTION_MAP[response]
 
-    response_id = GD.DOF_LABELS['3D'].index(response)
-    dynamic_response = dynamic_analysis_solved.dynamic_reaction[response_id]
-
-    dt = dynamic_analysis_solved.dt
-    T_series = dynamic_analysis_solved.dt * len(dynamic_response)
-    dur_ratio = 600 / T_series
+    T_series = time['dt'] * len(time_series)
+    dur_ratio = time['T'] / T_series
     # # MAXMINEST NIST
-    #P1 = 0.98
-    max_qnt, min_qnt, max_est, min_est, max_std, min_std, Nupcross = stats_utils.maxmin_qnt_est(dynamic_response, 
+    max_qnt, min_qnt, max_est, min_est, max_std, min_std, Nupcross = stats_utils.maxmin_qnt_est(time_series	, 
                                                                         cdf_p_max = P1 , cdf_p_min = 0.0001, cdf_qnt = P1, dur_ratio = dur_ratio)
     
     abs_max_est = max([abs(max_est[0][0]), abs(min_est[0][0])])
@@ -302,46 +299,5 @@ def extreme_value_analysis(dynamic_analysis_solved, response, type_of_return = '
     elif type_of_return == 'quantile':
         extreme_response = abs_max_qnt
     
-    glob_max = max(abs(dynamic_response))
-
-    print ('\nEstimated absolute maximum of', response)
-    print ('   ', round(abs_max_est/glob_max,2) , 'of the gobal maximum')
-    print ('Estimated absolute quantile value of', response)
-    print ('   ', round(abs_max_qnt/glob_max,2) , 'of the gobal maximum')
-
     return extreme_response
-
-def extreme_value_analysis_nist(given_series, dt, response_label, type_of_return = 'estimate', P1 = 0.98):
-    ''' 
-    dynamic_analysi_solved: dynamic_analysis.solver object
-    response: label given as dof_label, if given as response label it is convertedd
-    type_of_return: wheter the estimated or the quantile value of P1 is returned (both are computed)
-    ''' 
-
-    T_series = dt * len(given_series)
-    dur_ratio = 600 / T_series
-    # # MAXMINEST NIST
-    #P1 = 0.98
-    max_qnt, min_qnt, max_est, min_est, max_std, min_std, Nupcross = stats_utils.maxmin_qnt_est(given_series	, 
-                                                                        cdf_p_max = P1 , cdf_p_min = 0.0001, cdf_qnt = P1, dur_ratio = dur_ratio)
-    
-    abs_max_est = max([abs(max_est[0][0]), abs(min_est[0][0])])
-    abs_max_qnt = max([abs(max_qnt[0]), abs(min_qnt[0])])
-
-    if type_of_return == 'estimate':
-        extreme_response = abs_max_est
-    elif type_of_return == 'quantile':
-        extreme_response = abs_max_qnt
-    
-    glob_max = max(abs(given_series))
-
-    print ('\nEstimated absolute maximum of', response_label)
-    print ('   ', round(abs_max_est/glob_max,2) , 'of the gobal maximum')
-    print ('Estimated absolute quantile value of', response_label)
-    print ('   ', round(abs_max_qnt/glob_max,2) , 'of the gobal maximum')
-    print ('    Upcrossing rate of 100:', Nupcross/100)
-    print ('    len series:', len(given_series))
-    print ('    physical time:', len(given_series) * dt)
-
-    return abs_max_qnt, abs_max_est
 

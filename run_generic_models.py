@@ -1,3 +1,4 @@
+#%% SETUP and SOLVING
 from os.path import join as os_join
 import json
 
@@ -42,4 +43,11 @@ for available_model in [available_models[1]]:
     analyses_controller = AnalysisController(
         beam_model, parameters['analyses_parameters'])
     analyses_controller.solve()
+    print('Finished Solving.')
+    
+#%% POSTPROCESS
     analyses_controller.postprocess()
+
+# %%
+
+# %%
