@@ -4,7 +4,7 @@ from scipy.signal.windows import hann, boxcar
 
 from source.ESWL.ESWL import ESWL
 import source.auxiliary.global_definitions as GD
-import source.ESWL.eswl_auxiliaries as auxiliary
+import source.auxiliary.eswl_auxiliaries as auxiliary
 
 class RESWL(object):
 

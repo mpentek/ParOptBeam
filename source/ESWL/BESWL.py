@@ -2,7 +2,7 @@ import numpy as np
 from source.ESWL.ESWL import ESWL
 import source.auxiliary.global_definitions as GD
 
-class BESWL(ESWL):
+class BESWL(object):
 
     def __init__(self,strucutre_model, influence_function, load_signals, response, load_directions_to_compute, options):
         '''

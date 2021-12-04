@@ -5,9 +5,8 @@ from source.model.structure_model import StraightBeam
 from source.ESWL.ESWL import ESWL
 
 import source.auxiliary.global_definitions as GD
-import source.ESWL.eswl_auxiliaries as auxiliary
+import source.auxiliary.eswl_auxiliaries as auxiliary
 from source.auxiliary.other_utilities import get_adjusted_path_string
-import source.ESWL.eswl_plotters as eplt
 import source.postprocess.plotter_utilities as plotter_utilities
 
 
@@ -59,20 +58,16 @@ class EswlAnalysis(AnalysisType):
     def postprocess(self, global_folder_path, pdf_report, display_plot, skin_model_params):
         
         if self.plot_parameters['influence_functions']:
-            plotter_utilities.plot_influences(eswl)
-
-        if self.plot_parameters['mode_shapes']:
-            self.eigenform_sorted = self.sort_row_vectors_dof_wise(self.eigenform_unsorted)
-            plotter_utilities.plot_n_mode_shapes(self.eigenform_sorted, self.structure_model.charact_length)
+            plotter_utilities.plot_influences(self.eswl, display_plot, pdf_report)
 
         if self.plot_parameters['eswl_load_distribution']['plot']:
             for response in self.settings['responses_to_analyse']:
                 plotter_utilities.plot_eswl_components(self.eswl.eswl_components, response, 
-                            self.plot_parameters['eswl_load_distribution'], display_plot)
+                            self.plot_parameters['eswl_load_distribution'], display_plot, pdf_report)
 
         if self.plot_parameters['eswl_component_rate']:
-            plotter_utilities.plot_component_rate(self.eswl, display_plot)
+            plotter_utilities.plot_component_rate(self.eswl, display_plot, pdf_report)
 
         if self.plot_parameters['compare_eswl_dynamic_extreme']:
             responses = self.settings['responses_to_analyse']
-            plotter_utilities.plot_eswl_dyn_compare(self.eswl, self.dynamic_result, responses, display_plot)
+            plotter_utilities.plot_eswl_dyn_compare(self.eswl, self.dynamic_result, responses, display_plot, pdf_report)

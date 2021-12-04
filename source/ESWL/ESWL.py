@@ -1,11 +1,7 @@
 import numpy as np
-from functools import partial
-from scipy.optimize import minimize, minimize_scalar
 
 import source.auxiliary.global_definitions as GD
-import source.ESWL.eswl_plotters as plotter_utilities
-import source.ESWL.eswl_auxiliaries as auxiliary
-import source.auxiliary.statistics_utilities as stats_utils
+import source.auxiliary.eswl_auxiliaries as auxiliary
 
 ''' 
 Main sources and theoretical background:

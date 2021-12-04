@@ -217,9 +217,7 @@
                         },
                         "eswl_component_rate":true,
                         "compare_eswl_dynamic_extreme":true,
-                        "load_signals":false,
-                        "influence_functions":false,
-                        "mode_shapes":false
+                        "influence_functions":true
                     }
                 }
 

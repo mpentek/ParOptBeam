@@ -1,18 +1,12 @@
 import numpy as np
 from math import ceil
-from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 from matplotlib import animation
-from matplotlib.ticker import FormatStrFormatter
 from os.path import join as os_join
 
-#import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 from source.auxiliary import global_definitions as GD
-from source.auxiliary.other_utilities import get_signed_maximum
-from source.auxiliary.auxiliary_functionalities import get_fitted_array
-from source.auxiliary.auxiliary_functionalities import cm2inch
-from source.ESWL.eswl_auxiliaries import extreme_value_analysis_nist
+from source.auxiliary.eswl_auxiliaries import extreme_value_analysis_nist
 
 '''
 Everything should boil down to 2 main visualizaiton types:
@@ -153,8 +147,6 @@ def plot_result_2D(pdf_report, display_plot, plot_title, geometry, force, scalin
         plt.show()
         display_plot = False
     
-
-
 def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, n_data):
 
     # default parameter
@@ -505,7 +497,7 @@ def plot_table(pdf_report, display_plot, plot_title, table_data, row_labels, col
 
 # ESWL PLOTTERS
 
-def plot_eswl_components(eswl_components, response_label, parameters, display_plot):
+def plot_eswl_components(eswl_components, response_label, parameters, display_plot, pdf_report):
 
     if parameters['load_directions_to_plot'] == 'automatic':
         load_directions = GD.LOAD_DIRECTIONS_RESPONSES_UNCOUPLED[response_label]
@@ -578,16 +570,14 @@ def plot_eswl_components(eswl_components, response_label, parameters, display_pl
 
     axes[0].set_ylabel('height [m]')
     
-    # if pdf_report is not None:
-    #     pdf_report.savefig()
-    #     plt.close(fig)
-    #     # plt.savefig(os_join(destination,fname))
-    #     # print ('\nsaved:',os_join(destination,fname))
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
 
-    #if display_plot:
-    plt.show()
+    if display_plot:
+        plt.show()
 
-def plot_eswl_dyn_compare(eswl_obj, dynamic_result, responses, display_plot, T = 600):
+def plot_eswl_dyn_compare(eswl_obj, dynamic_result, responses, display_plot, pdf_report, T = 600):
 
     dest = os_join(*['plots', 'ESWL_plots', 'dyn_eswl_compare'])
 
@@ -611,24 +601,20 @@ def plot_eswl_dyn_compare(eswl_obj, dynamic_result, responses, display_plot, T =
     factor = 0.5
     colors = ['tab:blue', 'darkgray', 'gray',  'lightgray']
     fig, ax = plt.subplots(num='eswl_dyn_compare')
-    x = np.arange(len(result_labels))#* factor
+    x = np.arange(len(result_labels))
 
     width = 1/3
     d_i = width/2
     norm_by = 1/max_glob
 
-    #split = 2
     rects_dyn = ax.bar(x + d_i,  max_est * norm_by, 
                     width, color = colors[0], label='dyn_est')
     rects_eswl = ax.bar(x - d_i, static_reaction * norm_by, 
                     width, color = colors[1], label='eswl')
-    # dx = (x[2] - x[1])/2
-    # ax.axvline(x[1]+dx, linestyle = '--', color = 'grey')
-    # ax.axvline(x[3]+dx, linestyle = '--', color = 'grey')
+    
     ax.axhline(1,linestyle = '--', color = 'k',label= ('glob_max'))
 
-    # for r_i, r in enumerate(['Mz','My','Mx']):
-    #     ax.text(x[r_i],1.9, r)
+   
     
     ax.legend(bbox_to_anchor = (0.5, -0.02), loc= 'upper center',  ncol= 3)#bbox_to_anchor=(0.5, -0.15),
     ax.set_ylabel(r'$R_{i}/glob_{max}(R_{i})$')
@@ -637,16 +623,14 @@ def plot_eswl_dyn_compare(eswl_obj, dynamic_result, responses, display_plot, T =
 
     save_title = 'reaction_compare'
 
-    # if options['savefig']:
-    #     plt.savefig(dest + os_sep + save_title)
-    #     #plt.savefig(dest + os_sep + save_title + '.svg')
-    #     print ('\nsaved:',dest + os_sep + save_title)
-    #     #plt.close()
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
 
-    #if display_plot:
-    plt.show()
+    if display_plot:
+        plt.show()
     
-def plot_component_rate(eswl_obj, display_plot):
+def plot_component_rate(eswl_obj, display_plot, pdf_report):
     ''' 
     eswl_1,_2: already directional components of the eswl
     ''' 
@@ -697,247 +681,42 @@ def plot_component_rate(eswl_obj, display_plot):
 
     save_title = 'component_compare'
 
-    # if options['savefig']:
-    #     plt.savefig(dest + os_sep + save_title)
-    #     #plt.savefig(dest + os_sep + save_title + '.svg')
-    #     print ('\nsaved:',dest + os_sep + save_title)
-    #     #plt.close()
+    if pdf_report is not None:
+        pdf_report.savefig()
+        plt.close(fig)
 
-    #if display_plot:
-    plt.show()
+    if display_plot:
+        plt.show()
 
+def plot_influences(eswl_obj , display_plot, pdf_report):
 
-def plot_influences(eswl_object):
-    moment_load = {'y':'Mz', 'z':'My', 'a':'Mx','b':'My', 'g':'Mz'}
-    shear_load = {'y':'Qy', 'z':'Qz'}
-    fig, ax = plt.subplots(1, len(eswl_object.influences[eswl_object.response])-1,sharey=True)
-    fig.canvas.set_window_title('for_' +  eswl_object.response)
+    responses = eswl_obj.settings['responses_to_analyse']
+    fig, ax = plt.subplots(1, len(responses), num='influences')
 
-    nodal_coordinates = eswl_object.structure_model.nodal_coordinates
-    influences = eswl_object.influences[eswl_object.response]
-    if eswl_object.response in ['Mx','My','Mz']:
-        unit = '[Nm]'
-    elif eswl_object.response in ['Qx','Qy','Qz']:
-        unit = '[N]'
-    for i, direction in enumerate(eswl_object.load_directions):
-
+    nodal_coordinates = eswl_obj.structure_model.nodal_coordinates
+    
+    for i, response in enumerate(responses):
+        
         ax[i].plot(nodal_coordinates['y0'], nodal_coordinates['x0'], 
                 label = 'structure', 
                 marker = 'o', 
                 color = 'grey', 
                 linestyle = '--')
-        ax[i].plot(influences[direction], nodal_coordinates['x0'],
-                    label = GD.DIRECTION_LOAD_MAP[direction] + '_Static_analysis',
-                    color = LINE_TYPE_SETUP['color'][i+2])
-        # expected simple influences
-        if direction in ['y','z']:
-            
-            if moment_load[direction] == eswl_object.response:
-                if direction == 'z' and eswl_object.response == 'My':
-                    ax[i].plot(-nodal_coordinates['x0'], nodal_coordinates['x0'],
-                            label = 'expected',
-                            color = 'black',
-                            linestyle= '--') 
-                else:
-                    ax[i].plot(nodal_coordinates['x0'], nodal_coordinates['x0'],
-                                label = 'expected',
-                                color = 'black',
-                            linestyle= '--') 
-            elif shear_load[direction] == eswl_object.response:
-                ax[i].vlines(1.0, 0, nodal_coordinates['x0'][-1],
-                            label = 'expected',
-                            color = 'black',
-                            linestyle= '--')
-                ax[i].set_xlim(-0.1, 1.1)
-            else:
-                ax[i].plot(nodal_coordinates['x0'][0], 0,
-                            label = 'expected 0',
-                            color = 'black')        
-        else:
-            
-            if moment_load[direction] == eswl_object.response:
-                ax[i].vlines(1.0, 0, nodal_coordinates['x0'][-1],
-                            label = 'expected',
-                            color = 'black',
-                            linestyle= '--')
-                ax[i].set_xlim(-0.1, 1.1)
-            else:
-                ax[i].plot(nodal_coordinates['x0'][0], 0,
-                            label = 'expected 0',
-                            color = 'black',
-                            linestyle= '--') 
+
+        influence = eswl_obj.influences[response]        
+        for direction in influence:
+            if not np.all((influence[direction] == 0)):
+                ax[i].plot(influence[direction], nodal_coordinates['x0'],
+                            label = GD.DIRECTION_LOAD_MAP[direction])
+       
         ax[i].locator_params(axis='x', nbins = 5)
-        ax[i].set_xlabel('response '+ unit)
-        ax[i].legend(fontsize = 8 )
+        ax[i].set_xlabel(response)
+        ax[i].legend()
         ax[i].grid()
-        #ax[i].set_title(GD.DIRECTION_LOAD_MAP[direction] + ' on '+ eswl_object.response)
+
     ax[0].set_ylabel('height [m]')
 
-    fig.suptitle('influence functions for ' + eswl_object.response + ' due to unit load at the respective nodes')
-    
-    plt.show()
-
-
-def plot_n_mode_shapes(mode_shapes, charact_length ,n = 3, options = None, save_suffix=''):
-    ''' 
-    mode_shapes_sorted: mode shapres as a dictionary with dofs 
-    charact_length: scale for the rotaional dofs
-    ''' 
-    if not isinstance(mode_shapes, dict):
-        utilities.sort_row_vectors_dof_wise(mode_shapes)
-
-    fig, ax = plt.subplots(1, n, sharey=True)
-    fig.canvas.set_window_title('mode shapes first 3 modes')
-    fig.suptitle('mode shapes of first 3 modes - rotations multiplied with characteristic length')
-    if save_suffix == '_caarc_A':
-        dof_labels = list(mode_shapes_sorted[0].keys())
-        dof_labels = ['y', 'a', 'z']
-    else:
-        dof_lables = mode_shapes_sorted
-    for mode in range(n):
-        for d, dof_label in enumerate(dof_labels):
-            multiplier = 1.0
-            if dof_label in ['a','b','g']:
-                multiplier = charact_length
-            ax[mode].set_title('mode ' + str(mode+1))
-            if save_suffix == '_caarc_A':
-                mode_s = np.asarray(mode_shapes_sorted[mode][dof_label])
-            else:
-                mode_s = mode_shapes_sorted[dof_label][:,mode]
-            ax[mode].plot(mode_s * multiplier,
-                            np.arange(len(mode_s)),
-                            label = dof_label,
-                            color = LINE_TYPE_SETUP['color'][2+d])
-
-        ax[mode].legend()
-        ax[mode].set_xlabel('defl. [m]')
-        ax[mode].set_ylabel('height [m]')
-        ax[mode].locator_params(axis='y', nbins = 3)
-        
-        ax[mode].xaxis.set_major_formatter(FormatStrFormatter('%.1e'))
-        ax[mode].locator_params(axis='x', nbins = 5)
-        ax[mode].grid()
-    
-    save_title = 'eigenmodes' + save_suffix
-
-    if options['savefig']:
-        plt.savefig(dest + os_sep + save_title)
-        plt.savefig(dest + os_sep + save_title + '.pdf')
-        print ('\nsaved:',dest + os_sep + save_title)
-        #plt.close()
-    
-    if options['savefig_latex']:
-        plt.savefig(dest_latex + os_sep + save_title)
-        print ('\nsaved:',dest_latex + os_sep + save_title)
-
-    if options['show_plots']:
+    fig.suptitle('influence functions due to unit load at the respective nodes')
+    if display_plot:
         plt.show()
 
-
-def plot_load_time_histories(load_signals, nodal_coordinates):
-
-    fig, ax = plt.subplots(1, len(load_signals))
-
-    try:
-        if nodal_coordinates['x0']:
-            nodal_coordinates = nodal_coordinates['x0']
-    except KeyError:
-        nodal_coordinates = nodal_coordinates
-
-    for i, component in enumerate(load_signals):
-        if component == 'sample_freq':
-            break
-        # structure
-        ax[i].set_title('load signal direction ' + component)
-        ax[i].plot(np.zeros(len(nodal_coordinates)),
-                    nodal_coordinates, 
-                    label = 'structure', 
-                    marker = 'o', 
-                    color = 'grey', 
-                    linestyle = '--')
-        for node in range(len(nodal_coordinates)):
-            shift_scale = 1e+05
-            if component == 'a':
-                shift_scale *= 5
-            ax[i].plot(np.arange(0,len(load_signals[component][node])),
-                        load_signals[component][node] + nodal_coordinates['x0'][node]*shift_scale)
-    
-        #ax[i].legend()
-        ax[i].grid()
-    plt.show()
-
-def plot_load_time_histories_node_wise(load_signals, n_nodes, discard_time, load_signal_labels = None,
-                                        options = {'show_plots':True,'savefig':False,'savefig_latex':False, 'update_plot_params':None}):
-    '''
-    for each node it plots the time history of the loading 
-    parameter: load_signal_labels 
-                if not set all signals in the load_signal dict are plotted 
-                can be specified with a list of labels to plot
-    '''
-
-    dest = os_join(*['plots', 'ESWL_plots','load_signals_4_nodes'])
-
-    mpl.rcParams.update(mpl.rcParamsDefault)
-
-    if options['update_plot_params']:
-        plt.rcParams.update(options['update_plot_params'])
-
-    ax_i = list(range(n_nodes-1, -1, -1))
-    if load_signal_labels:
-        components = load_signal_labels
-    else:
-        load_signals.pop('sample_freq')
-        components = load_signals.keys()
-    for component in components:
-        # if component == 'sample_freq':
-        #     break
-        fig, ax = plt.subplots(n_nodes, 1, num = 'signals of ' +  GD.DIRECTION_LOAD_MAP[component])
-        fig.suptitle('signal of ' + GD.DIRECTION_LOAD_MAP[component])
-
-        for node in range(n_nodes):
-            # show also mean 
-            mean = np.mean(load_signals[component][node])
-            ax[ax_i[node]].hlines(mean, 0, len(load_signals[component][node]), 
-                                  color = 'dimgray', 
-                                  linestyle = '--', 
-                                  label = 'mean: ' + '{:.2e}'.format(mean))
-
-            ax[ax_i[node]].plot(np.arange(len(load_signals[component][node])),
-                                load_signals[component][node],
-                                label = 'node_'+str(node))
-
-            # ax[ax_i[node]].vlines(discard_time, min(load_signals[component][node]), max(load_signals[component][node]), 
-            #                       color = 'grey', 
-            #                       linestyle = '--',
-            #                       label = 'discard')
-
-            ax[ax_i[node]].ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-            
-            ax[ax_i[node]].locator_params(axis='y', nbins = 5)
-            ax[ax_i[node]].yaxis.set_major_formatter(FormatStrFormatter('%.1e'))
-            ax[ax_i[node]].grid()
-            ax[ax_i[node]].set_ylabel(r'$x_{}(t)$'.format(node))
-
-            ax[ax_i[node]].set_xlim(0, len(load_signals[component][node]))
-            
-        ax.legend()
-
-        ax[ax_i][0].set_xlabel(r'$t [s]$')
-
-        save_title = 'dyn_load_' + str(n_nodes) + '_' + component
-
-        if options['savefig']:
-            plt.savefig(dest + os_sep + save_title)
-            print ('\nsaved:',dest + os_sep + save_title)
-            #plt.close()
-
-        if options['savefig_latex']:
-            plt.savefig(dest_latex + os_sep + save_title)
-            print ('\nsaved:',dest_latex + os_sep + save_title)
-
-            #plt.close()
-
-        if options['show_plots']:
-            plt.show()
-
-        plt.show()
