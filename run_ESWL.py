@@ -7,8 +7,8 @@ import numpy as np
 import pickle as pkl
 
 import source.auxiliary.global_definitions as GD
-import source.ESWL.eswl_auxiliaries as auxiliary
-import source.ESWL.eswl_plotters as plotter_utilities
+import source.auxiliary.eswl_auxiliaries as auxiliary
+import source.postprocess.plotter_utilities as plotter_utilities
 from source.analysis.eigenvalue_analysis import EigenvalueAnalysis
 from source.auxiliary.other_utilities import get_adjusted_path_string
 from source.ESWL.ESWL import ESWL
@@ -155,7 +155,7 @@ if len(load_signals_raw) != (beam_model.n_nodes*GD.DOFS_PER_NODE[beam_model.doma
     raise Exception('beam model and dynamic load signal have different number of nodes')
 else:
     # PARSING FOR ESWL 
-    load_signals = auxiliary.parse_load_signal(load_signals_raw, GD.DOFS_PER_NODE[beam_model.domain_size], time_array,
+    load_signals = auxiliary.parse_load_signal(load_signals_raw, time_array, GD.DOFS_PER_NODE[beam_model.domain_size],  
                                                 discard_time= discard_ramp_up, 
                                                 load_directions_to_include = load_directions_to_include)
     # PARSING FOR DYNAMIC ANALYSIS
