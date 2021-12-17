@@ -222,6 +222,7 @@ class RESWL(object):
         Kareem eq. 6
         it seems that using window_type boxcar is the best choice, -> varified by using int_{CSD(x,x)} = std(x)
         see CSD_params.py
+        NOTE sehr rechenintensiv
         ''' 
 
         self.psd_of_jth_generalized_force = []
