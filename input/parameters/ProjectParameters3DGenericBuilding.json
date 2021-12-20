@@ -91,8 +91,8 @@
                           [0, 22.5, -15]
             ],
             "contour_density": 1,
-            "record_animation": true,
-            "visualize_line_structure": true,
+            "record_animation": false,
+            "visualize_line_structure": false,
             "beam_direction": "x",
             "scaling_vector": [1.0, 1.0 , 1.0, 1.0, 1.0, 1.0, 1.0],
             "eigenmode_scaling_factor" : 1e5,
@@ -147,8 +147,8 @@
                         "plot_time": [30.5, 315.25],
                         "write_time": [450.15]
                     },
-                    "animate_time_history" : true,
-                    "animate_skin_model_time_history": true,
+                    "animate_time_history" : false,
+                    "animate_skin_model_time_history": false,
                     "kinetic_energy": {
                         "write": true,
                         "plot": true
@@ -224,5 +224,35 @@
                                          [true, true]]
                     }
                 }
+            },{
+                "type": "ESWL_analysis",
+                "settings":{
+                    "result_type":"reaction",
+                    "responses_to_analyse":["My","Mz"],
+                    "at_height":0,
+                    "influence_function_computation":"analytic",
+                    "beswl_options":{"lrc":true,"gle":true},
+                    "reswl_options":{"modal_inertial":true, "base_moment_distr":true},
+                    "beswl_to_combine":"lrc",
+                    "reswl_to_combine":"modal_inertial"
+                },
+                "input":{
+                    "help":"required is a dynamic load file (the same as for the dynamic analysis) and the time step, sample frequency or a time array",
+                    "file_path": "input/force/generic_building/dynamic_force_4_nodes.npy",
+                    "time_info":0.02
+                },
+                "output":{
+                    "plot":{
+                        "eswl_load_distribution":{
+                            "plot":true,
+                            "components_to_plot":["total", "mean","lrc","modal_inertial"],
+                            "load_directions_to_plot":"automatic"
+                        },
+                        "eswl_component_rate":true,
+                        "compare_eswl_dynamic_extreme":true,
+                        "influence_functions":true
+                    }
+                }
+
             }]}
 }
