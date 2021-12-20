@@ -9,7 +9,7 @@ import source.auxiliary.statistics_utilities as stats_utils
 # # ========= ESWL =============
 
 
-def parse_load_signal(signal_raw, time_info,dofs_per_node,  load_directions_to_include = 'all', discard_time = None):
+def parse_load_signal(signal_raw, time_info,dofs_per_node, load_directions_to_include = 'all', discard_time = None):
     '''
     - sorts the load signals in a dictionary with load direction as keys:
         x,y,z: nodal force
@@ -34,7 +34,7 @@ def parse_load_signal(signal_raw, time_info,dofs_per_node,  load_directions_to_i
                 signal[label] = np.zeros((n_nodes,signal_raw.shape[1]))
 
     if isinstance(time_info, np.ndarray):
-        fs = 1/(time_array[1] - time_array[0]) # simulation time step
+        fs = 1/(time_info[1] - time_info[0]) # simulation time step
     elif time_info < 10.0:
         print('CHECK: Time Info is TIME STEP?')
         fs = 1/time_info
