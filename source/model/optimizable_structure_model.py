@@ -21,23 +21,23 @@ class OptimizableStraightBeam(object):
 
     Definition of axes:
         1. Longitudinal axis: x with rotation alpha around x
-        2. Transversal axes: 
-            y with rotation beta around y 
+        2. Transversal axes:
+            y with rotation beta around y
             z with rotation gamma around z
 
     Degrees of freedom DoFs
-        1. 2D: displacements x, y, rotation g(amma) around z 
+        1. 2D: displacements x, y, rotation g(amma) around z
             -> element DoFs for nodes i and j of one element
-                [0, 1, 2, 3, 4, 5, 6] = [x_i, y_i, g_i, 
+                [0, 1, 2, 3, 4, 5, 6] = [x_i, y_i, g_i,
                                         x_j, y_j, g_j]
 
-        2. 3D: displacements x, y, z, rotationS a(lpha), b(eta), g(amma) 
+        2. 3D: displacements x, y, z, rotationS a(lpha), b(eta), g(amma)
             -> element DoFs for nodes i and j of one element
                 [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] = [x_i, y_i, z_i, a_i, b_i, g_i,
                                                         x_j, y_j, z_j, a_j, b_j, g_j]
 
     TODO:
-        1. add a parametrization to include artificial (and possibly also local) 
+        1. add a parametrization to include artificial (and possibly also local)
             incrementation of stiffness and mass (towards a shear beam and/or point mass/stiffness)
         2. add a parametrization for tunig to eigen frequencies and mode shapes
         3. add a parametrization to be able to specify zones with altering mass ditribution
@@ -72,7 +72,7 @@ class OptimizableStraightBeam(object):
         self.parameters = parameters
 
         print('BEFORE OPTIMIZATION')
-        self.model.identify_decoupled_eigenmodes(print_to_console=True)
+        self.model.identify_decoupled_eigenmodes(considered_modes='all', print_to_console=True)
         print()
 
         print('Found need for adapting structure for target values')
@@ -183,7 +183,7 @@ class OptimizableStraightBeam(object):
                     target_freq, target_mode, True)
 
         print('AFTER OPTIMIZATION')
-        self.model.identify_decoupled_eigenmodes(print_to_console=True)
+        self.model.identify_decoupled_eigenmodes(considered_modes='all',print_to_console=True)
         print()
 
     def adjust_density_for_target_total_mass(self, target_total_mass, print_to_console=False):
@@ -320,7 +320,7 @@ class OptimizableStraightBeam(object):
 
         self.model.eigenvalue_solve()
 
-        self.model.identify_decoupled_eigenmodes()
+        self.model.identify_decoupled_eigenmodes(considered_modes='all')
 
         identifier = 'longitudinal'
 
@@ -384,7 +384,7 @@ class OptimizableStraightBeam(object):
 
         self.model.eigenvalue_solve()
 
-        self.model.identify_decoupled_eigenmodes()
+        self.model.identify_decoupled_eigenmodes(considered_modes='all')
 
         identifier = 'sway_y'
 
@@ -450,7 +450,7 @@ class OptimizableStraightBeam(object):
 
         self.model.eigenvalue_solve()
 
-        self.model.identify_decoupled_eigenmodes()
+        self.model.identify_decoupled_eigenmodes(considered_modes='all')
 
         identifier = 'sway_z'
 
@@ -517,7 +517,7 @@ class OptimizableStraightBeam(object):
 
         self.model.eigenvalue_solve()
 
-        self.model.identify_decoupled_eigenmodes()
+        self.model.identify_decoupled_eigenmodes(considered_modes='all')
 
         identifier = 'torsional'
 
