@@ -6,6 +6,7 @@ from source.model.structure_model import StraightBeam
 import source.auxiliary.global_definitions as GD
 
 
+# TODO (mate kelemen)
 class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
 
     # ------------------------------------------------------------------------------------------------------
@@ -26,46 +27,46 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
         # values from example system longer than 3 to make sure option considered_modes = 'all' ignores the extra value
         mock_self.decomposed_eigenmodes = {
             'eff_modal_mass': [
-                {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}, 
+                {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0},
                 {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0},
                 {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0},
                 {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}],
             'rel_contribution':[
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.0,
-                    'g': 0.01, 
-                    'x': 0.0, 
-                    'y': 0.01, 
+                    'g': 0.01,
+                    'x': 0.0,
+                    'y': 0.01,
                     'z': 0.0
-                }, 
+                },
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.01,
-                    'g': 0.0, 
-                    'x': 0.0, 
-                    'y': 0.0, 
+                    'g': 0.0,
+                    'x': 0.0,
+                    'y': 0.0,
                     'z': 0.01
                 },
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.01,
-                    'g': 0.0, 
-                    'x': 0.0, 
-                    'y': 0.0, 
+                    'g': 0.0,
+                    'x': 0.0,
+                    'y': 0.0,
                     'z': 0.01
                 },
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.0,
-                    'g': 0.01, 
-                    'x': 0.0, 
-                    'y': 0.01, 
+                    'g': 0.01,
+                    'x': 0.0,
+                    'y': 0.01,
                     'z': 0.0
                 }],
             'rel_participation':[
-                {'a': 0.0, 'b': 0.0, 'g': 1.0, 'x': 0.0, 'y': 1.0, 'z': 0.0}, 
-                {'a': 0.0, 'b': 2.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 2.0}, 
+                {'a': 0.0, 'b': 0.0, 'g': 1.0, 'x': 0.0, 'y': 1.0, 'z': 0.0},
+                {'a': 0.0, 'b': 2.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 2.0},
                 {'a': 0.0, 'b': 3.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 3.0},
                 {'a': 0.0, 'b': 0.0, 'g': 4.0, 'x': 0.0, 'y': 4.0, 'z': 0.0}]
         }
@@ -89,46 +90,46 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
         # values from example system longer than 3 to make sure option considered_modes = 'all' ignores the extra value
         mock_self.decomposed_eigenmodes = {
             'eff_modal_mass': [
-                {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}, 
+                {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0},
                 {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0},
                 {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0},
                 {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}],
             'rel_contribution':[
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.0,
-                    'g': 0.01, 
-                    'x': 0.0, 
-                    'y': 0.01, 
+                    'g': 0.01,
+                    'x': 0.0,
+                    'y': 0.01,
                     'z': 0.0
-                }, 
+                },
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.01,
-                    'g': 0.0, 
-                    'x': 0.0, 
-                    'y': 0.0, 
+                    'g': 0.0,
+                    'x': 0.0,
+                    'y': 0.0,
                     'z': 0.01
                 },
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.01,
-                    'g': 0.0, 
-                    'x': 0.0, 
-                    'y': 0.0, 
+                    'g': 0.0,
+                    'x': 0.0,
+                    'y': 0.0,
                     'z': 0.01
                 },
                 {
-                    'a': 0.0, 
+                    'a': 0.0,
                     'b': 0.0,
-                    'g': 0.01, 
-                    'x': 0.0, 
-                    'y': 0.01, 
+                    'g': 0.01,
+                    'x': 0.0,
+                    'y': 0.01,
                     'z': 0.0
                 }],
             'rel_participation':[
-                {'a': 0.0, 'b': 0.0, 'g': 1.0, 'x': 0.0, 'y': 1.0, 'z': 0.0}, 
-                {'a': 0.0, 'b': 2.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 2.0}, 
+                {'a': 0.0, 'b': 0.0, 'g': 1.0, 'x': 0.0, 'y': 1.0, 'z': 0.0},
+                {'a': 0.0, 'b': 2.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 2.0},
                 {'a': 0.0, 'b': 3.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 3.0},
                 {'a': 0.0, 'b': 0.0, 'g': 4.0, 'x': 0.0, 'y': 4.0, 'z': 0.0}]
         }
@@ -138,8 +139,8 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
 
         self.assertEqual(mock_self.mode_identification_results['sway_z'],[{'mode_id': 1, 'eff_modal_mass': 0.0, 'rel_participation': 1.0}])
         self.assertEqual(mock_self.mode_identification_results['sway_y'],[{'mode_id': 2, 'eff_modal_mass': 0.0, 'rel_participation': 2.0}, {'mode_id': 3, 'eff_modal_mass': 0.0, 'rel_participation': 3.0}])
-    
-    
+
+
     # ------------------------------------------------------------------------------------------------------
     # 2. check label contribution to mode type
     # ------------------------------------------------------------------------------------------------------
@@ -162,11 +163,11 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
                     {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}],
                 'rel_contribution':[
                     {
-                        'a': 0.0, 
+                        'a': 0.0,
                         'b': 0.0,
-                        'g': 0.0, 
-                        'x': 0.0, 
-                        'y': 0.0, 
+                        'g': 0.0,
+                        'x': 0.0,
+                        'y': 0.0,
                         'z': 0.0
                     }],
                 'rel_participation':[
@@ -181,17 +182,17 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
                 StraightBeam.identify_decoupled_eigenmodes(mock_self,considered_modes=5)
 
                 self.assertEqual(mock_self.mode_identification_results[category],[{'mode_id': 1, 'eff_modal_mass': 0.0, 'rel_participation': 0.0}])
-                
+
                 # reset to 0
                 mock_self.decomposed_eigenmodes['rel_contribution'][0][label] = 0.0
-            
+
             # all labels of category at once
             for label in GD.MODE_CATEGORIZATION[mock_self.domain_size][category]:
                 mock_self.decomposed_eigenmodes['rel_contribution'][0][label] = 0.01
 
             # considered modes=5 but should reduce it to len(DOFs to keep)=1
             StraightBeam.identify_decoupled_eigenmodes(mock_self,considered_modes=5)
-            self.assertEqual(mock_self.mode_identification_results[category],[{'mode_id': 1, 'eff_modal_mass': 0.0, 'rel_participation': 0.0}]) 
+            self.assertEqual(mock_self.mode_identification_results[category],[{'mode_id': 1, 'eff_modal_mass': 0.0, 'rel_participation': 0.0}])
 
 
     # ------------------------------------------------------------------------------------------------------
@@ -215,16 +216,16 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
                     {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}],
                 'rel_contribution':[
                     {
-                        'a': 0.0, 
+                        'a': 0.0,
                         'b': 0.0,
-                        'g': 0.0, 
-                        'x': 0.0, 
-                        'y': 0.0, 
+                        'g': 0.0,
+                        'x': 0.0,
+                        'y': 0.0,
                         'z': 0.0
                     }],
                 'rel_participation':[
                     {'a': 0.0, 'b': 0.0, 'g': 0.0, 'x': 0.0, 'y': 0.0, 'z': 0.0}]}
-            
+
             # find categories that include the current label
             for category in GD.MODE_CATEGORIZATION[mock_self.domain_size]:
                 if label in GD.MODE_CATEGORIZATION[mock_self.domain_size][category]:
@@ -236,6 +237,6 @@ class test_structure_model_identify_decoupled_eigenmodes(unittest.TestCase):
             StraightBeam.identify_decoupled_eigenmodes(mock_self,considered_modes=5)
             for category_res in res_categories:
                 self.assertEqual(mock_self.mode_identification_results[category_res],[{'mode_id': 1, 'eff_modal_mass': 0.0, 'rel_participation': 0.0}])
- 
+
 if __name__ == "__main__":
-    unittest.main()     
+    unittest.main()

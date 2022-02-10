@@ -5,12 +5,12 @@ from scipy import linalg
 # --- Internal Imports ---
 from source.model.structure_model import StraightBeam
 from source.test_utils.test_case import TestCase, TestMain
-from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 
 # --- STL Imports ---
 import unittest.mock as mock
 
 
+# TODO (mate kelemen)
 class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
 
     def create_mock_self_for_contribution (self):
@@ -71,6 +71,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
     # ------------------------------------------------------------------------------------------------------
     @mock.patch('builtins.zip')
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    @TestCase.UniqueReferenceDirectory
     def test_contributions (self,mock_eigenvalue_solve,mock_zip):
 
         for [idx,label] in [[0,'a'],[1,'b'],[2,'g'],[3,'x'],[4,'y'],[5,'z']]:
@@ -88,6 +89,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
     # 2. check modal mass calculation with unit values for every label
     # ------------------------------------------------------------------------------------------------------
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    @TestCase.UniqueReferenceDirectory
     def test_modal_masses (self,mock_eigenvalue_solve):
 
         for label in ('a', 'b', 'g', 'x', 'y', 'z'):
@@ -113,6 +115,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
     # 3. check modal mass calculation with reference results from matlab
     # ------------------------------------------------------------------------------------------------------
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    @TestCase.UniqueReferenceDirectory
     def test_modal_mass_values_symmetric (self, mock_eigenvalue_solve):
         mock_self = self.create_mock_self_for_modal_mass()
         mock_self.parameters['m'] = [1000.0,2000.0,2000.0,1000.0]
@@ -128,6 +131,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
                 self.reference_directory / reference_file_name)
 
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    @TestCase.UniqueReferenceDirectory
     def test_modal_mass_values_nonsymmetric (self, mock_eigenvalue_solve):
         mock_self = self.create_mock_self_for_modal_mass()
         mock_self.parameters['m'] = [1000.0,2000.0,3000.0,4000.0]
@@ -149,6 +153,7 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
     # ------------------------------------------------------------------------------------------------------
     #TODO: add test for other BC's
     @mock.patch('source.model.structure_model.StraightBeam.eigenvalue_solve')
+    @TestCase.UniqueReferenceDirectory
     def test_decomposing_eigenmode (self, mock_eigenvalue_solve):
         # pinned-fixed 3 Element System
         # after reduction 15 DOF left which are not ordered x,y,z,a,b,g
@@ -162,11 +167,6 @@ class test_structure_model_decompose_and_qunatify_eigenmodes(TestCase):
             self.CompareToReferenceFile(
                 float(mock_self.decomposed_eigenmodes["rel_contribution"][0][label]),
                 self.reference_directory / reference_file_name)
-
-
-    @property
-    def reference_directory(self):
-        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_structure_model_decompose_and_quantify_eigenmodes"
 
 
 if __name__ == "__main__":

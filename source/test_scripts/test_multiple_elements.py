@@ -5,12 +5,13 @@ import numpy as np
 from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 from source.model.structure_model import StraightBeam
 from source.test_utils.test_case import TestCase, TestMain
-from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
+from source.test_utils.code_structure import TEST_KRATOS_REFERENCE_RESULTS_DIRECTORY
 
 
 class TestMultipleElements(TestCase):
 
-    # This test throws a null division error
+
+    @TestCase.UniqueReferenceDirectory
     def test_multiple_elements(self):
         dt = 0.1
         tend = 10.
@@ -37,7 +38,6 @@ class TestMultipleElements(TestCase):
 
         scheme = "BackwardEuler1"
 
-        # A division by zero error is thrown here
         beam_1 = StraightBeam(self.params_one_element)
         beam_2 = StraightBeam(self.params_two_element)
 
@@ -55,19 +55,19 @@ class TestMultipleElements(TestCase):
         solver_1.solve()
         solver_2.solve()
 
-        reference_file = "kratos_reference_results/dynamic_displacement_z.txt"
-        disp_z_soln = np.loadtxt(reference_file)[:, 1]
 
         self.CompareToReferenceFile(
             solver_1.displacement[2,:],
-            self.reference_directory / "dynamic_displacement_z.csv")
+            self.reference_directory / "dynamic_displacement_z_1.csv")
 
         self.CompareToReferenceFile(
             solver_2.displacement[2,:],
-            self.reference_directory / "dynamic_displacement_z.csv")
+            self.reference_directory / "dynamic_displacement_z_2.csv")
 
         if __name__ == "__main__":
             import matplotlib.pyplot as plt
+            reference_file = TEST_KRATOS_REFERENCE_RESULTS_DIRECTORY / "dynamic_displacement_z.txt"
+            disp_z_soln = np.loadtxt(reference_file)[:, 1]
             plt.plot(array_time, solver_1.displacement[2, :], c='b', label='one element')
             plt.plot(array_time, solver_2.displacement[2, :], c='g', label='two elements')
             plt.plot(array_time_kratos, disp_z_soln, c='k', label='kratos reference')
@@ -161,10 +161,6 @@ class TestMultipleElements(TestCase):
             },
             "boundary_conditions": "fixed-free"
         }
-
-    @property
-    def reference_directory(self):
-        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_multiple_elements"
 
 
 if __name__ == "__main__":

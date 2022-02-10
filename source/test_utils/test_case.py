@@ -3,6 +3,7 @@ import unittest
 import pathlib
 import sys
 import shutil
+import functools
 
 # --- External Imports ---
 import numpy
@@ -10,7 +11,7 @@ import numpy
 # --- Internal Imports ---
 from .parsed_results import ParsedResults
 from .result_comparator import ResultComparator
-from .code_structure import TEST_SCRIPTS_DIRECTORY
+from .code_structure import TEST_SCRIPTS_DIRECTORY, TEST_REFERENCE_OUTPUT_DIRECTORY
 
 
 class TestCase(unittest.TestCase):
@@ -73,6 +74,19 @@ class TestCase(unittest.TestCase):
                 file.write(str(test))
         else:
             ResultComparator(test, reference, test_case=self, **kwargs).Compare()
+
+
+    @staticmethod
+    def UniqueReferenceDirectory(function):
+        """A class method decorator that adds a unique 'reference_directory' to the class in the member function's scope."""
+        @functools.wraps(function)
+        def WrappedFunction(this, *args, **kwargs):
+            tmp = getattr(this, "reference_directory") if hasattr(this, "reference_directory") else None
+            this.reference_directory = TEST_REFERENCE_OUTPUT_DIRECTORY / type(this).__name__ / function.__name__
+            output = function(this, *args, **kwargs)
+            this.reference_directory = tmp
+            return output
+        return WrappedFunction
 
 
     def _CheckFiles(self, *paths):

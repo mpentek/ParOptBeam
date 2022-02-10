@@ -3,12 +3,12 @@ import numpy as np
 
 # --- Internal Imports ---
 from source.element.cr_beam_element import CRBeamElement
-from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 from source.test_utils.test_case import TestCase, TestMain
 
 
 class TestElementKratos(TestCase):
 
+    @TestCase.UniqueReferenceDirectory
     def test_crbeam_element_update_incremental(self):
         material_params = {'rho': 7850, 'e': 2069000000.0, 'nu': 0.29, 'zeta': 0.05, 'lx_i': 1.2, 'is_nonlinear': True}
         element_params = {'a': 0.0001, 'asy': 0.0, 'asz': 0.0, 'iy': 0.0001, 'iz': 0.0001, 'it': 0.0001}
@@ -54,11 +54,6 @@ class TestElementKratos(TestCase):
             element._get_consistent_mass_matrix(),
             self.reference_directory / "crbeam_update_incremental_me.csv",
             delta=10)
-
-
-    @property
-    def reference_directory(self):
-        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_element_and_compare_to_kratos"
 
 
 if __name__ == "__main__":

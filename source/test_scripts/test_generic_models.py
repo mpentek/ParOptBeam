@@ -2,7 +2,7 @@
 from source.model.structure_model import StraightBeam
 from source.model.optimizable_structure_model import OptimizableStraightBeam
 from source.analysis.analysis_controller import AnalysisController
-from source.test_utils.code_structure import ROOT_DIRECTORY, OUTPUT_DIRECTORY, TEST_INPUT_DIRECTORY, TEST_REFERENCE_OUTPUT_DIRECTORY
+from source.test_utils.code_structure import ROOT_DIRECTORY, OUTPUT_DIRECTORY, TEST_INPUT_DIRECTORY
 from source.test_utils.parsed_results import ParsedResults
 from source.test_utils.test_case import TestCase, TestMain
 
@@ -23,14 +23,17 @@ class TestGenericModels(TestCase):
         os.chdir(self.cwd)
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_static(self):
         self.RunModel(TEST_INPUT_DIRECTORY / "ProjectParameters3DGenericBuildingStatic.json")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_dynamic(self):
         self.RunModel(TEST_INPUT_DIRECTORY / "ProjectParameters3DGenericBuildingDynamic.json")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_eigen(self):
         self.RunModel(TEST_INPUT_DIRECTORY / "ProjectParameters3DGenericBuildingEigen.json")
 
@@ -67,11 +70,6 @@ class TestGenericModels(TestCase):
             reference_file = reference_directory / output_file.name
             if output_file.suffix in ParsedResults.GetExtensionParserMap():
                 self.CompareFiles(output_file, reference_file)
-
-
-    @property
-    def reference_directory(self):
-        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_generic_models"
 
 
 if __name__ == "__main__":

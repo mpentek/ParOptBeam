@@ -5,13 +5,14 @@ import numpy as np
 from source.model.structure_model import StraightBeam
 
 
+# TODO (mate kelemen)
 class test_structure_model_eigenvalue_solve (unittest.TestCase):
-    
+
     @mock.patch('scipy.linalg.eigh')
     @mock.patch('numpy.sqrt')
     @mock.patch('numpy.real')
-    def test_function_calls (self,mock_np_real,mock_np_sqrt,mock_scipy_linalg_eigh): 
-        
+    def test_function_calls (self,mock_np_real,mock_np_sqrt,mock_scipy_linalg_eigh):
+
         # mock self, numpy and scipy functions
         mock_self = mock.MagicMock()
 
@@ -26,7 +27,7 @@ class test_structure_model_eigenvalue_solve (unittest.TestCase):
         # assertions
         # assert scipy.linalg.eigh beeing called correctly
         scipy.linalg.eigh.assert_called_once_with(mock_self.comp_k, mock_self.comp_m)
-        # assert np.sqrt and np.real beeing called correctly 
+        # assert np.sqrt and np.real beeing called correctly
         np.real.assert_called_once_with(mock_self.eig_values_raw)
         np.sqrt.assert_called_once_with(mock_self.real_eig_values_raw)
 
@@ -71,4 +72,4 @@ class test_structure_model_eigenvalue_solve (unittest.TestCase):
         self.assertIsNone(np.testing.assert_allclose(mock_self.eig_freqs,reference_eig_freqs,rtol=rtol_lim))
 
 if __name__ == "__main__":
-    unittest.main()     
+    unittest.main()

@@ -8,26 +8,32 @@ from source.test_utils.test_case import TestCase, TestMain
 
 class BeamEigenvalueAnalyticalTest(TestCase):
 
+    @TestCase.UniqueReferenceDirectory
     def test_fixed_fixed(self):
         self.runModel("FixedFixedTest", "fixed-fixed")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_free_fixed(self):
         self.runModel("FreeFixedTest", "free-fixed")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_fixed_free(self):
         self.runModel("FixedFreeTest", "fixed-free")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_fixed_pinned(self):
         self.runModel("FixedPinnedTest", "fixed-pinned")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_pinned_fixed(self):
         self.runModel("PinnedFixedTest", "pinned-fixed")
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_pinned_pinned(self):
         self.runModel("PinnedPinnedTest", "pinned-pinned")
 
@@ -127,10 +133,9 @@ class BeamEigenvalueAnalyticalTest(TestCase):
 
         # ==============================================
 
-        result_file_path = OUTPUT_DIRECTORY / model_name / "eigenvalue_analysis_eigenmode_identification.dat"
-        reference_file_path = TEST_REFERENCE_OUTPUT_DIRECTORY / "test_beam_eigenvalue_analytic" / (model_name + ".dat")
-
-        self.CompareFiles(result_file_path, reference_file_path)
+        self.CompareFiles(
+            OUTPUT_DIRECTORY / model_name / "eigenvalue_analysis_eigenmode_identification.dat",
+            self.reference_directory / "test_beam_eigenvalue_analytic" / (model_name + ".dat"))
 
 
 if __name__ == "__main__":

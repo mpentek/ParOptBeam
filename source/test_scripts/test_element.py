@@ -4,12 +4,12 @@ import numpy as np
 # --- Internal Imports ---
 from source.element.cr_beam_element import CRBeamElement
 from source.element.timoshenko_beam_element import TimoshenkoBeamElement
-from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 from source.test_utils.test_case import TestCase, TestMain
 
 
 class TestElement(TestCase):
 
+    @TestCase.UniqueReferenceDirectory
     def test_timoshenko_element(self):
         material_params = {'rho': 10.0, 'e': 100., 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': False}
         element_params = {'a': 5., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
@@ -26,6 +26,7 @@ class TestElement(TestCase):
             delta=self.tolerance)
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_crbeam_element_update_incremental(self):
         material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
         element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
@@ -38,8 +39,6 @@ class TestElement(TestCase):
         dp = [0.2, 0.6, 0.0, 0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         element.update_incremental(dp)
-        new_coords = element._get_current_nodal_position()
-        new_coords_sol = [1.2, 0.6, 0.0, 2.0, 0.0, 0.0]
 
         self.CompareToReferenceFile(
             element._get_current_nodal_position(),
@@ -84,6 +83,7 @@ class TestElement(TestCase):
             delta=self.tolerance)
 
 
+    @TestCase.UniqueReferenceDirectory
     def test_crbeam_element_update_total(self):
         material_params = {'rho': 1000.0, 'e': 1.e6, 'nu': 0.1, 'zeta': 0.05, 'lx_i': 10., 'is_nonlinear': True}
         element_params = {'a': 1., 'asy': 2., 'asz': 2., 'iy': 10, 'iz': 20, 'it': 20}
@@ -106,11 +106,6 @@ class TestElement(TestCase):
     @property
     def tolerance(self):
         return 1e-6
-
-
-    @property
-    def reference_directory(self):
-        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_element"
 
 
 if __name__ == "__main__":

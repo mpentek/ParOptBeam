@@ -5,12 +5,11 @@ import numpy as np
 from source.solving_strategies.strategies.linear_solver import LinearSolver
 from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
 from source.test_utils.test_case import TestCase, TestMain
-from source.test_utils.code_structure import TEST_REFERENCE_OUTPUT_DIRECTORY
 
 
-class test_schemes(TestCase):
+class TestSchemes(TestCase):
 
-    def test_schemes(self):
+    def run_scheme(self, scheme: str) -> None:
         M = np.array([[0.5, 0.0], [0.0, 1.0]])
         B = np.array([[0.1, 0.0], [0.0, 0.1]])
         K = np.array([[1.0, 0.0], [0.0, 2.0]])
@@ -22,19 +21,17 @@ class test_schemes(TestCase):
         steps = int(tend / dt)
         array_time = np.linspace(0.0, tend, steps)
         f = np.array([0.0 * array_time, 0.6 * np.sin(array_time)])
-        schemes = ["ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4"]
 
-        for scheme in schemes:
-            solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, None)
-            solver.solve()
+        solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, None)
+        solver.solve()
 
-            reference_file_name = "test_schemes_" + scheme + ".csv"
-            self.CompareToReferenceFile(
-                solver.displacement[1,:],
-                self.reference_directory / reference_file_name)
+        reference_file_name = "test_schemes_" + scheme + ".csv"
+        self.CompareToReferenceFile(
+            solver.displacement[1,:],
+            self.reference_directory / reference_file_name)
 
 
-    def test_schemes_analytic_sdof(self):
+    def run_scheme_analytic_sdof(self, scheme: str) -> None:
         # M = np.array([[0.5, 0.0], [0.0, 1.0]])
         # B = np.array([[0.1, 0.0], [0.0, 0.1]])
         # K = np.array([[1.0, 0.0], [0.0, 2.0]])
@@ -76,20 +73,49 @@ class test_schemes(TestCase):
 
         # TODO: add homogeneous solution
 
-        schemes = ["ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4"]
-        for scheme in schemes:
-            solver = LinearSolver(array_time, scheme, dt, [M,B,K], [u0, v0, a0], f, None)
-            solver.solve()
-            reference_file_name = "test_schemes_analytic_sdof_" + scheme + ".csv"
-            self.CompareToReferenceFile(
-                solver.displacement[0],
-                self.reference_directory / reference_file_name,
-                delta=1e-10)
+        solver = LinearSolver(array_time, scheme, dt, [M,B,K], [u0, v0, a0], f, None)
+        solver.solve()
+        reference_file_name = "test_schemes_analytic_sdof_" + scheme + ".csv"
+        self.CompareToReferenceFile(
+            solver.displacement[0],
+            self.reference_directory / reference_file_name,
+            delta=1e-10)
 
 
-    @property
-    def reference_directory(self):
-        return TEST_REFERENCE_OUTPUT_DIRECTORY / "test_schemes"
+    @TestCase.UniqueReferenceDirectory
+    def test_ForwardEuler1(self) -> None:
+        self.run_scheme("ForwardEuler1")
+        self.run_scheme_analytic_sdof("ForwardEuler1")
+
+
+    @TestCase.UniqueReferenceDirectory
+    def test_BackwardEuler1(self) -> None:
+        self.run_scheme("BackwardEuler1")
+        self.run_scheme_analytic_sdof("BackwardEuler1")
+
+
+    @TestCase.UniqueReferenceDirectory
+    def test_Euler12(self) -> None:
+        self.run_scheme("Euler12")
+        self.run_scheme_analytic_sdof("Euler12")
+
+
+    @TestCase.UniqueReferenceDirectory
+    def test_GenAlpha(self) -> None:
+        self.run_scheme("GenAlpha")
+        self.run_scheme_analytic_sdof("GenAlpha")
+
+
+    @TestCase.UniqueReferenceDirectory
+    def test_BDF2(self) -> None:
+        self.run_scheme("BDF2")
+        self.run_scheme_analytic_sdof("BDF2")
+
+
+    @TestCase.UniqueReferenceDirectory
+    def test_RungeKutta4(self) -> None:
+        self.run_scheme("RungeKutta4")
+        self.run_scheme_analytic_sdof("RungeKutta4")
 
 
 if __name__ == "__main__":
