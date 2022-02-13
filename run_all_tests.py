@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
         stream = UnbufferedStream(output_file)
         with contextlib.redirect_stdout(stream), contextlib.redirect_stderr(stream):
-            
+
             unittest.TextTestRunner(
                 stream = UnbufferedStream(StreamMultiplex(stderr, results_file)),
                 verbosity = 2

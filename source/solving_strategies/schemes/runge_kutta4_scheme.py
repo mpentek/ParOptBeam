@@ -16,14 +16,32 @@ class RungeKutta4(TimeIntegrationScheme):
 
         super().__init__(dt, comp_model, initial_conditions)
 
-        # inverse matrix
-        self.InvM = np.linalg.inv(self.M)
-
         # force from a previous time step (initial force)
-        self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
-                                                   self.v0) + np.dot(self.K, self.u0)
-        self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
-                                                   self.v1) + np.dot(self.K, self.u1)
+        if self.M.ndim == 2:
+            print('System: in matrix form')
+            # inverse matrix
+            self.InvM = np.linalg.inv(self.M)
+
+            # force from a previous time step (initial force)
+            self.f0 = np.dot(self.M, self.a0) + np.dot(self.B,
+                                                    self.v0) + np.dot(self.K, self.u0)
+            self.f1 = np.dot(self.M, self.a1) + np.dot(self.B,
+                                                    self.v1) + np.dot(self.K, self.u1)
+
+        elif self.M.ndim == 1:
+            print('System: in vector (from diagonal matrix) or scalar form')
+            self.f0 = self.M * self.a0 + self.B * self.v0 + self.K * self.u0
+            self.f1 = self.M * self.a1 + self.B * self.v1 + self.K * self.u1
+
+            # inverse matrix
+            self.InvM = 1/self.M
+
+            # force from a previous time step (initial force)
+            self.f0 = self.M * self.a0 + self.B * self.v0 + self.K * self.u0
+            self.f1 = self.M * self.a1 + self.B *self.v1 + self.K * self.u1
+
+        else:
+            raise Exception('Dimension of system parameters is RungeKuttaScheme is wrong')
 
         self._print_time_integration_setup()
 
