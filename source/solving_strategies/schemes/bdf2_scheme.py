@@ -10,6 +10,13 @@ class BDF2(TimeIntegrationScheme):
     """
 
     def __init__(self, dt, comp_model, initial_conditions):
+        '''
+        BDF2: y_n+2 - 4/3 * y_n+1 + 1/3 * y_n = 2/3 * h * f_n+2
+        -> y_n+2 * (1/(2/3*h)) + y_+1 * (- 4/3 * 1/(2/3*h)) + y_n * (1/3 * 1/(2/3*h)) = f_n+2
+        -> y_n+2 * (0.5/h) + y_n+1 * (-2.0/h) + y_n * (0.5/h) = f_n+2
+        -> y_n+2 * bdf0 + y_n+1 * bdf1 + y_n * bdf2 = f_n+2
+        '''
+
         # introducing and initializing properties and coefficients
         # construct an object self with the input arguments dt, M, B, K,
         # pInf, u0, v0, a0
@@ -46,7 +53,9 @@ class BDF2(TimeIntegrationScheme):
         return a1
 
     def solve_single_step(self, f1):
-        # TODO: needs check for system size, LHS missing
+
+        # LHS needs to be updated in case of non-linear elements
+        LHS = self.M + self.B * 2/3 *self.dt + self.K * (2/3 *self.dt) ** 2
 
         RHS = - np.dot(self.B, self.bdf1 * self.un1) - \
             np.dot(self.B, self.bdf2 * self.un2)
@@ -54,7 +63,8 @@ class BDF2(TimeIntegrationScheme):
         RHS += - 2 * self.bdf0 * self.bdf2 * np.dot(self.M, self.un2)
         RHS += -     self.bdf1 * self.bdf1 * np.dot(self.M, self.un2)
         RHS += - 2 * self.bdf1 * self.bdf2 * np.dot(self.M, self.un3)
-        RHS += -     self.bdf2 * self.bdf2 * np.dot(self.M, self.un4) + f1
+        RHS += -     self.bdf2 * self.bdf2 * np.dot(self.M, self.un4)
+        RHS += f1 * (2/3 *self.dt) ** 2
 
         # calculates self.un0,vn0,an0
         self.u1 = np.linalg.solve(LHS, RHS)
