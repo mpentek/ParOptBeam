@@ -126,6 +126,23 @@ class TestCase(unittest.TestCase):
                 self.assertAlmostEqual(row, row_reference, **kwargs)
 
 
+    def assertDictAlmostEqual(self, map: dict, reference: dict, **kwargs):
+        # Check keys
+        for key in map:
+            self.assertIn(key, reference, f"Key '{key}' in test dict is not in the reference dict")
+
+        for key in reference:
+            self.assertIn(key, map, f"Key '{key}' in the reference dict is not in the test dict")
+
+        # Check values
+        msg = ""
+        if msg in kwargs:
+            msg = kwargs.get("msg", "")
+            del kwargs["msg"]
+        for key in map:
+            self.assertAlmostEqual(map[key], reference[key], msg=f"Failure for key '{key}': {msg}", **kwargs)
+
+
 def TestMain():
     if "--generate-references" in sys.argv:
         sys.argv.remove("--generate-references")
