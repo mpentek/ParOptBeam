@@ -40,18 +40,7 @@ class EulerBernoulli:
             sign = -1 if (1 < ((term_index - 2 + derivative) % 4)) else 1
             return lambda wave_number, x, sign=sign, term_index=term_index, derivative=derivative: sign * EulerBernoulli.__shape_terms[2 + (term_index + derivative) % 2](wave_number, x) * wave_number**derivative
 
-    def GetEigenfrequencies(self,
-                            boundary_conditions: tuple[str,str] = ("",""),
-                            frequency_seeds: list[float] = [],
-                            frequency_tolerance: float = 1e-2,
-                            root_tolerance: float = 1e-10,
-                            trivial_tolerance: float = 1e-3,
-                            **kwargs) -> tuple[float]:
-        """@brief Compute the (approximate) analytical eigenfrequencies of an Euler-Bernoulli beam.
-
-           @details Newton iterations are performed around the passed seed points which are then filtered
-                    with respect to a specified tolerance, then returned.
-        """
+    def __GetConditionMatrix(self, boundary_conditions: tuple[str,str] = ("","")) -> list[list[typing.Callable]]:
         # Check input parameters
         if tuple(boundary_conditions) not in self.__boundary_conditions:
             raise ValueError("Invalid boundary conditions: {}. Options are: {}".format(boundary_conditions, self.__boundary_conditions))
@@ -61,7 +50,7 @@ class EulerBernoulli:
             position = self.length * condition_index
             if condition_type == "fixed":
                 condition_matrix.append([lambda wave_number, position=position, term_index=term_index: self.__GetShapeTerm(term_index, 0)(wave_number, position) for term_index in range(4)]) # displacement
-                condition_matrix.append([lambda wave_number, position=position, term_index=term_index: self.__GetShapeTerm(term_index, 1)(wave_number, position) for term_index in range(4)]) # angle
+                condition_matrix.append([lambda wave_number, position=position, term_index=term_index: self.__GetShapeTerm(term_index, 1)(wave_number, position) for term_index in range(4)]) # rotation
             elif condition_type == "free":
                 condition_matrix.append([lambda wave_number, position=position, term_index=term_index: self.__GetShapeTerm(term_index, 2)(wave_number, position) for term_index in range(4)]) # moment
                 condition_matrix.append([lambda wave_number, position=position, term_index=term_index: self.__GetShapeTerm(term_index, 3)(wave_number, position) for term_index in range(4)]) # shear
@@ -71,11 +60,29 @@ class EulerBernoulli:
             else:
                 raise ValueError("Invalid boundary condition type: {}".format(condition_type))
 
+        return condition_matrix
+
+    def __EigenfrequencyToWaveNumber(self, eigenfrequency: float) -> float:
+        return math.sqrt(eigenfrequency * math.sqrt(self.section_density / self.stiffness / self.moment_of_inertia))
+
+    def GetEigenfrequencies(self,
+                            boundary_conditions: tuple[str,str] = ("",""),
+                            frequency_seeds: list[float] = [],
+                            frequency_tolerance: float = 1e-2,
+                            root_tolerance: float = 1e-4,
+                            trivial_tolerance: float = 1e0,
+                            **kwargs) -> tuple[float]:
+        """@brief Compute the (approximate) analytical eigenfrequencies of an Euler-Bernoulli beam.
+
+           @details Newton iterations are performed around the passed seed points which are then filtered
+                    with respect to a specified tolerance, then returned.
+        """
+        condition_matrix = self.__GetConditionMatrix(boundary_conditions)
         determinant = lambda argument: numpy.linalg.det([[term(argument) for term in row] for row in condition_matrix])
 
         eigenfrequencies = []
         for frequency_seed in frequency_seeds:
-            wave_number = math.sqrt(frequency_seed * math.sqrt(self.section_density / self.stiffness / self.moment_of_inertia))
+            wave_number = self.__EigenfrequencyToWaveNumber(frequency_seed)
 
             # Do a couple of Newton iterations on the condition matrix' determinant to get the wave number
             try:
@@ -87,10 +94,51 @@ class EulerBernoulli:
                 pass
 
             # Filter trivial solutions and failed newton iterations
-            if trivial_tolerance < wave_number and abs(determinant(wave_number)) < root_tolerance:
-                circular_frequency = math.sqrt(self.stiffness * self.moment_of_inertia / self.section_density) * wave_number**2
-                if not any(abs((f - circular_frequency) / f) < frequency_tolerance for f in eigenfrequencies):
-                    eigenfrequencies.append(circular_frequency)
+            angular_frequency = math.sqrt(self.stiffness * self.moment_of_inertia / self.section_density) * wave_number**2
+            if trivial_tolerance < abs(angular_frequency) and abs(determinant(wave_number)) < root_tolerance:
+                if not any(abs((f - angular_frequency) / f) < frequency_tolerance for f in eigenfrequencies):
+                    eigenfrequencies.append(angular_frequency)
 
         eigenfrequencies.sort()
         return eigenfrequencies
+
+
+class TorsionalBeam:
+
+    def __init__(self,
+                 stiffness: float = 0.0,
+                 poisson_ratio: float = 0.0,
+                 density: float = 0.0,
+                 length: float = 0.0,
+                 moment_of_inertia_y: float = 0.0,
+                 moment_of_inertia_z: float = 0.0,
+                 torsional_moment_of_inertia: float = 0.0):
+        self.stiffness = stiffness
+        self.poisson_ratio = poisson_ratio
+        self.density = density
+        self.length = length
+        self.moment_of_inertia_y = moment_of_inertia_y
+        self.moment_of_inertia_z = moment_of_inertia_z
+        self.torsional_moment_of_inertia = torsional_moment_of_inertia
+
+    def GetEigenfrequencies(self,
+                            boundary_conditions: tuple[str,str] = ("",""),
+                            number_of_modes: int = 0) -> list[float]:
+        angular_frequencies = []
+        mode_index = 0
+
+        material_coefficient = math.sqrt(self.stiffness / 2.0 / (1.0 + self.poisson_ratio) / self.density)
+        geometry_coefficient = math.sqrt(self.torsional_moment_of_inertia / (self.moment_of_inertia_y + self.moment_of_inertia_z)) / self.length
+
+        # Free and pinned boundaries are interchangable in this case
+        # Both sides fixed == both sides free
+        if boundary_conditions[0] == boundary_conditions[1] or all(condition in ("free", "pinned") for condition in boundary_conditions):
+            trigonometric_offset = 1.0
+        else:
+            trigonometric_offset = 0.5
+
+        for mode_index in range(number_of_modes):
+            angular_frequency = (mode_index + trigonometric_offset) * math.pi * material_coefficient * geometry_coefficient
+            angular_frequencies.append(angular_frequency)
+
+        return angular_frequencies
