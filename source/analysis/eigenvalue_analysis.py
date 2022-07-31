@@ -257,13 +257,24 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO: add some generic way to be able to subtract some non-zero origin point
         # TODO: check if an origin point shift or extension still needed
 
-        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                                   self.structure_model.nodal_coordinates["y0"],
-                                   self.structure_model.nodal_coordinates["z0"]],
+        if self.structure_model.domain_size == '3D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                        "deformation": [self.structure_model.nodal_coordinates["x"],
+                                        self.structure_model.nodal_coordinates["y"],
+                                        self.structure_model.nodal_coordinates["z"]],
+                        "deformed": None}
+        elif self.structure_model.domain_size == '2D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                self.structure_model.nodal_coordinates["y0"],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y0"]))],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y"]))],
                     "deformed": None}
+        else:
+            raise Exception("Domain size invalid!")
 
         force = {"external": None,
                  "base_reaction": None}
@@ -310,14 +321,25 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO: add some generic way to be able to subtract some non-zero origin point
         # TODO: check if an origin point shift or extension still needed
 
-        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                                   self.structure_model.nodal_coordinates["y0"],
-                                   self.structure_model.nodal_coordinates["z0"]],
+        if self.structure_model.domain_size == '3D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                        "deformation": [self.structure_model.nodal_coordinates["x"],
+                                        self.structure_model.nodal_coordinates["y"],
+                                        self.structure_model.nodal_coordinates["z"]],
+                        "deformed": None}
+        elif self.structure_model.domain_size == '2D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                self.structure_model.nodal_coordinates["y0"],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y0"]))],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y"]))],
                     "deformed": None}
-
+        else:
+            raise Exception("Domain size invalid!")
+        
         force = {"external": None,
                  "base_reaction": None}
 
@@ -358,13 +380,24 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO: add some generic way to be able to subtract some non-zero origin point
         # TODO: check if an origin point shift or extension still needed
 
-        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                                   self.structure_model.nodal_coordinates["y0"],
-                                   self.structure_model.nodal_coordinates["z0"]],
+        if self.structure_model.domain_size == '3D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                        "deformation": [self.structure_model.nodal_coordinates["x"],
+                                        self.structure_model.nodal_coordinates["y"],
+                                        self.structure_model.nodal_coordinates["z"]],
+                        "deformed": None}
+        elif self.structure_model.domain_size == '2D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                self.structure_model.nodal_coordinates["y0"],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y0"]))],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y"]))],
                     "deformed": None}
+        else:
+            raise Exception("Domain size invalid!")
 
         force = {"external": None,
                  "base_reaction": None}
@@ -419,13 +452,24 @@ class EigenvalueAnalysis(AnalysisType):
         # TODO: add some generic way to be able to subtract some non-zero origin point
         # TODO: check if an origin point shift or extension still needed
 
-        geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
-                                   self.structure_model.nodal_coordinates["y0"],
-                                   self.structure_model.nodal_coordinates["z0"]],
+        if self.structure_model.domain_size == '3D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                    self.structure_model.nodal_coordinates["y0"],
+                                    self.structure_model.nodal_coordinates["z0"]],
+                        "deformation": [self.structure_model.nodal_coordinates["x"],
+                                        self.structure_model.nodal_coordinates["y"],
+                                        self.structure_model.nodal_coordinates["z"]],
+                        "deformed": None}
+        elif self.structure_model.domain_size == '2D':
+            geometry = {"undeformed": [self.structure_model.nodal_coordinates["x0"],
+                                self.structure_model.nodal_coordinates["y0"],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y0"]))],
                     "deformation": [self.structure_model.nodal_coordinates["x"],
                                     self.structure_model.nodal_coordinates["y"],
-                                    self.structure_model.nodal_coordinates["z"]],
+                                np.zeros(len(self.structure_model.nodal_coordinates["y"]))],
                     "deformed": None}
+        else:
+            raise Exception("Domain size invalid!")
 
         force = {"external": None,
                  "base_reaction": None}
