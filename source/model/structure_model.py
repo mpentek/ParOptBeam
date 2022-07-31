@@ -339,8 +339,9 @@ class StraightBeam(object):
                 bc_dofs_global[idx] = dof + len(self.all_dofs_global)
 
         # only take bc's of interest
-        self.dofs_to_keep = list(
-            set(self.all_dofs_global) - set(bc_dofs_global))
+        unordered_diff = set(self.all_dofs_global) - set(bc_dofs_global)
+        # order dofs after subtraction
+        self.dofs_to_keep = [o for o in self.all_dofs_global if o in unordered_diff]
 
     def update_outrigger_contribution(self):
 
@@ -522,10 +523,15 @@ class StraightBeam(object):
                                   GD.DOF_LABELS[self.domain_size]):
                 start = idx
                 step = GD.DOFS_PER_NODE[self.domain_size]
-                stop = self.eigen_modes_raw.shape[0] + idx - step
+                stop = len(self.all_dofs_global) + idx - step
 
-                decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
-                                                                   1:step][:, selected_mode]
+                influence_vector = np.zeros(len(self.all_dofs_global))
+                influence_vector[start:stop + 1:step] = 1.0
+                influence_vector = self.apply_bc_by_reduction(influence_vector,axis='column_vector') 
+
+                # misusing th influence vector to filter out contributions for the label
+                decomposed_eigenmode[label] = np.multiply(specific_eigenmode, influence_vector) 
+                
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
@@ -536,17 +542,13 @@ class StraightBeam(object):
                     rel_contrib[label] = linalg.norm(
                         decomposed_eigenmode[label])
 
+                # print(rel_contrib)
+
                 if label in ['x', 'y', 'z', 'a']:
+                    # if label == 'a' and mode_idx == (8-1):
+                    #     print()
+
                     if rel_contrib[label] > GD.THRESHOLD:
-                        # influence_vector = np.zeros(len(self.all_dofs_global))
-                        influence_vector = np.zeros(len(specific_eigenmode))
-                        influence_vector[start:stop + 1:step] = 1.0
-                        # turn on only certain entries to be 1.0
-
-                        # numerator like this 100.0 as it is mass normalized already
-
-                        #either self.m or self.comp_m
-
                         eff_modal_numerator_multy = (np.matmul(np.transpose(specific_eigenmode),np.matmul(self.comp_m,influence_vector)))**2
                         # denominator = Y'*m*Y
                         eff_modal_denominator_multy = np.matmul(np.matmul(np.transpose(specific_eigenmode),self.comp_m),specific_eigenmode)
@@ -557,14 +559,14 @@ class StraightBeam(object):
                         eff_modal_mass[label] = eff_modal_numerator_multy / eff_modal_denominator_multy
                         rel_participation[label] = eff_modal_mass[label] / total_mass_multy
 
-                        print()
-                        print(eff_modal_numerator_multy)
-                        print(eff_modal_denominator_multy)
-                        print(label)
-                        print(total_mass_multy)
-                        print(eff_modal_mass)
-                        print(rel_participation)
-                        print()
+                        # print()
+                        # print(eff_modal_numerator_multy)
+                        # print(eff_modal_denominator_multy)
+                        # print(label)
+                        # print(total_mass_multy)
+                        # print(eff_modal_mass)
+                        # print(rel_participation)
+                        # print()
 
                     else:
                         eff_modal_mass[label] = 0.0
@@ -713,11 +715,17 @@ class StraightBeam(object):
         # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
         self.eig_values_raw, self.eigen_modes_raw = linalg.eigh(
             self.comp_k, self.comp_m)
+    
         # rad/s
         self.eig_values = np.sqrt(np.real(self.eig_values_raw))
         self.eig_freqs = self.eig_values / 2. / np.pi
         self.eig_pers = 1 / self.eig_freqs
         # sort eigenfrequencies
+
+        #with np.printoptions(precision=3, suppress=True):
+        #     print(self.comp_k)
+        #     print(self.comp_m)
+        #     print(self.eig_freqs)
 
         # NOTE: it seems that it is anyway sorted
         # TODO: check if it can at all happen that it is not sorted, otherwise operation superflous
