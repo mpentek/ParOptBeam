@@ -1,40 +1,25 @@
-import unittest
-import unittest.mock as mock
-import scipy
-import numpy as np
+# --- Internal Imports ---
+from source.test_utils.code_structure import TEST_INPUT_DIRECTORY
 from source.model.structure_model import StraightBeam
+from source.test_utils.test_case import TestCase, TestMain
+
+# --- STL Imports ---
+import json
 
 
-# TODO (mate kelemen)
-class test_structure_model_eigenvalue_solve (unittest.TestCase):
+class test_structure_model_eigenvalue_solve (TestCase):
 
-    @mock.patch('scipy.linalg.eigh')
-    @mock.patch('numpy.sqrt')
-    @mock.patch('numpy.real')
-    def test_function_calls (self,mock_np_real,mock_np_sqrt,mock_scipy_linalg_eigh):
+    @staticmethod
+    def StraightBeamFactory() -> StraightBeam:
+        with open(TEST_INPUT_DIRECTORY / "ProjectParameters3DGenericBuildingStatic.json", "r") as config_file:
+            parameters = json.load(config_file)
+        return StraightBeam(parameters["model_parameters"])
 
-        # mock self, numpy and scipy functions
-        mock_self = mock.MagicMock()
-
-        # define return values of mocked functions
-        mock_np_real.return_value = mock_self.real_eig_values_raw
-        mock_np_sqrt.return_value = mock_self.eig_values
-        mock_scipy_linalg_eigh.return_value = [mock_self.eig_values_raw, mock_self.eigen_modes_raw]
-
-        # run the tested method
-        StraightBeam.eigenvalue_solve(mock_self)
-
-        # assertions
-        # assert scipy.linalg.eigh beeing called correctly
-        scipy.linalg.eigh.assert_called_once_with(mock_self.comp_k, mock_self.comp_m)
-        # assert np.sqrt and np.real beeing called correctly
-        np.real.assert_called_once_with(mock_self.eig_values_raw)
-        np.sqrt.assert_called_once_with(mock_self.real_eig_values_raw)
-
+    @TestCase.UniqueReferenceDirectory
     def test_values (self):
-        mock_self=mock.MagicMock()
+        beam = self.StraightBeamFactory()
         # example values
-        mock_self.comp_k = [[ 6.72000000e+08,  0.00000000e+00,  0.00000000e+00,
+        beam.comp_k = [[ 6.72000000e+08,  0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
         [ 0.00000000e+00,  4.30133760e+04,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00, -5.37667200e+05],
@@ -47,7 +32,7 @@ class test_structure_model_eigenvalue_solve (unittest.TestCase):
         [ 0.00000000e+00, -5.37667200e+05,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  8.96112000e+06]]
 
-        mock_self.comp_m = [[ 5.23333333e+03,  0.00000000e+00,  0.00000000e+00,
+        beam.comp_m = [[5.23333333e+03,  0.00000000e+00,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00,  0.00000000e+00],
         [ 0.00000000e+00,  5.83152906e+03,  0.00000000e+00,
         0.00000000e+00,  0.00000000e+00, -2.05597332e+04],
@@ -61,15 +46,12 @@ class test_structure_model_eigenvalue_solve (unittest.TestCase):
         0.00000000e+00,  0.00000000e+00,  9.34593596e+04]]
 
         # run the tested method
-        StraightBeam.eigenvalue_solve(mock_self)
+        StraightBeam.eigenvalue_solve(beam)
 
-        # reference results obtained from matlab
-        reference_eig_freqs = np.array([0.268649800092252,0.537253776812886,2.64654094768132,
-        5.29034680480794,8.29165837006746,57.0316018041581])
+        self.CompareToReferenceFile(beam.eig_freqs,
+                                    self.reference_directory / "eig_freqs.csv",
+                                    delta = 1e-12)
 
-        # assert equal
-        rtol_lim = 1e-05
-        self.assertIsNone(np.testing.assert_allclose(mock_self.eig_freqs,reference_eig_freqs,rtol=rtol_lim))
 
 if __name__ == "__main__":
-    unittest.main()
+    TestMain()

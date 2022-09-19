@@ -45,43 +45,6 @@ beam_eigenvalue_analytic_parameters = {
             }
         },
         "boundary_conditions": "bc"
-    },
-    "analyses_parameters":{
-        "global_output_folder" : "some/path",
-        "model_properties": {
-            "write": False,
-            "plot": False
-        },
-        "report_options": {
-            "combine_plots_into_pdf" : False,
-            "display_plots_on_screen" : False,
-            "use_skin_model" : False
-        },
-        "runs": [{
-                "type": "eigenvalue_analysis",
-                "settings": {
-                    "normalization": "mass_normalized"},
-                "input":{},
-                "output":{
-                    "eigenmode_summary": {
-                        "write" : False,
-                        "plot" : False},
-                    "eigenmode_identification": {
-                        "write" : True,
-                        "plot" : False},
-                    "selected_eigenmode": {
-                        "plot_mode": [],
-                        "write_mode": [],
-                        "animate_mode": [],
-                        "animate_skin_model": []},
-                    "selected_eigenmode_range": {
-                        "help": "maximum 4 modes per range at a time",
-                        "considered_ranges": [[1,2]],
-                        "plot_range": [False, False],
-                        "write_range": [False, False]}
-                    }
-
-            }]
     }
 }
 

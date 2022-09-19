@@ -66,6 +66,7 @@ class TestGenericModels(TestCase):
             self.assertTrue(output_file.is_file())
 
         # Check output files
+        # TODO set delta
         for output_file in output_directory.glob("*"):
             reference_file = reference_directory / output_file.name
             if output_file.suffix in ParsedResults.GetExtensionParserMap():
