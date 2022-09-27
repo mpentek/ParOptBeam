@@ -1,5 +1,6 @@
 # --- External Imports ---
 import scipy.optimize
+import scipy.linalg
 import numpy
 
 # --- STL Imports ---
@@ -73,7 +74,6 @@ class EulerBernoulli:
                             trivial_tolerance: float = 1e0,
                             **kwargs) -> tuple[float]:
         """@brief Compute the (approximate) analytical eigenfrequencies of an Euler-Bernoulli beam.
-
            @details Newton iterations are performed around the passed seed points which are then filtered
                     with respect to a specified tolerance, then returned.
         """
@@ -101,6 +101,84 @@ class EulerBernoulli:
 
         eigenfrequencies.sort()
         return eigenfrequencies
+
+    @property
+    def position_samples(self) -> numpy.array:
+        return numpy.linspace(0.0, self.length, 100)
+
+    @property
+    def mass(self) -> float:
+        return self.section_density * self.length
+
+    def __GetShapeTermCoefficients(self, wave_number: float, boundaries: tuple) -> list["float"]:
+        wl = wave_number * self.length
+        tmp_difference = (numpy.cosh(wl) - numpy.cos(wl)) / (numpy.sin(wl) - numpy.sinh(wl))
+        tmp_sum = (numpy.cosh(wl) + numpy.cos(wl)) / (numpy.sin(wl) + numpy.sinh(wl))
+        if boundaries.count("pinned") == 2:
+            return [0.0, 0.0, 1.0, 0.0]
+        elif boundaries.count("fixed") == 2:
+            return [-tmp_difference, -1.0, tmp_difference, 1.0]
+        elif boundaries.count("free") == 2:
+            return [tmp_difference, 1.0, tmp_difference, 1.0]
+        elif "fixed" in boundaries and "pinned" in boundaries:
+            return [-tmp_difference, -1.0, tmp_difference, 1.0]
+        elif "fixed" in boundaries and "free" in boundaries:
+            return [tmp_sum, -1.0, -tmp_sum, 1.0]
+        else:
+            raise ValueError(f"Unsupported boundary conditions: {boundaries}")
+
+    def GetMode(self, eigenfrequency: float, boundary_conditions: tuple) -> typing.Callable:
+        wave_number = self.__EigenfrequencyToWaveNumber(eigenfrequency)
+        shape_term_coefficients = self.__GetShapeTermCoefficients(wave_number, boundary_conditions)
+        def mode(position: float) -> float:
+            value = 0.0
+            for i_term, term_coefficient in enumerate(shape_term_coefficients):
+                value += term_coefficient * self.__GetShapeTerm(i_term, 0)(wave_number, position)
+            return value
+        return mode
+
+    def GetModalProperties(self, eigenfrequency: float, boundary_conditions: tuple) -> float:
+        mode = self.GetMode(eigenfrequency, boundary_conditions)
+        position_samples = self.position_samples
+        mode_samples = numpy.array([mode(x) for x in position_samples])
+        modal_participation_factor = (numpy.trapz(mode_samples, position_samples) * self.section_density)**2
+        modal_mass = numpy.trapz(mode_samples**2, position_samples) * self.section_density
+        return modal_participation_factor / modal_mass, modal_participation_factor
+
+    def GetDynamicSolution(self, initial_displacement: float, boundary_conditions: tuple["str","str"]) -> typing.Callable:
+        if boundary_conditions[0] != "fixed" or boundary_conditions[1] != "free":
+            raise RuntimeError("Unsupported boundary conditions")
+
+        frequency_coefficient = numpy.sqrt(self.stiffness / self.section_density * self.moment_of_inertia / self.length**4)
+        eigenfrequencies = [frequency_coefficient * root**2 for i, root in enumerate((1.875, 4.694, 7.885))]
+        wave_numbers = [self.__EigenfrequencyToWaveNumber(eigenfrequency) for eigenfrequency in eigenfrequencies]
+
+        def unscaled_initial_shape(position: float) -> float:
+            return position**3 / 6.0 / self.stiffness / self.moment_of_inertia * (3.0 * self.length - position)
+
+        initial_shape_coefficient = initial_displacement / unscaled_initial_shape(self.length)
+        initial_shape = lambda x: initial_shape_coefficient * unscaled_initial_shape(x)
+
+        def mode(wave_number: float, position: float) -> float:
+            wl = wave_number * self.length
+            wx = wave_number * position
+            tmp = (numpy.cos(wl) + numpy.cosh(wl)) / (numpy.sin(wl) + numpy.sinh(wl))
+            return numpy.cos(wx) - numpy.cosh(wx) - tmp * numpy.sin(wx) + tmp * numpy.sinh(wx)
+
+        mode_amplitudes = []
+        position_samples = numpy.linspace(0.0, self.length, 100)
+        for wave_number in wave_numbers:
+            integrand = [mode(wave_number, x) * initial_shape(x) for x in position_samples]
+            integral = numpy.trapz(integrand, position_samples)
+            mode_amplitudes.append(integral)
+
+        def solution(time: float, position: float) -> float:
+            value = 0.0
+            for eigenfrequency, wave_number, mode_amplitude in zip(eigenfrequencies, wave_numbers, mode_amplitudes):
+                value += mode_amplitude * mode(wave_number, position) * numpy.cos(eigenfrequency * time)
+            return value
+
+        return lambda t, x: solution(t, x) * initial_displacement / solution(0, self.length)
 
 
 class TorsionalBeam:

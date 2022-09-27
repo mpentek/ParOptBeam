@@ -1,5 +1,6 @@
 # --- External Imports ---
 import numpy
+import scipy.linalg
 
 # --- Internal Imports ---
 from source.model.structure_model import StraightBeam
@@ -7,11 +8,17 @@ from source.solving_strategies.strategies.linear_solver import LinearSolver
 from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
 from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
 from source.test_utils.test_case import TestCase, TestMain
+from source.auxiliary import global_definitions
+from source.test_utils.analytical_solutions import EulerBernoulli as AnalyticalBeam
+
+# --- STD Imports ---
+import typing
 
 
 schemes_beam_parameters = {
-    "name": "name",
+    "name": "Name",
     "domain_size": "3D",
+    "boundary_conditions" : "fixed-free",
     "system_parameters": {
         "element_params": {
             "type": "Bernoulli",
@@ -20,7 +27,7 @@ schemes_beam_parameters = {
         "material": {
             "is_nonlinear": False,
             "density": 7850.0,
-            "youngs_modulus": 2.10e11,
+            "youngs_modulus": 210e9,
             "poisson_ratio": 0.3,
             "damping_ratio": 0.0
         },
@@ -38,163 +45,140 @@ schemes_beam_parameters = {
                 "moment_of_inertia_z" : [0.0002667],
                 "torsional_moment_of_inertia" : [0.00007328]}]
         }
-    },
-    "boundary_conditions": "fixed-free"
+    }
 }
 
 
 class TestSchemes(TestCase):
 
+    def GetAnalyticalSolution(self, initial_displacement: float) -> numpy.array:
+        parameters = schemes_beam_parameters["system_parameters"]
+        material = parameters["material"].copy()
+        geometry = parameters["geometry"]
+        geometry.update(parameters["geometry"]["defined_on_intervals"][0])
+
+        section_density = material["density"] * geometry["area"][0]
+        stiffness = material["youngs_modulus"]
+        length = geometry["length_x"]
+        moment_of_inertia = geometry["moment_of_inertia_" + ("y" if self.deflection_direction == "z" else "z")][0]
+
+        analytical_beam = AnalyticalBeam(section_density, stiffness, length, moment_of_inertia)
+        solution_functor = analytical_beam.GetDynamicSolution(initial_displacement, schemes_beam_parameters["boundary_conditions"].split("-"))
+        return numpy.array([solution_functor(t, length) for t in self.time_samples]), solution_functor
+
+    @property
+    def initial_displacement(self) -> float:
+        return 1e-3
+
+    @property
+    def time_step_size(self) -> float:
+        return 5e-5
+
+    @property
+    def time_end(self) -> float:
+        return 4e0
+
+    @property
+    def deflection_direction(self) -> str:
+        return "y"
+
+    @property
+    def time_samples(self) -> numpy.array:
+        time_begin = 0.0
+        return numpy.linspace(time_begin, self.time_end, round((self.time_end-time_begin) / self.time_step_size) + 1)
+
+    @property
+    def tolerance(self) -> float:
+        return 1e-1
+
+    @property
+    def time_integration_schemes(self) -> list["str"]:
+        return ("ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4")
+
+    @property
+    def solvers(self) -> list["type"]:
+        return (LinearSolver, ResidualBasedPicardSolver, ResidualBasedNewtonRaphsonSolver)
+
+    @property
+    def discretizations(self) -> typing.Generator:
+        return range(2, 4)
+
     def test_AllSchemes(self) -> None:
-        for number_of_elements in (1, 2):
-            for scheme in ("ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4"):
-                with self.subTest(msg = scheme):
-                    for solver_type in (LinearSolver, ResidualBasedPicardSolver, ResidualBasedNewtonRaphsonSolver):
-                        # Construct structural components
-                        beam_parameters = schemes_beam_parameters.copy()
-                        beam_parameters["system_parameters"]["geometry"]["number_of_elements"] = number_of_elements
-                        model = StraightBeam(beam_parameters)
+        # Time discretization
+        time_samples = self.time_samples
+        number_of_steps = len(time_samples)
 
-                        number_of_dofs = len(model.k)
+        analytical_solution, analytical_functor = self.GetAnalyticalSolution(self.initial_displacement)
+        domain_size = schemes_beam_parameters["domain_size"]
+        cases = {}
 
-                        # Time discretization
-                        time_begin = 0.0
-                        time_end = 1.0
-                        time_step_size = int(1e-4)
-                        discrete_time = numpy.linspace(time_begin, time_end, time_step_size)
+        # Loop through cases
+        for number_of_elements in self.discretizations:
+            # Construct model
+            beam_parameters = schemes_beam_parameters.copy()
+            beam_parameters["system_parameters"]["geometry"]["number_of_elements"] = number_of_elements
+            model = StraightBeam(beam_parameters)
 
-                        number_of_steps = len(discrete_time)
+            # Compute static deformation for initial conditions
+            # |                   |
+            # |                   V
+            # |--------------------
+            # |
+            load_dof_index = (number_of_elements - 1) * global_definitions.DOFS_PER_NODE[domain_size] + global_definitions.DOF_LABELS[domain_size].index(self.deflection_direction)
+            load_vector = numpy.zeros(model.k.shape[0])
+            load_vector[load_dof_index] = 1.0
+            initial_displacement = scipy.linalg.solve(model.apply_bc_by_reduction(model.k), model.apply_bc_by_reduction(load_vector, axis="row_vector"))
+            initial_displacement = numpy.ravel(model.recuperate_bc_by_extension(initial_displacement, axis="row_vector"))
+            initial_displacement *= self.initial_displacement / initial_displacement[load_dof_index] # scale initial shape (assuming linear behaviour)
 
-                        # Initial conditions (free vibration from initial displacement)
-                        initial_displacement = numpy.zeros(number_of_dofs)
-                        initial_velocity = numpy.zeros(number_of_dofs)
-                        initial_acceleration = numpy.zeros(number_of_dofs)
-                        external_forces = numpy.zeros((number_of_dofs, number_of_steps))
+            # Initial conditions (free vibration from initial displacement)
+            number_of_dofs = model.k.shape[0]
+            initial_velocity = numpy.zeros(number_of_dofs)
+            initial_acceleration = numpy.zeros(number_of_dofs)
+            external_forces = numpy.zeros((number_of_dofs, number_of_steps))
 
-                        initial_displacement[0] = 1.0
+            for scheme in self.time_integration_schemes:
+                cases.setdefault(scheme, {})
+                for solver_type in self.solvers:
+                    solver_name = solver_type.__name__
+                    cases[scheme].setdefault(solver_name, {})
+                    with self.subTest(scheme=scheme, solver_name=solver_name, number_of_elements=number_of_elements):
+                        try:
+                            # Time integration
+                            solver = solver_type(time_samples,
+                                                 scheme,
+                                                 self.time_step_size,
+                                                 [model.comp_m, model.comp_b, model.comp_k],
+                                                 [numpy.ravel(model.apply_bc_by_reduction(item, axis="row_vector")) for item in [initial_displacement, initial_velocity, initial_acceleration]],
+                                                 model.apply_bc_by_reduction(external_forces, axis="row"),
+                                                 model)
 
-                        # Time integration
-                        solver = solver_type(discrete_time,
-                                            scheme,
-                                            time_step_size,
-                                            [model.m, model.b, model.k],
-                                            [initial_displacement, initial_velocity, initial_acceleration],
-                                            external_forces,
-                                            model)
+                            solver.solve()
+                            displacement_history = model.recuperate_bc_by_extension(solver.displacement, axis="row")[load_dof_index,:]
 
-                        print(solver)
+                            # Error norm as normalized deviation
+                            error = numpy.trapz(((analytical_solution - displacement_history) / numpy.max(numpy.abs(analytical_solution)))**2, time_samples) / (time_samples[-1] - time_samples[0])
 
-"""
-class TestSchemes(TestCase):
+                            # --- Debug begin ---
+                            #print(f"{scheme} {solver_name} {number_of_elements} {error}")
+                            #pyplot.plot(time_samples, analytical_solution)
+                            #pyplot.plot(time_samples, displacement_history)
+                            #pyplot.show()
+                            # --- Debug end ---
 
-    def run_scheme(self, scheme: str) -> None:
-        M = numpy.array([[0.5, 0.0], [0.0, 1.0]])
-        B = numpy.array([[0.1, 0.0], [0.0, 0.1]])
-        K = numpy.array([[1.0, 0.0], [0.0, 2.0]])
-        u0 = numpy.array([0.0, 1.0])
-        v0 = numpy.array([0.0, 0.0])
-        a0 = numpy.array([0.0, 0.0])
-        dt = 0.01
-        tend = 20.
-        steps = int(tend / dt)
-        array_time = numpy.linspace(0.0, tend, steps)
-        f = numpy.array([0.0 * array_time, 0.6 * numpy.sin(array_time)])
+                            self.assertLess(error, self.tolerance)
 
-        solver = LinearSolver(array_time, scheme, dt, [M, B, K], [u0, v0, a0], f, None)
-        solver.solve()
+                            cases[scheme][solver_name][number_of_elements] = "Pass"
+                        except AssertionError as exception:
+                            cases[scheme][solver_name][number_of_elements] = "Fail"
+                            raise exception
+                        except Exception as exception:
+                            cases[scheme][solver_name][number_of_elements] = "Error"
+                            raise exception
 
-        reference_file_name = "test_schemes_" + scheme + ".csv"
-        self.CompareToReferenceFile(
-            solver.displacement[1,:],
-            self.reference_directory / reference_file_name)
-
-
-    def run_scheme_analytic_sdof(self, scheme: str) -> None:
-        # M = numpy.array([[0.5, 0.0], [0.0, 1.0]])
-        # B = numpy.array([[0.1, 0.0], [0.0, 0.1]])
-        # K = numpy.array([[1.0, 0.0], [0.0, 2.0]])
-
-
-        # initial conditions all zero --> homogeneous solution = 0
-        u0 = numpy.array([0.0])
-        v0 = numpy.array([0.0])
-        a0 = numpy.array([0.0])
-
-        # time setup
-        dt = 0.01
-        tend = 20.
-        steps = int(tend / dt)
-        array_time = numpy.linspace(0.0, tend, steps)
-
-        # force setup
-        freq_f = 1. # 1 [Hz]
-        w_f = 2.*numpy.pi/freq_f
-        p_0 = 10.
-        f = numpy.array([p_0 * numpy.sin(w_f*array_time)])
-
-        # system setup
-        k = 1.
-        c = 0.1
-        m = 0.5
-        w_n = numpy.sqrt(k/m)
-        M = numpy.array([m])
-        B = numpy.array([c])
-        K = numpy.array([k])
-
-        # analytic solution
-        #u_st = p_0/k
-        #ceta = c*w_n/(2.*k)
-        #rd = 1./(numpy.sqrt( numpy.square(1.-numpy.square(w_f/w_n)) + numpy.square(2.*ceta*(w_f/w_n))))
-        #phi = numpy.arctan((2*ceta*(w_f/w_n))/(1-numpy.square(w_f/w_n)))
-
-        #u_analytic = u_st*rd*numpy.cos(w_f*array_time-phi)
-
-        # TODO: add homogeneous solution
-
-        solver = LinearSolver(array_time, scheme, dt, [M,B,K], [u0, v0, a0], f, None)
-        solver.solve()
-        reference_file_name = "test_schemes_analytic_sdof_" + scheme + ".csv"
-        self.CompareToReferenceFile(
-            solver.displacement[0],
-            self.reference_directory / reference_file_name,
-            delta=1e-10)
-
-
-    @TestCase.UniqueReferenceDirectory
-    def test_ForwardEuler1(self) -> None:
-        self.run_scheme("ForwardEuler1")
-        self.run_scheme_analytic_sdof("ForwardEuler1")
-
-
-    @TestCase.UniqueReferenceDirectory
-    def test_BackwardEuler1(self) -> None:
-        self.run_scheme("BackwardEuler1")
-        self.run_scheme_analytic_sdof("BackwardEuler1")
-
-
-    @TestCase.UniqueReferenceDirectory
-    def test_Euler12(self) -> None:
-        self.run_scheme("Euler12")
-        self.run_scheme_analytic_sdof("Euler12")
-
-
-    @TestCase.UniqueReferenceDirectory
-    def test_GenAlpha(self) -> None:
-        self.run_scheme("GenAlpha")
-        self.run_scheme_analytic_sdof("GenAlpha")
-
-
-    @TestCase.UniqueReferenceDirectory
-    def test_BDF2(self) -> None:
-        self.run_scheme("BDF2")
-        self.run_scheme_analytic_sdof("BDF2")
-
-
-    @TestCase.UniqueReferenceDirectory
-    def test_RungeKutta4(self) -> None:
-        self.run_scheme("RungeKutta4")
-        self.run_scheme_analytic_sdof("RungeKutta4")
-"""
+        # Dump results dict
+        import json
+        print(json.dumps(cases, indent=4))
 
 
 if __name__ == "__main__":

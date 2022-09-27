@@ -158,18 +158,12 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
         beam_model = self.runModel("FixedFreeTest", "fixed-free")
 
     def test_fixed_pinned(self):
-        # Note: this passes, which is weird because test_pinned_fixed yields
-        #       different results and fails, even though the physics should
-        #       be identical.
         beam_model = self.runModel("FixedPinnedTest", "fixed-pinned")
 
     def test_pinned_fixed(self):
-        # Note: eigenmode identification for this mode is probably wrong.
         beam_model = self.runModel("PinnedFixedTest", "pinned-fixed")
 
     def test_pinned_pinned(self):
-        # Note: rigid body mode interferes with mode identification.
-        #       => discard rigid body modes?
         beam_model = self.runModel("PinnedPinnedTest", "pinned-pinned")
 
     def runModel(self, model_name: str, boundary_conditions: str) -> StraightBeam:
@@ -189,52 +183,88 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
         length = parameters["model_parameters"]["system_parameters"]["geometry"]["length_x"]
 
         # sway_z
-        analytical_beam = EulerBernoulli(stiffness = youngs_modulus,
-                                         section_density = section_density,
-                                         length = length,
-                                         moment_of_inertia = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_z"][0])
-        eigenfrequencies_z = analytical_beam.GetEigenfrequencies(boundaries,
-                                                                 frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
-                                                                 rtol = 1e-12)
+        with self.subTest("sway_z"):
+            analytical_beam = EulerBernoulli(stiffness = youngs_modulus,
+                                            section_density = section_density,
+                                            length = length,
+                                            moment_of_inertia = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_z"][0])
+            eigenfrequencies = analytical_beam.GetEigenfrequencies(boundaries,
+                                                                   frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
+                                                                   rtol = 1e-12)
 
-        self.assertIn("sway_z", beam_model.mode_identification_results)
-        for mode_index, reference_frequency in enumerate(eigenfrequencies_z):
-            mode_info = beam_model.mode_identification_results["sway_z"][mode_index]
-            radial_frequency = 2 * math.pi * beam_model.eig_freqs[mode_info["mode_id"] - 1]
-            tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
-            self.assertAlmostEqual(radial_frequency, reference_frequency, delta = tolerance, msg = f"\ntest: {beam_model.eig_values[:len(eigenfrequencies_z)]}\nreference: {eigenfrequencies_z}")
+            self.assertIn("sway_z", beam_model.mode_identification_results)
+            for mode_index, reference_frequency in enumerate(eigenfrequencies):
+                mode_info = beam_model.mode_identification_results["sway_z"][mode_index]
+                radial_frequency = 2 * math.pi * beam_model.eig_freqs[mode_info["mode_id"] - 1]
+                tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
+
+                message_on_fail = f"\ntest eigenfrequencies: {beam_model.eig_values[:len(eigenfrequencies)]}\nreference eigenfrequencies: {eigenfrequencies}"
+
+                self.assertAlmostEqual(radial_frequency, reference_frequency, delta = tolerance, msg = message_on_fail)
+
+                # Effective modal mass and modal participation factor
+                effective_modal_mass, modal_participation_factor = analytical_beam.GetModalProperties(reference_frequency, boundaries)
+
+                tolerance = modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index)
+                self.assertAlmostEqual(mode_info["rel_participation"], modal_participation_factor, delta = tolerance, msg = message_on_fail)
+
+                tolerance = effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index)
+                self.assertAlmostEqual(mode_info["eff_modal_mass"], effective_modal_mass, delta = tolerance, msg = message_on_fail)
 
         # sway_y
-        analytical_beam = EulerBernoulli(stiffness = youngs_modulus,
-                                         section_density = section_density,
-                                         length = length,
-                                         moment_of_inertia = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_y"][0])
-        eigenfrequencies_y = analytical_beam.GetEigenfrequencies(boundaries,
-                                                                 frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
-                                                                 rtol = 1e-12)
+        with self.subTest("sway_y"):
+            analytical_beam = EulerBernoulli(stiffness = youngs_modulus,
+                                            section_density = section_density,
+                                            length = length,
+                                            moment_of_inertia = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_y"][0])
+            eigenfrequencies = analytical_beam.GetEigenfrequencies(boundaries,
+                                                                   frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
+                                                                   rtol = 1e-12)
 
-        self.assertIn("sway_y", beam_model.mode_identification_results)
-        for mode_index, reference_frequency in enumerate(eigenfrequencies_y):
-            mode_info = beam_model.mode_identification_results["sway_y"][mode_index]
-            radial_frequency = 2 * math.pi * beam_model.eig_freqs[mode_info["mode_id"] - 1]
-            tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
-            self.assertAlmostEqual(radial_frequency, reference_frequency, delta = tolerance, msg = f"\ntest: {beam_model.eig_values[:len(eigenfrequencies_y)]}\nreference: {eigenfrequencies_y}")
+            self.assertIn("sway_y", beam_model.mode_identification_results)
+            for mode_index, reference_frequency in enumerate(eigenfrequencies):
+                mode_info = beam_model.mode_identification_results["sway_y"][mode_index]
+                radial_frequency = 2 * math.pi * beam_model.eig_freqs[mode_info["mode_id"] - 1]
+                tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
+                self.assertAlmostEqual(radial_frequency, reference_frequency, delta = tolerance, msg = f"\ntest: {beam_model.eig_values[:len(eigenfrequencies)]}\nreference: {eigenfrequencies}")
+
+                message_on_fail = f"\ntest eigenfrequencies: {beam_model.eig_values[:len(eigenfrequencies)]}\nreference eigenfrequencies: {eigenfrequencies}"
+
+                # Effective modal mass and modal participation factor
+                effective_modal_mass, modal_participation_factor = analytical_beam.GetModalProperties(reference_frequency, boundaries)
+
+                tolerance = modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index)
+                self.assertAlmostEqual(mode_info["rel_participation"], modal_participation_factor, delta = tolerance, msg = message_on_fail)
+
+                tolerance = effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index)
+                self.assertAlmostEqual(mode_info["eff_modal_mass"], effective_modal_mass, delta = tolerance, msg = message_on_fail)
 
         # torsional
-        analytical_beam = TorsionalBeam(stiffness = youngs_modulus,
-                                        poisson_ratio = parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
-                                        density = parameters["model_parameters"]["system_parameters"]["material"]["density"],
-                                        length = length,
-                                        moment_of_inertia_y = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_y"][0],
-                                        moment_of_inertia_z = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_z"][0],
-                                        torsional_moment_of_inertia = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["torsional_moment_of_inertia"][0])
+        with self.subTest("torsion"):
+            if boundary_conditions == "free-free":
+                analytical_beam = TorsionalBeam(stiffness = youngs_modulus,
+                                                poisson_ratio = parameters["model_parameters"]["system_parameters"]["material"]["poisson_ratio"],
+                                                density = parameters["model_parameters"]["system_parameters"]["material"]["density"],
+                                                length = length,
+                                                moment_of_inertia_y = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_y"][0],
+                                                moment_of_inertia_z = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["moment_of_inertia_z"][0],
+                                                torsional_moment_of_inertia = parameters["model_parameters"]["system_parameters"]["geometry"]["defined_on_intervals"][0]["torsional_moment_of_inertia"][0])
 
-        self.assertIn("torsional", beam_model.mode_identification_results)
-        for mode_index, reference_frequency in enumerate(analytical_beam.GetEigenfrequencies(boundaries, 3)): # first 3 torsional modes
-            mode_info = beam_model.mode_identification_results["torsional"][mode_index]
-            radial_frequency = 2 * math.pi * beam_model.eig_freqs[mode_info["mode_id"] - 1]
-            tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
-            self.assertAlmostEqual(radial_frequency, reference_frequency, delta = tolerance)
+                self.assertIn("torsional", beam_model.mode_identification_results)
+                for mode_index, reference_frequency in enumerate(analytical_beam.GetEigenfrequencies(boundaries, 3)): # first 3 torsional modes
+                    mode_info = beam_model.mode_identification_results["torsional"][mode_index]
+                    radial_frequency = 2 * math.pi * beam_model.eig_freqs[mode_info["mode_id"] - 1]
+                    tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
+                    self.assertAlmostEqual(radial_frequency, reference_frequency, delta = tolerance)
+
+                    # Effective modal mass and modal participation factor
+                    effective_modal_mass, modal_participation_factor = analytical_beam.GetModalProperties(reference_frequency, boundaries)
+
+                    tolerance = modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index)
+                    self.assertAlmostEqual(mode_info["rel_participation"], modal_participation_factor, delta = tolerance)
+
+                    tolerance = effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index)
+                    self.assertAlmostEqual(mode_info["eff_modal_mass"], effective_modal_mass, delta = tolerance)
 
         return beam_model
 
