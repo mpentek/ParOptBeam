@@ -140,50 +140,24 @@ class TestSchemes(TestCase):
             external_forces = numpy.zeros((number_of_dofs, number_of_steps))
 
             for scheme in self.time_integration_schemes:
-                cases.setdefault(scheme, {})
                 for solver_type in self.solvers:
                     solver_name = solver_type.__name__
-                    cases[scheme].setdefault(solver_name, {})
                     with self.subTest(scheme=scheme, solver_name=solver_name, number_of_elements=number_of_elements):
-                        try:
-                            # Time integration
-                            solver = solver_type(time_samples,
-                                                 scheme,
-                                                 self.time_step_size,
-                                                 [model.comp_m, model.comp_b, model.comp_k],
-                                                 [numpy.ravel(model.apply_bc_by_reduction(item, axis="row_vector")) for item in [initial_displacement, initial_velocity, initial_acceleration]],
-                                                 model.apply_bc_by_reduction(external_forces, axis="row"),
-                                                 model)
+                        # Time integration
+                        solver = solver_type(time_samples,
+                                                scheme,
+                                                self.time_step_size,
+                                                [model.comp_m, model.comp_b, model.comp_k],
+                                                [numpy.ravel(model.apply_bc_by_reduction(item, axis="row_vector")) for item in [initial_displacement, initial_velocity, initial_acceleration]],
+                                                model.apply_bc_by_reduction(external_forces, axis="row"),
+                                                model)
 
-                            solver.solve()
-                            displacement_history = model.recuperate_bc_by_extension(solver.displacement, axis="row")[load_dof_index,:]
+                        solver.solve()
+                        displacement_history = model.recuperate_bc_by_extension(solver.displacement, axis="row")[load_dof_index,:]
 
-                            # Error norm as normalized deviation
-                            error = numpy.trapz(((analytical_solution - displacement_history) / numpy.max(numpy.abs(analytical_solution)))**2, time_samples) / (time_samples[-1] - time_samples[0])
-
-                            # # --- Debug begin ---
-                            # import numpy as np
-                            # import matplotlib.pyplot as plt
-                            # print(f"{scheme} {solver_name} {number_of_elements} {error}")
-                            # plt.plot(time_samples, analytical_solution)
-                            # plt.plot(time_samples, displacement_history)
-                            # plt.show()
-                            # plt.close()
-                            # # --- Debug end ---
-
-                            self.assertLess(error, self.tolerance)
-
-                            cases[scheme][solver_name][number_of_elements] = "Pass"
-                        except AssertionError as exception:
-                            cases[scheme][solver_name][number_of_elements] = "Fail"
-                            raise exception
-                        except Exception as exception:
-                            cases[scheme][solver_name][number_of_elements] = "Error"
-                            raise exception
-
-        # Dump results dict
-        import json
-        print(json.dumps(cases, indent=4))
+                        # Error norm as normalized deviation
+                        error = numpy.trapz(((analytical_solution - displacement_history) / numpy.max(numpy.abs(analytical_solution)))**2, time_samples) / (time_samples[-1] - time_samples[0])
+                        self.assertLess(error, self.tolerance)
 
 
 if __name__ == "__main__":
