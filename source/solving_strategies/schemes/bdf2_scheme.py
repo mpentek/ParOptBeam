@@ -63,10 +63,10 @@ class BDF2(TimeIntegrationScheme):
         LHS = self.M + self.B * (2/3 * self.dt) + self.K * (2/3 * self.dt)** 2
 
         # mass contributions
-        RHS = (-4/3 - 4/3) * np.dot(self.M, self.un1)
-        RHS += (1/3 + 4/3 * 4/3 + 1/3) * np.dot(self.M, self.un2)
-        RHS += (- 4/3 * 1/3 - 1/3 * 4/3) * np.dot(self.M, self.un3)
-        RHS += (1/3 * 1/3) * np.dot(self.M, self.un4)
+        RHS = -(-4/3 - 4/3) * np.dot(self.M, self.un1)
+        RHS += -(1/3 + 4/3 * 4/3 + 1/3) * np.dot(self.M, self.un2)
+        RHS += -(- 4/3 * 1/3 - 1/3 * 4/3) * np.dot(self.M, self.un3)
+        RHS += -(1/3 * 1/3) * np.dot(self.M, self.un4)
         # damping contributions
         RHS += (4/3 * 2/3 * self.dt) * np.dot(self.B, self.un1)
         RHS += (-1/3 * 2/3 * self.dt) * np.dot(self.B, self.un2)
@@ -80,9 +80,12 @@ class BDF2(TimeIntegrationScheme):
 
     def update(self):
         # update self.un3 un2 un1 vn2 vn1
+        # displacements
         self.un4 = self.un3
         self.un3 = self.un2
         self.un2 = self.un1
         self.un1 = self.u1
+        
+        # velocities
         self.vn2 = self.vn1
         self.vn1 = self.v1
