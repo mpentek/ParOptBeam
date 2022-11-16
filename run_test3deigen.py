@@ -11,9 +11,10 @@ parameters["model_parameters"] = {
         "name": "GenericBuilding",
         "domain_size": "3D",
         #"boundary_conditions": "fixed-free"}
-        #"boundary_conditions": "free-fixed"}
-        #"boundary_conditions": "fixed-pinned"}
-        "boundary_conditions": "pinned-fixed"}
+        "boundary_conditions": "free-fixed"}
+        # "boundary_conditions": "fixed-pinned"}
+        #"boundary_conditions": "pinned-pinned"}
+        #"boundary_conditions": "pinned-fixed"}
 
 parameters["model_parameters"]["system_parameters"]={
             "element_params": {
