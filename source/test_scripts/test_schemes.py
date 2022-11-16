@@ -93,11 +93,13 @@ class TestSchemes(TestCase):
 
     @property
     def time_integration_schemes(self) -> list["str"]:
-        return ("ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4")
+        # return ("ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4")
+        return ["BDF2"]
 
     @property
     def solvers(self) -> list["type"]:
-        return (LinearSolver, ResidualBasedPicardSolver, ResidualBasedNewtonRaphsonSolver)
+        # return (LinearSolver, ResidualBasedPicardSolver, ResidualBasedNewtonRaphsonSolver)
+        return [LinearSolver]
 
     @property
     def discretizations(self) -> typing.Generator:
@@ -159,12 +161,15 @@ class TestSchemes(TestCase):
                             # Error norm as normalized deviation
                             error = numpy.trapz(((analytical_solution - displacement_history) / numpy.max(numpy.abs(analytical_solution)))**2, time_samples) / (time_samples[-1] - time_samples[0])
 
-                            # --- Debug begin ---
-                            #print(f"{scheme} {solver_name} {number_of_elements} {error}")
-                            #pyplot.plot(time_samples, analytical_solution)
-                            #pyplot.plot(time_samples, displacement_history)
-                            #pyplot.show()
-                            # --- Debug end ---
+                            # # --- Debug begin ---
+                            # import numpy as np
+                            # import matplotlib.pyplot as plt
+                            # print(f"{scheme} {solver_name} {number_of_elements} {error}")
+                            # plt.plot(time_samples, analytical_solution)
+                            # plt.plot(time_samples, displacement_history)
+                            # plt.show()
+                            # plt.close()
+                            # # --- Debug end ---
 
                             self.assertLess(error, self.tolerance)
 
