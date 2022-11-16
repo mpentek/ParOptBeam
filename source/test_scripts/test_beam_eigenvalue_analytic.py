@@ -197,22 +197,22 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
             # for elem in beam_model.mode_identification_results["sway_z"]:
             #     relevant_modes.append(elem["mode_id"]-1)
             # relevent_rad_freqs = 2 * math.pi * beam_model.eig_freqs[relevant_modes]
-            
+
             # print(eigenfrequencies)
             # print(relevent_rad_freqs)
-            
+
             # message_on_fail = f"\ntest eigenfrequencies: {beam_model.eig_values[:len(eigenfrequencies)]}\nreference eigenfrequencies: {eigenfrequencies}"
             # for i in range(len(eigenfrequencies)):
             #     self.assertAlmostEqual(eigenfrequencies[i], relevent_rad_freqs[i], delta = 1e-3, msg = message_on_fail)
             # # # --- Debug end ---
-            
+
             self.assertIn("sway_z", beam_model.mode_identification_results)
-            
+
             relevant_modes = []
             for elem in beam_model.mode_identification_results["sway_z"]:
                 relevant_modes.append(elem["mode_id"]-1)
             relevent_rad_freqs = 2 * math.pi * beam_model.eig_freqs[relevant_modes]
-            
+
             for mode_index, reference_frequency in enumerate(eigenfrequencies):
                 mode_info = beam_model.mode_identification_results["sway_z"][mode_index]
                 tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
@@ -245,7 +245,7 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
             for elem in beam_model.mode_identification_results["sway_y"]:
                 relevant_modes.append(elem["mode_id"]-1)
             relevent_rad_freqs = 2 * math.pi * beam_model.eig_freqs[relevant_modes]
-            
+
             for mode_index, reference_frequency in enumerate(eigenfrequencies):
                 mode_info = beam_model.mode_identification_results["sway_y"][mode_index]
                 tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
@@ -300,7 +300,7 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
 
     @property
     def __base_relative_tolerance_order(self):
-        return -3
+        return -1.5
 
 
 if __name__ == "__main__":
