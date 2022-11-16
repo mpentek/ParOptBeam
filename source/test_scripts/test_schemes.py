@@ -93,11 +93,11 @@ class TestSchemes(TestCase):
 
     @property
     def time_integration_schemes(self) -> list["str"]:
-        # return ("ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4")
-        return ["BDF2"]
+        return ("ForwardEuler1", "BackwardEuler1", "Euler12", "GenAlpha", "BDF2", "RungeKutta4")
 
     @property
     def solvers(self) -> list["type"]:
+        # NOTE: nonlinear solvers and schemes do not work for now
         # return (LinearSolver, ResidualBasedPicardSolver, ResidualBasedNewtonRaphsonSolver)
         return [LinearSolver]
 
