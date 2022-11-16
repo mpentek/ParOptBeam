@@ -102,8 +102,8 @@ class BeamEigenvalueAnalyticalTest(TestCase):
                                                                                    frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
                                                                                    rtol = 1e-12)):
             # Assume the accuracy loses an order of magnitude for each consequent eigenfrequency
-            relative_tolerance = 10**(base_relative_tolerance_order + index)
-            self.AssertInWithTolerance(eigenfrequency, beam_model.eig_values, relative_tolerance = relative_tolerance)
+            relative_tolerance = max((10**(base_relative_tolerance_order + index),1e-14))
+            self.AssertInWithTolerance(eigenfrequency, beam_model.eig_values, relative_tolerance = max((relative_tolerance),1e-14))
 
         # sway_y
         analytical_beam = EulerBernoulli(stiffness = youngs_modulus,
@@ -115,8 +115,8 @@ class BeamEigenvalueAnalyticalTest(TestCase):
                                                                                    frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
                                                                                    rtol = 1e-12)):
             # Assume the accuracy loses an order of magnitude for each consequent eigenfrequency
-            relative_tolerance = 10**(base_relative_tolerance_order + index)
-            self.AssertInWithTolerance(eigenfrequency, beam_model.eig_values, relative_tolerance = relative_tolerance)
+            relative_tolerance = max((10**(base_relative_tolerance_order + index),1e-14))
+            self.AssertInWithTolerance(eigenfrequency, beam_model.eig_values, relative_tolerance = max((relative_tolerance),1e-14))
 
         # torsion
         # TODO: find analytical solution for other boundary conditions (free-free is not relevant for bending anyway)
@@ -131,8 +131,8 @@ class BeamEigenvalueAnalyticalTest(TestCase):
                 eigenfrequency = torsional_index * material_coefficient * geometry_coefficient
 
                 # Assume the accuracy loses an order of magnitude for each consequent eigenfrequency
-                relative_tolerance = 10**(base_relative_tolerance_order + index)
-                self.AssertInWithTolerance(eigenfrequency, beam_model.eig_values, relative_tolerance = relative_tolerance)
+                relative_tolerance = max((10**(base_relative_tolerance_order + index),1e-14))
+                self.AssertInWithTolerance(eigenfrequency, beam_model.eig_values, relative_tolerance = max((relative_tolerance),1e-14))
 
         return beam_model
 
@@ -215,7 +215,7 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
 
             for mode_index, reference_frequency in enumerate(eigenfrequencies):
                 mode_info = beam_model.mode_identification_results["sway_z"][mode_index]
-                tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
+                tolerance = max((reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index), 1e-12))
 
                 message_on_fail = f"\ntest eigenfrequencies: {relevent_rad_freqs}\nreference eigenfrequencies: {eigenfrequencies}"
                 self.assertAlmostEqual(relevent_rad_freqs[mode_index], reference_frequency, delta = tolerance, msg = message_on_fail)
@@ -223,10 +223,10 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
                 # Effective modal mass and modal participation factor
                 effective_modal_mass, modal_participation_factor = analytical_beam.GetModalProperties(reference_frequency, boundaries)
 
-                tolerance = modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index)
+                tolerance = max((modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
                 self.assertAlmostEqual(mode_info["rel_participation"], modal_participation_factor, delta = tolerance, msg = message_on_fail)
 
-                tolerance = effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index)
+                tolerance = max((effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
                 self.assertAlmostEqual(mode_info["eff_modal_mass"], effective_modal_mass, delta = tolerance, msg = message_on_fail)
 
         # sway_y
@@ -248,7 +248,7 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
 
             for mode_index, reference_frequency in enumerate(eigenfrequencies):
                 mode_info = beam_model.mode_identification_results["sway_y"][mode_index]
-                tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
+                tolerance = max((reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
 
                 message_on_fail = f"\ntest eigenfrequencies: {relevent_rad_freqs}\nreference eigenfrequencies: {eigenfrequencies}"
                 self.assertAlmostEqual(relevent_rad_freqs[mode_index], reference_frequency, delta = tolerance, msg = message_on_fail)
@@ -256,10 +256,10 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
                 # Effective modal mass and modal participation factor
                 effective_modal_mass, modal_participation_factor = analytical_beam.GetModalProperties(reference_frequency, boundaries)
 
-                tolerance = modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index)
+                tolerance = max((modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
                 self.assertAlmostEqual(mode_info["rel_participation"], modal_participation_factor, delta = tolerance, msg = message_on_fail)
 
-                tolerance = effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index)
+                tolerance = max((effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
                 self.assertAlmostEqual(mode_info["eff_modal_mass"], effective_modal_mass, delta = tolerance, msg = message_on_fail)
 
         # torsional
@@ -282,7 +282,7 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
 
                 for mode_index, reference_frequency in enumerate(analytical_beam.GetEigenfrequencies(boundaries, 3)): # first 3 torsional modes
                     mode_info = beam_model.mode_identification_results["torsional"][mode_index]
-                    tolerance = reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index)
+                    tolerance = max((reference_frequency * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
 
                     message_on_fail = f"\ntest eigenfrequencies: {relevent_rad_freqs}\nreference eigenfrequencies: {eigenfrequencies}"
                     self.assertAlmostEqual(relevent_rad_freqs[mode_index], reference_frequency, delta = tolerance, msg = message_on_fail)
@@ -290,10 +290,10 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
                     # Effective modal mass and modal participation factor
                     effective_modal_mass, modal_participation_factor = analytical_beam.GetModalProperties(reference_frequency, boundaries)
 
-                    tolerance = modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index)
+                    tolerance = max((modal_participation_factor * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
                     self.assertAlmostEqual(mode_info["rel_participation"], modal_participation_factor, delta = tolerance, msg = message_on_fail)
 
-                    tolerance = effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index)
+                    tolerance = max((effective_modal_mass * 10**(self.__base_relative_tolerance_order + mode_index),1e-14))
                     self.assertAlmostEqual(mode_info["eff_modal_mass"], effective_modal_mass, delta = tolerance, msg = message_on_fail)
 
         return beam_model
