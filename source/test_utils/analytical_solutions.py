@@ -141,9 +141,54 @@ class EulerBernoulli:
         mode = self.GetMode(eigenfrequency, boundary_conditions)
         position_samples = self.position_samples
         mode_samples = numpy.array([mode(x) for x in position_samples])
-        modal_participation_factor = (numpy.trapz(mode_samples, position_samples) * self.section_density)**2
-        modal_mass = numpy.trapz(mode_samples**2, position_samples) * self.section_density
-        return modal_participation_factor / modal_mass, modal_participation_factor
+        
+        # # --- Debug begin ---
+        # import numpy as np
+        # import matplotlib.pyplot as plt
+        # plt.plot(position_samples, mode_samples)
+        # plt.show()
+        # wait=input("check1")
+        # plt.close()
+        # # --- Debug end ---
+        
+        # # --- Debug begin ---
+        # total_mass = 0.0
+        # eff_modal_numerator_sum = 0.0
+        # eff_modal_denominator_sum = 0.0
+        
+        # for i in range(len(position_samples)-1):
+        #     storey_mass = (position_samples[i+1]-position_samples[i])*self.section_density
+        #     total_mass += storey_mass
+        #     # numerator like this 100.0
+        #     #eff_modal_numerator_sum += (storey_mass * phi_n[floor][mode]) **2
+
+        #     eff_modal_numerator_sum += (storey_mass * mode_samples[i])
+        #     eff_modal_denominator_sum += storey_mass * mode_samples[i] ** 2
+
+        #     # denominator always 1.0
+
+        # # numerator like this NOT 100.0
+        # eff_modal_numerator_sum = eff_modal_numerator_sum **2
+
+        # eff_modal_mass_sum = eff_modal_numerator_sum / eff_modal_denominator_sum
+        # rel_participation_sum = eff_modal_mass_sum / total_mass
+        # print(eff_modal_numerator_sum)
+        # print(eff_modal_denominator_sum)
+        # print(total_mass)
+        # print(rel_participation_sum)
+        # # --- Debug end ---
+        
+        eff_modal_numerator_sum = (numpy.trapz(mode_samples, position_samples) * self.section_density)**2
+        eff_modal_denominator_sum = numpy.trapz(mode_samples**2, position_samples) * self.section_density
+        eff_modal_mass_sum = eff_modal_numerator_sum / eff_modal_denominator_sum
+        total_mass = (position_samples[-1]-position_samples[0])* self.section_density
+        rel_participation_sum = eff_modal_mass_sum / total_mass
+        # print(eff_modal_numerator_sum)
+        # print(eff_modal_denominator_sum)
+        # print(total_mass)
+        # print(rel_participation_sum)
+        
+        return eff_modal_mass_sum, rel_participation_sum
 
     def GetDynamicSolution(self, initial_displacement: float, boundary_conditions: tuple["str","str"]) -> typing.Callable:
         if boundary_conditions[0] != "fixed" or boundary_conditions[1] != "free":
