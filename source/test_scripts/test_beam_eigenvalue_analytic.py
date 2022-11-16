@@ -192,20 +192,6 @@ class BeamDecomposeEigenmodesAnalyticalTest(TestCase):
                                                                    frequency_seeds = numpy.linspace(1e-3, 1e2, int(1e2)),
                                                                    rtol = 1e-12)
 
-            # # # --- Debug begin ---
-            # relevant_modes = []
-            # for elem in beam_model.mode_identification_results["sway_z"]:
-            #     relevant_modes.append(elem["mode_id"]-1)
-            # relevent_rad_freqs = 2 * math.pi * beam_model.eig_freqs[relevant_modes]
-
-            # print(eigenfrequencies)
-            # print(relevent_rad_freqs)
-
-            # message_on_fail = f"\ntest eigenfrequencies: {beam_model.eig_values[:len(eigenfrequencies)]}\nreference eigenfrequencies: {eigenfrequencies}"
-            # for i in range(len(eigenfrequencies)):
-            #     self.assertAlmostEqual(eigenfrequencies[i], relevent_rad_freqs[i], delta = 1e-3, msg = message_on_fail)
-            # # # --- Debug end ---
-
             self.assertIn("sway_z", beam_model.mode_identification_results)
 
             relevant_modes = []
