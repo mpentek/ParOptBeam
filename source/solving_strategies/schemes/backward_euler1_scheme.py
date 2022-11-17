@@ -6,6 +6,7 @@ from source.solving_strategies.schemes.time_integration_scheme import TimeIntegr
 class BackwardEuler1(TimeIntegrationScheme):
     """
     (Implicit) Backward Euler 1st order approximation
+    Also known as BDF 1
 
     """
 
@@ -59,7 +60,7 @@ class BackwardEuler1(TimeIntegrationScheme):
 
         else:
             raise Exception('Dimension of system parameters is BackwardEuler1 is wrong')
-        
+
         # updates self.v1,a1
         self.v1 = self.predict_velocity(self.u1)
         self.a1 = self.predict_acceleration(self.v1)

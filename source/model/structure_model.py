@@ -339,8 +339,9 @@ class StraightBeam(object):
                 bc_dofs_global[idx] = dof + len(self.all_dofs_global)
 
         # only take bc's of interest
-        self.dofs_to_keep = list(
-            set(self.all_dofs_global) - set(bc_dofs_global))
+        unordered_diff = set(self.all_dofs_global) - set(bc_dofs_global)
+        # order dofs after subtraction
+        self.dofs_to_keep = [o for o in self.all_dofs_global if o in unordered_diff]
 
     def update_outrigger_contribution(self):
 
@@ -477,7 +478,26 @@ class StraightBeam(object):
             self.parameters['m'][idx] += self.parameters['point_m'][idx]
 
     def decompose_and_quantify_eigenmodes(self, considered_modes=15):
+        ''' splits each eigenmode in contributions from each DOF
+
+        Calls eigenvalue_solve() to get the eigenvalues and modes
+        For each mode contributions of each DOF are computed.
+        Therefore modal_masses are computed and compared with the total mass
+
+        Parameters
+        ----------
+        considered_modes: int, optional
+            Number of eigenmodes to be computed. default = 15
+
+
+        Raises
+        ----------
+        ZeroDivisionError: float division by zero
+            If only one element is beeing used total mass will be 0 as loop for storey masses won't be entered!
+        '''
+
         # TODO remove code duplication: considered_modes
+        # NOTE number of DOFs == number of eigenmodes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
         else:
@@ -489,20 +509,29 @@ class StraightBeam(object):
         self.decomposed_eigenmodes = {'values': [], 'rel_contribution': [], 'eff_modal_mass': [],
                                       'rel_participation': []}
 
+        # loop over the first n=considered_modes eigenmodes
         for mode_idx in range(considered_modes):
             decomposed_eigenmode = {}
             rel_contrib = {}
             eff_modal_mass = {}
             rel_participation = {}
             selected_mode = self.eig_freqs_sorted_indices[mode_idx]
+            specific_eigenmode = self.eigen_modes_raw[:][:, selected_mode]
 
+            #NEW WAY -> as in test_script/test_compare_modal_mass_calculation.py
             for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
                                   GD.DOF_LABELS[self.domain_size]):
                 start = idx
                 step = GD.DOFS_PER_NODE[self.domain_size]
-                stop = self.eigen_modes_raw.shape[0] + idx - step
-                decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
-                                                                   1:step][:, selected_mode]
+                stop = len(self.all_dofs_global) + idx - step
+
+                influence_vector = np.zeros(len(self.all_dofs_global))
+                influence_vector[start:stop + 1:step] = 1.0
+                influence_vector = self.apply_bc_by_reduction(influence_vector,axis='column_vector') 
+
+                # misusing th influence vector to filter out contributions for the label
+                decomposed_eigenmode[label] = np.multiply(specific_eigenmode, influence_vector) 
+                
                 if label in ['a', 'b', 'g']:
                     # for rotation dofs multiply with a characteristic length
                     # to make comparable to translation dofs
@@ -513,38 +542,31 @@ class StraightBeam(object):
                     rel_contrib[label] = linalg.norm(
                         decomposed_eigenmode[label])
 
-                # adding computation of modal mass
-                # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
-                # TODO: for now using element mass (as constant) and nodal dof value - make consistent
-                # IMPORTANT
+                # print(rel_contrib)
+
                 if label in ['x', 'y', 'z', 'a']:
+                    # if label == 'a' and mode_idx == (8-1):
+                    #     print()
+
                     if rel_contrib[label] > GD.THRESHOLD:
-                        eff_modal_numerator = 0.0
-                        eff_modal_denominator = 0.0
-                        total_mass = 0.0
+                        eff_modal_numerator_multy = (np.matmul(np.transpose(specific_eigenmode),np.matmul(self.comp_m,influence_vector)))**2
+                        # denominator = Y'*m*Y
+                        eff_modal_denominator_multy = np.matmul(np.matmul(np.transpose(specific_eigenmode),self.comp_m),specific_eigenmode)
+                        # denominator always 1.0
 
-                        for el_idx in range(self.n_elements-1):
-                            # equivalent mass at node taken as average of 2 elements below and above node
-                            storey_mass = (
-                                self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
-                            if label == 'a':
-                                # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
-                                storey_mass *= (self.parameters['lz'][el_idx] **
-                                                2 + self.parameters['ly'][el_idx] ** 2) / 12
+                        total_mass_multy = np.matmul(np.matmul(np.transpose(influence_vector),self.comp_m),influence_vector)
 
-                                # TODO check as torsion 4-5-6 does not seem to be ok in the results
+                        eff_modal_mass[label] = eff_modal_numerator_multy / eff_modal_denominator_multy
+                        rel_participation[label] = eff_modal_mass[label] / total_mass_multy
 
-                            total_mass += storey_mass
-
-                            # taking the modal dof value at the node misusing naming el_idx
-                            eff_modal_numerator += storey_mass * \
-                                decomposed_eigenmode[label][el_idx]
-                            eff_modal_denominator += storey_mass * \
-                                decomposed_eigenmode[label][el_idx] ** 2
-
-                        eff_modal_mass[label] = eff_modal_numerator ** 2 / \
-                            eff_modal_denominator
-                        rel_participation[label] = eff_modal_mass[label] / total_mass
+                        # print()
+                        # print(eff_modal_numerator_multy)
+                        # print(eff_modal_denominator_multy)
+                        # print(label)
+                        # print(total_mass_multy)
+                        # print(eff_modal_mass)
+                        # print(rel_participation)
+                        # print()
 
                     else:
                         eff_modal_mass[label] = 0.0
@@ -554,6 +576,65 @@ class StraightBeam(object):
                     eff_modal_mass[label] = 0.0
                     rel_participation[label] = 0.0
 
+            # # OLD WAY
+            # for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.domain_size])),
+            #                       GD.DOF_LABELS[self.domain_size]):
+            #     start = idx
+            #     step = GD.DOFS_PER_NODE[self.domain_size]
+            #     stop = self.eigen_modes_raw.shape[0] + idx - step
+            #     decomposed_eigenmode[label] = self.eigen_modes_raw[start:stop +
+            #                                                        1:step][:, selected_mode]
+            #     if label in ['a', 'b', 'g']:
+            #         # for rotation dofs multiply with a characteristic length
+            #         # to make comparable to translation dofs
+            #         rel_contrib[label] = self.charact_length * \
+            #             linalg.norm(decomposed_eigenmode[label])
+            #     else:
+            #         # for translation dofs
+            #         rel_contrib[label] = linalg.norm(
+            #             decomposed_eigenmode[label])
+
+            #     # adding computation of modal mass
+            #     # according to D-67: http://www.vibrationdata.com/tutorials2/beam.pdf
+            #     # TODO: for now using element mass (as constant) and nodal dof value - make consistent
+            #     # IMPORTANT
+            #     if label in ['x', 'y', 'z', 'a']:
+            #         if rel_contrib[label] > GD.THRESHOLD:
+            #             eff_modal_numerator = 0.0
+            #             eff_modal_denominator = 0.0
+            #             total_mass = 0.0
+
+            #             for el_idx in range(self.n_elements-1):
+            #                 # equivalent mass at node taken as average of 2 elements below and above node
+            #                 storey_mass = (
+            #                     self.parameters['m'][el_idx] + self.parameters['m'][el_idx+1])/2
+            #                 if label == 'a':
+            #                     # NOTE for torsion using the equivalency of a rectangle with sides ly_i, lz_i
+            #                     storey_mass *= (self.parameters['lz'][el_idx] **
+            #                                     2 + self.parameters['ly'][el_idx] ** 2) / 12
+
+            #                     # TODO check as torsion 4-5-6 does not seem to be ok in the results
+
+            #                 total_mass += storey_mass
+
+            #                 # taking the modal dof value at the node misusing naming el_idx
+            #                 eff_modal_numerator += storey_mass * \
+            #                     decomposed_eigenmode[label][el_idx]
+            #                 eff_modal_denominator += storey_mass * \
+            #                     decomposed_eigenmode[label][el_idx] ** 2
+
+            #             eff_modal_mass[label] = eff_modal_numerator ** 2 / \
+            #                 eff_modal_denominator
+            #             rel_participation[label] = eff_modal_mass[label] / total_mass
+
+            #         else:
+            #             eff_modal_mass[label] = 0.0
+            #             rel_participation[label] = 0.0
+            #     else:
+            #         # TODO for now for rotations
+            #         eff_modal_mass[label] = 0.0
+            #         rel_participation[label] = 0.0
+
             self.decomposed_eigenmodes['values'].append(decomposed_eigenmode)
             self.decomposed_eigenmodes['rel_contribution'].append(rel_contrib)
             self.decomposed_eigenmodes['eff_modal_mass'].append(eff_modal_mass)
@@ -561,6 +642,20 @@ class StraightBeam(object):
                 rel_participation)
 
     def identify_decoupled_eigenmodes(self, considered_modes=15, print_to_console=False):
+        '''  Identify and sort eigenmodes
+
+        Computes the first n eigenmodes with n = `considered_modes`.
+        Identifies the types of eigenmodes and sorts them according to their type.
+
+        Parameters
+        ----------
+        considered_modes: int, optional
+            Number of eigenmodes to be computed. default = 15
+
+        print_to_console: bool, optional
+            If set to True eigenmodes will be printed to the console. default = False
+        '''
+
         # TODO remove code duplication: considered_modes
         if considered_modes == 'all':
             considered_modes = len(self.dofs_to_keep)
@@ -568,7 +663,7 @@ class StraightBeam(object):
             if considered_modes > len(self.dofs_to_keep):
                 considered_modes = len(self.dofs_to_keep)
 
-        self.decompose_and_quantify_eigenmodes()
+        self.decompose_and_quantify_eigenmodes(considered_modes)
 
         self.mode_identification_results = {}
 
@@ -584,6 +679,7 @@ class StraightBeam(object):
                         match_for_case_id = True
 
                 # TODO: check if robust enough for modes where 2 DoFs are involved
+                # see test_scripts.test_structure_model_identify_decoupled_eigenmodes.py
                 if match_for_case_id:
 
                     if case_id in self.mode_identification_results:
@@ -619,14 +715,21 @@ class StraightBeam(object):
         # solving for reduced m and k - applying BCs leads to avoiding rigid body modes
         self.eig_values_raw, self.eigen_modes_raw = linalg.eigh(
             self.comp_k, self.comp_m)
+    
         # rad/s
         self.eig_values = np.sqrt(np.real(self.eig_values_raw))
         self.eig_freqs = self.eig_values / 2. / np.pi
         self.eig_pers = 1 / self.eig_freqs
         # sort eigenfrequencies
 
+        #with np.printoptions(precision=3, suppress=True):
+        #     print(self.comp_k)
+        #     print(self.comp_m)
+        #     print(self.eig_freqs)
+
         # NOTE: it seems that it is anyway sorted
         # TODO: check if it can at all happen that it is not sorted, otherwise operation superflous
+        # linalg.eigh returns: "The N (1<=N<=M) selected eigenvalues, in ascending order, each repeated according to its multiplicity."
         self.eig_freqs_sorted_indices = np.argsort(self.eig_freqs)
 
     def evaluate_characteristic_on_interval(self, running_coord, characteristic_identifier):
