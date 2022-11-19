@@ -48,3 +48,8 @@ from source.test_utils.test_case import TestMain
 case = source.test_scripts.test_beam_eigenvalue_analytic.BeamEigenvalueAnalyticalTest
 TestMain()
 ```
+
+Run all working relevant test by:
+```
+python -m source.test_utils.run_all_tests
+```
