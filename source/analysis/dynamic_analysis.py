@@ -150,7 +150,7 @@ class DynamicAnalysis(AnalysisType):
             pass
         
 
-        # TODO intiial condition in modal coordinates : when all the modes are not considered. 
+        # TODO initial condition in modal coordinates : when all the modes are not considered. 
         # TODO check if concept of comp - computational model is robust and generic enough
         self.comp_m = np.copy(self.structure_model.comp_m)
         self.comp_k = np.copy(self.structure_model.comp_k)
@@ -208,7 +208,6 @@ class DynamicAnalysis(AnalysisType):
         print("Solving the structure for dynamic loads \n")
         self.solver.solve()
 
-
         # transforming back to normal coordinates :
         if self.transform_into_modal:
             self.solver.displacement = np.matmul(
@@ -224,6 +223,7 @@ class DynamicAnalysis(AnalysisType):
             self.solver.velocity)
         self.solver.acceleration = self.structure_model.recuperate_bc_by_extension(
             self.solver.acceleration)
+        
         # computing the reactions
         f1 = np.dot(self.structure_model.m, self.solver.acceleration)
         f2 = np.dot(self.structure_model.b, self.solver.velocity)
@@ -468,7 +468,7 @@ class DynamicAnalysis(AnalysisType):
 
         sum_over_time = np.sum(np.multiply(sum_energy, self.dt/self.array_time[-1]))
 
-        ## EXPLIZIT WAY
+        ## EXPLICIT WAY
         # vel = {}
 
         # for idx, label in zip(list(range(GD.DOFS_PER_NODE[self.structure_model.domain_size])),
