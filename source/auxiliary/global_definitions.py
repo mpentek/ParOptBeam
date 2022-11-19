@@ -3,16 +3,17 @@ AVAILABLE_BCS = ['\"fixed-fixed\"', '\"pinned-pinned\"', '\"fixed-pinned\"',
 
 BC_DOFS = {
     '2D': {'\"fixed-fixed\"': [0, 1, 2, -3, -2, -1],
-           '\"pinned-pinned\"': [0, 1, -5, -4],
-           '\"fixed-pinned\"': [0, 1, 2, -5, -4],
+           '\"pinned-pinned\"': [0, 1, -3, -2],
+           '\"fixed-pinned\"': [0, 1, 2, -3, -2],
            '\"pinned-fixed\"': [0, 1, -3, -2, -1],
            '\"fixed-free\"': [0, 1, 2],
            '\"free-fixed\"': [-3, -2, -1]
            },
     '3D': {'\"fixed-fixed\"': [0, 1, 2, 3, 4, 5, -6, -5, -4, -3, -2, -1],
-           '\"pinned-pinned\"': [0, 1, 2, -6, -5, -4],
-           '\"fixed-pinned\"': [0, 1, 2, 3, 4, 5, -6, -5, -4],
-           '\"pinned-fixed\"': [0, 1, 2, -6, -5, -4, -3, -2, -1],
+           # torsion is considered fixed for anything involving "pinned"
+           '\"pinned-pinned\"': [0, 1, 2, 3, -6, -5, -4, -3],
+           '\"fixed-pinned\"': [0, 1, 2, 3, 4, 5, -6, -5, -4, -3],
+           '\"pinned-fixed\"': [0, 1, 2, 3, -6, -5, -4, -3, -2, -1],
            '\"fixed-free\"': [0, 1, 2, 3, 4, 5],
            '\"free-fixed\"': [-6, -5, -4, -3, -2, -1]
            }}
@@ -26,7 +27,7 @@ DOF_LABELS = {'2D': ['x', 'y', 'g'],
 MODE_CATEGORIZATION = {
     '2D': {
         'longitudinal': ['x'],
-        'sway_y': ['z', 'b']},
+        'sway_z': ['y', 'g']},
     '3D': {
         'longitudinal': ['x'],
         'torsional': ['a'],
