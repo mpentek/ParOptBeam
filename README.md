@@ -12,7 +12,7 @@ The project is free under the BSD 3-Clause License
 ## Beam types:
 * Bernoulli beam
 * Timoshenko beam
-* Co-rotational beam
+* Co-rotational beam (WIP -> linked to geometric nonlinear analysis)
 
 ## Boundary conditions
 * fixed-fixed
