@@ -331,7 +331,7 @@ class OptimizableStraightBeam(object):
 
         mode_type_results = self.model.mode_identification_results[identifier]
         # mode_type_results is an ordered list
-        m_id = mode_type_results[0]['mode_id']
+        m_id = mode_type_results[target_mode-1]['mode_id']
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
@@ -394,7 +394,7 @@ class OptimizableStraightBeam(object):
 
         mode_type_results = self.model.mode_identification_results[identifier]
         # mode_type_results is an ordered list
-        m_id = mode_type_results[0]['mode_id']
+        m_id = mode_type_results[target_mode-1]['mode_id']
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
@@ -460,7 +460,7 @@ class OptimizableStraightBeam(object):
 
         mode_type_results = self.model.mode_identification_results[identifier]
         # mode_type_results is an ordered list
-        m_id = mode_type_results[0]['mode_id']
+        m_id = mode_type_results[target_mode-1]['mode_id']
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
@@ -523,6 +523,6 @@ class OptimizableStraightBeam(object):
 
         mode_type_results = self.model.mode_identification_results[identifier]
         # mode_type_results is an ordered list
-        m_id = mode_type_results[0]['mode_id']
+        m_id = mode_type_results[target_mode-1]['mode_id']
 
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
