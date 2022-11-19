@@ -10,9 +10,6 @@ from source.auxiliary.validate_and_assign_defaults import validate_and_assign_de
 from source.auxiliary.global_definitions import *
 
 
-CUST_MAGNITUDE = 2
-
-
 class OptimizableStraightBeam(object):
     """
     A 2D/3D prismatic homogenous isotropic Timoshenko beam element
@@ -46,7 +43,7 @@ class OptimizableStraightBeam(object):
         6. test unti how many elements it works, also specific cases with analystical solutions
     """
 
-    OPT_FCTR = 100
+    OPT_FCTR = 1250
 
     THRESHOLD = 1e-8
 
@@ -201,9 +198,8 @@ class OptimizableStraightBeam(object):
 
         minimization_result = minimize_scalar(optimizable_function,
                                               method='Bounded',
-                                              bounds=(1/5, 5))
-                                              # TODO avoid hardcoding
-                                            #   bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, 
+                                                      OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
         opt_rho_fctr = minimization_result.x
@@ -212,6 +208,9 @@ class OptimizableStraightBeam(object):
         if print_to_console:
             print('INITIAL rho:', initial_rho)
             print('OPTIMIZED rho: ', opt_rho_fctr * initial_rho)
+            print('FACTOR: ', opt_rho_fctr)
+            if ((abs(opt_rho_fctr-1/OptimizableStraightBeam.OPT_FCTR)) < 1e-2) or ((abs(opt_rho_fctr-OptimizableStraightBeam.OPT_FCTR)) < 1e-2):
+                print("Optimization factor reaching bounds! Might want to adjust these limits.")
             print()
 
         # re-calculate and print to console
@@ -253,7 +252,11 @@ class OptimizableStraightBeam(object):
         if print_to_console:
             print('INITIAL e:', initial_e)
             print('OPTIMIZED e: ', opt_e_fctr * initial_e)
+            print('FACTOR: ', opt_e_fctr)
+            if ((abs(opt_e_fctr-1/OptimizableStraightBeam.OPT_FCTR)) < 1e-2) or ((abs(opt_e_fctr-OptimizableStraightBeam.OPT_FCTR)) < 1e-2):
+                print("Optimization factor reaching bounds! Might want to adjust these limits.")
             print()
+    
     def generic_material_stiffness_objective_function(self, target_freq, target_mode, initial_e, multiplier_fctr):
 
         for e in self.model.elements:
@@ -298,6 +301,8 @@ class OptimizableStraightBeam(object):
                 [str(opt_a_fctr * val) for val in initial_a]))
             print()
             print('FACTOR: ', opt_a_fctr)
+            if ((abs(opt_a_fctr-1/OptimizableStraightBeam.OPT_FCTR)) < 1e-2) or ((abs(opt_a_fctr-OptimizableStraightBeam.OPT_FCTR)) < 1e-2):
+                print("Optimization factor reaching bounds! Might want to adjust these limits.")
             print()
 
     def longitudinal_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_a, initial_a_sy, initial_a_sz, multiplier_fctr):
@@ -343,8 +348,7 @@ class OptimizableStraightBeam(object):
         init_guess = (1.0, 1.0)
 
         bnds_iy = (1/OptimizableStraightBeam.OPT_FCTR,
-                   OptimizableStraightBeam.OPT_FCTR)  # (1/8,8)
-        # (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)#(1/15,15)
+                   OptimizableStraightBeam.OPT_FCTR)
         bnds_a_sz = (0.4, 1.0)
 
         minimization_result = minimize(optimizable_function,
@@ -461,7 +465,11 @@ class OptimizableStraightBeam(object):
         return (self.model.eig_freqs[self.model.eig_freqs_sorted_indices[m_id-1]] - target_freq)**2 / target_freq**2
 
     def adjust_torsional_stiffness_for_target_eigenfreq(self, target_freq, target_mode, print_to_console=False):
+        
+        # stiffness and inertia inversely effect the eigenfrequency
+        # stiffness term
         initial_it = list(e.It for e in self.model.elements)
+        # inertia term
         initial_ip = list(e.Ip for e in self.model.elements)
 
         # NOTE: single parameter optimization seems not to be enough
@@ -473,44 +481,36 @@ class OptimizableStraightBeam(object):
                                        initial_it,
                                        initial_ip)
 
-        # NOTE: some additional reduction factor so that ip gets changes less
-
-        init_guess = (1.0, 1.0)
-
-        # NOTE: this seems not to be enough
-        # bnds_it = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)
-        # bnds_ip = (1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR)
-
-        # NOTE: seems that the stiffness contribution takes lower bound, the inertia one the upper bound
-        bnds_it = (1/7, 7)
-        bnds_ip = (1/11, 11)
-
-        # NOTE: TNC, SLSQP, L-BFGS-B seems to work with bounds correctly, COBYLA not
-        minimization_result = minimize(optimizable_function,
-                                       init_guess,
-                                       method='L-BFGS-B',
-                                       bounds=(bnds_it, bnds_ip))
+        minimization_result = minimize_scalar(optimizable_function,
+                                              method='Bounded',
+                                              bounds=(1/OptimizableStraightBeam.OPT_FCTR, OptimizableStraightBeam.OPT_FCTR))
 
         # returning only one value!
         opt_fctr = minimization_result.x
 
         if print_to_console:
-            print('INITIAL it:', ', '.join([str(val) for val in initial_it]))
+            print('INITIAL it:', initial_it)
             print('OPTIMIZED it: ', ', '.join(
-                [str(opt_fctr[0] * val) for val in initial_it]))
+                [str(opt_fctr * val) for val in initial_it]))
             print()
-            print('INITIAL ip:', ', '.join([str(val) for val in initial_ip]))
+            
+            print('INITIAL ip:', initial_ip)
             print('OPTIMIZED ip: ', ', '.join(
-                [str(opt_fctr[1] * val) for val in initial_ip]))
+                [str(val / opt_fctr) for val in initial_ip]))
             print()
-            print('FACTORS: ', ', '.join([str(val) for val in opt_fctr]))
+            
+            print('FACTOR: ', opt_fctr)
+            if ((abs(opt_fctr-1/OptimizableStraightBeam.OPT_FCTR)) < 1e-2) or ((abs(opt_fctr-OptimizableStraightBeam.OPT_FCTR)) < 1e-2):
+                print("Optimization factor reaching bounds! Might want to adjust these limits.")
             print()
 
+    # def torsional_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_it, initial_ip, multiplier_fctr):
     def torsional_geometric_stiffness_objective_function(self, target_freq, target_mode, initial_it, initial_ip, multiplier_fctr):
-
+    
+        # stiffness and inertia inversely effect the eigenfrequency
         for e in self.model.elements:
-            e.It = multiplier_fctr[0] * initial_it[e.index]
-            e.Ip = multiplier_fctr[1] * initial_ip[e.index]
+            e.It = multiplier_fctr * initial_it[e.index]
+            e.Ip =  initial_ip[e.index] / multiplier_fctr
 
         # re-evaluate
         self.model.calculate_global_matrices()
