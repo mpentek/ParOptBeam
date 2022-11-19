@@ -49,7 +49,7 @@ case = source.test_scripts.test_beam_eigenvalue_analytic.BeamEigenvalueAnalytica
 TestMain()
 ```
 
-Run all working relevant test by:
+Run all working relevant tests by:
 ```
 python -m source.test_utils.run_all_tests
 ```
