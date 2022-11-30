@@ -199,7 +199,7 @@ class TimoshenkoBeamElement(BeamElement):
     def _get_element_stiffness_matrix_geometry(self):
         pass
 
-    def _get_element_stiffness_matrix_material(self):
+    def _get_element_stiffness_matrix_material(self, coupling_terms=[0.0,0.0,0.0,0.0]):
         """
         stiffness values for one level
         VERSION 2
@@ -297,6 +297,47 @@ class TimoshenkoBeamElement(BeamElement):
                               0.],
                              [0., k_el_yg[0][3], 0., 0., 0., k_el_yg[1][3], 0., k_el_yg[2][3], 0., 0., 0.,
                               k_el_yg[3][3]]])
+
+            # bending components y - displacement and g - rotation
+            # coupled with torsion a - alpha
+            k_ya = coupling_terms[0] * (k_yg * k_yg_11)
+            k_el[1][3] = k_ya
+            k_el[3][1] = k_ya
+            k_el[3][7] = -k_ya
+            k_el[7][3] = -k_ya
+            k_el[1][9] = -k_ya
+            k_el[9][1] = -k_ya
+            k_el[7][9] = k_ya
+            k_el[9][7] = k_ya
+            k_ga = coupling_terms[1] * (k_yg * k_yg_22)
+            k_el[3][5] = -k_ga
+            k_el[5][3] = -k_ga
+            k_el[3][11] = k_ga
+            k_el[11][3] = k_ga
+            k_el[5][9] = k_ga
+            k_el[9][5] = k_ga
+            k_el[11][9] = -k_ga
+            k_el[9][11] = -k_ga
+            # bending components z - displacement and b - rotation
+            # coupled with torsion a - alpha           
+            k_za = coupling_terms[2] * (k_zb * k_zb_11)
+            k_el[2][3] = k_za
+            k_el[3][2] = k_za
+            k_el[3][8] = -k_za
+            k_el[8][3] = -k_za
+            k_el[2][9] = -k_za
+            k_el[9][2] = -k_za
+            k_el[8][9] = k_za
+            k_el[9][8] = k_za
+            k_ba = coupling_terms[3] * (k_zb * k_zb_22)
+            k_el[3][4] = -k_ba
+            k_el[4][3] = -k_ba
+            k_el[3][10] = k_ba
+            k_el[10][3] = k_ba
+            k_el[4][9] = k_ba
+            k_el[9][4] = k_ba
+            k_el[10][9] = -k_ba
+            k_el[9][10] = -k_ba
 
         elif self.domain_size == '2D':
             k_el = np.array([[k_el_x[0][0], 0., 0., k_el_x[0][1], 0., 0.],
