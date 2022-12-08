@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
 from mpl_toolkits.mplot3d import proj3d
 from matplotlib import animation
@@ -27,10 +28,16 @@ class Arrow3D(FancyArrowPatch):
         return np.min(zs)
 
     def draw(self, renderer):
+        # xs3d, ys3d, zs3d = self._verts3d
+        # xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        # self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
+        # FancyArrowPatch.draw(self, renderer)
+        
         xs3d, ys3d, zs3d = self._verts3d
-        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, renderer.M)
+        xs, ys, zs = proj3d.proj_transform(xs3d, ys3d, zs3d, self.axes.M)
         self.set_positions((xs[0], ys[0]), (xs[1], ys[1]))
-        FancyArrowPatch.draw(self, renderer)
+        if not (np.allclose(xs, 0.) and np.allclose(ys, 0.)):
+            FancyArrowPatch.draw(self, renderer)
 
 
 class Visualiser:
@@ -83,6 +90,7 @@ class Visualiser:
         self.fig = plt.figure(figsize=(10, 10))
         self.ax = self.fig.add_subplot(
             111, projection='3d')
+            # ax = fig.add_subplot(projection='3d')
         # TODO: after an error this was commented out: currently not possible to set aspect ratio manually
         # , aspect='equal', azim=-60, elev=10)
 
