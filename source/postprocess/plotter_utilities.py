@@ -97,7 +97,7 @@ def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, 
     # print(geometry)
     # Set up figure
     fig = plt.figure()
-    ax = fig.gca(projection='3d')  # fig.add_subplot(111)
+    ax = fig.add_subplot(projection='3d')
 
     # Handover data
     # x_undef = np.zeros(len(undeformed_geometry))
@@ -265,10 +265,26 @@ def animate_result(title, array_time, geometry, force, scaling):
     zmax = np.max(geometry["deformed"][2])
     # zmin = zmin - ceil((zmax-zmin)/30)
     # zmax = zmax + ceil((zmax-zmin)/30)
+    
+    representative_length = ((xmin-xmax)**2 + (ymin-ymax)**2 + (zmin-zmax)**2)**0.5
 
-    ax.set_xlim3d(xmin, xmax)
-    ax.set_ylim3d(ymin, ymax)
-    ax.set_zlim3d(zmax, zmin)
+    if abs(xmin-xmax) < 1e-1:
+        ax.set_xlim3d(xmin - representative_length/2, xmax + representative_length/2)
+    else:
+        ax.set_xlim3d(xmin, xmax)
+    
+    if abs(ymin-ymax) < 1e-1:
+        ax.set_ylim3d(ymin - representative_length/2, ymax + representative_length/2)
+    else:
+        ax.set_ylim3d(ymin, ymax)    
+    
+    if abs(zmin-zmax) < 1e-1:
+        ax.set_zlim3d(zmin - representative_length/2, zmax + representative_length/2)
+    else:
+        ax.set_zlim3d(zmin, zmax) 
+    
+    # ax.set_ylim3d(ymin, ymax)
+    # ax.set_zlim3d(zmax, zmin)
 
     # text = ax.text(0.02, 0.90, '', transform=ax.transAxes)
     # text_mode = ax.text(0.02, 0.95, '', transform=ax.transAxes)
