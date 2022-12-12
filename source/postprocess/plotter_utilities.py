@@ -97,7 +97,8 @@ def plot_result(pdf_report, display_plot, plot_title, geometry, force, scaling, 
     # print(geometry)
     # Set up figure
     fig = plt.figure()
-    ax = fig.add_subplot(projection='3d')
+    ax = fig.add_subplot(
+            111, projection='3d')
 
     # Handover data
     # x_undef = np.zeros(len(undeformed_geometry))
