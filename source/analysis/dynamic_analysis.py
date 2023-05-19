@@ -202,6 +202,9 @@ class DynamicAnalysis(AnalysisType):
             ext_force = np.dot(np.transpose(
                 self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered]), ext_force)
 
+            own_weight = np.dot(np.transpose(
+                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered]), own_weight)
+
         print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
             from source.solving_strategies.strategies.linear_solver import LinearSolver
