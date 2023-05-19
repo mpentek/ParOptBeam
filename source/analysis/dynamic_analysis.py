@@ -61,18 +61,18 @@ class DynamicAnalysis(AnalysisType):
         else:
             print(get_adjusted_path_string(
                 self.parameters['input']['file_path']) + ' set as load file path in DynamicAnalysis')
-            force = np.load(get_adjusted_path_string(
+            ext_force = np.load(get_adjusted_path_string(
                 self.parameters['input']['file_path']))
 
         super().__init__(structure_model, self.parameters["type"])
-        # print("Force: ", len(force))
+        # print("Force: ", len(ext_force))
         # overwriting attribute from base constructors
-        self.force = force
+        self.ext_force = ext_force
 
         # check dimensionality
         # of time
         len_time_gen_array = len(self.array_time)
-        len_time_force = len(self.force[0])
+        len_time_force = len(self.ext_force[0])
         if len_time_gen_array != len_time_force:
             err_msg = "The length " + \
                 str(len_time_gen_array) + \
@@ -86,7 +86,7 @@ class DynamicAnalysis(AnalysisType):
         # of nodes-dofs
         n_dofs_model = structure_model.n_nodes * \
             GD.DOFS_PER_NODE[structure_model.domain_size]
-        n_dofs_force = len(self.force)
+        n_dofs_force = len(self.ext_force)
         if n_dofs_model != n_dofs_force:
             err_msg = "The number of the degrees of freedom " + \
                 str(n_dofs_model) + " of the structural model\n"
@@ -111,6 +111,8 @@ class DynamicAnalysis(AnalysisType):
                     ', '.join(digits_in_filename) + \
                     " (separated by underscores)!"
             raise Exception(err_msg)
+
+        # end initializing external load
 
         rows = len(self.structure_model.apply_bc_by_reduction(
             self.structure_model.k))
@@ -164,37 +166,62 @@ class DynamicAnalysis(AnalysisType):
             self.comp_k = transform_into_modal_coordinates(
                 self.structure_model.eigen_modes_raw, self.comp_k, self.num_of_modes_considered)
 
-        if force.shape[1] != len(self.array_time):
+        if ext_force.shape[1] != len(self.array_time):
             err_msg = "The time step for forces does not match the time step defined"
             raise Exception(err_msg)
 
-        # external forces
-        force = self.structure_model.apply_bc_by_reduction(self.force, 'row')
+        # final shape for external forces
+        ext_force = self.structure_model.apply_bc_by_reduction(self.ext_force, 'row')
+
+        ##################
+        # BEGIN new functionality
+        ##################
+        
+        # self weight - for now hardcoded for along axis - so x directon with magnitude -9.81
+        self.own_weight = np.zeros_like(self.ext_force)
+        gravity_direction_id = 0 # for X - along the beam
+        dofs_per_node = 6 # for 3D
+        gravity_fctr = -9.81
+        rampup_t = 10.0 # will be user-defined
+        # NOTE: not only 'm' but also 'point_m' will need to be added
+        for m_idx, val_m in enumerate(self.structure_model.parameters['m']):
+            for t_idx, val_t in enumerate(self.array_time):
+                rampup_fctr = 1.0
+                if val_t < rampup_t:
+                    rampup_fctr = val_t/rampup_t
+                self.own_weight[m_idx*dofs_per_node + gravity_direction_id][t_idx] += rampup_fctr*gravity_fctr * val_m
+
+        # final shape for own weight
+        own_weight = self.structure_model.apply_bc_by_reduction(self.own_weight, 'row')
+
+        ##################
+        # END new functionality
+        ##################
 
         if self.transform_into_modal:
-            force = np.dot(np.transpose(
-                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered]), force)
+            ext_force = np.dot(np.transpose(
+                self.structure_model.eigen_modes_raw[:,:self.num_of_modes_considered]), ext_force)
 
         print(self.parameters)
         if self.parameters["settings"]["solver_type"] == "Linear":
             from source.solving_strategies.strategies.linear_solver import LinearSolver
             self.solver = LinearSolver(self.array_time, time_integration_scheme, self.dt,
                                        [self.comp_m, self.comp_b, self.comp_k],
-                                       initial_conditions, force,
+                                       initial_conditions, ext_force + own_weight,
                                        self.structure_model)
         elif self.parameters["settings"]["solver_type"] == "Picard":
             from source.solving_strategies.strategies.residual_based_picard_solver import ResidualBasedPicardSolver
             self.solver = ResidualBasedPicardSolver(self.array_time, time_integration_scheme, self.dt,
                                                     [self.comp_m, self.comp_b,
                                                         self.comp_k],
-                                                    initial_conditions, force,
+                                                    initial_conditions, ext_force + own_weight,
                                                     self.structure_model)
         elif self.parameters["settings"]["solver_type"] == "NewtonRaphson":
             from source.solving_strategies.strategies.residual_based_newton_raphson_solver import ResidualBasedNewtonRaphsonSolver
             self.solver = ResidualBasedNewtonRaphsonSolver(self.array_time, time_integration_scheme, self.dt,
                                                            [self.comp_m, self.comp_b,
                                                                self.comp_k],
-                                                           initial_conditions, force,
+                                                           initial_conditions, ext_force + own_weight,
                                                            self.structure_model)
         else:
             err_msg = "The requested solver type \"" + \
@@ -228,7 +255,7 @@ class DynamicAnalysis(AnalysisType):
         f1 = np.dot(self.structure_model.m, self.solver.acceleration)
         f2 = np.dot(self.structure_model.b, self.solver.velocity)
         f3 = np.dot(self.structure_model.k, self.solver.displacement)
-        self.solver.dynamic_reaction = self.force - f1 - f2 - f3
+        self.solver.dynamic_reaction = (self.ext_force + self.own_weight) - f1 - f2 - f3
         #TODO : elastic support reaction computation 
 
     def plot_result_at_dof(self, pdf_report, display_plots, dof, selected_result):
